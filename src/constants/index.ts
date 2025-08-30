@@ -112,3 +112,8 @@ export const permissionsArray = {
     delete: false,
   },
 }
+
+export const printerTypeOption = [
+  { label: "Offset", value: 'Offset' },
+  { label: "Screen Printing", value: "Screen Printing" },
+  { label: "Other", value: "Other" }]

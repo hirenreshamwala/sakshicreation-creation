@@ -151,5 +151,11 @@ const Endpoint = {
 
   // extra code for remove errors
   UPDATE_STAFF_ATTACHMENTS: `${BaseURL}/api/staff/updateattachments`,
+  CREATE_BINDER_TYPE:  `${BaseURL}/api/bindertype/create`,
+  GET_ALL_BINDER_TYPE:  `${BaseURL}/api/bindertype/getall`,
+  GET_BINDER_TYPE_WITH_ID:  `${BaseURL}/api/bindertype/getbyid`,
+  UPDATE_BINDER_TYPE:  `${BaseURL}/api/bindertype/update`,
+  DELETE_BINDER_TYPE:  `${BaseURL}/api/bindertype/delete`,
+  BULK_CREATE_BINDER_TYPES:  `${BaseURL}/api/bindertype/bulk`,
 };
 export default Endpoint;

@@ -21,6 +21,7 @@ import performanceInvoiceReducer from '@/store/slices/performanceInvoiceSlice';
 import companyNameReducer from '@/store/slices/companyNameSlice';
 import vendorReducer from '@/store/slices/vendorSlice';
 import inventoryReducer from '@/store/slices/inventorySlice';
+import binderTypeReducer from '@/store/slices/binderTypeSlice';
 // Persist configuration
 export const persistConfig = {
   key: 'auth',
@@ -54,6 +55,7 @@ export const store = configureStore({
     companyNames: companyNameReducer,
     vendors: vendorReducer,
     inventory: inventoryReducer,
+    binderType: binderTypeReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

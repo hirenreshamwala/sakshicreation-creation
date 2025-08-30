@@ -27,6 +27,7 @@ import {
   MdExpandLess,
   MdMenu,
   MdLogout,
+  MdBackpack,
 } from "react-icons/md";
 import { IoChevronBack } from "react-icons/io5";
 import { useRouter } from "next/router";
@@ -271,6 +272,11 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     {
       label: "Paper Material",
       path: "/admin/setup/paper-material",
+      icon: <MdGroup size={18} />,
+    },
+     {
+      label: "Binder Type",
+      path: "/admin/setup/binderType",
       icon: <MdGroup size={18} />,
     },
     // {

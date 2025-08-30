@@ -24,6 +24,8 @@ import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog";
 import RoleStaffSelect from "@/component/reusablecomponents/RoleStaffSelect";
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ThemeSelect from "@/component/common_component/themeselect";
+import { getAllMaterialsThunk } from "@/store/slices/materialSlice";
 
 type OptionType = {
   label: string;
@@ -44,7 +46,7 @@ const PrinterForm = () => {
   const { id: orderId } = router.query;
   const dispatch = useAppDispatch();
   const { singleOrder } = useAppSelector((state) => state.orders);
-
+  const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [openFilesDialog, setOpenFilesDialog] = useState(false);
@@ -73,6 +75,10 @@ const PrinterForm = () => {
     };
     fetchOrderData();
   }, [dispatch, orderId]);
+
+  useEffect(() => {
+    if (!materials.length) dispatch(getAllMaterialsThunk());
+  }, [])
 
   // Initialize formik values and selected staff when singleOrder changes
   useEffect(() => {
@@ -115,11 +121,14 @@ const PrinterForm = () => {
           sheetSize: "",
           paperType: "",
           gsm: "",
-          ratePerUnit: ""
+          ratePerUnit: "",
+          paperSize: "",
         }]);
       }
     }
   }, [singleOrder]);
+
+
 
   const formik = useFormik({
     initialValues: {
@@ -148,18 +157,18 @@ const PrinterForm = () => {
       printingrate: Yup.string().required("Printing Rate is required"),
       printingratePerUnit: Yup.string().required("Printing Rate Per Unit is required"),
       // gsm: Yup.string().required("GSM is required"),
-      rowPaperSize: Yup.string().required("Raw Paper Size is required"),
-      rowPaperUser: Yup.string().required("Raw Paper User is required"),
+      // rowPaperSize: Yup.string().required("Raw Paper Size is required"),
+      // rowPaperUser: Yup.string().required("Raw Paper User is required"),
       printerRemarks: Yup.string().required("Remarks are required"),
       printerPapers: Yup.array().of(
-      Yup.object().shape({
-      numberOfSheetsUsed: Yup.string().required("Number of Sheets Used is required"),
-      sheetSize: Yup.string().required("Sheet Size is required"),
-      paperType: Yup.string().required("Paper Type is required"),
-      gsm: Yup.string().required("GSM is required"),
-      ratePerUnit: Yup.string().required("Rate Per Unit is required"),
-    })
-  ),
+        Yup.object().shape({
+          numberOfSheetsUsed: Yup.string().required("Number of Sheets Used is required"),
+          sheetSize: Yup.string().required("Sheet Size is required"),
+          paperType: Yup.string().required("Paper Type is required"),
+          gsm: Yup.string().required("GSM is required"),
+          ratePerUnit: Yup.string().required("Rate Per Unit is required"),
+        })
+      ),
     }),
     onSubmit: async (values) => {
       if (!orderId || typeof orderId !== "string") {
@@ -205,6 +214,66 @@ const PrinterForm = () => {
     },
   });
 
+  console.log(formik.errors,'jsxgjusghf')
+
+  const materialNameOptions = Array.from(new Set(materials.map(material => material.materialName))).map(name => ({
+    value: name,
+    label: name
+  }));
+
+  const getMaterialGSMOptions = (materialName: string) => {
+    const filteredMaterials = materials.filter(material => material.materialName === materialName);
+    return Array.from(new Set(filteredMaterials.map(material => material.materialGSM.toString()))).map(gsm => ({
+      value: gsm,
+      label: `${gsm} GSM`
+    }));
+  };
+
+  const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
+    const filteredMaterials = materials.filter(
+      material =>
+        material.materialName === materialName &&
+        material.materialGSM.toString() === materialGSM
+    );
+    return Array.from(new Set(filteredMaterials.map(material => material.materialSize))).map(size => ({
+      value: size,
+      label: size
+    }));
+  };
+
+  // Handle material selection for a specific paper field
+  const handleMaterialNameChange = (index: number, value: string) => {
+    const updatedFields = [...paperFields];
+    updatedFields[index] = {
+      ...updatedFields[index],
+      materialName: value,
+      paperType:value,
+      gsm: "", // Reset GSM when material name changes
+      materialSize: "", // Reset size when material name changes
+    };
+    setPaperFields(updatedFields);
+  };
+
+  const handleMaterialGSMChange = (index: number, value: string) => {
+    const updatedFields = [...paperFields];
+    updatedFields[index] = {
+      ...updatedFields[index],
+      gsm:value,
+      materialSize: "", // Reset size when GSM changes
+    };
+    setPaperFields(updatedFields);
+  };
+
+  const handleMaterialSizeChange = (index: number, value: string) => {
+    const updatedFields = [...paperFields];
+    updatedFields[index] = {
+      ...updatedFields[index],
+      materialSize: value,
+      sheetSize: value // Set sheetSize to match material size
+    };
+    setPaperFields(updatedFields);
+  };
+
   const handleHoldToggle = async () => {
     if (!orderId || typeof orderId !== "string") {
       toast.error("Order ID not found");
@@ -236,40 +305,40 @@ const PrinterForm = () => {
     router.push(`/admin/all-orders/view/binder/?id=${orderId}`);
   };
 
-const handleAssignToBookletBinder = async () => {
-  if (!orderId || typeof orderId !== "string") {
-    toast.error("Order ID not found");
-    return;
-  }
-  if (singleOrder?.status === "Hold") {
-    toast.error("Order is on hold. Please unhold to assign to booklet binder.");
-    return;
-  }
-  if (!selectedPrinterStaff) {
-    toast.error("Please select a printer before assigning to booklet binder.");
-    return;
-  }
+  const handleAssignToBookletBinder = async () => {
+    if (!orderId || typeof orderId !== "string") {
+      toast.error("Order ID not found");
+      return;
+    }
+    if (singleOrder?.status === "Hold") {
+      toast.error("Order is on hold. Please unhold to assign to booklet binder.");
+      return;
+    }
+    if (!selectedPrinterStaff) {
+      toast.error("Please select a printer before assigning to booklet binder.");
+      return;
+    }
 
-  setLoading(true);
-  try {
-    const updateData = {
-      status: "Booklet & Folder Binder",
-      bookletBinderStatus: "Pending",
-      bookletBinder: null, // Will be set in BookletFolderBinderForm
-      printerStatus: singleOrder?.printerStatus === "Pending" ? "Done" : singleOrder?.printerStatus,
-      binderStatus: singleOrder?.binderStatus || "Pending", // Mark binder as skipped
-    };
+    setLoading(true);
+    try {
+      const updateData = {
+        status: "Booklet & Folder Binder",
+        bookletBinderStatus: "Pending",
+        bookletBinder: null, // Will be set in BookletFolderBinderForm
+        printerStatus: singleOrder?.printerStatus === "Pending" ? "Done" : singleOrder?.printerStatus,
+        binderStatus: singleOrder?.binderStatus || "Pending", // Mark binder as skipped
+      };
 
-    await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap();
-    toast.success("Order assigned to Booklet & Folder Binder successfully");
-    router.push(`/admin/all-orders/view/booklet-folder/?id=${orderId}`);
-  } catch (error: any) {
-    console.error("Error assigning to booklet binder:", error);
-    toast.error(error?.message || "Failed to assign to booklet binder");
-  } finally {
-    setLoading(false);
-  }
-};
+      await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap();
+      toast.success("Order assigned to Booklet & Folder Binder successfully");
+      router.push(`/admin/all-orders/view/booklet-folder/?id=${orderId}`);
+    } catch (error: any) {
+      console.error("Error assigning to booklet binder:", error);
+      toast.error(error?.message || "Failed to assign to booklet binder");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleProceedToDelivery = () => {
     router.push(`/admin/all-orders/view/dilevery/?id=${orderId}`);
@@ -335,8 +404,8 @@ const handleAssignToBookletBinder = async () => {
         <Typography fontWeight={600} fontSize={18} mb={3}>
           {singleOrder.party?.partyName || "Party"}
         </Typography>
-        <StepperProgress 
-          activeStep={2} 
+        <StepperProgress
+          activeStep={2}
           orderStatus={singleOrder?.status}
           designerStatus={singleOrder?.designerStatus}
           printerStatus={singleOrder?.printerStatus}
@@ -374,16 +443,16 @@ const handleAssignToBookletBinder = async () => {
               fullWidth
               InputProps={{ readOnly: true }}
             />
-              <RoleStaffSelect
-                label="Select Printer"
-                name="printerRole"
-                value={selectedPrinterStaff}
-                onChange={handlePrinterStaffChange}
-                onStaffChange={handlePrinterStaffChange}
-                roleFilter="Printer"
-                showStaff={true}
-                disabled={areFieldsReadOnly || isPrinterAssigned}
-              />
+            <RoleStaffSelect
+              label="Select Printer"
+              name="printerRole"
+              value={selectedPrinterStaff}
+              onChange={handlePrinterStaffChange}
+              onStaffChange={handlePrinterStaffChange}
+              roleFilter="Printer"
+              showStaff={true}
+              disabled={areFieldsReadOnly || isPrinterAssigned}
+            />
           </Stack>
 
           {/* Specs Section - Single Row */}
@@ -398,7 +467,7 @@ const handleAssignToBookletBinder = async () => {
               helperText={formik.touched.size && formik.errors.size}
               InputProps={{ readOnly: areFieldsReadOnly }}
             />
-              <ThemeInput
+            <ThemeInput
               labelName="Item Quantity"
               value={formik.values.qty}
               fullWidth
@@ -446,55 +515,64 @@ const handleAssignToBookletBinder = async () => {
             />
           </Stack>
 
-            {/* Paper Fields Section */}
-            {paperFields.map((paper, index) => (
-              <Box key={index} mb={3} p={2} border={1} borderRadius={2} borderColor="#ddd">
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography fontWeight={600}>
-                    {paper.paperName}
-                  </Typography>
-                  {!areFieldsReadOnly && (
-                    <IconButton
-                      onClick={() => handleDeletePaperField(index)}
-                      disabled={paperFields.length === 1}
-                      sx={{
-                        color: '#F04438',
-                        '&:hover': { backgroundColor: '#FEE2E2' },
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  )}
-                </Box>
+          {/* Paper Fields Section */}
+          {paperFields.map((paper, index) => (
+            <Box key={index} mb={3} p={2} border={1} borderRadius={2} borderColor="#ddd">
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography fontWeight={600}>
+                  {paper.paperName}
+                </Typography>
+                {!areFieldsReadOnly && (
+                  <IconButton
+                    onClick={() => handleDeletePaperField(index)}
+                    disabled={paperFields.length === 1}
+                    sx={{
+                      color: '#F04438',
+                      '&:hover': { backgroundColor: '#FEE2E2' },
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                )}
+              </Box>
               <Stack direction="row" spacing={2}>
-                <ThemeInput
-                  labelName="Number of Sheets Used"
-                  value={paper.numberOfSheetsUsed}
-                  onChange={(e) => handlePaperFieldChange(index, 'numberOfSheetsUsed', e.target.value)}
-                  fullWidth
-                  required
-                  error={!paper.numberOfSheetsUsed && formik.submitCount > 0}
-                  helperText={!paper.numberOfSheetsUsed && formik.submitCount > 0 ? "This field is required" : ""}
-                  InputProps={{ readOnly: areFieldsReadOnly }}
-                />
-                <ThemeInput
-                  labelName="Sheet Size"
-                  value={paper.sheetSize}
-                  onChange={(e) => handlePaperFieldChange(index, 'sheetSize', e.target.value)}
-                  fullWidth
-                  required
-                  error={!paper.sheetSize && formik.submitCount > 0}
-                  helperText={!paper.sheetSize && formik.submitCount > 0 ? "This field is required" : ""}
-                  InputProps={{ readOnly: areFieldsReadOnly }}
-                />
+                <Stack direction="row" spacing={2} mb={2}>
+                  <ThemeSelect
+                    label="Paper Type"
+                    options={materialNameOptions}
+                    value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
+                    onChange={(e, newValue) => handleMaterialNameChange(index, newValue?.value as string || "")}
+                    required
+                    fullWidth
+                    disabled={areFieldsReadOnly}
+                  />
+                  <ThemeSelect
+                    label="GSM"
+                    options={getMaterialGSMOptions(paper.paperType)}
+                    value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
+                    onChange={(e, newValue) => handleMaterialGSMChange(index, newValue?.value as string || "")}
+                    required
+                    fullWidth
+                    disabled={!paper.paperType || areFieldsReadOnly}
+                  />
+                  <ThemeSelect
+                    label="Size"
+                    options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
+                    value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.materialSize) || null}
+                    onChange={(e, newValue) => handleMaterialSizeChange(index, newValue?.value as string || "")}
+                    required
+                    fullWidth
+                    disabled={!paper.paperType || areFieldsReadOnly}
+                  />
+                </Stack>
                 <ThemeInput
                   labelName="Paper Type"
                   value={paper.paperType}
                   onChange={(e) => handlePaperFieldChange(index, 'paperType', e.target.value)}
                   fullWidth
-                   required
-                    error={!paper.paperType && formik.submitCount > 0}
-                    helperText={!paper.paperType && formik.submitCount > 0 ? "This field is required" : ""}
+                  required
+                  error={!paper.paperType && formik.submitCount > 0}
+                  helperText={!paper.paperType && formik.submitCount > 0 ? "This field is required" : ""}
                   InputProps={{ readOnly: areFieldsReadOnly }}
                 />
                 <ThemeInput
@@ -502,7 +580,7 @@ const handleAssignToBookletBinder = async () => {
                   value={paper.gsm}
                   onChange={(e) => handlePaperFieldChange(index, 'gsm', e.target.value)}
                   fullWidth
-                   required
+                  required
                   error={!paper.gsm && formik.submitCount > 0}
                   helperText={!paper.gsm && formik.submitCount > 0 ? "This field is required" : ""}
                   InputProps={{ readOnly: areFieldsReadOnly }}
@@ -561,7 +639,7 @@ const handleAssignToBookletBinder = async () => {
               helperText={formik.touched.printingratePerUnit && formik.errors.printingratePerUnit}
               InputProps={{ readOnly: areFieldsReadOnly }}
             />
-          <ThemeInput
+            {/* <ThemeInput
               labelName="Raw Paper Size"
               name="rowPaperSize"
               value={formik.values.rowPaperSize}
@@ -570,8 +648,8 @@ const handleAssignToBookletBinder = async () => {
               error={formik.touched.rowPaperSize && Boolean(formik.errors.rowPaperSize)}
               helperText={formik.touched.rowPaperSize && formik.errors.rowPaperSize}
               InputProps={{ readOnly: areFieldsReadOnly }}
-            />
-            <ThemeInput
+            /> */}
+            {/* <ThemeInput
               labelName="Raw Paper No. Of Sheet Used"
               name="rowPaperUser"
               value={formik.values.rowPaperUser}
@@ -580,7 +658,7 @@ const handleAssignToBookletBinder = async () => {
               error={formik.touched.rowPaperUser && Boolean(formik.errors.rowPaperUser)}
               helperText={formik.touched.rowPaperUser && formik.errors.rowPaperUser}
               InputProps={{ readOnly: areFieldsReadOnly }}
-            />
+            /> */}
             {(isPrinterStatusDone || isPrinterStatusInProgress) && (
               <ThemeInput
                 labelName="Printer Wasted Sheet"

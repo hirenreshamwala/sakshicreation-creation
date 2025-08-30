@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useRef, useState, useEffect } from "react"
-import { Box, Stack, CircularProgress, FormControlLabel, Checkbox, FormControl, FormLabel, RadioGroup, Radio } from "@mui/material"
+import { Box, Stack, CircularProgress, FormControlLabel, Checkbox, FormControl, FormLabel, RadioGroup, Radio, InputLabel, MenuItem, Select, Typography, Switch } from "@mui/material"
 import CustomDialog from "@/component/customdialog"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeSelect from "@/component/common_component/themeselect"
@@ -14,6 +14,8 @@ import { getAccountMasterByCompanyAndPartyThunk } from "@/store/slices/accountMa
 import { getAllProductItemsThunk } from "@/store/slices/productItemSlice"
 import { createOrderThunk, clearOrderError, clearOrderSuccessMessage } from "@/store/slices/orderSlice"
 import { toast } from "react-toastify"
+import { printerTypeOption } from "@/constants"
+import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice"
 
 interface OptionType {
   label: string
@@ -34,16 +36,19 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
   const { productItems, loading: productLoading } = useAppSelector((state) => state.productItems)
   const { singleAccountMaster, loading: accountLoading } = useAppSelector((state) => state.accountMasters)
   const { loading: orderLoading, error: orderError, successMessage } = useAppSelector((state) => state.orders)
-
+  const { binderTypes } = useAppSelector((state) => state.binderType);
   const [formData, setFormData] = useState({
     companyName: "",
     partyName: "",
     personName: "",
     whatsapp: "",
+    binding: false,
+    bindingType: "",
     itemName: "",
     qty: "",
     gst: "",
     remarks: "",
+    pType: "",
     size: "", // New field
     rate: "", // New field
     rateType: "new", // New field: default to "new"
@@ -85,6 +90,10 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       dispatch(getAllProductItemsThunk())
     }
   }, [open, dispatch])
+
+  useEffect(() => {
+    if (!binderTypes.length) dispatch(getAllBinderTypesThunk());
+  }, []);
 
   // Set item options when product items are loaded
   useEffect(() => {
@@ -182,6 +191,9 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       const orderData = {
         companyName: formData.companyName,
         party: formData.partyName,
+        pType: formData.pType,
+        binding: formData.binding,
+        bindingType: formData.bindingType,
         productItem: formData.itemName,
         qty: Number.parseInt(formData.qty),
         remarks: formData.remarks || "",
@@ -216,6 +228,9 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       itemName: "",
       qty: "",
       gst: "",
+      bindingType: "",
+      pType: "",
+      binding: false,
       remarks: "",
       size: "",
       rate: "",
@@ -292,7 +307,14 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
             required
           />
           <ThemeInput
-            labelName="Qty"
+            labelName="Item Size"
+            placeholder="Enter size (e.g., A4)"
+            fullWidth
+            value={formData.size}
+            onChange={(e) => handleChange("size", e.target.value)}
+          />
+          <ThemeInput
+            labelName="Item Qty"
             placeholder="200"
             fullWidth
             type="number"
@@ -300,12 +322,31 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
             onChange={(e) => handleChange("qty", e.target.value)}
             required
           />
-          <ThemeInput
-            labelName="Size"
-            placeholder="Enter size (e.g., A4)"
-            fullWidth
-            value={formData.size}
-            onChange={(e) => handleChange("size", e.target.value)}
+        </Stack>
+        <Stack direction="row" spacing={2} mb={2}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={formData.binding} // boolean field
+                onChange={(e) => handleChange("binding", e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Binding"
+          />
+          {formData.binding ? <ThemeSelect
+            label="Binding Type"
+            value={getSelectedOption(formData.bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
+            options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
+            onChange={(_, v) => { handleChange("bindingType", v ? v.value : "") }}
+            required
+          /> : null}
+          <ThemeSelect
+            label="Printing Type"
+            value={getSelectedOption(formData.pType, printerTypeOption)}
+            options={printerTypeOption}
+            onChange={(_, v) => handleChange("pType", v ? v.value : "")}
+            required
           />
         </Stack>
 
@@ -339,7 +380,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
               placeholder="Enter GST number"
               fullWidth
               value={gstNotApplicable ? "Not Applicable" : formData.gst}
-              onChange={(e) => {}}
+              onChange={(e) => { }}
               disabled={true}
               sx={{
                 "& .MuiInputBase-input": {

@@ -541,7 +541,7 @@ const BinderForm = () => {
               InputProps={{ readOnly: areFieldsReadOnly || !!singleOrder.rowPaperSize }}
             />
             <ThemeInput
-              labelName="Raw Paper Used"
+              labelName="Raw Paper No of Sheet Used"
               name="rowPaperUser"
               value={formik.values.rowPaperUser}
               onChange={formik.handleChange}
