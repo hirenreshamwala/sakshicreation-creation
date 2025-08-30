@@ -103,23 +103,38 @@ class StaffService {
       throw error;
     }
   }
-static async updateStaffPassword(id: string, passwordData: { currentPassword: string; newPassword: string }) {
-  try {
-    const response = await axios.patch(
-      `${Endpoint.UPDATE_STAFF_PASSWORD}/${id}`,
-      passwordData,
-      {
-        headers: this.getAuthHeader(),
-        withCredentials: true,
-      }
-    );
-    return response.data;
-  } catch (error: any) {
-    // Extract the error message from the response
-    const errorMessage = error.response?.data?.message || error.message || "Failed to update password";
-    throw new Error(errorMessage);
+  static async updateStaffPassword(id: string, passwordData: { currentPassword: string; newPassword: string }) {
+    try {
+      const response = await axios.patch(
+        `${Endpoint.UPDATE_STAFF_PASSWORD}/${id}`,
+        passwordData,
+        {
+          headers: this.getAuthHeader(),
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      // Extract the error message from the response
+      const errorMessage = error.response?.data?.message || error.message || "Failed to update password";
+      throw new Error(errorMessage);
+    }
   }
-}
+  static async updateStaffAttachments(id: any, body: boolean) {
+    try {
+      const response = await axios.post(
+        `${Endpoint.UPDATE_STAFF_ATTACHMENTS}/${id}`,
+        body,
+        {
+          headers: this.getAuthHeader(),
+          withCredentials: true,
+        }
+      );
+      return response.data.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export default StaffService;

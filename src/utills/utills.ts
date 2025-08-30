@@ -1,3 +1,4 @@
+import CryptoJS from "crypto-js";
 // function convertToPermissionsData(modules: string[]) {
 //   return modules.map((module) => ({
 //     feature: toTitleCase(module.replace(/_/g, " ")),
@@ -83,3 +84,23 @@ function convertPermissionsToDb(displayPermissions: any[]) {
 
   return dbPermissions;
 }
+
+
+const SECRET_KEY = process.env.NEXT_PUBLIC_CRYPTO_SECRET || "xghvyusdvf";
+
+export const decryptData = (ciphertext: any) => {
+  try {
+    console.log(ciphertext, 'Decryption error', SECRET_KEY)
+    const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
+    const originalText = bytes.toString(CryptoJS.enc.Utf8);
+
+    if (!originalText) {
+      throw new Error("Invalid decryption or empty result");
+    }
+
+    return originalText;
+  } catch (error: any) {
+    console.log("Decryption error:", error.message || error);
+    return "Decryption failed";
+  }
+};

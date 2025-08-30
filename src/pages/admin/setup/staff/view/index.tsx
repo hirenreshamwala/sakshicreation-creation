@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Box, Stack, Typography, Chip, FormLabel } from "@mui/material"
+import { Box, Stack, Typography, Chip, FormLabel, IconButton } from "@mui/material"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import { toast } from "react-toastify"
@@ -16,6 +16,8 @@ import { deleteFileThunk } from "@/store/slices/fileUploadSlice" // Import delet
 import CompanySelect from "@/component/reusablecomponents/CompanyWithPartyName"
 import FileUpload, { type FileUploadRef } from "@/component/reusablecomponents/FileUpload" // Adjust path if necessary
 import { ArrowBack, Delete } from "@mui/icons-material" // Import Delete icon for chips
+import { decryptData } from "@/utills/utills"
+import StaffService from "@/services/staff.service"
 
 interface StaffFormData {
   firstName: string;
@@ -73,19 +75,16 @@ const StaffView = () => {
   const { mode, id } = router.query
   const dispatch = useAppDispatch()
 
-  const { currentStaff, loading: staffLoading } = useAppSelector((state) => state.staff)
-  console.log("🚀 ~ StaffView ~ currentStaff:", currentStaff)
+  const { user } = useAppSelector((state) => state.auth)
   const { roles, loading: rolesLoading } = useAppSelector((state) => state.roles)
+  const { currentStaff, loading: staffLoading } = useAppSelector((state) => state.staff)
 
-  // Refs for FileUpload components
   const aadharFileUploadRef = useRef<FileUploadRef>(null)
   const addressFileUploadRef = useRef<FileUploadRef>(null)
-
-  // State for files selected for upload (not yet saved to backend)
+  const [roleOptions, setRoleOptions] = useState<RoleOption[]>([])
+  const [selectedRole, setSelectedRole] = useState<RoleOption | null>(null)
   const [selectedAadharFiles, setSelectedAadharFiles] = useState<File[]>([])
   const [selectedAddressFiles, setSelectedAddressFiles] = useState<File[]>([])
-
-  // State for files already associated with the staff member (from backend)
   const [existingAadharFiles, setExistingAadharFiles] = useState<string[]>([])
   const [existingAddressFiles, setExistingAddressFiles] = useState<string[]>([])
 
@@ -150,7 +149,8 @@ const StaffView = () => {
           joiningDate: values.joiningDate,
           birthDay: values.birthDay || undefined,
           role: values.role,
-          companyName: values.companyName,
+          CompanyName: values.companyName,
+          password: values.password,
           aadharFiles: finalAadharFiles, // Include file paths
           addressFiles: finalAddressFiles, // Include file paths
           ...(mode === "add" && { password: values.password }),
@@ -177,15 +177,10 @@ const StaffView = () => {
     },
   })
 
-  const [roleOptions, setRoleOptions] = useState<RoleOption[]>([])
-  const [selectedRole, setSelectedRole] = useState<RoleOption | null>(null)
-
   useEffect(() => {
-    dispatch(getAllRolesThunk())
-    if (mode === "edit" && id) {
-      dispatch(getStaffByIdThunk(id as string))
-    }
-  }, [dispatch, mode, id])
+    if (!roles.length) dispatch(getAllRolesThunk())
+    if (mode === "edit" && id) dispatch(getStaffByIdThunk(id as string))
+  }, [mode, id])
 
   useEffect(() => {
     if (roles.length > 0) {
@@ -198,7 +193,6 @@ const StaffView = () => {
   }, [roles])
 
   useEffect(() => {
-    console.log("🚀 ~ StaffView ~ currentStaff:", currentStaff)
     if (mode === "edit" && currentStaff) {
       const editData = {
         firstName: currentStaff.firstName || "",
@@ -214,28 +208,23 @@ const StaffView = () => {
         birthDay: currentStaff.birthDay ? new Date(currentStaff.birthDay).toISOString().split("T")[0] : "",
         role: currentStaff.role?._id || "",
         companyName: currentStaff.companyName?._id || currentStaff.companyName?.companyName,
-        password: "", // Password is not pre-filled for security
+        password: user?.role?.roleName === 'Admin' && user?.role?.isDelete === false ? decryptData(currentStaff?.password) : "", // Password is not pre-filled for security
         aadharFiles: currentStaff.aadharFiles || [], // Populate existing files
         addressFiles: currentStaff.addressFiles || [], // Populate existing files
         mode: "edit",
       }
-        console.log("🚀 ~ StaffView ~ editData.companyName:", editData.companyName)
-      console.log("Edit Data:", editData)
       const selected = roleOptions.find((opt) => opt.value === editData.role) || null
       formik.setValues(editData)
       setSelectedRole(selected)
       setExistingAadharFiles(currentStaff.aadharFiles || []) // Set existing files state
       setExistingAddressFiles(currentStaff.addressFiles || []) // Set existing files state
     } else if (mode === "add") {
-      formik.setValues({
-        ...formik.initialValues,
-        mode: "add",
-      })
+      formik.setFieldValue("mode", "add")
       setSelectedRole(null)
       setExistingAadharFiles([]) // Clear existing files for add mode
       setExistingAddressFiles([]) // Clear existing files for add mode
     }
-  }, [currentStaff, mode, roleOptions])
+  }, [currentStaff, mode, roleOptions, user])
 
   const handleRoleChange = (event: React.SyntheticEvent, newValue: RoleOption | null) => {
     setSelectedRole(newValue)
@@ -259,7 +248,7 @@ const StaffView = () => {
       cleanValue && cleanValue.length !== 12 ? "Aadhar No. must be 12 digits" : undefined,
     )
   }
-const handleEmailChange = (value: string) => {
+  const handleEmailChange = (value: string) => {
     const normalizedEmail = value.toLowerCase();
     formik.setFieldValue("email", normalizedEmail);
     formik.setFieldError(
@@ -278,6 +267,7 @@ const handleEmailChange = (value: string) => {
     try {
       // Call backend to delete the file
       await dispatch(deleteFileThunk({ folder, filename })).unwrap()
+      await StaffService.updateStaffAttachments(id, fileType === "aadhar" ? { aadharFiles: currentStaff?.aadharFiles?.filter((path) => path !== filePathToDelete) } : { addressFiles: currentStaff?.addressFiles?.filter((path) => path !== filePathToDelete) })
       toast.success(`File ${filename} deleted successfully.`)
 
       // Update local state and formik values
@@ -300,7 +290,6 @@ const handleEmailChange = (value: string) => {
   }
 
   const handleDiscard = () => {
-    console.log("🚀 ~ handleDiscard ~ currentStaff:", currentStaff)
     if (mode === "edit" && currentStaff) {
       const editData = {
         firstName: currentStaff.firstName || "",
@@ -335,17 +324,13 @@ const handleEmailChange = (value: string) => {
     aadharFileUploadRef.current?.clearSelectedFiles()
     addressFileUploadRef.current?.clearSelectedFiles()
   }
-  const handleBack = () => {
-    router.push("/admin/setup/staff")
-  }
 
   return (
     <Box sx={{ width: "100%" }} component="form" onSubmit={formik.handleSubmit}>
       <Box sx={{ mb: 3 }}>
         <ThemeButton
-                       sx={{ backgroundColor: "#6366F1", borderRadius: "8px", color: "#fff" }}
-
-          onClick={handleBack}
+          sx={{ backgroundColor: "#6366F1", borderRadius: "8px", color: "#fff" }}
+          onClick={() => router.push("/admin/setup/staff")}
           disabled={formik.isSubmitting}
           startIcon={<ArrowBack />}
         >
@@ -372,7 +357,7 @@ const handleEmailChange = (value: string) => {
           fullWidth
           required
         />
-       <ThemeInput
+        <ThemeInput
           labelName="Email"
           value={formik.values.email}
           onChange={(e) => handleEmailChange(e.target.value)}
@@ -417,9 +402,7 @@ const handleEmailChange = (value: string) => {
           fullWidth
           required
         />
-      {/* </Stack>
 
-      <Stack direction="row" spacing={2} mb={2}> */}
         <CompanySelect
           name="companyName"
           value={formik.values.companyName}
@@ -444,7 +427,7 @@ const handleEmailChange = (value: string) => {
       {/* New: Aadhar File Upload */}
       <Box mb={2}>
         
-      <Box sx={{ mb: 2 }}>
+        {!existingAadharFiles.length && <Box sx={{ mb: 2 }}>
         <FormLabel required sx={{ mb: 1, display: 'block', fontWeight: 'bold' }}>
           Aadhar File Upload (Required)
         </FormLabel>
@@ -462,7 +445,7 @@ const handleEmailChange = (value: string) => {
           helperText="Upload Aadhar card images or PDF (required)"
           required
         />
-      </Box>
+      </Box>}
         {/* Display existing Aadhar files */}
         {existingAadharFiles.length > 0 && (
           <Box sx={{ mt: 2 }}>
@@ -470,20 +453,62 @@ const handleEmailChange = (value: string) => {
               Existing Aadhar Files:
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-              {existingAadharFiles.map((filePath, index) => (
-                <Chip
-                  key={index}
-                  label={filePath.split("/").pop()} // Display filename
-                  component="a"
-                  href={`${process.env.NEXT_PUBLIC_API_URL}/api/fileDownload/download?filePath=${encodeURIComponent(filePath)}&view=true`} // Assuming a download endpoint
-                  target="_blank"
-                  clickable
-                  onDelete={() => handleDeleteExistingFile("aadhar", filePath)}
-                  deleteIcon={<Delete />}
-                  variant="outlined"
-                  sx={{ maxWidth: "300px" }}
-                />
-              ))}
+              {existingAadharFiles.map((filePath, index) => {
+                const fileName = filePath.split("/").pop();
+                const fileUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/fileDownload/download?filePath=${encodeURIComponent(filePath)}&view=true`;
+
+                return (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      border: 1,
+                      borderRadius: 5,
+                      borderColor: "#bdbdbd",
+                      padding: '4px 8px',
+                    }}
+                  >
+                    {/* File name as clickable link */}
+                    <Box
+                      component="a"
+                      href={fileUrl}
+                      target="_blank"
+                      sx={{
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        maxWidth: '200px',
+                        color: "#404550",
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontSize: 10,
+                        marginRight: 1,
+                        '&:hover': {
+                          textDecoration: 'underline'
+                        }
+                      }}
+                    >
+                      {fileName}
+                    </Box>
+
+                    {/* Delete button */}
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteExistingFile("aadhar", filePath)}
+                      sx={{
+                        color: 'grey.500',
+                        '&:hover': {
+                          color: 'error.main',
+                          backgroundColor: 'error.light'
+                        }
+                      }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Box>
+                );
+              })}
             </Box>
           </Box>
         )}
@@ -496,13 +521,15 @@ const handleEmailChange = (value: string) => {
         error={Boolean(formik.errors.address)}
         helperText={formik.errors.address}
         fullWidth
+        rows={2}
+        multiline
         sx={{ mb: 2 }}
         required
       />
 
       {/* New: Address File Upload */}
       <Box mb={2}>
-        <FileUpload
+        {!existingAddressFiles.length && <FileUpload
           ref={addressFileUploadRef}
           folder="address" // Specific folder for Address files
           multiple={true}
@@ -514,7 +541,7 @@ const handleEmailChange = (value: string) => {
           autoUpload={false}
           label="Upload Address Files"
           helperText="Upload Address proof images or PDF "
-        />
+        />}
         {/* Display existing Address files */}
         {existingAddressFiles.length > 0 && (
           <Box sx={{ mt: 2 }}>
@@ -522,20 +549,62 @@ const handleEmailChange = (value: string) => {
               Existing Address Files:
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-              {existingAddressFiles.map((filePath, index) => (
-                <Chip
-                  key={index}
-                  label={filePath.split("/").pop()} // Display filename
-                  component="a"
-                  href={`${process.env.NEXT_PUBLIC_API_URL}/api/fileDownload/download?filePath=${encodeURIComponent(filePath)}&view=true`}
-                  target="_blank"
-                  clickable
-                  onDelete={() => handleDeleteExistingFile("address", filePath)}
-                  deleteIcon={<Delete />}
-                  variant="outlined"
-                  sx={{ maxWidth: "300px" }}
-                />
-              ))}
+              {existingAddressFiles.map((filePath, index) => {
+                const fileName = filePath.split("/").pop();
+                const fileUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/fileDownload/download?filePath=${encodeURIComponent(filePath)}&view=true`;
+
+                return (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      border: 1,
+                      borderRadius: 5,
+                      borderColor: "#bdbdbd",
+                      padding: '4px 8px',
+                    }}
+                  >
+                    {/* File name as clickable link */}
+                    <Box
+                      component="a"
+                      href={fileUrl}
+                      target="_blank"
+                      sx={{
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        maxWidth: '200px',
+                        color: "#404550",
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontSize: 10,
+                        marginRight: 1,
+                        '&:hover': {
+                          textDecoration: 'underline'
+                        }
+                      }}
+                    >
+                      {fileName}
+                    </Box>
+
+                    {/* Delete button */}
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteExistingFile("address", filePath)}
+                      sx={{
+                        color: 'grey.500',
+                        '&:hover': {
+                          color: 'error.main',
+                          backgroundColor: 'error.light'
+                        }
+                      }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Box>
+                );
+              })}
             </Box>
           </Box>
         )}
@@ -599,6 +668,20 @@ const handleEmailChange = (value: string) => {
             required
           />
         )}
+        {mode === "edit" && user?.role?.roleName === 'Admin' && (
+          <ThemeInput
+            labelName="Password"
+            type="password"
+            value={formik.values.password || ""}
+            onChange={(e) => formik.setFieldValue("password", e.target.value)}
+            error={Boolean(formik.errors.password)}
+            helperText={formik.errors.password}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            sx={{ mb: 2 }}
+            required
+          />
+        )}
       </Stack>
 
      
@@ -616,7 +699,8 @@ const handleEmailChange = (value: string) => {
             width: 180,
             "&:hover": { background: mode === "add" ? "#5B3FB4" : "#079455" },
           }}
-          disabled={staffLoading || rolesLoading || formik.isSubmitting}
+          // disabled={staffLoading || rolesLoading || formik.isSubmitting}
+          loading={formik.isSubmitting}
         >
           {formik.isSubmitting
             ? mode === "add"

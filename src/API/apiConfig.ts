@@ -148,5 +148,8 @@ const Endpoint = {
   ROLE_DEPARTMENT_COMPANY_GET_BY_ID: `${BaseURL}/api/roleDepartmentCompany/getbyid`,
   ROLE_DEPARTMENT_COMPANY_UPDATE: `${BaseURL}/api/roleDepartmentCompany/update`,
   ROLE_DEPARTMENT_COMPANY_DELETE: `${BaseURL}/api/roleDepartmentCompany/delete`,
+
+  // extra code for remove errors
+  UPDATE_STAFF_ATTACHMENTS: `${BaseURL}/api/staff/updateattachments`,
 };
 export default Endpoint;

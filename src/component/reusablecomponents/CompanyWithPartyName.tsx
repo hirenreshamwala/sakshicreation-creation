@@ -77,17 +77,18 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
       const options = filteredCompanies.map((company: any) => ({
         label: company.companyName || company.name,
         value: company._id,
+        default: company?.default
       }))
       setCompanyOptions(options)
       console.log("Company options set:", options)
 
       // Set default to "Sakshi Creation" if value is not set and default hasn't been set yet
       if (!value && !defaultSet) {
-        const sakshiCreation = options.find((option) => option.label === "Sakshi Creation")
-        if (sakshiCreation) {
-          console.log("Setting default company to Sakshi Creation:", sakshiCreation)
-          onChange(null, sakshiCreation)
-          setDefaultSet(true) // Mark default as set to prevent re-setting
+        const defaultCompany = options.find((option) => option.default);
+        if (defaultCompany) {
+          console.log("Setting default company:", defaultCompany);
+          onChange(null, defaultCompany);
+          setDefaultSet(true);
         }
       }
     } else {

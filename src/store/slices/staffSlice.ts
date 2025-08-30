@@ -156,6 +156,7 @@ export const getStaffByIdThunk = createAsyncThunk("staff/getById", async (id: st
       birthDay: data.birthDay,
       role: data.role,
       companyName: data.CompanyName,
+      password: data.password,
       status: data.status,
       aadharFiles: data.aadharFiles || [], // Include new field
       addressFiles: data.addressFiles || [], // Include new field
@@ -265,11 +266,11 @@ export const updateStaffPasswordThunk = createAsyncThunk(
           withCredentials: true,
         }
       );
-      
+
       if (!response.data.success) {
         return rejectWithValue(response.data.message || "Failed to update password");
       }
-      
+
       return { id, message: response.data.message };
     } catch (error: any) {
       // Extract the error message from the response
@@ -423,18 +424,18 @@ const staffSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(bulkCreateStaffThunk.pending, (state) => {
-          state.loading = true;
-          state.error = null;
-        })
-        .addCase(bulkCreateStaffThunk.fulfilled, (state, action: PayloadAction<Staff[]>) => {
-          state.loading = false;
-          state.staffList = [...state.staffList, ...action.payload];
-        })
-        .addCase(bulkCreateStaffThunk.rejected, (state, action) => {
-          state.loading = false;
-          state.error = action.payload as string;
-        })
-        .addCase(updateStaffPasswordThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(bulkCreateStaffThunk.fulfilled, (state, action: PayloadAction<Staff[]>) => {
+        state.loading = false;
+        state.staffList = [...state.staffList, ...action.payload];
+      })
+      .addCase(bulkCreateStaffThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(updateStaffPasswordThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -445,8 +446,8 @@ const staffSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
-        },
-        
+  },
+
 })
 
 export const { clearError, clearCurrentStaff } = staffSlice.actions
