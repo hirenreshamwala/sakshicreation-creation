@@ -116,49 +116,27 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
       {/* Filter chips and Clear All button */}
       {Object.keys(filters).length > 0 && (
         <Stack direction="row" alignItems="center" spacing={1} useFlexGap flexWrap="wrap">
-        {/* {Object.entries(filters).flatMap(([field, values]) =>
-          values.map((value) => (
-            <Chip
-              key={`${field}-${value}`}
-              label={`${field}: ${value}`}
-              onDelete={() => handleRemoveFilter(field, value)}
-              deleteIcon={<FiX size={14} />}
-              size="small"
-              sx={{
-                backgroundColor: "#F9F5FF",
-                color: "#7F56D9",
-                fontWeight: 500,
-                "& .MuiChip-deleteIcon": {
-                  color: "#7F56D9",
-                  "&:hover": {
-                    color: "#7F56D9",
-                  },
-                },
-              }}
-            />
-          ))
-        )} */}
-        <Button
-          variant="text"
-          onClick={handleClearFilter}
-          sx={{
-            color: "#D32F2F",
-            fontWeight: 600,
-            fontSize: 14,
-            textTransform: "none",
-            minWidth: 'auto',
-            px: 1,
-            py: 0.5,
-            '&:hover': {
-              backgroundColor: 'transparent',
-              textDecoration: 'underline'
-            }
-          }}
-        >
-          Clear All
-        </Button>
-      </Stack>
-    )}
+          <Button
+            variant="text"
+            onClick={handleClearFilter}
+            sx={{
+              color: "#D32F2F",
+              fontWeight: 600,
+              fontSize: 14,
+              textTransform: "none",
+              minWidth: 'auto',
+              px: 1,
+              py: 0.5,
+              '&:hover': {
+                backgroundColor: 'transparent',
+                textDecoration: 'underline'
+              }
+            }}
+          >
+            Clear All
+          </Button>
+        </Stack>
+      )}
 
       {/* Filter button */}
       <Button
@@ -191,8 +169,10 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
             px: 1,
             py: 0.5,
             minWidth: 220,
-            maxHeight: 400,
+            maxHeight: 500,
             overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
           },
         }}
       >
@@ -270,49 +250,58 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
             <Divider />
 
-            {filteredUniqueValues.length > 0 ? (
-              filteredUniqueValues.map((value) => (
-                <MenuItem
-                  key={value}
-                  sx={{ px: 2 }}
-                  onClick={() => handleValueToggle(value)}
-                >
-                  <Checkbox
-                    checked={tempSelectedValues.includes(value)}
-                    size="small"
-                    sx={{ p: 0, mr: 1 }}
-                  />
+            {/* Scrollable values list */}
+            <Box sx={{ overflowY: "auto", flex: 1, maxHeight: 300 }}>
+              {filteredUniqueValues.length > 0 ? (
+                filteredUniqueValues.map((value) => (
+                  <MenuItem
+                    key={value}
+                    sx={{ px: 2 }}
+                    onClick={() => handleValueToggle(value)}
+                  >
+                    <Checkbox
+                      checked={tempSelectedValues.includes(value)}
+                      size="small"
+                      sx={{ p: 0, mr: 1 }}
+                    />
+                    <ListItemText
+                      primary={value}
+                      primaryTypographyProps={{
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: "#344054",
+                      }}
+                    />
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem sx={{ px: 2 }} disabled>
                   <ListItemText
-                    primary={value}
+                    primary="No matching values"
                     primaryTypographyProps={{
                       fontSize: 14,
                       fontWeight: 500,
-                      color: "#344054",
+                      color: "#98A2B3",
                     }}
                   />
                 </MenuItem>
-              ))
-            ) : (
-              <MenuItem sx={{ px: 2 }} disabled>
-                <ListItemText
-                  primary="No matching values"
-                  primaryTypographyProps={{
-                    fontSize: 14,
-                    fontWeight: 500,
-                    color: "#98A2B3",
-                  }}
-                />
-              </MenuItem>
-            )}
+              )}
+            </Box>
 
             <Divider />
 
+            {/* Fixed buttons at bottom */}
             <Box
               sx={{
                 display: "flex",
                 justifyContent: "space-between",
                 px: 2,
                 py: 1,
+                position: "sticky",
+                bottom: 0,
+                background: "#fff",
+                zIndex: 1,
+                borderTop: "1px solid #f0f0f0",
               }}
             >
               <Button
