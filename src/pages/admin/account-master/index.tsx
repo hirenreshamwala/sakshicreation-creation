@@ -753,18 +753,18 @@ const IndexPage: React.FC = () => {
               <TableCell sx={{ fontSize: 14 }}>{row.createdBy}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.assignedTo}</TableCell>
               <TableCell sx={{ display: "flex", gap: 1 }}>
-                {candelete && (
-                  <IconButton onClick={() => handleDelete(row.id)}>
-                    <DeleteIcon />
-                  </IconButton>
-                )}
                 {canedit && (
-                  <IconButton onClick={() => handleEdit(row.id)}>
+                  <IconButton color="primary" onClick={() => handleEdit(row.id)}>
                     <EditIcon />
                   </IconButton>
                 )}
+                {candelete && (
+                  <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                    <DeleteIcon />
+                  </IconButton>
+                )}
                 {row.statusApproval === 'Pending' && canViewGlobal && (
-                  <IconButton onClick={() => handleApprove(row.partyId)}>
+                  <IconButton  onClick={() => handleApprove(row.partyId)}>
                     <CheckCircleIcon color="success" />
                   </IconButton>
                 )}

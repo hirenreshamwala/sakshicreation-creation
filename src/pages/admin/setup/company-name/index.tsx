@@ -2,7 +2,15 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
-import { Box, Typography, IconButton, TableCell, Button as MuiButton } from "@mui/material"
+import { 
+  Box, 
+  Typography, 
+  IconButton, 
+  TableCell, 
+  Button as MuiButton, 
+  Switch,
+  FormControlLabel 
+} from "@mui/material"
 import { Add, Edit, Delete, CloudUpload as CloudUploadIcon } from "@mui/icons-material"
 import BasicTable from "@/component/common_component/Table/themetable"
 import Input from "@/component/common_component/themeinput"
@@ -19,17 +27,20 @@ import {
 import { useAppDispatch, useAppSelector, type RootState } from "@/store"
 import { toast } from "react-toastify"
 import { fileUploadService } from "@/services/fileUpload.service"
+import Swal from "sweetalert2"
 
 interface CompanyName {
   _id: string
   companyName: string
   avatar?: string
+  default: boolean
   createdAt?: string
   updatedAt?: string
 }
 
 interface FormData {
   companyName: string
+  default: boolean
   logo?: File | null
 }
 
@@ -37,6 +48,7 @@ const columns = [
   { id: "id", label: "ID" },
   { id: "companyName", label: "Company Name" },
   { id: "avatar", label: "Logo" },
+  { id: "default", label: "Default" },
   { id: "options", label: "Options" },
 ]
 
@@ -44,11 +56,11 @@ const CompanyNamePage = () => {
   const dispatch = useAppDispatch()
   const { companyNames, loading, error, successMessage } = useAppSelector((state: RootState) => state.companyNames)
 
-  console.log("companyNamescompanyNames", companyNames)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<FormData>({
     companyName: "",
+    default: false,
     logo: null,
   })
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -74,11 +86,19 @@ const CompanyNamePage = () => {
   const handleOpenDialog = (company?: CompanyName) => {
     if (company) {
       setEditId(company._id)
-      setForm({ companyName: company.companyName, logo: null })
+      setForm({ 
+        companyName: company.companyName, 
+        default: company.default,
+        logo: null 
+      })
       setLogoPreview(company.avatar || null)
     } else {
       setEditId(null)
-      setForm({ companyName: "", logo: null })
+      setForm({ 
+        companyName: "", 
+        default: companyNames.filter(c => c.default).length === 0, // Set as default if no default exists
+        logo: null 
+      })
       setLogoPreview(null)
     }
     setDialogOpen(true)
@@ -87,6 +107,11 @@ const CompanyNamePage = () => {
   // Handle form input changes
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, companyName: e.target.value })
+  }
+
+  // Handle default switch change
+  const handleDefaultChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, default: e.target.checked })
   }
 
   // Handle logo file changes
@@ -123,17 +148,35 @@ const CompanyNamePage = () => {
 
       const companyData = {
         companyName: form.companyName,
+        default: form.default,
         avatar: logoUrl || "", // Send existing logo URL or empty string if no logo
       };
 
+      // If setting as default and there's already a default company
+      if (form.default) {
+        const currentDefaultCompany = companyNames.find(company => company.default);
+        
+        // If there's an existing default company and it's not the one being edited
+        if (currentDefaultCompany && (!editId || currentDefaultCompany._id !== editId)) {
+          // Update the previous default company to false
+          await dispatch(updateCompanyNameThunk({
+            id: currentDefaultCompany._id,
+            data: {
+              ...currentDefaultCompany,
+              default: false
+            }
+          })).unwrap();
+        }
+      }
+
       if (editId) {
-        dispatch(updateCompanyNameThunk({ id: editId, data: companyData }))
+        await dispatch(updateCompanyNameThunk({ id: editId, data: companyData })).unwrap();
       } else {
-        dispatch(createCompanyNameThunk(companyData))
+        await dispatch(createCompanyNameThunk(companyData)).unwrap();
       }
 
       setDialogOpen(false)
-      setForm({ companyName: "", logo: null })
+      setForm({ companyName: "", default: false, logo: null })
       setLogoPreview(null)
       setEditId(null)
     } catch (error: any) {
@@ -141,15 +184,91 @@ const CompanyNamePage = () => {
     }
   }
 
-  // Delete company name
-  const handleDelete = (id: string) => {
-    dispatch(deleteCompanyNameThunk(id))
+  // Handle toggle default status from table
+  const handleToggleDefault = async (company: CompanyName) => {
+    try {
+      const newDefaultStatus = !company.default;
+      
+      // If setting as default and there's already a default company
+      if (newDefaultStatus) {
+        const currentDefaultCompany = companyNames.find(c => c.default && c._id !== company._id);
+        
+        // If there's an existing default company
+        if (currentDefaultCompany) {
+          // Update the previous default company to false
+          await dispatch(updateCompanyNameThunk({
+            id: currentDefaultCompany._id,
+            data: {
+              ...currentDefaultCompany,
+              default: false
+            }
+          })).unwrap();
+        }
+      }
+      
+      // Update the current company's default status
+      await dispatch(updateCompanyNameThunk({
+        id: company._id,
+        data: {
+          ...company,
+          default: newDefaultStatus
+        }
+      })).unwrap();
+      
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update default status")
+    }
   }
+
+  // Delete company name
+  const handleDelete = async (id: string) => {
+    const companyToDelete = companyNames.find(company => company._id === id);
+    
+    // Prevent deletion of default company if there are other companies
+    if (companyToDelete?.default && companyNames.length > 1) {
+      Swal.fire({
+        title: "Cannot Delete Default Company",
+        text: "Please set another company as default before deleting this one.",
+        icon: "warning",
+        confirmButtonColor: "#7F56D9",
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#7F56D9",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await dispatch(deleteCompanyNameThunk(id)).unwrap();
+        Swal.fire({
+          title: "Deleted!",
+          text: "Company deleted successfully",
+          icon: "success",
+          confirmButtonColor: "#7F56D9",
+        });
+      } catch (err: any) {
+        Swal.fire({
+          title: "Error!",
+          text: err.message || "Failed to delete company",
+          icon: "error",
+          confirmButtonColor: "#7F56D9",
+        });
+      }
+    }
+  };
 
   // Close dialog handler
   const handleCloseDialog = () => {
     setDialogOpen(false)
-    setForm({ companyName: "", logo: null })
+    setForm({ companyName: "", default: false, logo: null })
     setLogoPreview(null)
     setEditId(null)
   }
@@ -182,12 +301,21 @@ const CompanyNamePage = () => {
               )}
             </TableCell>
             <TableCell>
+              <Switch 
+                checked={row.default} 
+                onChange={() => handleToggleDefault(row)}
+                color="primary"
+                disabled={loading}
+              />
+            </TableCell>
+            <TableCell>
               <IconButton color="primary" onClick={() => handleOpenDialog(row)} disabled={loading}>
                 <Edit />
               </IconButton>
-              <IconButton color="error" onClick={() => handleDelete(row._id)} 
-              // disabled={loading}
-              disabled
+              <IconButton 
+                color="error" 
+                onClick={() => handleDelete(row._id)} 
+                disabled={loading || (row.default && companyNames.length > 1)}
               >
                 <Delete />
               </IconButton>
@@ -213,6 +341,25 @@ const CompanyNamePage = () => {
           required
           sx={{ mb: 2, mt: 1 }}
         />
+
+        {/* Default Company Switch */}
+        <FormControlLabel
+          control={
+            <Switch
+              checked={form.default}
+              onChange={handleDefaultChange}
+              color="primary"
+              disabled={companyNames.filter(c => c.default).length === 0 && !form.default && !editId}
+            />
+          }
+          label="Set as default company"
+          sx={{ mb: 2 }}
+        />
+        {companyNames.filter(c => c.default).length === 0 && !form.default && !editId && (
+          <Typography variant="caption" color="primary" sx={{ display: 'block', mt: -2, mb: 2 }}>
+            This will be set as default since no default company exists.
+          </Typography>
+        )}
 
         {/* Logo Upload Section */}
         <Box sx={{ mb: 2 }}>

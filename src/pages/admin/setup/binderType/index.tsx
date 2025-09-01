@@ -22,6 +22,7 @@ import {
 } from "@/store/slices/binderTypeSlice";
 import { RootState, useAppDispatch } from "@/store";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 interface BinderType {
     _id: string;
@@ -89,7 +90,41 @@ const BinderTypesPage = () => {
         setEditId(null);
     };
 
-    const handleDelete = (id: string) => dispatch(deleteBinderTypeThunk(id));
+
+
+    // ...
+
+    const handleDelete = async (id: string) => {
+        const result = await Swal.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#7F56D9",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!",
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await dispatch(deleteBinderTypeThunk(id)).unwrap();
+                Swal.fire({
+                    title: "Deleted!",
+                    text: "Binder deleted successfully",
+                    icon: "success",
+                    confirmButtonColor: "#7F56D9",
+                });
+            } catch (err: any) {
+                Swal.fire({
+                    title: "Error!",
+                    text: err?.message || "Failed to delete binder",
+                    icon: "error",
+                    confirmButtonColor: "#7F56D9",
+                });
+            }
+        }
+    };
+
 
     return (
         <Box p={3}>
