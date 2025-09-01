@@ -390,7 +390,7 @@
               </FormControl>
               {formik.values.pType === "Other" && (
                 <ThemeInput
-                  labelName="Custom Pinting Type"
+                  labelName="Custom Printing Type"
                   name="customPType"
                   value={formik.values.customPType}
                   onChange={formik.handleChange}

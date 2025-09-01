@@ -122,7 +122,7 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
   useEffect(() => {
     if (parties && parties.length > 0) {
     const options = parties.map((party: any) => ({
-      label: `${party.partyName} - ${party.unitNo}, ${party.marketName}`,
+      label: `${party?.partyName?.trim() || ""} - ${party?.unitNo?.trim() || ""}, ${party?.marketName?.trim() || ""}`,
       value: party._id,
     }));
       setPartyOptions(options)

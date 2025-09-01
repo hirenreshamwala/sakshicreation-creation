@@ -22,6 +22,7 @@ import {
 } from "@/store/slices/productItemSlice";
 import { RootState } from "@/store";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 interface ProductItem {
   _id: string;
@@ -102,16 +103,48 @@ const ProductsPage = () => {
     setEditId(null);
   };
 
-  const handleDelete = (id: string) => {
-    dispatch(deleteProductItemThunk(id));
+
+
+  // ...
+
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#7F56D9",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await dispatch(deleteProductItemThunk(id)).unwrap();
+        Swal.fire({
+          title: "Deleted!",
+          text: "Product deleted successfully",
+          icon: "success",
+          confirmButtonColor: "#7F56D9",
+        });
+      } catch (err: any) {
+        Swal.fire({
+          title: "Error!",
+          text: err?.message || "Failed to delete product",
+          icon: "error",
+          confirmButtonColor: "#7F56D9",
+        });
+      }
+    }
   };
 
+
   return (
-      <Box p={3}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h5" fontWeight={600}>
-            Products
-          </Typography>
+    <Box p={3}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h5" fontWeight={600}>
+          Products
+        </Typography>
         <Box>
           <Button
             variant="contained"
@@ -133,75 +166,75 @@ const ProductsPage = () => {
           </Button>
         </Box>
       </Box>
-        <BasicTable
-          tableHeader={columns}
-          rowData={productItems}
-          showDatePicker={false}
-          renderRow={(row: ProductItem, idx: number) => (
-            <>
-              <TableCell>{idx + 1}</TableCell>
-              <TableCell>{row.itemName}</TableCell>
-              <TableCell>
-                <IconButton
-                  color="primary"
-                  onClick={() => handleOpenDialog(row)}
-                  disabled={loading}
-                >
-                  <Edit />
-                </IconButton>
-                <IconButton
-                  color="error"
-                  onClick={() => handleDelete(row._id)}
-                  disabled={loading}
-                >
-                  <Delete />
-                </IconButton>
-              </TableCell>
-            </>
-          )}
-        />
+      <BasicTable
+        tableHeader={columns}
+        rowData={productItems}
+        showDatePicker={false}
+        renderRow={(row: ProductItem, idx: number) => (
+          <>
+            <TableCell>{idx + 1}</TableCell>
+            <TableCell>{row.itemName}</TableCell>
+            <TableCell>
+              <IconButton
+                color="primary"
+                onClick={() => handleOpenDialog(row)}
+                disabled={loading}
+              >
+                <Edit />
+              </IconButton>
+              <IconButton
+                color="error"
+                onClick={() => handleDelete(row._id)}
+                disabled={loading}
+              >
+                <Delete />
+              </IconButton>
+            </TableCell>
+          </>
+        )}
+      />
 
-        {/* Add/Edit Dialog */}
-        <CustomDialog
-          open={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          title={editId ? "Edit Product" : "New Product"}
-          maxWidth="xs"
+      {/* Add/Edit Dialog */}
+      <CustomDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title={editId ? "Edit Product" : "New Product"}
+        maxWidth="xs"
+        fullWidth
+      >
+        <Input
+          label="Product Name"
+          name="itemName"
+          value={form.itemName}
+          onChange={handleFormChange}
           fullWidth
-        >
-          <Input
-            label="Product Name"
-            name="itemName"
-            value={form.itemName}
-            onChange={handleFormChange}
-            fullWidth
-            required
-            sx={{ mb: 2, mt: 1 }}
-          />
-          <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-            <Button
-              onClick={() => setDialogOpen(false)}
-              variant="outlined"
-              sx={{ borderRadius: 2, borderColor: '#A409F8', color: '#A409F8', '&:hover': { borderColor: '#7B06C2', color: '#7B06C2' } }}
-            >
-              Close
-            </Button>
-            <Button
-              onClick={handleSave}
-              variant="contained"
-              disabled={loading}
-              sx={{ borderRadius: 2, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
-            >
-              Save
-            </Button>
-          </Box>
-        </CustomDialog>
-        <AddNewProductBulkDialog
-          open={bulkDialogOpen}
-          onClose={() => setBulkDialogOpen(false)}
-          refreshData={() => dispatch(getAllProductItemsThunk())}
+          required
+          sx={{ mb: 2, mt: 1 }}
         />
-      </Box>
+        <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
+          <Button
+            onClick={() => setDialogOpen(false)}
+            variant="outlined"
+            sx={{ borderRadius: 2, borderColor: '#A409F8', color: '#A409F8', '&:hover': { borderColor: '#7B06C2', color: '#7B06C2' } }}
+          >
+            Close
+          </Button>
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            disabled={loading}
+            sx={{ borderRadius: 2, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
+          >
+            Save
+          </Button>
+        </Box>
+      </CustomDialog>
+      <AddNewProductBulkDialog
+        open={bulkDialogOpen}
+        onClose={() => setBulkDialogOpen(false)}
+        refreshData={() => dispatch(getAllProductItemsThunk())}
+      />
+    </Box>
   );
 };
 

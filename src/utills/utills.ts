@@ -104,3 +104,66 @@ export const decryptData = (ciphertext: any) => {
     return "Decryption failed";
   }
 };
+
+
+export const getDisplayStatus = (row: OrderRow): { text: string; isHold: boolean } => {
+  const { status, designerStatus, printerStatus, binderStatus, bookletBinderStatus, designer, binder, bookletBinder } = row;
+  const staffMap = {
+    designer: designer,
+    binder: binder,
+    bookletBinder: bookletBinder,
+  };
+
+  if (status === "Hold") {
+    const { designer, printer, binder, bookletBinder } = row;
+    let holdStage = "Order";
+    if (bookletBinder) holdStage = "Booklet Binding";
+    else if (binder) holdStage = "Binding";
+    else if (printer) holdStage = "Printing";
+    else if (designer) holdStage = "Designing";
+    return { text: holdStage, isHold: true };
+  }
+
+  let mainStatusText = status || "Order Received";
+  let subStatusText = "";
+  let staffName = "";
+
+  switch (status) {
+    case "Designer":
+      mainStatusText = "Designing";
+      subStatusText = designerStatus || "Pending";
+      staffName = designer && designer.firstName && designer.lastName
+        ? `${designer.firstName} ${designer.lastName}`
+        : "Unknown Designer";
+      break;
+    case "Printer":
+      mainStatusText = "Printing";
+      subStatusText = printerStatus || "Pending";
+      break;
+    case "Binder":
+      mainStatusText = "Binding";
+      subStatusText = binderStatus || "Pending";
+      staffName = binder && binder.firstName && binder.lastName
+        ? `${binder.firstName} ${binder.lastName}`
+        : "Unknown Binder";
+      break;
+    case "Booklet & Folder Binder":
+      mainStatusText = "Booklet Binding";
+      subStatusText = bookletBinderStatus || "Pending";
+      staffName = bookletBinder && bookletBinder.firstName && bookletBinder.lastName
+        ? `${bookletBinder.firstName} ${bookletBinder.lastName}`
+        : "Unknown Booklet Binder";
+      break;
+    case "Delivery":
+      mainStatusText = "Ready for Delivery";
+      break;
+    case "Received":
+      mainStatusText = "Order Received";
+      break;
+    default:
+      break;
+  }
+
+  const displayText = staffName ? `${mainStatusText} (${subStatusText}) by ${staffName}` : subStatusText ? `${mainStatusText} (${subStatusText})` : mainStatusText;
+  return { text: displayText, isHold: false };
+};

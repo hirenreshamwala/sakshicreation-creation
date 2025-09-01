@@ -12,6 +12,7 @@ import AssignTaskDialog from '@/component/assigntaskdailog';
 import AddOrderDialog from '@/component/allorderdailog';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
+import moment from 'moment'
 import {
   getAccountMasterByIdThunk,
   getAllAccountMastersThunk,
@@ -23,7 +24,6 @@ import {
 } from '@/store/slices/assignTaskSlice';
 import { getAllLeadsThunk } from '@/store/slices/leadSlice';
 import { getAllStaffThunk } from '@/store/slices/staffSlice';
-import { format } from 'date-fns';
 import Loader from '@/component/common_component/loader';
 
 interface Task {
@@ -163,7 +163,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true 
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return format(date, 'dd/MM/yy');
+      return moment(date).format('DD/MM/YY');
     } catch {
       return dateString;
     }
@@ -280,7 +280,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, title = 'Lead' }) => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return format(date, 'dd/MM/yy');
+      return moment(date).format('DD/MM/YY');
     } catch {
       return dateString;
     }

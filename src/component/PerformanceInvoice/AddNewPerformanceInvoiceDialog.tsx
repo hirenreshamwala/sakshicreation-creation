@@ -1,7 +1,7 @@
 "use client";
 import type React from "react";
 import { useState, useEffect } from "react";
-import { Box, TextField, Autocomplete, Checkbox, FormControlLabel } from "@mui/material";
+import { Box, TextField, Autocomplete, FormControlLabel, Checkbox } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { toast } from "react-toastify";
@@ -16,7 +16,6 @@ import {
   clearSuccessMessage,
   clearError,
 } from "@/store/slices/performanceInvoiceSlice"
-// import { updateOrderThunk } from "@/store/slices/orderSlice"; // Removed as per request
 import { orderService } from "@/services/order.service"
 import { performanceInvoiceService } from "@/services/performanceInvoice.service"
 import InvoicePDFGenerator from "../InvoicePDFGenerator"
@@ -37,10 +36,10 @@ interface FormData {
   servicePerformance: string;
   unitPrice?: number;
   total?: number;
-  applyGST: boolean;
+  applyGST: number;
   finalAmount?: number;
   assignedTo?: string; 
-  daysAfterConfirmation?: number; // New field
+  daysAfterConfirmation?: number;
 }
 
 interface Order {
@@ -102,6 +101,15 @@ const validationSchema = Yup.object({
   unitPrice: Yup.number()
     .required("Unit Price is required")
     .min(0, "Unit Price cannot be negative"),
+  applyGST: Yup.boolean(), // Added applyGST to validation
+  gstPercentage: Yup.number() // Make conditional in validation
+    .min(0, "GST Percentage cannot be negative")
+    .max(100, "GST Percentage cannot exceed 100%")
+    .when('applyGST', {
+      is: true,
+      then: (schema) => schema.required("GST Percentage is required when GST is applied"),
+      otherwise: (schema) => schema.optional()
+    }),
   GSTNo: Yup.string(),
   addressName: Yup.string(),
   servicePerformance: Yup.string().required("Service/Performance is required"),
@@ -189,7 +197,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       servicePerformance: "",
       unitPrice: 0,
       total: 0,
-      applyGST: false,
+      applyGST: false, // Initialize applyGST as false
+      gstPercentage: 0,
       finalAmount: 0,
       assignedTo: "",
       daysAfterConfirmation: undefined,
@@ -236,7 +245,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           servicePerformance: values.servicePerformance,
           unitPrice: values.unitPrice || 0,
           total: values.total || 0,
-          applyGST: values.applyGST,
+          applyGST: values.applyGST, // Changed from applyGST
           assignedTo: values.assignedTo,
           finalAmount: values.finalAmount || 0,
           daysAfterConfirmation: values.daysAfterConfirmation, // Include new field
@@ -309,7 +318,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             servicePerformance: result.servicePerformance || "",
             unitPrice: result.unitPrice || 0,
             total: result.total || 0,
-            applyGST: result.applyGST || false,
+            applyGST: result.applyGST || 0, // Changed from applyGST
             finalAmount: result.finalAmount || 0,
             assignedTo: assignedToValue,
             daysAfterConfirmation: result.daysAfterConfirmation, // Set new field
@@ -325,6 +334,14 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     };
     fetchData();
   }, [open, isEditMode, invoiceId, dispatch]);
+
+   useEffect(() => {
+    const total = (formik.values.quantity || 0) * (formik.values.unitPrice || 0);
+    const gstAmount = formik.values.applyGST ? total * (formik.values.gstPercentage / 100) : 0;
+    const finalAmount = total + gstAmount;
+    formik.setFieldValue("total", total);
+    formik.setFieldValue("finalAmount", finalAmount);
+  }, [formik.values.quantity, formik.values.unitPrice, formik.values.gstPercentage, formik.values.applyGST]);
 
   useEffect(() => {
     if (!open || orders.length === 0) {
@@ -360,7 +377,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
 
     const unitPrice = formik.values.unitPrice || 0;
     const total = selectedOrder.qty * unitPrice;
-    const finalAmount = formik.values.applyGST ? total * 1.18 : total;
+    const gstAmount = total * (formik.values.applyGST / 100);
+    const finalAmount = total + gstAmount;
 
     const checkInvoice = async () => {
       try {
@@ -399,7 +417,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             servicePerformance: existingInvoice.servicePerformance || "",
             unitPrice: existingInvoice.unitPrice || 0,
             total: existingInvoice.total || 0,
-            applyGST: existingInvoice.applyGST || false,
+            applyGST: existingInvoice.applyGST || 0, // Changed from applyGST
             finalAmount: existingInvoice.finalAmount || 0,
             assignedTo: assignedToValue,
             daysAfterConfirmation: existingInvoice.daysAfterConfirmation,
@@ -423,7 +441,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             servicePerformance: selectedOrder.productItem.itemName || "",
             unitPrice: formik.values.unitPrice || 0,
             total,
-            applyGST: formik.values.applyGST || false,
+            applyGST: formik.values.applyGST || 0, // Changed from applyGST
             finalAmount,
             daysAfterConfirmation: undefined,
           });
@@ -463,7 +481,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
         .filter((part) => part.trim() !== "")
         .join(", ");
       const total = selectedOrder.qty * (formik.values.unitPrice || 0);
-      const finalAmount = formik.values.applyGST ? total * 1.18 : total;
+      const gstAmount = total * (formik.values.applyGST / 100);
+      const finalAmount = total + gstAmount;
 
       const response = await performanceInvoiceService.getPerformanceInvoices();
       const existingInvoice = response.data?.find((invoice) => invoice.orderNumber === orderNumber);
@@ -499,7 +518,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           servicePerformance: existingInvoice.servicePerformance || "",
           unitPrice: existingInvoice.unitPrice || 0,
           total: existingInvoice.total || 0,
-          applyGST: existingInvoice.applyGST || false,
+          applyGST: existingInvoice.applyGST || 0, // Changed from applyGST
           finalAmount: existingInvoice.finalAmount || 0,
           assignedTo: assignedToValue,
           daysAfterConfirmation: existingInvoice.daysAfterConfirmation,
@@ -523,7 +542,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           servicePerformance: selectedOrder.productItem.itemName || "",
           unitPrice: formik.values.unitPrice || 0,
           total,
-          applyGST: formik.values.applyGST || false,
+          applyGST: formik.values.applyGST || 0, // Changed from applyGST
           finalAmount,
           daysAfterConfirmation: undefined, // Initialize new field
         });
@@ -536,7 +555,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
 
   useEffect(() => {
     const total = (formik.values.quantity || 0) * (formik.values.unitPrice || 0);
-    const finalAmount = formik.values.applyGST ? total * 1.18 : total;
+    const gstAmount = total * (formik.values.applyGST / 100);
+    const finalAmount = total + gstAmount;
     formik.setFieldValue("total", total);
     formik.setFieldValue("finalAmount", finalAmount);
   }, [formik.values.quantity, formik.values.unitPrice, formik.values.applyGST]);
@@ -725,12 +745,67 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               helperText={formik.touched.daysAfterConfirmation && formik.errors.daysAfterConfirmation}
               fullWidth
             />
+               <Box display="flex" flexDirection="row">
             <FormControlLabel
               control={
-                <Checkbox checked={formik.values.applyGST} onChange={formik.handleChange("applyGST")} name="applyGST" />
+                <Checkbox
+                  checked={formik.values.applyGST}
+                  onChange={(e) => {
+                    formik.setFieldValue("applyGST", e.target.checked);
+                    // Reset GST percentage when unchecked
+                    if (!e.target.checked) {
+                      formik.setFieldValue("gstPercentage", 0);
+                    }
+                  }}
+                  name="applyGST"
+                  color="primary"
+                />
               }
-              label="Apply 18% GST"
+              label="Apply GST"
             />
+            
+            {formik.values.applyGST ? (
+              <TextField
+                label="GST Percentage"
+                name="gstPercentage"
+                value={formik.values.gstPercentage}
+                 onChange={(e) => {
+    let { value } = e.target;
+
+    // Remove non-numeric characters
+    value = value.replace(/\D/g, "");
+
+    // Remove leading zeros (except for single zero)
+    if (value.length > 1) {
+      value = value.replace(/^0+/, "");
+    }
+
+    // If empty, default back to "0"
+    if (value === "") {
+      value = "0";
+    }
+
+    formik.setFieldValue("gstPercentage", value);
+  }}
+                error={formik.touched.gstPercentage && Boolean(formik.errors.gstPercentage)}
+                helperText={formik.touched.gstPercentage && formik.errors.gstPercentage}
+                required={formik.values.applyGST}
+                fullWidth
+              />
+            ):null}
+          </Box>
+            {/* <TextField
+              label="GST Percentage"
+              name="applyGST"
+              type="number"
+              value={formik.values.applyGST}
+              onChange={formik.handleChange}
+              error={formik.touched.applyGST && Boolean(formik.errors.applyGST)}
+              helperText={formik.touched.applyGST && formik.errors.applyGST}
+              required
+              fullWidth
+            /> */}
+            
           </Box>
           <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
             <TextField
@@ -775,9 +850,9 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               unitPrice: formik.values.unitPrice || 0,
               total: formik.values.total || 0,
               finalAmount: formik.values.finalAmount || 0,
-              applyGST: formik.values.applyGST,
-              gstPercentage: formik.values.applyGST ? 18 : 0,
-              daysAfterConfirmation: formik.values.daysAfterConfirmation, // Pass new field
+              applyGST: formik.values.applyGST, // Changed from applyGST
+              gstPercentage: formik.values.gstPercentage,
+              daysAfterConfirmation: formik.values.daysAfterConfirmation,
             }}
             isSaved={isSaved}
             onClose={onClose}

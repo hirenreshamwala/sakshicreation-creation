@@ -200,9 +200,10 @@ const AssignTaskPage: React.FC = () => {
   const mapTasksToRows = (tasks: any[]): RowData[] =>
     tasks.map((task) => ({
       id: task._id,
-      company: { name: task.companyName?.companyName || "Unknown",
-        avatar: task.companyName?.avatar || "" 
-       },
+      company: {
+        name: task.companyName?.companyName || "Unknown",
+        avatar: task.companyName?.avatar || ""
+      },
       date: new Date(task.isRescheduledTask && task.originalTaskId?.createdAt
         ? task.originalTaskId.createdAt
         : task.createdAt).toLocaleDateString("en-GB"),
@@ -352,8 +353,8 @@ const AssignTaskPage: React.FC = () => {
     <>
       <TableCell>
         <Box display="flex" alignItems="center" gap={1}>
-          <Avatar 
-            sx={{ width: 32, height: 32 }} 
+          <Avatar
+            sx={{ width: 32, height: 32 }}
             src={row.company.avatar} // Add this
             alt={row.company.name}   // And this
           />
@@ -403,7 +404,9 @@ const AssignTaskPage: React.FC = () => {
       <TableCell sx={{ fontSize: 14 }}>{row.market}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.remarks}</TableCell>
+      <TableCell ><Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
+        ? `${row.remarks.substring(0, 10)}...`
+        : row.remarks}</Typography></TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.assignBy}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>
@@ -425,14 +428,14 @@ const AssignTaskPage: React.FC = () => {
               row.statusType === "success"
                 ? "#ECFDF3"
                 : row.statusType === "error"
-                ? "#FEF3F2"
-                : "#F2F4F7",
+                  ? "#FEF3F2"
+                  : "#F2F4F7",
             color:
               row.statusType === "success"
                 ? "#027A48"
                 : row.statusType === "error"
-                ? "#D92D20"
-                : "#344054",
+                  ? "#D92D20"
+                  : "#344054",
             fontWeight: 600,
             fontSize: 14,
             px: 1.5,
@@ -442,12 +445,12 @@ const AssignTaskPage: React.FC = () => {
       </TableCell>
       <TableCell sx={{ display: "flex" }}>
         {canedit && (
-          <IconButton onClick={() => handleEdit(row.id)}>
+          <IconButton color="primary" onClick={() => handleEdit(row.id)}>
             <EditIcon />
           </IconButton>
         )}
         {candelete && (
-          <IconButton onClick={() => handleDelete(row.id)}>
+          <IconButton color="error" onClick={() => handleDelete(row.id)}>
             <DeleteIcon />
           </IconButton>
         )}

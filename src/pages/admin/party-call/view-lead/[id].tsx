@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { useSelector } from 'react-redux';
 import { RootState, useAppDispatch } from '@/store';
 import { getAllLeadsThunk } from '@/store/slices/leadSlice';
-import { Box, IconButton, Tooltip, Typography } from '@mui/material';
+import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import ThemeInput from '@/component/common_component/themeinput';
 import ThemeChip from '@/component/common_component/themechip';
 import ThemeButton from '@/component/common_component/themebutton';
@@ -13,74 +13,75 @@ import { MdTurnLeft } from 'react-icons/md';
 import AssignLeadDialog from '@/component/AssignLeadDialog';
 import Loader from '@/component/common_component/loader';
 import Swal from 'sweetalert2';
+import CallHistoryDialog from '@/component/Dialog/CallHistoryDialog';
 
 interface Lead {
+  _id: string;
+  companyName: {
     _id: string;
-    companyName: {
-        _id: string;
-        companyName?: string;
+    companyName?: string;
+  };
+  partyName: {
+    _id: string;
+    partyName: string;
+    companyName?: string;
+    ownerMobileNo?: string;
+    ownerName?: string;
+    ownerEmail?: string;
+    personMobileNo?: string;
+    contactPerson?: string;
+    contactPersonEmail?: string;
+    contactMobileNo?: string;
+    contactForPayment?: string;
+    contactForPaymentEmail?: string;
+    address?: {
+      unitNo: string;
+      marketName: string;
+      streetAddress: string;
+      area: string;
+      pincode: string;
     };
-    partyName: {
-        _id: string;
-        partyName: string;
-        companyName?: string;
-        ownerMobileNo?: string;
-        ownerName?: string;
-        ownerEmail?: string;
-        personMobileNo?: string;
-        contactPerson?: string;
-        contactPersonEmail?: string;
-        contactMobileNo?: string;
-        contactForPayment?: string;
-        contactForPaymentEmail?: string;
-        address?: {
-            unitNo: string;
-            marketName: string;
-            streetAddress: string;
-            area: string;
-            pincode: string;
-        };
-        partyTag?: string;
-        createdBy?: {
-            _id: string;
-            firstName?: string;
-            lastName?: string;
-        };
+    partyTag?: string;
+    createdBy?: {
+      _id: string;
+      firstName?: string;
+      lastName?: string;
     };
-    reason: string;
-    customReason?: string;
-    assignedTo: {
-        _id: string;
+  };
+  reason: string;
+  customReason?: string;
+  assignedTo: {
+    _id: string;
     firstName?: string;
     lastName?: string;
-    };
-    dateType: string;
-    status: string;
-    callFeedback: string;
-    date: string;
-    time: string;
-    createdAt: string;
-    updatedAt: string;
-    rescheduleDate?: string;
-    isRescheduledCall?: boolean;
-    originalLeadId?: { _id: string; date: string; createdAt: string };
+  };
+  dateType: string;
+  status: string;
+  callFeedback: string;
+  date: string;
+  time: string;
+  createdAt: string;
+  updatedAt: string;
+  rescheduleDate?: string;
+  isRescheduledCall?: boolean;
+  originalLeadId?: { _id: string; date: string; createdAt: string };
 }
 
 interface PartyDetails {
-    address: string;
-    ownerMobileNo: string;
-    ownerName: string;
-    ownerEmail: string;
-    contactPersonEmail: string;
-    contactForPaymentEmail: string;
-    personMobileNo: string;
-    contactPerson: string;
-    contactMobileNo: string;
-    contactForPayment: string;
-    marketName: string;
-    area: string;
-    partyName?: string;
-    companyName?: string;
+  address: string;
+  ownerMobileNo: string;
+  ownerName: string;
+  ownerEmail: string;
+  contactPersonEmail: string;
+  contactForPaymentEmail: string;
+  personMobileNo: string;
+  contactPerson: string;
+  contactMobileNo: string;
+  contactForPayment: string;
+  marketName: string;
+  area: string;
+  partyName?: string;
+  companyName?: string;
 }
 
 interface LeadCardProps {
@@ -130,7 +131,7 @@ const formatDateOnly = (dateString: string): string => {
   }
 };
 
-const LeadCard: React.FC<LeadCardProps> = ({ lead, onRescheduleClick }) => {
+const LeadCard: React.FC<LeadCardProps> = ({ lead, onRescheduleClick, setOpenHistoryDialog = () => { }, openHistoryDialog = false }) => {
   const personName = lead.partyName?.contactPerson || 'Unknown';
   const createdAtToShow = lead.isRescheduledCall && lead.originalLeadId?.createdAt
     ? lead.originalLeadId.createdAt
@@ -164,21 +165,33 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onRescheduleClick }) => {
             </Tooltip>
           )}
         </Box>
-        <ThemeButton
-          variant="outlined"
-          sx={{ py: 0.6 }}
-          startIcon={<MdTurnLeft style={{ fontSize: 18, color: '#98A2B3' }} />}
-          onClick={() => onRescheduleClick(lead)}
-          disabled={lead.status !== 'pending' && lead.status !== 'rescheduled'}
+        <Stack direction='row' spacing={2}
         >
-          Update
-        </ThemeButton>
+
+          <ThemeButton
+            variant="outlined"
+            sx={{ py: 0.6 }}
+            startIcon={<MdTurnLeft style={{ fontSize: 18, color: '#98A2B3' }} />}
+            onClick={() => onRescheduleClick(lead)}
+            disabled={lead.status !== 'pending' && lead.status !== 'rescheduled'}
+          >
+            Update
+          </ThemeButton>
+          {lead.status !== 'pending' ? <ThemeButton
+            variant="outlined"
+            sx={{ py: 0.6, pl: 1 }}
+            onClick={() => setOpenHistoryDialog(!openHistoryDialog)}
+            disabled={lead.status !== 'pending' && lead.status !== 'rescheduled'}
+          >
+            Call History
+          </ThemeButton> : null}
+        </Stack>
       </Box>
 
       <Box display="flex" justifyContent="space-between" flexWrap="wrap" rowGap={1}>
         <Box>
           <Typography component="div">
-            <strong>Called Time:</strong> {formatDate(lead.date)} {lead.time}
+            <strong>Called Time:</strong>{lead?.callHistory?.length ? lead?.callHistory[0] : "N/A"}
           </Typography>
           <Typography component="div">
             <strong>Created Date:</strong> {formatDate(createdAtToShow)}
@@ -200,12 +213,12 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onRescheduleClick }) => {
               lead.status === 'pending'
                 ? 'primary'
                 : lead.status === 'rescheduled'
-                ? 'warning'
-                : lead.status === 'completed'
-                ? 'success'
-                : lead.status === 'cancelled'
-                ? 'error'
-                : 'default'
+                  ? 'warning'
+                  : lead.status === 'completed'
+                    ? 'success'
+                    : lead.status === 'cancelled'
+                      ? 'error'
+                      : 'default'
             }
             variant="filled"
             sx={{
@@ -213,22 +226,22 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onRescheduleClick }) => {
                 lead.status === 'pending'
                   ? '#E0F2FE'
                   : lead.status === 'rescheduled'
-                  ? '#FFFAEB'
-                  : lead.status === 'completed'
-                  ? '#D1FAE5'
-                  : lead.status === 'cancelled'
-                  ? '#FEE2E2'
-                  : '#E0F2FE',
+                    ? '#FFFAEB'
+                    : lead.status === 'completed'
+                      ? '#D1FAE5'
+                      : lead.status === 'cancelled'
+                        ? '#FEE2E2'
+                        : '#E0F2FE',
               color:
                 lead.status === 'pending'
                   ? '#0369A1'
                   : lead.status === 'rescheduled'
-                  ? '#B54708'
-                  : lead.status === 'completed'
-                  ? '#047857'
-                  : lead.status === 'cancelled'
-                  ? '#B91C1C'
-                  : '#0369A1',
+                    ? '#B54708'
+                    : lead.status === 'completed'
+                      ? '#047857'
+                      : lead.status === 'cancelled'
+                        ? '#B91C1C'
+                        : '#0369A1',
               fontWeight: 600,
               fontSize: 13,
               height: 24,
@@ -271,6 +284,7 @@ const ViewLeadPage: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [partyDetails, setPartyDetails] = useState<PartyDetails | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [openHistoryDialog, setOpenHistoryDialog] = useState(false)
   const pendingPartyCallRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -423,77 +437,77 @@ const ViewLeadPage: React.FC = () => {
           borderBottom: '1px solid #e0e0e0',
         }}
       >
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
-        <IconButton onClick={() => router.back()} sx={{ p: 0, color: 'primary.main' }}>
-          <MdTurnLeft size={24} />
-        </IconButton>
-        <Typography variant="h6" component="div" sx={{ fontWeight: 400 }}>
-          {partyDetails.partyName} | {selectedLead?.companyName?.companyName || 'N/A'} |{' '}
-          {selectedLead?.partyName?.createdBy?.firstName}{' '}
-          {selectedLead?.partyName?.createdBy?.lastName}
-        </Typography>
-      </Box>
-      <Box display="flex" flexWrap="wrap" justifyContent="space-between" mb={4} gap={2}>
-        <Box>
-          <Typography component="div" fontWeight={600}>
-            Address
-          </Typography>
-          <Typography component="div">{partyDetails.address}</Typography>
-        </Box>
-        <Box>
-          <Typography component="div" fontWeight={600}>
-            Mobile Numbers
-          </Typography>
-          <Typography component="div">
-            <strong>Owner:</strong> {partyDetails.ownerMobileNo}
-          </Typography>
-          <Typography component="div">
-            <strong>Person:</strong> {partyDetails.personMobileNo}
-          </Typography>
-          <Typography component="div">
-            <strong>Payment:</strong> {partyDetails.contactMobileNo}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
+          <IconButton onClick={() => router.back()} sx={{ p: 0, color: 'primary.main' }}>
+            <MdTurnLeft size={24} />
+          </IconButton>
+          <Typography variant="h6" component="div" sx={{ fontWeight: 400 }}>
+            {partyDetails.partyName} | {selectedLead?.companyName?.companyName || 'N/A'} |{' '}
+            {selectedLead?.partyName?.createdBy?.firstName}{' '}
+            {selectedLead?.partyName?.createdBy?.lastName}
           </Typography>
         </Box>
-        <Box>
-          <Typography component="div" fontWeight={600}>
-            Contact Names
-          </Typography>
-          <Typography component="div">
-            <strong>Owner:</strong> {partyDetails.ownerName}
-          </Typography>
-          <Typography component="div">
-            <strong>Person:</strong> {partyDetails.contactPerson}
-          </Typography>
-          <Typography component="div">
-            <strong>Payment:</strong> {partyDetails.contactForPayment}
-          </Typography>
-        </Box>
-        <Box>
-          <Typography component="div" fontWeight={600}>
-            Email Id
-          </Typography>
-          <Typography component="div">
-            <strong>Owner Email:</strong> {partyDetails.ownerEmail}
-          </Typography>
-          <Typography component="div">
-            <strong>Person Email:</strong> {partyDetails.contactPersonEmail}
-          </Typography>
-          <Typography component="div">
-            <strong>Payment Email:</strong> {partyDetails.contactForPaymentEmail}
-          </Typography>
-        </Box>
-        <Box>
-          <Typography component="div" fontWeight={600}>
-            Market Name
-          </Typography>
-          <Typography component="div">{partyDetails.marketName}</Typography>
-        </Box>
-        <Box>
-          <Typography component="div" fontWeight={600}>
-            Area
-          </Typography>
-          <Typography component="div">{partyDetails.area}</Typography>
-        </Box>
+        <Box display="flex" flexWrap="wrap" justifyContent="space-between" mb={4} gap={2}>
+          <Box>
+            <Typography component="div" fontWeight={600}>
+              Address
+            </Typography>
+            <Typography component="div">{partyDetails.address}</Typography>
+          </Box>
+          <Box>
+            <Typography component="div" fontWeight={600}>
+              Mobile Numbers
+            </Typography>
+            <Typography component="div">
+              <strong>Owner:</strong> {partyDetails.ownerMobileNo}
+            </Typography>
+            <Typography component="div">
+              <strong>Person:</strong> {partyDetails.personMobileNo}
+            </Typography>
+            <Typography component="div">
+              <strong>Payment:</strong> {partyDetails.contactMobileNo}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography component="div" fontWeight={600}>
+              Contact Names
+            </Typography>
+            <Typography component="div">
+              <strong>Owner:</strong> {partyDetails.ownerName}
+            </Typography>
+            <Typography component="div">
+              <strong>Person:</strong> {partyDetails.contactPerson}
+            </Typography>
+            <Typography component="div">
+              <strong>Payment:</strong> {partyDetails.contactForPayment}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography component="div" fontWeight={600}>
+              Email Id
+            </Typography>
+            <Typography component="div">
+              <strong>Owner Email:</strong> {partyDetails.ownerEmail}
+            </Typography>
+            <Typography component="div">
+              <strong>Person Email:</strong> {partyDetails.contactPersonEmail}
+            </Typography>
+            <Typography component="div">
+              <strong>Payment Email:</strong> {partyDetails.contactForPaymentEmail}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography component="div" fontWeight={600}>
+              Market Name
+            </Typography>
+            <Typography component="div">{partyDetails.marketName}</Typography>
+          </Box>
+          <Box>
+            <Typography component="div" fontWeight={600}>
+              Area
+            </Typography>
+            <Typography component="div">{partyDetails.area}</Typography>
+          </Box>
         </Box>
       </Box>
 
@@ -506,84 +520,88 @@ const ViewLeadPage: React.FC = () => {
           bgcolor: '#f5f5f5',
         }}
       >
-      <Typography component="div" fontWeight={600} color="primary" mb={2}>
+        <Typography component="div" fontWeight={600} color="primary" mb={2}>
 
-        Pending Party Call
-      </Typography>
-      {sortedPendingDates.length > 0 ? (
-        sortedPendingDates.map((date) => (
-          <Box
-            key={date}
-            mb={4}
-            sx={{
-              backgroundColor: isToday(date) ? '#a0d8b4ff' : 'transparent',
-              borderRadius: 2,
-              p: isToday(date) ? 2 : 0,
-              border: isToday(date) ? '1px solid #D1FADF' : 'none',
-            }}
-          >
-            <Typography variant="subtitle1" fontWeight={600}>
-              Party Call - <span style={{ color: 'red' }}>{date}</span>
-              {isToday(date) && (
-                <ThemeChip
-                  label="Today"
-                  color="success"
-                  size="small"
-                  sx={{ ml: 1, background: '#3a43beff' }}
+          Pending Party Call
+        </Typography>
+        {sortedPendingDates.length > 0 ? (
+          sortedPendingDates.map((date) => (
+            <Box
+              key={date}
+              mb={4}
+              sx={{
+                backgroundColor: isToday(date) ? '#a0d8b4ff' : 'transparent',
+                borderRadius: 2,
+                p: isToday(date) ? 2 : 0,
+                border: isToday(date) ? '1px solid #D1FADF' : 'none',
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={600}>
+                Party Call - <span style={{ color: 'red' }}>{date}</span>
+                {isToday(date) && (
+                  <ThemeChip
+                    label="Today"
+                    color="success"
+                    size="small"
+                    sx={{ ml: 1, background: '#3a43beff' }}
+                  />
+                )}
+              </Typography>
+              {groupedPendingLeads[date].map((lead) => (
+                <LeadCard
+                  key={lead._id}
+                  lead={lead}
+                  onRescheduleClick={handleRescheduleClick}
+                  setOpenHistoryDialog={setOpenHistoryDialog}
+                  openHistoryDialog={openHistoryDialog}
                 />
-              )}
-            </Typography>
-            {groupedPendingLeads[date].map((lead) => (
-              <LeadCard
-                key={lead._id}
-                lead={lead}
-                onRescheduleClick={handleRescheduleClick}
-              />
-            ))}
-          </Box>
-        ))
-      ) : (
-        <Typography>No pending leads found</Typography>
-      )}
+              ))}
+            </Box>
+          ))
+        ) : (
+          <Typography>No pending leads found</Typography>
+        )}
 
-      <Typography component="div" fontWeight={600} color="primary" mb={2} mt={4}>
-        History
-      </Typography>
-      {sortedCompletedDates.length > 0 ? (
-        sortedCompletedDates.map((date) => (
-          <Box
-            key={date}
-            mb={4}
-            sx={{
-              backgroundColor: isToday(date) ? '#a0d8b4ff' : 'transparent',
-              borderRadius: 2,
-              p: isToday(date) ? 2 : 0,
-              border: isToday(date) ? '1px solid #D1FADF' : 'none',
-            }}
-          >
-            <Typography variant="subtitle1" fontWeight={600}>
-              Party Call - <span style={{ color: 'red' }}>{date}</span>
-              {isToday(date) && (
-                <ThemeChip
-                  label="Today"
-                  color="success"
-                  size="small"
-                  sx={{ ml: 1, background: '#3a43beff' }}
+        <Typography component="div" fontWeight={600} color="primary" mb={2} mt={4}>
+          History
+        </Typography>
+        {sortedCompletedDates.length > 0 ? (
+          sortedCompletedDates.map((date) => (
+            <Box
+              key={date}
+              mb={4}
+              sx={{
+                backgroundColor: isToday(date) ? '#a0d8b4ff' : 'transparent',
+                borderRadius: 2,
+                p: isToday(date) ? 2 : 0,
+                border: isToday(date) ? '1px solid #D1FADF' : 'none',
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={600}>
+                Party Call - <span style={{ color: 'red' }}>{date}</span>
+                {isToday(date) && (
+                  <ThemeChip
+                    label="Today"
+                    color="success"
+                    size="small"
+                    sx={{ ml: 1, background: '#3a43beff' }}
+                  />
+                )}
+              </Typography>
+              {groupedCompletedLeads[date].map((lead) => (
+                <LeadCard
+                  key={lead._id}
+                  lead={lead}
+                  onRescheduleClick={handleRescheduleClick}
+                  setOpenHistoryDialog={setOpenHistoryDialog}
+                  openHistoryDialog={openHistoryDialog}
                 />
-              )}
-            </Typography>
-            {groupedCompletedLeads[date].map((lead) => (
-              <LeadCard
-                key={lead._id}
-                lead={lead}
-                onRescheduleClick={handleRescheduleClick}
-              />
-            ))}
-          </Box>
-        ))
-      ) : (
-        <Typography>No history leads found</Typography>
-      )}
+              ))}
+            </Box>
+          ))
+        ) : (
+          <Typography>No history leads found</Typography>
+        )}
       </Box>
 
       <AssignLeadDialog
@@ -594,6 +612,12 @@ const ViewLeadPage: React.FC = () => {
         }}
         lead={selectedLead}
         onSuccess={handleAssignSuccess}
+      />
+
+      <CallHistoryDialog
+        open={openHistoryDialog}
+        onClose={() => setOpenHistoryDialog(false)}
+        data={selectedLead?.callHistory}
       />
     </Box>
   );

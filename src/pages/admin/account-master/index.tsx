@@ -724,7 +724,9 @@ const IndexPage: React.FC = () => {
               <TableCell sx={{ fontSize: 14 }}>{row.unitno}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.market}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.remarks}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}><Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
+                      ? `${row.remarks.substring(0, 10)}...`
+                      : row.remarks}</Typography></TableCell>
               <TableCell sx={{ fontSize: 14 }}>
                 <ThemeChip
                   label={row.status}

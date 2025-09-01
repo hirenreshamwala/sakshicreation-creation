@@ -77,7 +77,7 @@ const StaffView = () => {
 
   const { user } = useAppSelector((state) => state.auth)
   const { roles, loading: rolesLoading } = useAppSelector((state) => state.roles)
-  const { currentStaff, loading: staffLoading } = useAppSelector((state) => state.staff)
+  const { staffList,currentStaff, loading: staffLoading } = useAppSelector((state) => state.staff)
 
   const aadharFileUploadRef = useRef<FileUploadRef>(null)
   const addressFileUploadRef = useRef<FileUploadRef>(null)
@@ -176,6 +176,8 @@ const StaffView = () => {
       }
     },
   })
+
+  console.log(staffList,'staffList')
 
   useEffect(() => {
     if (!roles.length) dispatch(getAllRolesThunk())
