@@ -111,12 +111,12 @@ const InventoryPage = () => {
     setActiveWardTab(newValue as WardTab);
   };
 const aggregateInventory = (): AggregatedInventory[] => {
-  const filtered = inventory.filter(item => item.type === activeWardTab);
+    // Always use ALL inventory data for aggregation, not just filtered by activeWardTab
   const aggregated: Record<string, AggregatedInventory> = {};
 
-  // First pass: aggregate all inward items
-  filtered.forEach(item => {
-    if (!item.forCompany || !item.material) return;
+    // First pass: aggregate all inward items (regardless of current tab)
+    inventory?.forEach(item => {
+     if (!item.forCompany || !item.material || item.type !== 'inward') return;
 
     const key = `${item.forCompany._id}-${item.material._id}`;
     
@@ -141,19 +141,16 @@ const aggregateInventory = (): AggregatedInventory[] => {
     aggregated[key].purchases.push(item);
     
     // Track the most recent inward purchase
-    if (item.type === 'inward') {
       const itemDate = new Date(item.date);
       if (!aggregated[key].lastPurchaseDate || itemDate > aggregated[key].lastPurchaseDate) {
         aggregated[key].lastPurchaseDate = itemDate;
         aggregated[key].lastPurchase = item.quantity;
       }
-    }
-  });
+      });
 
-  // Second pass: calculate used quantity from outward items
-  const outwardItems = inventory.filter(item => item.type === 'outward');
-  outwardItems.forEach(item => {
-    if (!item.forCompany || !item.material) return;
+  // Second pass: calculate used quantity from ALL outward items
+   inventory?.forEach(item => {
+    if (!item.forCompany || !item.material || item.type !== 'outward') return;
     
     const key = `${item.forCompany._id}-${item.material._id}`;
     if (aggregated[key]) {
@@ -180,7 +177,7 @@ const aggregateInventory = (): AggregatedInventory[] => {
     setSelectedPrinter(null);
   };
 
-  const filteredInventory = inventory.filter(item => 
+  const filteredInventory = inventory?.filter(item =>
     item.type === activeWardTab &&
     (!selectedMaterial || item.material?._id === selectedMaterial) &&
     (!selectedVendor || item.vendor?._id === selectedVendor) &&
@@ -312,7 +309,7 @@ const aggregateInventory = (): AggregatedInventory[] => {
                   { id: 'balance', label: 'BALANCE' },
                   { id: 'action', label: 'ACTIONS' },
                 ]}
-                rowData={aggregatedData.filter(item => 
+                rowData={aggregatedData?.filter(item =>
                   (!selectedMaterial || item.materialId === selectedMaterial) &&
                   (!selectedPrinterFilter || item.printerId === selectedPrinterFilter)
                 )}
@@ -398,7 +395,7 @@ const aggregateInventory = (): AggregatedInventory[] => {
                   { id: 'date', label: 'DATE IN WARD' },
                   { id: 'vendor', label: 'VENDOR' },
                 ]}
-                rowData={filteredInventory.filter(item => 
+                rowData={filteredInventory?.filter(item =>
                   item.forCompany?._id === selectedPrinter?.printerId &&
                   item.material?._id === selectedPrinter?.materialId
                 )}

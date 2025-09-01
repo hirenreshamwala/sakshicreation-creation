@@ -199,7 +199,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
         {!selectedField ? (
           <>
             {filterOptions.length > 0 ? (
-              filterOptions.map((label) => (
+              filterOptions.filter(item => !['actions','options','action','option'].includes(item?.toLowerCase()?.trim())).map((label) => (
                 <MenuItem
                   key={label}
                   sx={{ px: 2 }}
