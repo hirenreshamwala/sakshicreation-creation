@@ -48,6 +48,7 @@ interface RowData {
   mobile: string;
   reason: string;
   market: string;
+  unitno: string;
   area: string;
   remarks: string;
   status: string;
@@ -66,6 +67,7 @@ const columns = [
   { id: "partyTag", label: "Party Tag" },
   { id: "mobile", label: "Mobile No." },
   { id: "reason", label: "Reason to Visit" },
+  { id: "unitno", label: "Unit No" },
   { id: "market", label: "Market" },
   { id: "area", label: "Area" },
   { id: "remarks", label: "Remarks" },
@@ -86,14 +88,14 @@ const IndexPage: React.FC = () => {
   const [isRequestMode, setIsRequestMode] = useState(false);
   const [isBulkUpload, setIsBulkUpload] = useState(false); // New state for bulk upload mode
   const [tab, setTab] = useState(0);
- const [startDate, setStartDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
   const [openBulkUploadDialog, setOpenBulkUploadDialog] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [openAssignLeadDialog, setOpenAssignLeadDialog] = useState(false);
   const [openBulkAssignTask, setOpenBulkAssignTask] = useState(false); // New state for bulk assign task dialog
   const canViewGlobal = user?.role?.permissions?.account_master?.view_global;
@@ -147,7 +149,7 @@ const [selectedRows, setSelectedRows] = useState<string[]>([]);
     setIsRequestMode(false);
     setOpen(true);
   };
-const handleSelectRow = (id: string) => {
+  const handleSelectRow = (id: string) => {
     setSelectedRows((prev) =>
       prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
     );
@@ -224,12 +226,12 @@ const handleSelectRow = (id: string) => {
     }
   };
 
-const handleBulkUploadClick = () => {
-  setEditId(null);
+  const handleBulkUploadClick = () => {
+    setEditId(null);
     setIsRequestMode(false);
     setIsBulkUpload(true); // Set to true for bulk upload
     setOpen(true)// Open AddNewPartyDialog instead of openBulkUploadDialog
-};
+  };
 
   const handleBulkUploadClose = () => {
     setOpenBulkUploadDialog(false);
@@ -276,69 +278,69 @@ const handleBulkUploadClick = () => {
     }
   };
 
-const getUniqueValues = (columnId: string): string[] => {
-  const uniqueValues = new Set<string>();
-  
-  accountMasters.forEach((account) => {
-    let value: string | undefined;
-    
-    switch (columnId) {
-      case 'company':
-        value = account.companyName?.name;
-        break;
-      case 'createdDate':
-        value = new Date(account.createdAt).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "2-digit",
-        });
-        break;
-      case 'party':
-        value = account.party?.partyName;
-        break;
-      case 'contactPerson':
-        value = account.party?.ownerName;
-        break;
-      case 'partyTag':
-        value = account.party?.partyTag;
-        break;
-      case 'mobile':
-        value = account.party?.ownerMobileNo;
-        break;
-      case 'reason':
-        value = account.reasonToVisit;
-        break;
-      case 'market':
-        value = account.party?.address?.marketName;
-        break;
-      case 'area':
-        value = account.party?.address?.area;
-        break;
-      case 'remarks':
-        value = account.assignment?.remarks;
-        break;
-      case 'status':
-        value = account.assignment?.status;
-        break;
-      case 'createdBy':
-        value = account.createdBy && typeof account.createdBy === "object"
-          ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
-          : undefined;
-        break;
-      case 'assignedTo':
-        value = account.assignment?.assignedTo && typeof account.assignment.assignedTo === "object"
-          ? `${account.assignment.assignedTo.firstName} ${account.assignment.assignedTo.lastName}`
-          : undefined;
-        break;
-    }
-    
-    if (value) {
-      uniqueValues.add(value);
-    }
-  });
-  
-  return Array.from(uniqueValues).sort();
-};
+  const getUniqueValues = (columnId: string): string[] => {
+    const uniqueValues = new Set<string>();
+
+    accountMasters.forEach((account) => {
+      let value: string | undefined;
+
+      switch (columnId) {
+        case 'company':
+          value = account.companyName?.name;
+          break;
+        case 'createdDate':
+          value = new Date(account.createdAt).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "2-digit",
+          });
+          break;
+        case 'party':
+          value = account.party?.partyName;
+          break;
+        case 'contactPerson':
+          value = account.party?.ownerName;
+          break;
+        case 'partyTag':
+          value = account.party?.partyTag;
+          break;
+        case 'mobile':
+          value = account.party?.ownerMobileNo;
+          break;
+        case 'reason':
+          value = account.reasonToVisit;
+          break;
+        case 'market':
+          value = account.party?.address?.marketName;
+          break;
+        case 'area':
+          value = account.party?.address?.area;
+          break;
+        case 'remarks':
+          value = account.assignment?.remarks;
+          break;
+        case 'status':
+          value = account.assignment?.status;
+          break;
+        case 'createdBy':
+          value = account.createdBy && typeof account.createdBy === "object"
+            ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
+            : undefined;
+          break;
+        case 'assignedTo':
+          value = account.assignment?.assignedTo && typeof account.assignment.assignedTo === "object"
+            ? `${account.assignment.assignedTo.firstName} ${account.assignment.assignedTo.lastName}`
+            : undefined;
+          break;
+      }
+
+      if (value) {
+        uniqueValues.add(value);
+      }
+    });
+
+    return Array.from(uniqueValues).sort();
+  };
 
   const handleDialogClose = () => {
     setOpen(false);
@@ -372,91 +374,92 @@ const getUniqueValues = (columnId: string): string[] => {
 
 
 
-const filteredAccountMasters = accountMasters.filter((account) => {
-  const statusApproval = account.party?.statusApproval || "Pending";
-  const statusMatch = tab === 0 ? statusApproval === "Approved" : statusApproval === "Pending";
-  
-  // Date range filtering
-  const accountDate = new Date(account.createdAt);
-  const matchesDateRange =
-    (!startDate || accountDate >= new Date(startDate).setHours(0, 0, 0, 0)) &&
-    (!endDate || accountDate <= new Date(endDate).setHours(23, 59, 59, 999));
-  
-  // Search filtering
-  const matchesSearch = searchQuery
-    ? (account.party?.partyName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+  const filteredAccountMasters = accountMasters.filter((account) => {
+    const statusApproval = account.party?.statusApproval || "Pending";
+    const statusMatch = tab === 0 ? statusApproval === "Approved" : statusApproval === "Pending";
+
+    // Date range filtering
+    const accountDate = new Date(account.createdAt);
+    const matchesDateRange =
+      (!startDate || accountDate >= new Date(startDate).setHours(0, 0, 0, 0)) &&
+      (!endDate || accountDate <= new Date(endDate).setHours(23, 59, 59, 999));
+
+    // Search filtering
+    const matchesSearch = searchQuery
+      ? (account.party?.partyName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (account.companyName?.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (account.reasonToVisit?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : true;
+      : true;
 
-  // Filter by column filters
-  const matchesFilters = Object.keys(filters).every((columnId) => {
-    if (filters[columnId].length === 0) return true;
-    
-    let value: string | undefined;
-    
-    switch (columnId) {
-      case 'company':
-        value = account.companyName?.name;
-        break;
-      case 'createdDate':
-        value = new Date(account.createdAt).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "2-digit",
-        });
-        break;
-      case 'party':
-        value = account.party?.partyName;
-        break;
-      case 'contactPerson':
-        value = account.party?.ownerName;
-        break;
-      case 'partyTag':
-        value = account.party?.partyTag;
-        break;
-      case 'mobile':
-        value = account.party?.ownerMobileNo;
-        break;
-      case 'reason':
-        value = account.reasonToVisit;
-        break;
-      case 'market':
-        value = account.party?.address?.marketName;
-        break;
-      case 'area':
-        value = account.party?.address?.area;
-        break;
-      case 'remarks':
-        value = account.assignment?.remarks;
-        break;
-      case 'status':
-        value = account.assignment?.status;
-        break;
-      case 'createdBy':
-        value = account.createdBy && typeof account.createdBy === "object"
-          ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
-          : undefined;
-        break;
-      case 'assignedTo':
-        value = account.assignment?.assignedTo && typeof account.assignment.assignedTo === "object"
-          ? `${account.assignment.assignedTo.firstName} ${account.assignment.assignedTo.lastName}`
-          : undefined;
-        break;
+    // Filter by column filters
+    const matchesFilters = Object.keys(filters).every((columnId) => {
+      if (filters[columnId].length === 0) return true;
+
+      let value: string | undefined;
+
+      switch (columnId) {
+        case 'company':
+          value = account.companyName?.name;
+          break;
+        case 'createdDate':
+          value = new Date(account.createdAt).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "2-digit",
+          });
+          break;
+        case 'party':
+          value = account.party?.partyName;
+          break;
+        case 'contactPerson':
+          value = account.party?.ownerName;
+          break;
+        case 'partyTag':
+          value = account.party?.partyTag;
+          break;
+        case 'mobile':
+          value = account.party?.ownerMobileNo;
+          break;
+        case 'reason':
+          value = account.reasonToVisit;
+          break;
+        case 'market':
+          value = account.party?.address?.marketName;
+          break;
+        case 'area':
+          value = account.party?.address?.area;
+          break;
+        case 'remarks':
+          value = account.assignment?.remarks;
+          break;
+        case 'status':
+          value = account.assignment?.status;
+          break;
+        case 'createdBy':
+          value = account.createdBy && typeof account.createdBy === "object"
+            ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
+            : undefined;
+          break;
+        case 'assignedTo':
+          value = account.assignment?.assignedTo && typeof account.assignment.assignedTo === "object"
+            ? `${account.assignment.assignedTo.firstName} ${account.assignment.assignedTo.lastName}`
+            : undefined;
+          break;
+      }
+
+      return value && filters[columnId].includes(value);
+    });
+
+    // Then filter by ownership if user only has view_own permission
+    if (canViewOwn && !canViewGlobal) {
+      return statusMatch && matchesDateRange && matchesSearch && matchesFilters && account.createdBy?._id === user?.id;
     }
-    
-    return value && filters[columnId].includes(value);
+
+    return statusMatch && matchesDateRange && matchesSearch && matchesFilters;
   });
 
-  // Then filter by ownership if user only has view_own permission
-  if (canViewOwn && !canViewGlobal) {
-    return statusMatch && matchesDateRange && matchesSearch && matchesFilters && account.createdBy?._id === user?.id;
-  }
 
-  return statusMatch && matchesDateRange && matchesSearch && matchesFilters;
-});
-
-
+  console.log(filteredAccountMasters)
   const formattedRows: RowData[] = filteredAccountMasters.map((account) => {
     return {
       id: account._id,
@@ -476,6 +479,7 @@ const filteredAccountMasters = accountMasters.filter((account) => {
       partyTag: account.party?.partyTag || "New",
       mobile: account.party?.ownerWhatsAppNo || "N/A",
       reason: account.reasonToVisit || "N/A",
+      unitno: account.party?.address?.unitNo || "N/A",
       market: account.party?.address?.marketName || "N/A",
       area: account.party?.address?.area || "N/A",
       remarks: account.assignment?.remarks || "N/A",
@@ -493,17 +497,17 @@ const filteredAccountMasters = accountMasters.filter((account) => {
     };
   });
   const partyIds = selectedRows.map((accountId) => {
-  const account = accountMasters.find((acc) => acc._id === accountId);
-  return account?.party?._id || "";
-}).filter(Boolean);
+    const account = accountMasters.find((acc) => acc._id === accountId);
+    return account?.party?._id || "";
+  }).filter(Boolean);
 
-const selectedParties = selectedRows.map((accountId) => {
-  const account = accountMasters.find((acc) => acc._id === accountId);
-  return {
-    partyId: account?.party?._id || "",
-    companyId: account?.companyName?._id || ""
-  };
-}).filter(p => p.partyId && p.companyId);
+  const selectedParties = selectedRows.map((accountId) => {
+    const account = accountMasters.find((acc) => acc._id === accountId);
+    return {
+      partyId: account?.party?._id || "",
+      companyId: account?.companyName?._id || ""
+    };
+  }).filter(p => p.partyId && p.companyId);
 
   return (
     <>
@@ -534,8 +538,8 @@ const selectedParties = selectedRows.map((accountId) => {
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          
-           <Box
+
+          <Box
             sx={{
               display: "flex",
               alignItems: "center",
@@ -557,33 +561,33 @@ const selectedParties = selectedRows.map((accountId) => {
             />
           </Box>
           <FilterDropdown
-              filterOptions={columns
-                .filter((col) => col.id !== "action")
-                .map((col) => col.label)}
-              uniqueValues={selectedFilterField ? 
-                getUniqueValues(columns.find(col => col.label === selectedFilterField)?.id || '') : 
-                []}
-              onFiltersChange={(newFilters) => {
-                const idBasedFilters: { [key: string]: string[] } = {};
-                Object.entries(newFilters).forEach(([label, values]) => {
-                  const columnId = columns.find(col => col.label === label)?.id;
-                  if (columnId) {
-                    idBasedFilters[columnId] = values;
-                  }
-                });
-                setFilters(idBasedFilters);
-              }}
-              filters={Object.keys(filters).reduce((acc, columnId) => {
-                const columnLabel = columns.find(col => col.id === columnId)?.label;
-                if (columnLabel) {
-                  acc[columnLabel] = filters[columnId];
+            filterOptions={columns
+              .filter((col) => col.id !== "action")
+              .map((col) => col.label)}
+            uniqueValues={selectedFilterField ?
+              getUniqueValues(columns.find(col => col.label === selectedFilterField)?.id || '') :
+              []}
+            onFiltersChange={(newFilters) => {
+              const idBasedFilters: { [key: string]: string[] } = {};
+              Object.entries(newFilters).forEach(([label, values]) => {
+                const columnId = columns.find(col => col.label === label)?.id;
+                if (columnId) {
+                  idBasedFilters[columnId] = values;
                 }
-                return acc;
-              }, {} as { [key: string]: string[] })}
-              selectedField={selectedFilterField}
-              onFieldSelect={setSelectedFilterField}
-            />
-          
+              });
+              setFilters(idBasedFilters);
+            }}
+            filters={Object.keys(filters).reduce((acc, columnId) => {
+              const columnLabel = columns.find(col => col.id === columnId)?.label;
+              if (columnLabel) {
+                acc[columnLabel] = filters[columnId];
+              }
+              return acc;
+            }, {} as { [key: string]: string[] })}
+            selectedField={selectedFilterField}
+            onFieldSelect={setSelectedFilterField}
+          />
+
           {(canViewGlobal) && (
             <ThemeButton onClick={handleAddNew}>+ Add New Party</ThemeButton>
           )}
@@ -591,10 +595,10 @@ const selectedParties = selectedRows.map((accountId) => {
             <ThemeButton onClick={handleAddNewRequest}>+ Add New Party Request</ThemeButton>
           )}
           {/* {(canViewGlobal) && ( */}
-            <ThemeButton onClick={handleBulkUploadClick} startIcon={<CloudUploadIcon />}>
-              Bulk Upload
-            </ThemeButton>
-            <ThemeButton
+          <ThemeButton onClick={handleBulkUploadClick} startIcon={<CloudUploadIcon />}>
+            Bulk Upload
+          </ThemeButton>
+          <ThemeButton
             onClick={() => setOpenAssignLeadDialog(true)}
             disabled={selectedRows.length === 0}
           >
@@ -683,14 +687,14 @@ const selectedParties = selectedRows.map((accountId) => {
           showFillter={false}
           showSearch={false}
           rowData={formattedRows}
-         renderRow={(row: RowData, index: number) => (
+          renderRow={(row: RowData, index: number) => (
             <>
               <TableCell>
-  <Box display="flex" alignItems="center" gap={1}>
-    <Avatar src={row.company.avatar} alt={row.company.name} sx={{ width: 28, height: 28 }} />
-    <Typography fontWeight={100} fontSize={14}>{row.company.name}</Typography>
-  </Box>
-</TableCell>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Avatar src={row.company.avatar} alt={row.company.name} sx={{ width: 28, height: 28 }} />
+                  <Typography fontWeight={100} fontSize={14}>{row.company.name}</Typography>
+                </Box>
+              </TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.createdDate}</TableCell>
               <TableCell
                 sx={{ cursor: 'pointer', fontWeight: 500, fontSize: 14 }}
@@ -715,12 +719,13 @@ const selectedParties = selectedRows.map((accountId) => {
                   }}
                 />
               </TableCell>
-              <TableCell  sx={{fontSize:14}}>{row.mobile}</TableCell>
-              <TableCell  sx={{fontSize:14}}>{row.reason}</TableCell>
-              <TableCell  sx={{fontSize:14}}>{row.market}</TableCell>
-              <TableCell  sx={{fontSize:14}}>{row.area}</TableCell>
-              <TableCell  sx={{fontSize:14}}>{row.remarks}</TableCell>
-              <TableCell  sx={{fontSize:14}}>
+              <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.unitno}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.market}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.remarks}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>
                 <ThemeChip
                   label={row.status}
                   color={row.statusType}
@@ -745,8 +750,8 @@ const selectedParties = selectedRows.map((accountId) => {
                   }}
                 />
               </TableCell>
-              <TableCell  sx={{fontSize:14}}>{row.createdBy}</TableCell>
-              <TableCell  sx={{fontSize:14}}>{row.assignedTo}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.createdBy}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.assignedTo}</TableCell>
               <TableCell sx={{ display: "flex", gap: 1 }}>
                 {candelete && (
                   <IconButton onClick={() => handleDelete(row.id)}>
@@ -765,7 +770,7 @@ const selectedParties = selectedRows.map((accountId) => {
                 )}
               </TableCell>
             </>
-            )}
+          )}
           onSelectAll={handleSelectAll}
           onSelectRow={handleSelectRow}
           selectedRows={selectedRows}
@@ -786,39 +791,39 @@ const selectedParties = selectedRows.map((accountId) => {
         isBulkUpload={isBulkUpload}
       />
       <AssignLeadDialog
-  open={openAssignLeadDialog}
-  onClose={() => {
-    setOpenAssignLeadDialog(false);
-    setSelectedRows([]);
-  }}
-  partyIds={partyIds}
-  onSuccess={() => {
-    setOpenAssignLeadDialog(false);
-    setSelectedRows([]);
-    if (canViewGlobal) {
-      dispatch(getAllAccountMastersThunk());
-    } else if (canViewOwn && user?.id) {
-      dispatch(getAccountMasterByStaffIdThunk(user.id));
-    }
-  }}
-/>
-<AssignTaskDialog
-  open={openBulkAssignTask}
-  onClose={() => {
-    setOpenBulkAssignTask(false);
-    setSelectedRows([]);
-  }}
-  selectedParties={selectedParties}
-  onSuccess={() => {
-    setOpenBulkAssignTask(false);
-    setSelectedRows([]);
-    if (canViewGlobal) {
-      dispatch(getAllAccountMastersThunk());
-    } else if (canViewOwn && user?.id) {
-      dispatch(getAccountMasterByStaffIdThunk(user.id));
-    }
-  }}
-/>
+        open={openAssignLeadDialog}
+        onClose={() => {
+          setOpenAssignLeadDialog(false);
+          setSelectedRows([]);
+        }}
+        partyIds={partyIds}
+        onSuccess={() => {
+          setOpenAssignLeadDialog(false);
+          setSelectedRows([]);
+          if (canViewGlobal) {
+            dispatch(getAllAccountMastersThunk());
+          } else if (canViewOwn && user?.id) {
+            dispatch(getAccountMasterByStaffIdThunk(user.id));
+          }
+        }}
+      />
+      <AssignTaskDialog
+        open={openBulkAssignTask}
+        onClose={() => {
+          setOpenBulkAssignTask(false);
+          setSelectedRows([]);
+        }}
+        selectedParties={selectedParties}
+        onSuccess={() => {
+          setOpenBulkAssignTask(false);
+          setSelectedRows([]);
+          if (canViewGlobal) {
+            dispatch(getAllAccountMastersThunk());
+          } else if (canViewOwn && user?.id) {
+            dispatch(getAccountMasterByStaffIdThunk(user.id));
+          }
+        }}
+      />
     </>
   );
 };
