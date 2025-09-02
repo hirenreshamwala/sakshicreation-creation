@@ -71,7 +71,6 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ isEditMode = false, roleId })
   useEffect(() => {
     dispatch(getAllRolesThunk());
     if (isEditMode && roleId) {
-      console.log("Fetching role with ID:", roleId);
       dispatch(clearSuccessMessage());
       dispatch(getRoleByIdThunk(roleId));
     }
@@ -80,7 +79,6 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ isEditMode = false, roleId })
   // Initialize form with role data in edit mode
   useEffect(() => {
     if (isEditMode && singleRole) {
-      console.log("Role data loaded:", singleRole);
       setRoleName(singleRole.roleName);
 
       setPermissions(singleRole?.permissions);
@@ -90,13 +88,11 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ isEditMode = false, roleId })
   // Handle toast notifications and redirects
   useEffect(() => {
     if (error && error !== prevErrorRef.current) {
-      console.log("Error occurred:", error);
       toast.error(error);
       prevErrorRef.current = error;
       dispatch(clearError());
     }
     if (isSaving && successMessage && successMessage !== prevSuccessRef.current) {
-      console.log("Success message:", successMessage);
       toast.success(successMessage);
       prevSuccessRef.current = successMessage;
       dispatch(clearSuccessMessage());
@@ -137,7 +133,6 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ isEditMode = false, roleId })
       permissions: permissions,
     };
 
-    console.log(isEditMode ? "Updating role with payload:" : "Creating role with payload:", payload);
     try {
       if (isEditMode && roleId) {
         await dispatch(updateRoleThunk({ id: roleId, data: payload })).unwrap();
@@ -154,7 +149,6 @@ const AddRoleForm: React.FC<AddRoleFormProps> = ({ isEditMode = false, roleId })
   };
 
   const handleCancel = () => {
-    console.log("Cancel action, navigating to role list");
     router.push("/admin/setup/role");
   };
 

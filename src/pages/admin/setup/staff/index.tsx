@@ -92,7 +92,6 @@ const StaffPage = () => {
     }
 
     const fileUrl = `${baseUrl}/api/fileDownload/download?filePath=${encodeURIComponent(filePath)}&view=true`
-console.log("File URL:", fileUrl)
     let type: "image" | "pdf" | "other"
     if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(extension || "")) {
       type = "image"

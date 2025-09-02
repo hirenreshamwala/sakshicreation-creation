@@ -458,8 +458,6 @@ const IndexPage: React.FC = () => {
     return statusMatch && matchesDateRange && matchesSearch && matchesFilters;
   });
 
-
-  console.log(filteredAccountMasters)
   const formattedRows: RowData[] = filteredAccountMasters.map((account) => {
     return {
       id: account._id,

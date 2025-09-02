@@ -7,9 +7,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   useEffect(() => {
     const authToken = localStorage.getItem('auth_token') || Cookies.get('auth_token');
-    console.log('ProtectedRoute - Checking auth token:', { localStorage: localStorage.getItem('auth_token'), cookies: Cookies.get('auth_token') });
     if (!authToken) {
-      console.log('ProtectedRoute - No token, redirecting to /login');
       router.push(`/login`);
     }
   }, [router]);

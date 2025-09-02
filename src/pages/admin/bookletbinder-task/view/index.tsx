@@ -241,7 +241,6 @@ const BookletBinderTaskView = () => {
       if (fileUploadRef.current) {
         const selectedFiles = fileUploadRef.current.getSelectedFiles()
         if (selectedFiles.length > 0) {
-          console.log("Uploading booklet files...")
           const uploadedFileResults = selectedFiles.map((file: File) => ({
             folder: "booklet-files",
             filename: file.name,
@@ -251,7 +250,6 @@ const BookletBinderTaskView = () => {
             remark: bookletBinderRemarks,
             uploadedAt: new Date().toISOString(),
           }))
-          console.log("Booklet files uploaded:", newBookletFiles)
         }
       }
 

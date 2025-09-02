@@ -181,7 +181,6 @@ const handleUpdateStatus = async (orderId: string, statusType: string, status: s
       if (fileUploadRef.current) {
         const selectedFiles = fileUploadRef.current.getSelectedFiles()
         if (selectedFiles.length > 0) {
-          console.log("Uploading printer files...")
           const uploadedFileResults = selectedFiles.map((file: File) => ({
             folder: "printer-files",
             filename: file.name,
@@ -191,7 +190,6 @@ const handleUpdateStatus = async (orderId: string, statusType: string, status: s
             remark: printerRemarks,
             uploadedAt: new Date().toISOString(),
           }))
-          console.log("Printer files uploaded:", newPrinterFiles)
         }
       }
 

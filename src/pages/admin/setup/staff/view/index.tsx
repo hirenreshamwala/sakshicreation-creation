@@ -177,8 +177,6 @@ const StaffView = () => {
     },
   })
 
-  console.log(staffList,'staffList')
-
   useEffect(() => {
     if (!roles.length) dispatch(getAllRolesThunk())
     if (mode === "edit" && id) dispatch(getStaffByIdThunk(id as string))

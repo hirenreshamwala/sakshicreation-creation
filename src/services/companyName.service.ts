@@ -55,7 +55,6 @@ export const companyNameService = {
           withCredentials: true,
         }
       );
-      console.log("responseresponseresponse",response)
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch company names");

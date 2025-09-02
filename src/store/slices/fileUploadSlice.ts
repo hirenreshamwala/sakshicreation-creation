@@ -33,7 +33,6 @@ export const uploadSingleFileThunk = createAsyncThunk(
   async ({ file, folder }: { file: File; folder?: string }, { rejectWithValue }) => {
     try {
       const response = await fileUploadService.uploadSingleFile(file, folder)
-      console.log("Upload Single File Response:", response)
 
       if (response.success) {
         return response.data
@@ -53,7 +52,6 @@ export const uploadMultipleFilesThunk = createAsyncThunk(
   async ({ files, folder }: { files: File[]; folder?: string }, { rejectWithValue }) => {
     try {
       const response = await fileUploadService.uploadMultipleFiles(files, folder)
-      console.log("Upload Multiple Files Response:", response)
 
       if (response.success) {
         return response.data
@@ -73,7 +71,6 @@ export const deleteFileThunk = createAsyncThunk(
   async ({ folder, filename }: { folder: string; filename: string }, { rejectWithValue }) => {
     try {
       const response = await fileUploadService.deleteFile(folder, filename)
-      console.log("Delete File Response:", response)
 
       if (response.success) {
         return { folder, filename }

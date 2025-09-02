@@ -126,7 +126,6 @@ const PerformanceInvoicePage: React.FC = () => {
   }, [dispatch, router]);
 
   const formattedRows: RowData[] = performanceInvoices.map((invoice: any) => {
-    console.log("Invoice Data:", invoice); // Debug log to check companyName
     return {
       id: invoice._id,
       company: {

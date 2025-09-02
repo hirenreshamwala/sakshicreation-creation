@@ -23,8 +23,6 @@ export const companyService = {
         throw new Error("No authentication token found")
       }
 
-      console.log("Making API call to:", Endpoint.GET_ALL_COMPANY)
-      console.log("With hasParties:", hasParties)
 
       const response: AxiosResponse<ApiResponse<Company[]>> = await axios.get(Endpoint.GET_ALL_COMPANY, {
         headers: {
@@ -35,7 +33,6 @@ export const companyService = {
         withCredentials: true,
       })
 
-      console.log("API Response:", response.data)
 
       return {
         success: response.data.success,

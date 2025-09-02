@@ -35,7 +35,6 @@ export const createProductItemThunk = createAsyncThunk(
   async (data: CreateProductItemData, { rejectWithValue }) => {
     try {
       const response = await productItemService.createProductItem(data);
-      console.log("Create Product Item Response:", response);
 
       if (response.success) {
         return response.data;
@@ -54,7 +53,6 @@ export const getAllProductItemsThunk = createAsyncThunk(
   async (params?: { page?: number; limit?: number; search?: string }, { rejectWithValue }) => {
     try {
       const response = await productItemService.getAllProductItems(params);
-      console.log("Get All Product Items Response:", response);
 
       if (response.success && Array.isArray(response.data)) {
         return {
@@ -76,7 +74,6 @@ export const getProductItemByIdThunk = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await productItemService.getProductItemById(id);
-      console.log("Get Product Item By ID Response:", response);
 
       if (response.success && response.data) {
         return response.data;
@@ -95,7 +92,6 @@ export const updateProductItemThunk = createAsyncThunk(
   async ({ id, data }: { id: string; data: Partial<CreateProductItemData> }, { rejectWithValue }) => {
     try {
       const response = await productItemService.updateProductItem(id, data);
-      console.log("Update Product Item Response:", response);
 
       if (response.success) {
         return response.data;
@@ -114,7 +110,6 @@ export const deleteProductItemThunk = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await productItemService.deleteProductItem(id);
-      console.log("Delete Product Item Response:", response);
 
       if (response.success) {
         return id;
@@ -133,7 +128,6 @@ export const bulkCreateProductItemsThunk = createAsyncThunk(
   async (formData: FormData, { rejectWithValue }) => {
     try {
       const response = await productItemService.bulkCreateProductItems(formData);
-      console.log("Bulk Create Product Items Response:", response);
 
       if (response.success && Array.isArray(response.data)) {
         return response.data;

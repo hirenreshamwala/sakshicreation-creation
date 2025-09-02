@@ -83,7 +83,7 @@ const AddNewStaffBulkDialog: React.FC<AddNewStaffBulkDialogProps> = ({ open, onC
 
     // Log FormData for debugging
     for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
+      // console.log(`${key}:`, value);
     }
 
     try {
@@ -181,7 +181,6 @@ const AddNewStaffBulkDialog: React.FC<AddNewStaffBulkDialogProps> = ({ open, onC
                 const selectedFile = e.target.files?.[0];
                 if (selectedFile && selectedFile.type === "text/csv") {
                   setFile(selectedFile);
-                  console.log("Selected CSV file:", selectedFile.name);
                 } else {
                   toast.error("Please select a valid CSV file");
                 }

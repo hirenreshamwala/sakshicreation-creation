@@ -51,8 +51,6 @@ export const statusService = {
         throw new Error("No authentication token found")
       }
 
-      console.log(`Service: Creating ${type} status with data:`, data)
-
       const response: AxiosResponse<ApiResponse<Status>> = await axios.post(
         `${Endpoint.STATUS_BASE}/${type}/create`,
         data,
@@ -65,7 +63,6 @@ export const statusService = {
         },
       )
 
-      console.log(`Service: Create ${type} status API response:`, response.data)
 
       return {
         success: response.data.success,
@@ -94,7 +91,6 @@ export const statusService = {
         throw new Error("No authentication token found")
       }
 
-      console.log(`Service: Fetching all ${type} statuses with params:`, params)
 
       const queryParams: any = {}
       if (params?.page) queryParams.page = params.page
@@ -111,7 +107,6 @@ export const statusService = {
         withCredentials: true,
       })
 
-      console.log(`Service: Get all ${type} statuses API response:`, response.data)
 
       return {
         success: response.data.success,
@@ -133,7 +128,6 @@ export const statusService = {
         throw new Error("No authentication token found")
       }
 
-      console.log(`Service: Fetching ${type} status with ID:`, id)
 
       const response: AxiosResponse<ApiResponse<Status>> = await axios.get(`${Endpoint.STATUS_BASE}/${type}/${id}`, {
         headers: {
@@ -143,7 +137,6 @@ export const statusService = {
         withCredentials: true,
       })
 
-      console.log(`Service: Get ${type} status by ID API response:`, response.data)
 
       return {
         success: response.data.success,
@@ -164,7 +157,6 @@ export const statusService = {
         throw new Error("No authentication token found")
       }
 
-      console.log(`Service: Updating ${type} status with ID:`, id, "Data:", data)
 
       const response: AxiosResponse<ApiResponse<Status>> = await axios.put(
         `${Endpoint.STATUS_BASE}/${type}/update/${id}`,
@@ -178,7 +170,6 @@ export const statusService = {
         },
       )
 
-      console.log(`Service: Update ${type} status API response:`, response.data)
 
       return {
         success: response.data.success,
@@ -199,7 +190,6 @@ export const statusService = {
         throw new Error("No authentication token found")
       }
 
-      console.log(`Service: Deleting ${type} status with ID:`, id)
 
       const response: AxiosResponse<ApiResponse<null>> = await axios.delete(
         `${Endpoint.STATUS_BASE}/${type}/delete/${id}`,
@@ -212,7 +202,6 @@ export const statusService = {
         },
       )
 
-      console.log(`Service: Delete ${type} status API response:`, response.data)
 
       return {
         success: response.data.success,
@@ -233,7 +222,6 @@ export const statusService = {
         throw new Error("No authentication token found")
       }
 
-      console.log(`Service: Fetching default ${type} status`)
 
       const response: AxiosResponse<ApiResponse<Status>> = await axios.get(`${Endpoint.STATUS_BASE}/${type}/default`, {
         headers: {
@@ -243,7 +231,6 @@ export const statusService = {
         withCredentials: true,
       })
 
-      console.log(`Service: Get default ${type} status API response:`, response.data)
 
       return {
         success: response.data.success,
@@ -264,7 +251,6 @@ export const statusService = {
         throw new Error("No authentication token found")
       }
 
-      console.log(`Service: Reordering ${type} statuses:`, statusIds)
 
       const response: AxiosResponse<ApiResponse<Status[]>> = await axios.put(
         `${Endpoint.STATUS_BASE}/${type}/reorder`,
@@ -278,7 +264,6 @@ export const statusService = {
         },
       )
 
-      console.log(`Service: Reorder ${type} statuses API response:`, response.data)
 
       return {
         success: response.data.success,

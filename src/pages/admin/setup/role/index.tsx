@@ -58,7 +58,6 @@ const RoleTable: React.FC = () => {
   // Fetch roles only if on the role list page
   useEffect(() => {
     if (router.pathname === '/admin/setup/role') {
-      console.log("Fetching all roles for RoleTable");
       dispatch(getAllRolesThunk());
     }
   }, [router.pathname, dispatch]);
@@ -78,17 +77,14 @@ const RoleTable: React.FC = () => {
   }, [error, successMessage, dispatch]);
 
   const handleEdit = (id: string) => {
-    console.log("Navigating to edit role:", id);
     router.push(`/admin/setup/role/edit-role/${id}`);
   };
 
   const handleDelete = (id: string) => {
-    console.log("Deleting role:", id);
     dispatch(deleteRoleThunk(id));
   };
 
   const handleAddRole = () => {
-    console.log("Navigating to add role");
     router.push('/admin/setup/role/add-role');
   };
 

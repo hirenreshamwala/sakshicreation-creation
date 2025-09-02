@@ -36,7 +36,6 @@ export const binderTypeService = {
       const token = authService.getToken();
       if (!token) throw new Error("No authentication token found");
 
-      console.log("Creating binder type with data:", data);
 
       const response: AxiosResponse<ApiResponse<BinderType>> = await axios.post(
         Endpoint.CREATE_BINDER_TYPE,
@@ -71,7 +70,6 @@ export const binderTypeService = {
       const token = authService.getToken();
       if (!token) throw new Error("No authentication token found");
 
-      console.log("Fetching all binder types with params:", params);
 
       const queryParams: any = {};
       if (params?.page) queryParams.page = params.page;
@@ -109,7 +107,6 @@ export const binderTypeService = {
       const token = authService.getToken();
       if (!token) throw new Error("No authentication token found");
 
-      console.log("Fetching binder type with ID:", id);
 
       const response: AxiosResponse<ApiResponse<BinderType>> = await axios.get(
         `${Endpoint.GET_BINDER_TYPE_WITH_ID}/${id}`,
@@ -142,7 +139,6 @@ export const binderTypeService = {
       const token = authService.getToken();
       if (!token) throw new Error("No authentication token found");
 
-      console.log("Updating binder type with ID:", id, "Data:", data);
 
       const response: AxiosResponse<ApiResponse<BinderType>> = await axios.put(
         `${Endpoint.UPDATE_BINDER_TYPE}/${id}`,
@@ -173,7 +169,6 @@ export const binderTypeService = {
       const token = authService.getToken();
       if (!token) throw new Error("No authentication token found");
 
-      console.log("Deleting binder type with ID:", id);
 
       const response: AxiosResponse<ApiResponse<null>> = await axios.delete(
         `${Endpoint.DELETE_BINDER_TYPE}/${id}`,
@@ -203,7 +198,6 @@ export const binderTypeService = {
       const token = authService.getToken();
       if (!token) throw new Error("No authentication token found");
 
-      console.log("Uploading bulk binder types");
 
       const response: AxiosResponse<ApiResponse<BinderType[]>> = await axios.post(
         Endpoint.BULK_CREATE_BINDER_TYPES,

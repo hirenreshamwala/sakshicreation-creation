@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authToken = request.cookies.get('auth_token')?.value;
 
-  console.log(`Middleware - Path: ${pathname}, Auth token: ${authToken ? 'exists' : 'missing'}`);
+  // console.log(`Middleware - Path: ${pathname}, Auth token: ${authToken ? 'exists' : 'missing'}`);
 
   // Allow all requests to proceed
   // Client-side components will handle the actual protection logic

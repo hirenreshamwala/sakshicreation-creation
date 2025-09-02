@@ -90,7 +90,6 @@ const SECRET_KEY = process.env.NEXT_PUBLIC_CRYPTO_SECRET || "xghvyusdvf";
 
 export const decryptData = (ciphertext: any) => {
   try {
-    console.log(ciphertext, 'Decryption error', SECRET_KEY)
     const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
     const originalText = bytes.toString(CryptoJS.enc.Utf8);
 

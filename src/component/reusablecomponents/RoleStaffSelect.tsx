@@ -80,7 +80,6 @@ const RoleStaffSelect: React.FC<RoleStaffSelectProps> = ({
   }, [roleError]);
 
   useEffect(() => {
-    console.log("roleDetails.staffMembers:", roleDetails?.staffMembers);
     
     if (roleDetails?.staffMembers) {
       const options = roleDetails.staffMembers.map((staff: any) => {

@@ -50,7 +50,6 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        console.log("Fetching companies with hasParties:", hasParties)
         await dispatch(getAllCompaniesThunk(hasParties)).unwrap()
       } catch (err) {
         console.error("Company fetch error:", err)
@@ -70,7 +69,6 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
           // Check if company has partyList and it's not empty
           return company.partyList && company.partyList.length > 0
         })
-        console.log("Filtered companies with parties:", filteredCompanies)
       } else {
         console.log("Showing all companies:", companies)
       }
@@ -80,13 +78,11 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
         default: company?.default
       }))
       setCompanyOptions(options)
-      console.log("Company options set:", options)
 
       // Set default to "Sakshi Creation" if value is not set and default hasn't been set yet
       if (!value && !defaultSet) {
         const defaultCompany = options.find((option) => option.default);
         if (defaultCompany) {
-          console.log("Setting default company:", defaultCompany);
           onChange(null, defaultCompany);
           setDefaultSet(true);
         }
@@ -103,7 +99,6 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
         try {
           const companyId = typeof value === "object" ? value.value : value
           if (companyId) {
-            console.log("Fetching parties for company:", companyId)
             await dispatch(getPartiesByCompanyThunk(companyId)).unwrap()
           }
         } catch (err) {
@@ -126,7 +121,6 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
       value: party._id,
     }));
       setPartyOptions(options)
-      console.log("Party options set:", options)
     } else {
       setPartyOptions([])
     }

@@ -183,7 +183,6 @@ const BinderTaskView = () => {
       if (fileUploadRef.current) {
         const selectedFiles = fileUploadRef.current.getSelectedFiles()
         if (selectedFiles.length > 0) {
-          console.log("Uploading binder files...")
           const uploadedFileResults = selectedFiles.map((file: File) => ({
             folder: "binder-files",
             filename: file.name,
@@ -193,7 +192,6 @@ const BinderTaskView = () => {
             remark: binderRemarks,
             uploadedAt: new Date().toISOString(),
           }))
-          console.log("Binder files uploaded:", newBinderFiles)
         }
       }
 

@@ -327,9 +327,7 @@ const ViewTaskPage: React.FC = () => {
   useEffect(() => {
     if (singleAssignTask && assignTasks.length > 0) {
       const fullTask = assignTasks.find((task) => task._id === singleAssignTask._id);
-      console.log("🚀 ~ ViewTaskPage ~ fullTask:", fullTask);
       const party = typeof fullTask?.partyName === 'object' ? fullTask.partyName : fullTask?.accountMaster?.party;
-      console.log("🚀 ~ ViewTaskPage ~ party:", party);
       const company = typeof fullTask?.companyName === 'object' ? fullTask.companyName : null;
 
       if (party) {

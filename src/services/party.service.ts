@@ -25,7 +25,6 @@ export const partyService = {
         throw new Error("No authentication token found")
       }
 
-      console.log("Making API call to get parties for company:", companyId)
 
       const response: AxiosResponse<ApiResponse<Party[]>> = await axios.get(
         `${Endpoint.GET_PARTIES_BY_COMPANY}/${companyId}`,
@@ -38,7 +37,6 @@ export const partyService = {
         },
       )
 
-      console.log("Party API Response:", response.data)
 
       return {
         success: response.data.success,

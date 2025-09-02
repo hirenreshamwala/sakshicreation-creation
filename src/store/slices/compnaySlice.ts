@@ -27,7 +27,6 @@ export const getAllCompaniesThunk = createAsyncThunk(
   async (hasParties = false, { rejectWithValue }) => {
     try {
       const response = await companyService.getAllCompanies(hasParties)
-      console.log("Company API Response:", response)
 
       if (response.success && Array.isArray(response.data)) {
         return response.data

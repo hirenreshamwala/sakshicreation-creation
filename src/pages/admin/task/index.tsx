@@ -49,7 +49,7 @@ const Index = () => {
   );
   const { user } = useAppSelector((state) => state.auth);
   const { orders } = useAppSelector((state) => state.orders);
-  console.log("🚀 ~ Index ~ singleOrder:", orders);
+
   const getRoleSpecificTasks = () => {
     if (!orders || orders.length === 0) return [];
 
@@ -93,7 +93,7 @@ const Index = () => {
   // Render different components based on role
   const renderRoleSpecificComponent = () => {
     const tasks = getRoleSpecificTasks();
-    console.log(`Tasks for ${role}:`, tasks);
+
     switch (role) {
       case "designer":
         return <DesignerTask tasks={tasks} />;

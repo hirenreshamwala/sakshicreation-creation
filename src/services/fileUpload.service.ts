@@ -31,7 +31,6 @@ export const fileUploadService = {
       formData.append("folder", folder)
       formData.append("file", file)
 
-      console.log("Uploading single file:", file.name, "to folder:", folder)
 
       const response: AxiosResponse<ApiResponse<UploadedFile>> = await axios.post(
         Endpoint.UPLOAD_SINGLE_FILE,
@@ -45,7 +44,6 @@ export const fileUploadService = {
         },
       )
 
-      console.log("Upload Single File API Response:", response.data)
 
       return {
         success: response.data.success,
@@ -72,7 +70,6 @@ export const fileUploadService = {
       })
       formData.append("folder", folder)
 
-      console.log("Uploading multiple files:", files.length, "files to folder:", folder)
 
       const response: AxiosResponse<ApiResponse<UploadedFile[]>> = await axios.post(
         Endpoint.UPLOAD_MULTIPLE_FILES,
@@ -86,7 +83,6 @@ export const fileUploadService = {
         },
       )
 
-      console.log("Upload Multiple Files API Response:", response.data)
 
       return {
         success: response.data.success,
@@ -107,7 +103,6 @@ export const fileUploadService = {
         throw new Error("No authentication token found")
       }
 
-      console.log("Deleting file:", filename, "from folder:", folder)
 
       const response: AxiosResponse<ApiResponse<null>> = await axios.delete(
         `${Endpoint.DELETE_FILE}/${folder}/${filename}`,
@@ -120,7 +115,6 @@ export const fileUploadService = {
         },
       )
 
-      console.log("Delete File API Response:", response.data)
 
       return {
         success: response.data.success,
@@ -141,7 +135,6 @@ export const fileUploadService = {
         throw new Error("No authentication token found")
       }
 
-      console.log("Getting file info:", filename, "from folder:", folder)
 
       const response: AxiosResponse<ApiResponse<UploadedFile>> = await axios.get(
         `${Endpoint.GET_FILE_INFO}/${folder}/${filename}`,
@@ -154,7 +147,6 @@ export const fileUploadService = {
         },
       )
 
-      console.log("Get File Info API Response:", response.data)
 
       return {
         success: response.data.success,

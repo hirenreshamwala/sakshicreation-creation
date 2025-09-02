@@ -67,7 +67,6 @@ const StatusSelect: React.FC<StatusSelectProps> = ({
   useEffect(() => {
     const fetchStatuses = async () => {
       try {
-        console.log(`Fetching ${statusType} statuses...`)
         await dispatch(
           getAllStatusesThunk({
             type: statusType,

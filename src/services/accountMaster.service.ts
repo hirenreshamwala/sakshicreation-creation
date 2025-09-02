@@ -128,7 +128,6 @@ export const accountMasterService = {
           withCredentials: true,
         }
       );
-      console.log("🚀 ~ getAccountMasters ~ response:", response.data)
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch account masters");

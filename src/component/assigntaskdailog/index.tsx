@@ -149,7 +149,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
       setIsLoading(true);
       try {
         if (isEditMode && taskId) {
-          console.log("Updating task with ID:", taskId, "Data:", values); // Debug log
           await dispatch(
             updateAssignTaskThunk({
               id: taskId,

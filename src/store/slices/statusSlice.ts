@@ -65,9 +65,7 @@ export const createStatusThunk = createAsyncThunk(
   "status/create",
   async ({ type, data }: { type: string; data: CreateStatusData }, { rejectWithValue }) => {
     try {
-      console.log(`Redux: Creating ${type} status with data:`, data)
       const response = await statusService.createStatus(type, data)
-      console.log(`Redux: Create ${type} status response:`, response)
 
       if (response.success) {
         return { type, data: response.data }
@@ -101,7 +99,6 @@ export const getAllStatusesThunk = createAsyncThunk(
   ) => {
     try {
       const response = await statusService.getAllStatuses(type, params)
-      console.log(`Redux: Get all ${type} statuses response:`, response)
 
       if (response.success && Array.isArray(response.data)) {
         return {
@@ -125,7 +122,6 @@ export const getStatusByIdThunk = createAsyncThunk(
   async ({ type, id }: { type: string; id: string }, { rejectWithValue }) => {
     try {
       const response = await statusService.getStatusById(type, id)
-      console.log(`Redux: Get ${type} status by ID response:`, response)
 
       if (response.success && response.data) {
         return response.data
@@ -145,7 +141,6 @@ export const updateStatusThunk = createAsyncThunk(
   async ({ type, id, data }: { type: string; id: string; data: Partial<CreateStatusData> }, { rejectWithValue }) => {
     try {
       const response = await statusService.updateStatus(type, id, data)
-      console.log(`Redux: Update ${type} status response:`, response)
 
       if (response.success) {
         return { type, data: response.data }
@@ -165,7 +160,6 @@ export const deleteStatusThunk = createAsyncThunk(
   async ({ type, id }: { type: string; id: string }, { rejectWithValue }) => {
     try {
       const response = await statusService.deleteStatus(type, id)
-      console.log(`Redux: Delete ${type} status response:`, response)
 
       if (response.success) {
         return { type, id }
@@ -185,7 +179,6 @@ export const getDefaultStatusThunk = createAsyncThunk(
   async (type: string, { rejectWithValue }) => {
     try {
       const response = await statusService.getDefaultStatus(type)
-      console.log(`Redux: Get default ${type} status response:`, response)
 
       if (response.success && response.data) {
         return response.data

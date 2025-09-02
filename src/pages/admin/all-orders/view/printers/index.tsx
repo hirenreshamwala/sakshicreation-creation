@@ -214,8 +214,6 @@ const PrinterForm = () => {
     },
   });
 
-  console.log(formik.errors,'jsxgjusghf')
-
   const materialNameOptions = Array.from(new Set(materials.map(material => material.materialName))).map(name => ({
     value: name,
     label: name

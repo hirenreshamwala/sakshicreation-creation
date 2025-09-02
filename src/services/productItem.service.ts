@@ -36,7 +36,6 @@ export const productItemService = {
         throw new Error("No authentication token found");
       }
 
-      console.log("Creating product item with data:", data);
 
       const response: AxiosResponse<ApiResponse<ProductItem>> = await axios.post(
         Endpoint.CREATE_PRODUCT_ITEM,
@@ -50,7 +49,6 @@ export const productItemService = {
         }
       );
 
-      console.log("Create Product Item API Response:", response.data);
 
       return {
         success: response.data.success,
@@ -75,7 +73,6 @@ export const productItemService = {
         throw new Error("No authentication token found");
       }
 
-      console.log("Fetching all product items with params:", params);
 
       const queryParams: any = {};
       if (params?.page) queryParams.page = params.page;
@@ -94,7 +91,6 @@ export const productItemService = {
         }
       );
 
-      console.log("Get All Product Items API Response:", response.data);
 
       return {
         success: response.data.success,
@@ -117,7 +113,6 @@ export const productItemService = {
         throw new Error("No authentication token found");
       }
 
-      console.log("Fetching product item with ID:", id);
 
       const response: AxiosResponse<ApiResponse<ProductItem>> = await axios.get(
         `${Endpoint.GET_PRODUCT_ITEM_WITH_ID}/${id}`,
@@ -130,7 +125,6 @@ export const productItemService = {
         }
       );
 
-      console.log("Get Product Item By ID API Response:", response.data);
 
       return {
         success: response.data.success,
@@ -151,7 +145,6 @@ export const productItemService = {
         throw new Error("No authentication token found");
       }
 
-      console.log("Updating product item with ID:", id, "Data:", data);
 
       const response: AxiosResponse<ApiResponse<ProductItem>> = await axios.put(
         `${Endpoint.UPDATE_PRODUCT_ITEM}/${id}`,
@@ -165,7 +158,6 @@ export const productItemService = {
         }
       );
 
-      console.log("Update Product Item API Response:", response.data);
 
       return {
         success: response.data.success,
@@ -186,7 +178,6 @@ export const productItemService = {
         throw new Error("No authentication token found");
       }
 
-      console.log("Deleting product item with ID:", id);
 
       const response: AxiosResponse<ApiResponse<null>> = await axios.delete(
         `${Endpoint.DELETE_PRODUCT_ITEM}/${id}`,
@@ -199,7 +190,6 @@ export const productItemService = {
         }
       );
 
-      console.log("Delete Product Item API Response:", response.data);
 
       return {
         success: response.data.success,
@@ -219,7 +209,6 @@ export const productItemService = {
         throw new Error("No authentication token found");
       }
 
-      console.log("Uploading bulk product items");
 
       const response: AxiosResponse<ApiResponse<ProductItem[]>> = await axios.post(
         Endpoint.BULK_CREATE_PRODUCT_ITEMS,
@@ -233,7 +222,6 @@ export const productItemService = {
         }
       );
 
-      console.log("Bulk Create Product Items API Response:", response.data);
 
       return {
         success: response.data.success,

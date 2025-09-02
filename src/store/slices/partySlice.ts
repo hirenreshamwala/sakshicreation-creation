@@ -29,7 +29,6 @@ export const getPartiesByCompanyThunk = createAsyncThunk(
   async (companyId: string, { rejectWithValue }) => {
     try {
       const response = await partyService.getPartiesByCompany(companyId)
-      console.log("Party API Response:", response)
 
       if (response.success && Array.isArray(response.data)) {
         return response.data

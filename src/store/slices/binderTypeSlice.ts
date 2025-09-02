@@ -36,7 +36,6 @@ export const createBinderTypeThunk = createAsyncThunk(
   async (data: CreateBinderTypeData, { rejectWithValue }) => {
     try {
       const response = await binderTypeService.createBinderType(data);
-      console.log("Create Binder Type Response:", response);
 
       if (response.success) {
         return response.data;
@@ -55,7 +54,6 @@ export const getAllBinderTypesThunk = createAsyncThunk(
   async (params?: { page?: number; limit?: number; search?: string }, { rejectWithValue }) => {
     try {
       const response = await binderTypeService.getAllBinderTypes(params);
-      console.log("Get All Binder Types Response:", response);
 
       if (response.success && Array.isArray(response.data)) {
         return {
@@ -77,7 +75,6 @@ export const getBinderTypeByIdThunk = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await binderTypeService.getBinderTypeById(id);
-      console.log("Get Binder Type By ID Response:", response);
 
       if (response.success && response.data) {
         return response.data;
@@ -96,7 +93,6 @@ export const updateBinderTypeThunk = createAsyncThunk(
   async ({ id, data }: { id: string; data: Partial<CreateBinderTypeData> }, { rejectWithValue }) => {
     try {
       const response = await binderTypeService.updateBinderType(id, data);
-      console.log("Update Binder Type Response:", response);
 
       if (response.success) {
         return response.data;
@@ -115,7 +111,6 @@ export const deleteBinderTypeThunk = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await binderTypeService.deleteBinderType(id);
-      console.log("Delete Binder Type Response:", response);
 
       if (response.success) {
         return id;
@@ -134,7 +129,6 @@ export const bulkCreateBinderTypesThunk = createAsyncThunk(
   async (formData: FormData, { rejectWithValue }) => {
     try {
       const response = await binderTypeService.bulkCreateBinderTypes(formData);
-      console.log("Bulk Create Binder Types Response:", response);
 
       if (response.success && Array.isArray(response.data)) {
         return response.data;
