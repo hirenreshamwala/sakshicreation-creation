@@ -13,6 +13,9 @@ import DateRangePicker from "@/component/daterangepicker"
 import { FiSearch } from "react-icons/fi"
 import { InputBase } from "@mui/material"
 import { getDisplayStatus } from "@/utills/utills"
+import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk } from "@/store/slices/qpOrderSlice"
+import QpOrdersPage from "@/component/allorderdailog/QpOrder"
+import TabComponent from "@/component/Dialog/TabComponent"
 
 const columns = [
   { id: "company", label: "Company" },
@@ -62,17 +65,19 @@ const AllOrdersPage = () => {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const { orders, loading, error,totalCount, pagination } = useAppSelector((state) => state.orders)
+  const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.orders)
+
 
   const { user } = useAppSelector((state) => state.auth)
 
   // Filter state
+  const [activeTab, setActiveTab] = useState(1);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
   const [selectedFilterValues, setSelectedFilterValues] = useState<string[] | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
-const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
+  const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
 
   const canViewGlobal = user?.role?.permissions?.all_orders?.view_global
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own
@@ -117,7 +122,7 @@ const getUniqueValues = useMemo(() => {
         value = order.productItem?.itemName;
         break;
       case "size":
-        value = order.size;
+        value = order.size.size;
         break;
       case "remarks":
         value = order.remarks;
@@ -144,7 +149,7 @@ const filteredOrders = useMemo(() => {
 
     const matchesSearch = searchQuery
       ? order.orderNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.companyName?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.comanyName?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.party?.partyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.productItem?.itemName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.remarks?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -170,7 +175,7 @@ const filteredOrders = useMemo(() => {
           value = order.productItem?.itemName;
           break;
         case "size":
-          value = order.size;
+          value = order.size.size;
           break;
         case "remarks":
           value = order.remarks;
@@ -197,9 +202,11 @@ const filteredOrders = useMemo(() => {
     }
 
     if (canViewGlobal) {
+      dispatch(getAllQPOrdersThunk())
       dispatch(getAllOrdersThunk({ limit: 100 })); // Increase limit to fetch more orders
     } else if (canViewOwn && user?.id) {
       dispatch(getOrdersByStaffIdThunk(user.id));
+      dispatch(getQPOrdersByStaffIdThunk(user.id));
     }
   }, [dispatch, router, canViewGlobal, canViewOwn, user?.id]);
 
@@ -285,9 +292,9 @@ const filteredOrders = useMemo(() => {
   };
 
   const getAvatarUrl = (row: OrderRow) => {
-     if (row.companyName && (row.companyName as any).avatar) {
-    return (row.companyName as any).avatar;
-  }
+    if (row.companyName && (row.companyName as any).avatar) {
+      return (row.companyName as any).avatar;
+    }
   };
 
   if (loading) return <Typography>Loading orders...</Typography>;
@@ -295,6 +302,8 @@ const filteredOrders = useMemo(() => {
 
   return (
     <>
+    <TabComponent activeTab={activeTab} setActiveTab={setActiveTab}/>
+      {activeTab === 0 ? <>
       <Box
         sx={{
           display: "flex",
@@ -346,20 +355,20 @@ const filteredOrders = useMemo(() => {
             filterOptions={columns
               .filter((col) => col.id !== "action")
               .map((col) => col.label)}
-            uniqueValues={selectedFilterField ? 
-              getUniqueValues : 
+            uniqueValues={selectedFilterField ?
+              getUniqueValues :
               []}
             onFiltersChange={(newFilters) => {
               // Convert label-based filters to id-based filters
               const idBasedFilters: { [key: string]: string[] } = {};
-              
+
               Object.entries(newFilters).forEach(([label, values]) => {
                 const columnId = columns.find(col => col.label === label)?.id;
                 if (columnId) {
                   idBasedFilters[columnId] = values;
                 }
               });
-              
+
               setFilters(idBasedFilters);
             }}
             filters={Object.keys(filters).reduce((acc, columnId) => {
@@ -389,8 +398,8 @@ const filteredOrders = useMemo(() => {
               <TableCell>
                 <Box display="flex" alignItems="center" gap={2}>
                    <Avatar 
-                    src={getAvatarUrl(row)} 
-                    sx={{ width: 32, height: 32 }} 
+                    src={getAvatarUrl(row)}
+                    sx={{ width: 32, height: 32 }}
                     alt={row.companyName?.companyName || "Company"}
                   />
                   <Typography
@@ -436,13 +445,13 @@ const filteredOrders = useMemo(() => {
               {/* Size */}
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.size || "N/A"}
+                  {row.size?.size || "N/A"}
                 </Typography>
               </TableCell>
 
               {/* Remarks */}
               <TableCell>
-                <Typography sx={{ fontSize: 14,color:"text.secondary" }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
+                <Typography sx={{ fontSize: 14, color: "text.secondary" }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
                         ? `${row.remarks.substring(0, 13)}...`
                         : row.remarks}</Typography>
               </TableCell>
@@ -478,7 +487,8 @@ const filteredOrders = useMemo(() => {
         />
       </Box>
 
-      <AddOrderDialog open={open} onClose={() => setOpen(false)} />
+        <AddOrderDialog open={open} onClose={() => setOpen(false)} />
+      </> : <QpOrdersPage />}
     </>
   )
 }

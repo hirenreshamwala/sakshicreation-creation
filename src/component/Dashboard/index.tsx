@@ -279,6 +279,11 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       path: "/admin/setup/binderType",
       icon: <MdGroup size={18} />,
     },
+     {
+      label: "Packaging Option",
+      path: "/admin/setup/packaging-options",
+      icon: <MdGroup size={18} />,
+    },
     // {
     //   label: "Department Company",
     //   path: "/admin/setup/department-company",

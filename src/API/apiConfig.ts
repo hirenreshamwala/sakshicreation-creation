@@ -7,7 +7,7 @@ const Endpoint = {
   UPDATE_STAFF: `${BaseURL}/api/staff/update`,
   UPDATE_STAFF_STATUS: `${BaseURL}/api/staff/updatestatus`,
   DELETE_STAFF: `${BaseURL}/api/staff/delete`,
-  BULK_CREATE_STAFF:`${BaseURL}/api/staff/bulk`,
+  BULK_CREATE_STAFF: `${BaseURL}/api/staff/bulk`,
   UPDATE_STAFF_PASSWORD: `${BaseURL}/api/staff/updatepassword`,
   GET_ALL_ACCOUNT_MASTERS: `${BaseURL}/api/account-master/getall`,
   BULK_CREATE_ACCOUNT_MASTERS: `${BaseURL}/api/account-master/bulk-create`,
@@ -17,7 +17,7 @@ const Endpoint = {
   UPDATE_ACCOUNT_MASTER: `${BaseURL}/api/account-master/update`,
   DELETE_ACCOUNT_MASTER: `${BaseURL}/api/account-master/delete`,
   UPDATE_APPROVED_ACCOUNT_MASTER: `${BaseURL}/api/account-master/party`,
-  SEARCH_PARTIES:`${BaseURL}/api/account-master/parties/search`,
+  SEARCH_PARTIES: `${BaseURL}/api/account-master/parties/search`,
   GET_USER_PROFILE: `${BaseURL}/api/staff/getbyid`,
   GET_ALL_ASSIGN_TASKS: `${BaseURL}/api/assign-task/getall`,
   GET_ASSIGN_TASK_BY_ID: `${BaseURL}/api/assign-task/getbyid`,
@@ -151,11 +151,24 @@ const Endpoint = {
 
   // extra code for remove errors
   UPDATE_STAFF_ATTACHMENTS: `${BaseURL}/api/staff/updateattachments`,
-  CREATE_BINDER_TYPE:  `${BaseURL}/api/bindertype/create`,
-  GET_ALL_BINDER_TYPE:  `${BaseURL}/api/bindertype/getall`,
-  GET_BINDER_TYPE_WITH_ID:  `${BaseURL}/api/bindertype/getbyid`,
-  UPDATE_BINDER_TYPE:  `${BaseURL}/api/bindertype/update`,
-  DELETE_BINDER_TYPE:  `${BaseURL}/api/bindertype/delete`,
-  BULK_CREATE_BINDER_TYPES:  `${BaseURL}/api/bindertype/bulk`,
+  CREATE_BINDER_TYPE: `${BaseURL}/api/bindertype/create`,
+  GET_ALL_BINDER_TYPE: `${BaseURL}/api/bindertype/getall`,
+  GET_BINDER_TYPE_WITH_ID: `${BaseURL}/api/bindertype/getbyid`,
+  UPDATE_BINDER_TYPE: `${BaseURL}/api/bindertype/update`,
+  DELETE_BINDER_TYPE: `${BaseURL}/api/bindertype/delete`,
+  BULK_CREATE_BINDER_TYPES: `${BaseURL}/api/bindertype/bulk`,
+
+
+  // quality packaging orders 
+  CREATE_QP_ORDER: `${BaseURL}/api/qporder/create`,
+  UPDATE_QP_ORDER: `${BaseURL}/api/qporder/update`,
+  DELETE_QP_ORDER: `${BaseURL}/api/qporder/delete`,
+  GET_ALL_QP_ORDER: `${BaseURL}/api/qporder/getall`,
+  GET_QP_ORDER_BY_STAFF_ID: `${BaseURL}/api/qporder/getbystaff`,
+
+  CREATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/create`,
+  UPDATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/update`,
+  DELETE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/delete`,
+  GET_ALL_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/getall`,
 };
 export default Endpoint;

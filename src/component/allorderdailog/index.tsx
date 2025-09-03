@@ -16,6 +16,9 @@ import { createOrderThunk, clearOrderError, clearOrderSuccessMessage } from "@/s
 import { toast } from "react-toastify"
 import { printerTypeOption } from "@/constants"
 import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice"
+import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
+import { createQpOrderThunk } from "@/store/slices/qpOrderSlice"
+import { getAllPackagingOptionsThunk } from "@/store/slices/packagingOptionSlice"
 
 interface OptionType {
   label: string
@@ -33,11 +36,21 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
   const fileUploadRef = useRef<FileUploadRef>(null)
 
   // Redux state
+  const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
+  const { companies } = useAppSelector((state) => state.company)
   const { productItems, loading: productLoading } = useAppSelector((state) => state.productItems)
-  const { singleAccountMaster, loading: accountLoading } = useAppSelector((state) => state.accountMasters)
+  const { singleAccountMaster, loading: accountLoading }:any = useAppSelector((state) => state.accountMasters)
   const { loading: orderLoading, error: orderError, successMessage } = useAppSelector((state) => state.orders)
   const { binderTypes } = useAppSelector((state) => state.binderType);
-  const [formData, setFormData] = useState({
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [gstNotApplicable, setGstNotApplicable] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [itemOptions, setItemOptions] = useState<OptionType[]>([])
+  const [selectedCompany, setSelectedCompany] = useState<string>("")
+
+  // Sakshi Creation form data
+  const [sakshiFormData, setSakshiFormData] = useState({
     companyName: "",
     partyName: "",
     personName: "",
@@ -49,15 +62,34 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     gst: "",
     remarks: "",
     pType: "",
-    size: "", // New field
-    rate: "", // New field
-    rateType: "new", // New field: default to "new"
+    size: "",
+    rate: "",
+    rateType: "new",
   })
 
-  const [gstNotApplicable, setGstNotApplicable] = useState(false)
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [itemOptions, setItemOptions] = useState<OptionType[]>([])
+  // Quality Packaging form data
+  const [qpFormData, setQpFormData] = useState({
+    companyName: "",
+    partyName: "",
+    date: "",
+    orderFrom: "",
+    size: null,
+    ply: null,
+    gsm: null,
+    deckal: "",
+    rate: "",
+    dyeNumber: "",
+    dyeSize: "",
+    dySheetSize: "",
+    dyeRemark: "",
+    godownRemark: "",
+    factoryRemark: "",
+    delivery: ""
+  })
+
+  // Determine which form to show based on selected company
+  const isQualityPackaging = selectedCompany === companies?.find((item) => item?.companyName?.toLowerCase() === 'quality packaging')?._id
+  const isSakshiCreation = selectedCompany === companies?.find((item) => item?.companyName?.toLowerCase() === 'sakshi creation')?._id // Replace with actual ID
 
   // Clear messages when dialog opens
   useEffect(() => {
@@ -65,6 +97,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       dispatch(clearOrderError())
       dispatch(clearOrderSuccessMessage())
       setGstNotApplicable(false)
+      setSelectedCompany("")
     }
   }, [open, dispatch])
 
@@ -93,6 +126,8 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
 
   useEffect(() => {
     if (!binderTypes.length) dispatch(getAllBinderTypesThunk());
+    if (!companies.length) dispatch(getAllCompaniesThunk())
+    if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
   }, []);
 
   // Set item options when product items are loaded
@@ -111,17 +146,23 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     if (singleAccountMaster && singleAccountMaster.accountMaster) {
       const accountData = singleAccountMaster.accountMaster
 
-      setFormData((prev) => ({
-        ...prev,
-        personName: accountData.party?.contactPerson || "",
-        whatsapp: accountData.party?.personWhatsAppNo || "",
-        gst: accountData.party?.GSTNo || "",
-      }))
+      if (isSakshiCreation) {
+        setSakshiFormData((prev) => ({
+          ...prev,
+          personName: accountData.party?.contactPerson || "",
+          whatsapp: accountData.party?.personWhatsAppNo || "",
+          gst: accountData.party?.GSTNo || "",
+        }))
+      }
     }
-  }, [singleAccountMaster])
+  }, [singleAccountMaster, isSakshiCreation])
 
-  const handleChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+  const handleSakshiChange = (field: string, value: any) => {
+    setSakshiFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleQpChange = (field: string, value: any) => {
+    setQpFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleGstCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,25 +171,36 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
 
   const handleCompanyChange = (event: any, newValue: any) => {
     const companyId = newValue ? newValue.value : ""
-    handleChange("companyName", companyId)
+    const companyLabel = newValue ? newValue.label : ""
+    console.log(companyId, 'niskjhdoihnj')
+
+    setSelectedCompany(companyId)
+
+    // Update both form company fields
+    handleSakshiChange("companyName", companyId)
+    handleQpChange("companyName", companyId)
 
     // Clear party name and auto-filled fields when company changes
-    handleChange("partyName", "")
-    handleChange("personName", "")
-    handleChange("whatsapp", "")
-    handleChange("gst", "")
+    handleSakshiChange("partyName", "")
+    handleSakshiChange("personName", "")
+    handleSakshiChange("whatsapp", "")
+    handleSakshiChange("gst", "")
+    handleQpChange("partyName", "")
     setGstNotApplicable(false)
   }
 
   const handlePartyChange = async (event: any, newValue: any) => {
     const partyId = newValue ? newValue.value : ""
-    handleChange("partyName", partyId)
 
-    if (formData.companyName && partyId) {
+    // Update both form party fields
+    handleSakshiChange("partyName", partyId)
+    handleQpChange("partyName", partyId)
+
+    if (selectedCompany && partyId) {
       try {
         await dispatch(
           getAccountMasterByCompanyAndPartyThunk({
-            companyId: formData.companyName,
+            companyId: selectedCompany,
             partyId: partyId,
           })
         ).unwrap()
@@ -159,21 +211,27 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     }
   }
 
-  const handleFilesSelected = (files: File[]) => {
-    setSelectedFiles(files)
-  }
+  const handleFilesSelected = (files: File[]) =>  setSelectedFiles(files)
 
-  const handleUploadError = (error: string) => {
-    toast.error(error)
-  }
+  const handleUploadError = (error: string) => toast.error(error)
 
   const handleSubmit = async () => {
-    if (!formData.companyName || !formData.partyName || !formData.itemName || !formData.qty) {
+    if (isSakshiCreation) {
+      await handleSakshiSubmit()
+    } else if (isQualityPackaging) {
+      await handleQpSubmit()
+    } else {
+      toast.error("Please select a valid company")
+    }
+  }
+
+  const handleSakshiSubmit = async () => {
+    if (!sakshiFormData.companyName || !sakshiFormData.partyName || !sakshiFormData.itemName || !sakshiFormData.qty) {
       toast.error("Please fill all required fields")
       return
     }
 
-    if (Number.parseInt(formData.qty) <= 0) {
+    if (Number.parseInt(sakshiFormData.qty) <= 0) {
       toast.error("Quantity must be greater than 0")
       return
     }
@@ -189,21 +247,21 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       }
 
       const orderData = {
-        companyName: formData.companyName,
-        party: formData.partyName,
-        pType: formData.pType,
-        binding: formData.binding,
-        bindingType: formData.bindingType,
-        productItem: formData.itemName,
-        qty: Number.parseInt(formData.qty),
-        remarks: formData.remarks || "",
+        companyName: sakshiFormData.companyName,
+        party: sakshiFormData.partyName,
+        pType: sakshiFormData.pType,
+        binding: sakshiFormData.binding,
+        bindingType: sakshiFormData.bindingType,
+        productItem: sakshiFormData.itemName,
+        qty: Number.parseInt(sakshiFormData.qty),
+        remarks: sakshiFormData.remarks || "",
         filePaths: filePaths,
         gstStatus: gstNotApplicable ? "Not Applicable" : "Applicable",
-        gstNumber: gstNotApplicable ? "" : formData.gst,
+        gstNumber: gstNotApplicable ? "" : sakshiFormData.gst,
         isGst: !gstNotApplicable,
-        size: formData.size || "", // Include size
-        rate: formData.rate ? Number.parseFloat(formData.rate) : undefined, // Include rate (optional)
-        rateType: formData.rate ? formData.rateType : undefined, // Include rateType only if rate is provided
+        size: sakshiFormData.size || "",
+        rate: sakshiFormData.rate ? Number.parseFloat(sakshiFormData.rate) : undefined,
+        rateType: sakshiFormData.rate ? sakshiFormData.rateType : undefined,
       }
 
       await dispatch(createOrderThunk(orderData)).unwrap()
@@ -219,8 +277,50 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     }
   }
 
+  const handleQpSubmit = async () => {
+    if (!qpFormData.companyName || !qpFormData.partyName) {
+      toast.error("Please fill all required fields")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const orderData = {
+        isQp: true,
+        companyName: qpFormData.companyName,
+        party: qpFormData.partyName,
+        date: qpFormData.date,
+        orderFrom: qpFormData.orderFrom,
+        size: qpFormData.size,
+        ply: qpFormData.ply,
+        gsm: qpFormData.gsm,
+        deckal: qpFormData.deckal,
+        rate: qpFormData.rate,
+        dyeNumber: qpFormData.dyeNumber,
+        dyeSize: qpFormData.dyeSize,
+        dySheetSize: qpFormData.dySheetSize,
+        dyeRemark: qpFormData.dyeRemark,
+        godownRemark: qpFormData.godownRemark,
+        factoryRemark: qpFormData.factoryRemark,
+        delivery: qpFormData.delivery
+      }
+
+      await dispatch(createQpOrderThunk(orderData as any)).unwrap()
+
+      if (refreshData) refreshData()
+      resetForm()
+      onClose()
+    } catch (error: any) {
+      console.error("QP Order creation error:", error)
+      toast.error(error?.message || "Failed to create QP order")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const resetForm = () => {
-    setFormData({
+    setSakshiFormData({
       companyName: "",
       partyName: "",
       personName: "",
@@ -236,8 +336,27 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       rate: "",
       rateType: "new",
     })
+    setQpFormData({
+      companyName: "",
+      partyName: "",
+      date: "",
+      orderFrom: "",
+      size: null,
+      ply: null,
+      gsm: null,
+      deckal: "",
+      rate: "",
+      dyeNumber: "",
+      dyeSize: "",
+      dySheetSize: "",
+      dyeRemark: "",
+      godownRemark: "",
+      factoryRemark: "",
+      delivery: ""
+    })
     setGstNotApplicable(false)
     setSelectedFiles([])
+    setSelectedCompany("")
     if (fileUploadRef.current) {
       fileUploadRef.current.clearSelectedFiles()
     }
@@ -252,174 +371,335 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     return options.find((option) => option.value === value) || null
   }
 
+  const renderSakshiForm = () => (
+    <>
+      <Stack direction="row" spacing={2} mb={2}>
+        <ThemeInput
+          labelName="Person Name"
+          placeholder="Person"
+          fullWidth
+          value={sakshiFormData.personName}
+          onChange={(e) => handleSakshiChange("personName", e.target.value)}
+          disabled={!!singleAccountMaster}
+          sx={{
+            "& .MuiInputBase-input": {
+              backgroundColor: singleAccountMaster ? "#f5f5f5" : "transparent",
+            },
+          }}
+        />
+        <ThemeInput
+          labelName="WhatsApp no."
+          placeholder="98233-12342"
+          fullWidth
+          value={sakshiFormData.whatsapp}
+          onChange={(e) => handleSakshiChange("whatsapp", e.target.value)}
+          disabled={!!singleAccountMaster}
+          sx={{
+            "& .MuiInputBase-input": {
+              backgroundColor: singleAccountMaster ? "#f5f5f5" : "transparent",
+            },
+          }}
+        />
+      </Stack>
+
+      <Stack direction="row" spacing={2} mb={2}>
+        <ThemeSelect
+          label="Item Name"
+          value={getSelectedOption(sakshiFormData.itemName, itemOptions)}
+          options={itemOptions}
+          onChange={(_, v) => handleSakshiChange("itemName", v ? v.value : "")}
+          disabled={productLoading}
+          required
+        />
+        <ThemeInput
+          labelName="Item Size"
+          placeholder="Enter size (e.g., A4)"
+          fullWidth
+          value={sakshiFormData.size}
+          onChange={(e) => handleSakshiChange("size", e.target.value)}
+        />
+        <ThemeInput
+          labelName="Item Qty"
+          placeholder="200"
+          fullWidth
+          type="number"
+          value={sakshiFormData.qty}
+          onChange={(e) => handleSakshiChange("qty", e.target.value)}
+          required
+        />
+      </Stack>
+      <Stack direction="row" spacing={2} mb={2}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={sakshiFormData.binding}
+              onChange={(e) => handleSakshiChange("binding", e.target.checked)}
+              color="primary"
+            />
+          }
+          label="Binding"
+        />
+        {sakshiFormData.binding ? <ThemeSelect
+          label="Binding Type"
+          value={getSelectedOption(sakshiFormData.bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
+          options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
+          onChange={(_, v) => { handleSakshiChange("bindingType", v ? v.value : "") }}
+          required
+        /> : null}
+        <ThemeSelect
+          label="Printing Type"
+          value={getSelectedOption(sakshiFormData.pType, printerTypeOption)}
+          options={printerTypeOption}
+          onChange={(_, v) => handleSakshiChange("pType", v ? v.value : "")}
+          required
+        />
+      </Stack>
+
+      <Stack direction="row" spacing={2} mb={2}>
+        <Box sx={{ width: "100%" }}>
+          <ThemeInput
+            labelName="Rate"
+            placeholder="Enter rate"
+            fullWidth
+            type="number"
+            value={sakshiFormData.rate}
+            onChange={(e) => handleSakshiChange("rate", e.target.value)}
+          />
+          {sakshiFormData.rate && (
+            <FormControl component="fieldset" sx={{ mt: 1 }}>
+              <FormLabel component="legend">Rate Type</FormLabel>
+              <RadioGroup
+                row
+                value={sakshiFormData.rateType}
+                onChange={(e) => handleSakshiChange("rateType", e.target.value)}
+              >
+                <FormControlLabel value="old" control={<Radio />} label="Old Rate" />
+                <FormControlLabel value="new" control={<Radio />} label="New Rate" />
+              </RadioGroup>
+            </FormControl>
+          )}
+        </Box>
+        <Box sx={{ width: "100%" }}>
+          <ThemeInput
+            labelName="GST Number"
+            placeholder="Enter GST number"
+            fullWidth
+            value={gstNotApplicable ? "Not Applicable" : sakshiFormData.gst}
+            onChange={(e) => { }}
+            disabled={true}
+            sx={{
+              "& .MuiInputBase-input": {
+                backgroundColor: "#f5f5f5",
+              },
+            }}
+          />
+        </Box>
+      </Stack>
+
+      <ThemeInput
+        labelName="Remarks"
+        placeholder="Enter Remarks"
+        fullWidth
+        value={sakshiFormData.remarks}
+        onChange={(e) => handleSakshiChange("remarks", e.target.value)}
+        sx={{ mb: 2 }}
+      />
+
+      <Box sx={{ mb: 2 }}>
+        <FileUpload
+          ref={fileUploadRef}
+          folder="orders"
+          multiple={true}
+          accept="*/*"
+          variant="dropzone"
+          onFilesSelected={handleFilesSelected}
+          onUploadError={handleUploadError}
+          showPreview={false}
+          showUploadButton={false}
+          autoUpload={false}
+          label="Attach Order Files"
+          helperText="Select order documents, images, or any related files"
+        />
+      </Box>
+    </>
+  )
+
+  const renderQpForm = () => (
+    <>
+      <Stack direction="row" spacing={2} mb={2}>
+        <ThemeInput
+          labelName="Order From"
+          placeholder="Order From"
+          fullWidth
+          value={qpFormData.orderFrom}
+          onChange={(e) => handleQpChange("orderFrom", e.target.value)}
+        />
+        <ThemeInput
+          labelName="Date"
+          placeholder="Date"
+          fullWidth
+          type="date"
+          value={qpFormData.date}
+          onChange={(e) => handleQpChange("date", e.target.value)}
+        />
+        <ThemeSelect
+          label="Ply"
+          options={packagingOptions?.map((item: any) => ({ value: item?._id, label: item?.ply }))}
+          value={packagingOptions?.map((item: any) => ({ value: item?._id, label: item?.ply }))?.find((item) => item.value === qpFormData.ply)}
+          onChange={(e, val: any) => {
+            handleQpChange("ply", val.value)
+            handleQpChange("size", null)
+            handleQpChange("gsm", null)
+            handleQpChange("deckal", null)
+          }}
+          name="ply"
+        // error={error}
+        // helperText={helperText}
+        // required={required}
+        />
+      </Stack>
+      <Stack direction="row" spacing={2} mb={2}>
+        <ThemeSelect
+          label="Size"
+          options={packagingOptions?.filter((item) => item._id !== qpFormData.ply)?.map((item: any) => ({ value: item?._id, label: item?.size }))}
+          value={packagingOptions?.filter((item) => item._id !== qpFormData.ply)?.map((item: any) => ({ value: item?._id, label: item?.size }))?.find((item) => item.value === qpFormData.size)}
+          onChange={(e, val: any) => {
+            handleQpChange("size", val.value)
+            handleQpChange("gsm", null)
+            handleQpChange("deckal", null)
+          }}
+          name="size"
+        // error={error}
+        // helperText={helperText}
+        // required={required}
+        />
+        <ThemeSelect
+          label="GSM"
+          options={packagingOptions?.filter((item) => item._id !== qpFormData.size)?.map((item: any) => ({ value: item?._id, label: item?.gsm }))}
+          value={packagingOptions?.filter((item) => item._id !== qpFormData.size)?.map((item: any) => ({ value: item?._id, label: item?.gsm }))?.find((item) => item.value === qpFormData.gsm)}
+          onChange={(e, val: any) => {
+            handleQpChange("gsm", val.value)
+            handleQpChange("deckal", null)
+          }}
+          name="size"
+        // error={error}
+        // helperText={helperText}
+        // required={required}
+        />
+
+      </Stack>
+      <Stack direction="row" spacing={2} mb={2}>
+        <ThemeSelect
+          label="Deckal"
+          options={packagingOptions?.filter((item) => item._id !== qpFormData.gsm)?.map((item: any) => ({ value: item?._id, label: item?.deckal }))}
+          value={packagingOptions?.filter((item) => item._id !== qpFormData.gsm)?.map((item: any) => ({ value: item?._id, label: item?.deckal }))?.find((item) => item.value === qpFormData.deckal)}
+          onChange={(e, val: any) => {
+            handleQpChange("deckal", val.value)
+          }}
+          name="size"
+        // error={error}
+        // helperText={helperText}
+        // required={required}
+        />
+        <ThemeInput
+          labelName="Rate"
+          placeholder="Rate"
+          fullWidth
+          value={qpFormData.rate}
+          onChange={(e) => {
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+            handleQpChange("rate", numericValue)
+          }}
+        />
+      </Stack>
+      <Stack direction="row" spacing={2} mb={2}>
+        <ThemeInput
+          labelName="DYE Number"
+          placeholder="Dye Number"
+          fullWidth
+          value={qpFormData.dyeNumber}
+          onChange={(e) => handleQpChange("dyeNumber", e.target.value)}
+        />
+        <ThemeInput
+          labelName="DYE Size"
+          placeholder="Dye Size"
+          fullWidth
+          value={qpFormData.dyeSize}
+          onChange={(e) => handleQpChange("dyeSize", e.target.value)}
+        />
+      </Stack>
+      <Stack direction="row" spacing={2} mb={2}>
+        <ThemeInput
+          labelName="DYE Sheet Size"
+          placeholder="DYE Sheet Size"
+          fullWidth
+          value={qpFormData.dySheetSize}
+          onChange={(e) => handleQpChange("dySheetSize", e.target.value)}
+        />
+        <ThemeInput
+          labelName="DYE Remark"
+          placeholder="DYE Remark"
+          fullWidth
+          value={qpFormData.dyeRemark}
+          onChange={(e) => handleQpChange("dyeRemark", e.target.value)}
+        />
+      </Stack>
+      <Stack direction="row" spacing={2} mb={2}>
+        <ThemeInput
+          labelName="Godown Remark"
+          placeholder="Godown Remark"
+          fullWidth
+          value={qpFormData.godownRemark}
+          onChange={(e) => handleQpChange("godownRemark", e.target.value)}
+        />
+        <ThemeInput
+          labelName="Factory Remark"
+          placeholder="Factory Remark"
+          fullWidth
+          value={qpFormData.factoryRemark}
+          onChange={(e) => handleQpChange("factoryRemark", e.target.value)}
+        />
+      </Stack>
+
+      <ThemeInput
+        labelName="Delivery"
+        placeholder="Delivery"
+        fullWidth
+        value={qpFormData.delivery}
+        onChange={(e) => handleQpChange("delivery", e.target.value)}
+        sx={{ mb: 2 }}
+      />
+    </>
+  )
+
   return (
     <CustomDialog open={open} onClose={handleClose} maxWidth="md" title="Place New Order">
       <Box sx={{ p: 2, background: "#fff", borderRadius: 2 }}>
         <Box mb={2}>
           <CompanySelect
             name="companyName"
-            value={formData.companyName}
+            value={selectedCompany}
             onChange={handleCompanyChange}
             hasParties={true}
             required
             showPartyName={true}
-            partyName={formData.partyName}
+            partyName={isSakshiCreation ? sakshiFormData.partyName : qpFormData.partyName}
             onPartyChange={handlePartyChange}
           />
         </Box>
 
-        <Stack direction="row" spacing={2} mb={2}>
-          <ThemeInput
-            labelName="Person Name"
-            placeholder="Person"
-            fullWidth
-            value={formData.personName}
-            onChange={(e) => handleChange("personName", e.target.value)}
-            disabled={!!singleAccountMaster}
-            sx={{
-              "& .MuiInputBase-input": {
-                backgroundColor: singleAccountMaster ? "#f5f5f5" : "transparent",
-              },
-            }}
-          />
-          <ThemeInput
-            labelName="WhatsApp no."
-            placeholder="98233-12342"
-            fullWidth
-            value={formData.whatsapp}
-            onChange={(e) => handleChange("whatsapp", e.target.value)}
-            disabled={!!singleAccountMaster}
-            sx={{
-              "& .MuiInputBase-input": {
-                backgroundColor: singleAccountMaster ? "#f5f5f5" : "transparent",
-              },
-            }}
-          />
-        </Stack>
+        {isSakshiCreation && renderSakshiForm()}
+        {isQualityPackaging && renderQpForm()}
 
-        <Stack direction="row" spacing={2} mb={2}>
-          <ThemeSelect
-            label="Item Name"
-            value={getSelectedOption(formData.itemName, itemOptions)}
-            options={itemOptions}
-            onChange={(_, v) => handleChange("itemName", v ? v.value : "")}
-            disabled={productLoading}
-            required
-          />
-          <ThemeInput
-            labelName="Item Size"
-            placeholder="Enter size (e.g., A4)"
-            fullWidth
-            value={formData.size}
-            onChange={(e) => handleChange("size", e.target.value)}
-          />
-          <ThemeInput
-            labelName="Item Qty"
-            placeholder="200"
-            fullWidth
-            type="number"
-            value={formData.qty}
-            onChange={(e) => handleChange("qty", e.target.value)}
-            required
-          />
-        </Stack>
-        <Stack direction="row" spacing={2} mb={2}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.binding} // boolean field
-                onChange={(e) => handleChange("binding", e.target.checked)}
-                color="primary"
-              />
-            }
-            label="Binding"
-          />
-          {formData.binding ? <ThemeSelect
-            label="Binding Type"
-            value={getSelectedOption(formData.bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
-            options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
-            onChange={(_, v) => { handleChange("bindingType", v ? v.value : "") }}
-            required
-          /> : null}
-          <ThemeSelect
-            label="Printing Type"
-            value={getSelectedOption(formData.pType, printerTypeOption)}
-            options={printerTypeOption}
-            onChange={(_, v) => handleChange("pType", v ? v.value : "")}
-            required
-          />
-        </Stack>
-
-        <Stack direction="row" spacing={2} mb={2}>
-          <Box sx={{ width: "100%" }}>
-            <ThemeInput
-              labelName="Rate"
-              placeholder="Enter rate"
-              fullWidth
-              type="number"
-              value={formData.rate}
-              onChange={(e) => handleChange("rate", e.target.value)}
-            />
-            {formData.rate && (
-              <FormControl component="fieldset" sx={{ mt: 1 }}>
-                <FormLabel component="legend">Rate Type</FormLabel>
-                <RadioGroup
-                  row
-                  value={formData.rateType}
-                  onChange={(e) => handleChange("rateType", e.target.value)}
-                >
-                  <FormControlLabel value="old" control={<Radio />} label="Old Rate" />
-                  <FormControlLabel value="new" control={<Radio />} label="New Rate" />
-                </RadioGroup>
-              </FormControl>
-            )}
-          </Box>
-          <Box sx={{ width: "100%" }}>
-            <ThemeInput
-              labelName="GST Number"
-              placeholder="Enter GST number"
-              fullWidth
-              value={gstNotApplicable ? "Not Applicable" : formData.gst}
-              onChange={(e) => { }}
-              disabled={true}
-              sx={{
-                "& .MuiInputBase-input": {
-                  backgroundColor: "#f5f5f5",
-                },
-              }}
-            />
-          </Box>
-        </Stack>
-
-        <ThemeInput
-          labelName="Remarks"
-          placeholder="Enter Remarks"
-          fullWidth
-          value={formData.remarks}
-          onChange={(e) => handleChange("remarks", e.target.value)}
-          sx={{ mb: 2 }}
-        />
-
-        <Box sx={{ mb: 2 }}>
-          <FileUpload
-            ref={fileUploadRef}
-            folder="orders"
-            multiple={true}
-            accept="*/*"
-            variant="dropzone"
-            onFilesSelected={handleFilesSelected}
-            onUploadError={handleUploadError}
-            showPreview={false}
-            showUploadButton={false}
-            autoUpload={false}
-            label="Attach Order Files"
-            helperText="Select order documents, images, or any related files"
-          />
-        </Box>
+        {!selectedCompany && (
+          <Typography variant="body1" color="textSecondary" textAlign="center" py={4}>
+            Please select a company to show the appropriate form
+          </Typography>
+        )}
 
         <ThemeButton
           onClick={handleSubmit}
-          disabled={isSubmitting || accountLoading || productLoading || orderLoading}
+          disabled={isSubmitting || accountLoading || productLoading || orderLoading || !selectedCompany}
           sx={{
             background: "#12B76A",
             color: "#fff",

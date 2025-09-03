@@ -14,11 +14,13 @@ import {
   Checkbox,
   MenuItem,
   Select,
+  Collapse,
 } from "@mui/material";
 import Button from "@/component/common_component/themebutton";
 import { FiSearch } from "react-icons/fi";
 import FilterDropdown from "@/component/fillter";
 import DateRangePicker from "@/component/daterangepicker";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa6";
 
 interface Column {
   id: string;
@@ -64,6 +66,7 @@ const BasicTable = <T extends { id: string }>({
     hasNext: rowData.length > 10,
     hasPrev: false,
   },
+  renderExpandedRow, // New prop
 }: BasicTableProps<T>) => {
   const [page, setPage] = useState(pagination.currentPage - 1 || 0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -72,6 +75,7 @@ const BasicTable = <T extends { id: string }>({
   const [endDate, setEndDate] = useState<string | null>(null);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null); // State for expanded row
 
   // Dynamically generate filter options from tableHeader, excluding "action" and "checkbox"
   const filterOptions = useMemo(() => {
@@ -300,6 +304,10 @@ const BasicTable = <T extends { id: string }>({
     return items;
   };
 
+  const toggleExpandRow = (rowId: string) => {
+    setExpandedRowId(expandedRowId === rowId ? null : rowId);
+  };
+
   return (
     <Paper elevation={0} sx={{ width: "100%", overflow: "hidden", p: 0, maxWidth: "100%" }}>
       <Box
@@ -425,33 +433,81 @@ const BasicTable = <T extends { id: string }>({
                     )}
                   </TableCell>
                 ))}
+                {/* Add header for expand column if needed */}
+                {renderExpandedRow && (
+                  <TableCell
+                    sx={{
+                      background: "#EAECF0",
+                      borderBottom: "none",
+                      padding: "10px 10px",
+                      width: "50px",
+                    }}
+                  />
+                )}
               </TableRow>
             </TableHead>
 
             <TableBody>
               {paginatedRows.map((row, index) => (
-                <TableRow
-                  key={row.id}
-                  hover
-                  sx={{
-                    borderBottom: "2px solid #F2F4F7",
-                    "& .MuiTableCell-root": {
-                      padding: "6px 10px",
-                      fontSize: "14px",
-                      lineHeight: "1.2",
-                    },
-                  }}
-                >
-                  {tableHeader[0].id === "checkbox" && (
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedRows.includes(row.id)}
-                        onChange={() => onSelectRow && onSelectRow(row.id)}
-                      />
-                    </TableCell>
+                <React.Fragment key={row.id}>
+                  <TableRow
+                    hover
+                    sx={{
+                      borderBottom: "2px solid #F2F4F7",
+                      "& .MuiTableCell-root": {
+                        padding: "6px 10px",
+                        fontSize: "14px",
+                        lineHeight: "1.2",
+                      },
+                    }}
+                  >
+                    {tableHeader[0].id === "checkbox" && (
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedRows.includes(row.id)}
+                          onChange={() => onSelectRow && onSelectRow(row.id)}
+                        />
+                      </TableCell>
+                    )}
+                    {renderRow(row, index)}
+                    {/* Add expand/collapse button in the last column */}
+                    {renderExpandedRow && (
+                      <TableCell>
+                        <IconButton
+                          onClick={() => toggleExpandRow(row._id)}
+                          size="small"
+                          sx={{ padding: 0 }}
+                        >
+                          {expandedRowId === row._id ? (
+                            <FaChevronUp size={14} />
+                          ) : (
+                            <FaChevronDown size={14} />
+                          )}
+                        </IconButton>
+                      </TableCell>
+                    )}
+                  </TableRow>
+
+                  {/* Expanded row content */}
+                  {renderExpandedRow && expandedRowId === row._id && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={tableHeader.length + (tableHeader[0].id === "checkbox" ? 1 : 0) + 1}
+                        sx={{
+                          padding: 0,
+                          backgroundColor: "#f9f9f9",
+                          borderBottom: "2px solid #F2F4F7",
+                        }}
+                      >
+                        <Collapse in={expandedRowId === row._id} timeout="auto" unmountOnExit>
+                          <Box sx={{ p: 2 }}>
+                            {renderExpandedRow(row)}
+                          </Box>
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
                   )}
-                  {renderRow(row, index)}
-                </TableRow>
+                </React.Fragment>
               ))}
             </TableBody>
           </Table>

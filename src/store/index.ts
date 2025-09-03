@@ -13,6 +13,8 @@ import partyReducer from './slices/partySlice';
 import productItemReducer from './slices/productItemSlice';
 import fileUploadReducer from "./slices/fileUploadSlice";
 import orderReducer from "./slices/orderSlice";
+import qpOrderReducer from "./slices/qpOrderSlice";
+import packagingOptionReducer from "./slices/packagingOptionSlice"
 import statusReducer from "./slices/statusSlice";
 import roleReducer from "./slices/roleSlice";
 import materialReducer from "./slices/materialSlice";
@@ -47,6 +49,8 @@ export const store = configureStore({
     productItems: productItemReducer,
     fileUpload: fileUploadReducer,
     orders: orderReducer,
+    qpOrders: qpOrderReducer,
+    packagingOptions : packagingOptionReducer,
     status: statusReducer,
     roles: roleReducer,
     materials: materialReducer,
