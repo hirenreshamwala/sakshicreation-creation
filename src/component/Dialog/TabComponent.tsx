@@ -3,13 +3,14 @@
 import type React from "react"
 import { useState } from "react"
 import { Box, Tabs, Tab } from "@mui/material"
+import { companyOptions } from "@/constants"
 
 interface AddOrderDialogProps {
     activeTab: () => void
     tabList?: any
 }
 
-const TabComponent: React.FC<AddOrderDialogProps> = ({ setActiveTab,activeTab, tabList = ["Sakshi Creation", "Quality Packaging"] }) => {
+const TabComponent: React.FC<AddOrderDialogProps> = ({ setActiveTab,activeTab, tabList = companyOptions }) => {
     const [tab, setTab] = useState(activeTab)
     const tabLabels = tabList
 

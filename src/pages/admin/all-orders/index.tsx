@@ -71,7 +71,7 @@ const AllOrdersPage = () => {
   const { user } = useAppSelector((state) => state.auth)
 
   // Filter state
-  const [activeTab, setActiveTab] = useState(1);
+  const [activeTab, setActiveTab] = useState(0);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
   const [selectedFilterValues, setSelectedFilterValues] = useState<string[] | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")

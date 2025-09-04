@@ -4,6 +4,7 @@ import Dashboard from '@/component/Dashboard';
 import BasicTable from '@/component/common_component/Table/themetable';
 import StaffChart from '@/component/staffchart';
 import { useRouter } from 'next/router';
+import { companyOptions } from '@/constants';
 
 const staffList1 = [
   { name: 'Staff 1', department: 'Department1', joining: '01/04/25', left: '-' },
@@ -17,7 +18,7 @@ const staffList2 = [
   { name: 'Staff C', department: 'DepartmentC', joining: '02/04/25', left: '-' },
 ];
 
-const tabLabels = ['Sakshi Creation', 'Quality Packaging'];
+const tabLabels = companyOptions;
 
 const columns = [
   { id: 'name', label: 'Staff' },

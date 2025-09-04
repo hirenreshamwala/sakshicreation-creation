@@ -12,7 +12,9 @@ import { toast } from "react-toastify"
 import FileViewerModal from "@/component/FileViewerModal"
 import AddNewStaffBulkDialog from '@/component/AddNewStaffBulkDialog';
 import PasswordUpdateDialog from "@/component/PasswordUpdateDialog"
-const tabLabels = ["Sakshi Creation", "Quality Packaging"]
+import { companyOptions } from "@/constants"
+
+const tabLabels = companyOptions
 const columns = [
   { id: "name", label: "Staff" },
   { id: "role", label: "Role" },
