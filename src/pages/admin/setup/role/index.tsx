@@ -13,9 +13,15 @@ import BasicTable from "@/component/common_component/Table/themetable";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { getAllRolesThunk, deleteRoleThunk, clearError, clearSuccessMessage } from "@/store/slices/roleSlice";
+import {
+  getAllRolesThunk,
+  deleteRoleThunk,
+  clearError,
+  clearSuccessMessage,
+} from "@/store/slices/roleSlice";
 import { Role } from "@/services/role.service";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import Loader from "@/component/common_component/loader";
 
 interface RoleRow {
@@ -34,7 +40,6 @@ const RoleTable: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
-  // Select roles state with fallback
   const rolesState = useSelector((state: RootState) => state.roles || {
     roles: [],
     loading: false,
@@ -43,11 +48,9 @@ const RoleTable: React.FC = () => {
   });
   const { roles, loading, error, successMessage } = rolesState;
 
-  // Track previous messages to avoid duplicate toasts
   const prevErrorRef = useRef<string | null>(null);
   const prevSuccessRef = useRef<string | null>(null);
 
-  // Map Role data to RoleRow interface
   const roleRows: RoleRow[] = roles.map((role: Role) => ({
     id: role._id,
     name: role.roleName,
@@ -55,14 +58,11 @@ const RoleTable: React.FC = () => {
     canDelete: role.totalUser === 0,
   }));
 
-  // Fetch roles only if on the role list page
   useEffect(() => {
-    if (router.pathname === '/admin/setup/role') {
+    if (router.pathname === "/admin/setup/role")
       dispatch(getAllRolesThunk());
-    }
   }, [router.pathname, dispatch]);
 
-  // Handle toast notifications
   useEffect(() => {
     if (error && error !== prevErrorRef.current) {
       toast.error(error);
@@ -76,16 +76,21 @@ const RoleTable: React.FC = () => {
     }
   }, [error, successMessage, dispatch]);
 
-  const handleEdit = (id: string) => {
-    router.push(`/admin/setup/role/edit-role/${id}`);
-  };
-
-  const handleDelete = (id: string) => {
-    dispatch(deleteRoleThunk(id));
-  };
-
-  const handleAddRole = () => {
-    router.push('/admin/setup/role/add-role');
+  const handleDelete = (id: string, name: string) => {
+    Swal.fire({
+      title: `Delete Role ?`,
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(deleteRoleThunk(id));
+        Swal.fire("Deleted!", `${name} has been deleted.`, "success");
+      }
+    });
   };
 
   return (
@@ -95,20 +100,18 @@ const RoleTable: React.FC = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={handleAddRole}
+          onClick={() => router.push("/admin/setup/role/add-role")}
         >
           New Role
         </Button>
       </Box>
 
-      {/* Loading State */}
+      {/* Loading */}
       {loading && <Loader />}
 
-      {/* Empty State */}
+      {/* Empty */}
       {!loading && roleRows.length === 0 && (
-        <Typography sx={{ mt: 2 }}>
-          No roles found.
-        </Typography>
+        <Typography sx={{ mt: 2 }}>No roles found.</Typography>
       )}
 
       {/* Table */}
@@ -128,14 +131,15 @@ const RoleTable: React.FC = () => {
                 </Box>
               </TableCell>
               <TableCell align="right">
-                <IconButton onClick={() => handleEdit(row.id)}>
-                  <EditIcon sx={{ color: "#4F46E5" }} />
+                <IconButton onClick={() => router.push(`/admin/setup/role/edit-role/${row?.id}`)}>
+                  <EditIcon color="primary" />
                 </IconButton>
                 <IconButton
-                  onClick={() => row.canDelete && handleDelete(row.id)}
+                  color="error"
+                  onClick={() => row.canDelete && handleDelete(row.id, row.name)}
                   disabled={!row.canDelete}
                 >
-                  <DeleteIcon sx={{ color: row.canDelete ? "#EF4444" : "#D1D5DB" }} />
+                  <DeleteIcon />
                 </IconButton>
               </TableCell>
             </>

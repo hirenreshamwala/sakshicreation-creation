@@ -170,5 +170,6 @@ const Endpoint = {
   UPDATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/update`,
   DELETE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/delete`,
   GET_ALL_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/getall`,
+  BULK_UPLOAD_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/bulk`,
 };
 export default Endpoint;

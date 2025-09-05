@@ -60,7 +60,6 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
     fetchCompanies()
   }, [dispatch, hasParties])
 
-  console.log(value, 'initial value ')
   // Set company options and default to "Sakshi Creation" when companies data changes
   // Inside useEffect where you're setting default company
 useEffect(() => {

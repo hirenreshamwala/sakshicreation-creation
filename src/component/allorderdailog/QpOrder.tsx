@@ -423,15 +423,15 @@ const AllOrdersPage = () => {
             <TextField
               select
               label="Status"
-              value={formData.otherStatus || ''}
-              onChange={(e) => handleFormChange('otherStatus', e.target.value)}
+              value={formData.status || ''}
+              onChange={(e) => handleFormChange('status', e.target.value)}
               variant="outlined"
               size="small"
               sx={{ minWidth: 150 }}
             >
-              <MenuItem value="order">Order</MenuItem>
-              <MenuItem value="in-progress">In Progress</MenuItem>
-              <MenuItem value="canceled">Canceled</MenuItem>
+              {["paper cutting", "corogation", "pasting", "rotery", "sloting/rs4", "printing", "pinning", "kanthan", "puching", "manual pasting", "Pending", "Order", "In Progress", "Canceled"].map((item) => (
+                <MenuItem value={item} sx={{ textTransform: "capitalize" }}>{item}</MenuItem>
+              ))}
             </TextField>
           </Box>
 
@@ -556,7 +556,7 @@ const AllOrdersPage = () => {
             <>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.orderNo || "N/A"}
+                  QP-{row.orderNo || "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>

@@ -180,16 +180,8 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
       <Stack direction="row" spacing={2} mb={2}>
         <ThemeSelect
           label="Size"
-          options={packagingOptions
-            ?.filter((item) => item._id === qpFormData.ply) // ✅ match ply
-            ?.map((item: any) => ({
-              value: item?._id,
-              label: item?.size,
-            }))}
-          value={packagingOptions
-            ?.filter((item) => item._id === qpFormData.ply)
-            ?.map((item: any) => ({ value: item?._id, label: item?.size }))
-            ?.find((item) => item.value === qpFormData.size)}
+          options={packagingOptions?.filter((item) => item._id !== qpFormData.ply)?.map((item: any) => ({ value: item?._id, label: item?.size }))}
+          value={packagingOptions?.filter((item) => item._id !== qpFormData.ply)?.map((item: any) => ({ value: item?._id, label: item?.size }))?.find((item) => item.value === qpFormData.size)}
           onChange={(e, val: any) => {
             handleQpChange("size", val.value)
             handleQpChange("gsm", null)
@@ -199,16 +191,8 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
 
         <ThemeSelect
           label="GSM"
-          options={packagingOptions
-            ?.filter((item) => item._id === qpFormData.size) // ✅ match size
-            ?.map((item: any) => ({
-              value: item?._id,
-              label: item?.gsm,
-            }))}
-          value={packagingOptions
-            ?.filter((item) => item._id === qpFormData.size)
-            ?.map((item: any) => ({ value: item?._id, label: item?.gsm }))
-            ?.find((item) => item.value === qpFormData.gsm)}
+          options={packagingOptions?.filter((item) => item._id !== qpFormData.size)?.map((item: any) => ({ value: item?._id, label: item?.gsm }))}
+          value={packagingOptions?.filter((item) => item._id !== qpFormData.size)?.map((item: any) => ({ value: item?._id, label: item?.gsm }))?.find((item) => item.value === qpFormData.gsm)}
           onChange={(e, val: any) => {
             handleQpChange("gsm", val.value)
             handleQpChange("deckal", null)
@@ -218,16 +202,8 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
       <Stack direction="row" spacing={2} mb={2}>
         <ThemeSelect
           label="Deckal"
-          options={packagingOptions
-            ?.filter((item) => item._id === qpFormData.gsm)
-            ?.map((item: any) => ({
-              value: item?._id,
-              label: item?.deckal,
-            }))}
-          value={packagingOptions
-            ?.filter((item) => item._id === qpFormData.gsm)
-            ?.map((item: any) => ({ value: item?._id, label: item?.deckal }))
-            ?.find((item) => item.value === qpFormData.deckal)}
+          options={packagingOptions?.filter((item) => item._id !== qpFormData.gsm)?.map((item: any) => ({ value: item?._id, label: item?.deckal }))}
+          value={packagingOptions?.filter((item) => item._id !== qpFormData.gsm)?.map((item: any) => ({ value: item?._id, label: item?.deckal }))?.find((item) => item.value === qpFormData.deckal)}
           onChange={(e, val: any) => handleQpChange("deckal", val.value)}
         />
         <ThemeInput

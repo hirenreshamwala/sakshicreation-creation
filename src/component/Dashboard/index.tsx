@@ -74,6 +74,7 @@ const menuItems = [
   { label: "Account Master", icon: <MdAssignment size={18} />, path: "/admin/account-master" },
   { label: "Assign Task", icon: <MdWork size={18} />, path: "/admin/assign-task" },
   { label: "Party call", icon: <MdGroup size={18} />, path: "/admin/party-call" },
+  { label: "Order To Factory", icon: <MdAssignment size={18} />, path: "/admin/factory-orders" },
   { label: "All Orders", icon: <MdAssignment size={18} />, path: "/admin/all-orders" },
   { label: "Quality Packaging", icon: <MdSettings size={18} />, path: "/admin/quality-packageing" },
   { label: "Performance invoice", icon: <MdSettings size={18} />, path: "/admin/performance-invoice" },

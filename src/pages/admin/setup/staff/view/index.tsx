@@ -18,6 +18,7 @@ import FileUpload, { type FileUploadRef } from "@/component/reusablecomponents/F
 import { ArrowBack, Delete } from "@mui/icons-material" // Import Delete icon for chips
 import { decryptData } from "@/utills/utills"
 import StaffService from "@/services/staff.service"
+import { companyOptions } from "@/constants"
 
 interface StaffFormData {
   firstName: string;
@@ -187,6 +188,7 @@ const StaffView = () => {
       const options = roles.map((role) => ({
         label: role.roleName,
         value: role._id,
+        company: role.company?._id
       }))
       setRoleOptions(options)
     }
@@ -392,18 +394,7 @@ const StaffView = () => {
           fullWidth
           required
         />
-        <ThemeSelect
-          label="Role"
-          options={roleOptions}
-          value={selectedRole}
-          onChange={handleRoleChange}
-          error={Boolean(formik.errors.role)}
-          helperText={formik.errors.role}
-          fullWidth
-          required
-        />
-
-        <CompanySelect
+         <CompanySelect
           name="companyName"
           value={formik.values.companyName}
           onChange={(event, newValue) => {
@@ -413,6 +404,18 @@ const StaffView = () => {
           helperText={formik.errors.companyName}
           required
         />
+
+        <ThemeSelect
+          label="Role"
+          options={roleOptions?.filter((item)=>item.company === formik.values.companyName)}
+          value={selectedRole}
+          onChange={handleRoleChange}
+          error={Boolean(formik.errors.role)}
+          helperText={formik.errors.role}
+          fullWidth
+          required
+        />
+
         <ThemeInput
           labelName="Aadhar No."
           value={formik.values.aadharNo}

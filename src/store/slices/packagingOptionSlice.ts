@@ -1,5 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { packagingOptionService, PackagingOption, ApiResponse } from '@/services/packagingOption.service';
+import { authService } from '@/services/auth.service';
+import axios from 'axios';
+import Endpoint from '@/API/apiConfig';
 
 // Async thunks
 export const createPackagingOptionThunk = createAsyncThunk(
@@ -55,7 +58,7 @@ export const deletePackagingOptionThunk = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await packagingOptionService.deletePackagingOption(id);
-      if (response.status === 200 ) {
+      if (response.status === 200) {
         return id; // Return the ID of the deleted item
       } else {
         return rejectWithValue(response.message || 'Failed to delete packaging option');
@@ -65,6 +68,45 @@ export const deletePackagingOptionThunk = createAsyncThunk(
     }
   }
 );
+
+export const bulkCreatePackagingOptionThunk = createAsyncThunk(
+  'staff/bulkCreate',
+  async (formData: FormData, { rejectWithValue }) => {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await axios.post(
+        Endpoint.BULK_UPLOAD_PACKAGING_OPTION,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+          withCredentials: true,
+        }
+      );
+
+      // If your API uses `success` flag
+      if (response.data.success === false) {
+        throw new Error(response.data.message || 'Bulk create failed');
+      }
+
+      console.log(response.data.data, ' response.data.data')
+      return response.data.data;
+
+    } catch (error: any) {
+      // Check if Axios response contains server error message
+      const message =
+        error.response?.data?.message || error.message || 'Failed to bulk create options';
+      return rejectWithValue(message);
+    }
+  }
+);
+
 
 interface PackagingOptionsState {
   packagingOptions: PackagingOption[];
@@ -167,6 +209,18 @@ const packagingOptionsSlice = createSlice({
       .addCase(deletePackagingOptionThunk.rejected, (state, action) => {
         state.operationLoading = false;
         state.operationError = action.payload as string;
+      })
+      .addCase(bulkCreatePackagingOptionThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(bulkCreatePackagingOptionThunk.fulfilled, (state, action: any) => {
+        state.loading = false;
+        state.packagingOptions = [...state.packagingOptions, ...action.payload];
+      })
+      .addCase(bulkCreatePackagingOptionThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

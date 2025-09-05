@@ -13,7 +13,7 @@ const Loader: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => {
       minHeight="60vh"
       width="100%"
     >
-      <CircularProgress size={48} thickness={4} sx={{ color: '#1976d2' }} />
+      <CircularProgress size={48} thickness={4} sx={{ color: 'primary' }} />
       <Typography mt={2} fontWeight={500} color="text.secondary">
         {message}
       </Typography>
