@@ -61,7 +61,7 @@ export const store = configureStore({
     vendors: vendorReducer,
     inventory: inventoryReducer,
     binderType: binderTypeReducer,
-    marketData: marketDataReducer
+    markets: marketDataReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

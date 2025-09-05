@@ -138,7 +138,7 @@ const marketsSlice = createSlice({
       })
       .addCase(createMarketThunk.fulfilled, (state, action: PayloadAction<Market>) => {
         state.operationLoading = false;
-        state.markets.push(action.payload);
+        state.markets = [action.payload, ...state.markets]
       })
       .addCase(createMarketThunk.rejected, (state, action) => {
         state.operationLoading = false;
