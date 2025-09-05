@@ -232,6 +232,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
       { label: "Visit", value: "Get Visit" },
       { label: "Order", value: "Order" },
       { label: "Complain", value: "Complain" },
+      { label: "Sample Approval", value: "Sample Approval" },
       { label: "Other", value: "Other" },
     ],
     []

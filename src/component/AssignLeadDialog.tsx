@@ -198,7 +198,7 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
     () => [
         { label: 'Cold Call', value: 'Cold Call' },
         { label: 'Proof Approval', value: 'Proof Approval' },
-        { label: 'Sample Approval', value: 'Sample Approval' },
+        // { label: 'Sample Approval', value: 'Sample Approval' },
         // { label: 'Delivery', value: 'Delivery' },
         { label: 'Inquiry Call', value: 'Inquiry Call' },
         { label: 'Confirmation Call', value: 'Confirmation Call' },

@@ -39,7 +39,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
   const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
   const { companies } = useAppSelector((state) => state.company)
   const { productItems, loading: productLoading } = useAppSelector((state) => state.productItems)
-  const { singleAccountMaster, loading: accountLoading }:any = useAppSelector((state) => state.accountMasters)
+  const { singleAccountMaster, loading: accountLoading }: any = useAppSelector((state) => state.accountMasters)
   const { loading: orderLoading, error: orderError, successMessage } = useAppSelector((state) => state.orders)
   const { binderTypes } = useAppSelector((state) => state.binderType);
 
@@ -65,6 +65,10 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     size: "",
     rate: "",
     rateType: "new",
+    color: "",
+    number: "",
+    endNumber: "",
+    startNumber: ""
   })
 
   // Quality Packaging form data
@@ -211,7 +215,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     }
   }
 
-  const handleFilesSelected = (files: File[]) =>  setSelectedFiles(files)
+  const handleFilesSelected = (files: File[]) => setSelectedFiles(files)
 
   const handleUploadError = (error: string) => toast.error(error)
 
@@ -262,6 +266,10 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         size: sakshiFormData.size || "",
         rate: sakshiFormData.rate ? Number.parseFloat(sakshiFormData.rate) : undefined,
         rateType: sakshiFormData.rate ? sakshiFormData.rateType : undefined,
+        number: sakshiFormData.number,
+        endNumber: sakshiFormData.endNumber,
+        startNumber: sakshiFormData.startNumber,
+        color: sakshiFormData.color
       }
 
       await dispatch(createOrderThunk(orderData)).unwrap()
@@ -335,6 +343,10 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       size: "",
       rate: "",
       rateType: "new",
+      color: "",
+      number: "",
+      endNumber: "",
+      startNumber: ""
     })
     setQpFormData({
       companyName: "",
@@ -495,6 +507,56 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
           />
         </Box>
       </Stack>
+      <Stack direction="row" spacing={2}>
+        <FormControl sx={{ flex: 1, minWidth: 120 }} >
+          <InputLabel id="color-label">Color</InputLabel>
+          <Select
+            labelId="color-label"
+            name="color"
+            value={sakshiFormData.color}
+            onChange={(e) => handleSakshiChange("color", e.target.value)}
+            label="Color"
+          >
+            <MenuItem value="">Select</MenuItem>
+            {[1, 2, 4, 6].map((num) => (
+              <MenuItem key={num} value={num.toString()}>
+                color - {num}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ flex: 1, minWidth: 120 }} >
+          <InputLabel id="number-label">Number</InputLabel>
+          <Select
+            labelId="number-label"
+            name="number"
+            value={sakshiFormData.number}
+            onChange={(e) => handleSakshiChange("number", e.target.value)}
+            label="Number"
+          >
+            <MenuItem value="">Select</MenuItem>
+            <MenuItem value="Yes">Yes</MenuItem>
+            <MenuItem value="No">No</MenuItem>
+          </Select>
+        </FormControl>
+      </Stack>
+
+      {sakshiFormData.number === 'Yes' ? <Stack direction="row" spacing={2}>
+        <ThemeInput
+          labelName="Start Number"
+          name="startNumber"
+          value={sakshiFormData.startNumber}
+          onChange={(e) => handleSakshiChange("startNumber", e.target.value)}
+          sx={{ flex: 1, minWidth: 120 }}
+        />
+        <ThemeInput
+          labelName="End Number"
+          name="endNumber"
+          value={sakshiFormData.endNumber}
+          onChange={(e) => handleSakshiChange("endNumber", e.target.value)}
+          sx={{ flex: 1, minWidth: 120 }}
+        />
+      </Stack> : null}
 
       <ThemeInput
         labelName="Remarks"
