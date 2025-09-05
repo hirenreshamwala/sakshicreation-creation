@@ -168,6 +168,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       },
       reasonToVisit: "Visit",
       reference: "",
+      partyTag:"New",
       createdBy: isRequestMode ? (currentUser?.id || "") : "",
       isRequestMode,
     },
@@ -180,7 +181,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         formik.setErrors(errors);
         return;
       }
-    const submissionValues = {
+      const submissionValues = {
         ...values,
         reference: hasReference === "yes" ? values.reference : "",
       };
@@ -249,6 +250,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             contactWhatsAppNo: result.contactWhatsAppNo || "",
             contactForPaymentEmail: result.contactForPaymentEmail || "",
             GSTNo: result.GSTNo || "",
+            partyTag: result.partyTag,
             address: {
               unitNo: result.address?.unitNo || "",
               marketName: result.address?.marketName || "",
@@ -302,11 +304,11 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   const staffOptions = isRequestMode
     ? []
     : staffList
-        .filter((staff) => staff.role.roleName === "Sales Staff")
-        .map((staff) => ({
-          label: staff.name,
-          value: staff.id,
-        }));
+      .filter((staff) => staff.role.roleName === "Sales Staff")
+      .map((staff) => ({
+        label: staff.name,
+        value: staff.id,
+      }));
 
   const getSelectedOption = (value: string, options: { label: string; value: string }[]) => {
     const selected = options.find((option) => option.value === value);
@@ -353,6 +355,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
           contactWhatsAppNo: partyData.contactWhatsAppNo || "",
           contactForPaymentEmail: partyData.contactForPaymentEmail || "",
           GSTNo: partyData.GSTNo || "",
+          partyTag: partyData.partyTag || "",
           address: {
             unitNo: partyData.address?.unitNo || "",
             marketName: partyData.address?.marketName || "",
@@ -381,10 +384,10 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         isEditMode
           ? "Edit Party"
           : isRequestMode
-          ? "Add New Party Request"
-          : isBulkUpload
-          ? "Bulk Upload Parties"
-          : "Add New Party"
+            ? "Add New Party Request"
+            : isBulkUpload
+              ? "Bulk Upload Parties"
+              : "Add New Party"
       }
     >
       <Box sx={{ background: "#fff", borderRadius: 2 }} component="form" onSubmit={formik.handleSubmit}>
@@ -456,7 +459,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
               />
               <ThemeInput
                 labelName="Owner WhatsApp No."
-                placeholder="98312-13221"
+                placeholder="xxxxx-xxxxx"
                 mobile
                 fullWidth
                 name="ownerWhatsAppNo"
@@ -476,7 +479,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
               />
               <ThemeInput
                 labelName="Owner Mobile No."
-                placeholder="98312-13221"
+                placeholder="xxxxx-xxxxx"
                 mobile
                 fullWidth
                 name="ownerMobileNo"
@@ -520,7 +523,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
               />
               <ThemeInput
                 labelName="Person WhatsApp No."
-                placeholder="98312-13221"
+                placeholder="xxxxx-xxxxx"
                 mobile
                 fullWidth
                 name="personWhatsAppNo"
@@ -539,7 +542,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
               />
               <ThemeInput
                 labelName="Person Mobile No."
-                placeholder="98312-13221"
+                placeholder="xxxxx-xxxxx"
                 mobile
                 fullWidth
                 name="personMobileNo"
@@ -584,7 +587,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
               />
               <ThemeInput
                 labelName="Contact WhatsApp No."
-                placeholder="98312-13221"
+                placeholder="xxxxx-xxxxx"
                 mobile
                 fullWidth
                 name="contactWhatsAppNo"
@@ -603,7 +606,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
               />
               <ThemeInput
                 labelName="Contact Mobile No."
-                placeholder="98312-13221"
+                placeholder="xxxxx-xxxxx"
                 mobile
                 fullWidth
                 name="contactMobileNo"
@@ -633,73 +636,93 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
               />
             </Box>
 
-           <Box display="flex" gap={2} mb={1} alignItems="flex-end">
-  {/* GST Field */}
-            <Box sx={{ width: '24.2%' }}>
-              <ThemeInput
-                labelName="GST No."
-                placeholder="22AAAAA0000A1Z5"
-                fullWidth
-                name="GSTNo"
-                value={formik.values.GSTNo}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15);
-                  formik.setFieldValue("GSTNo", value);
-                  if (value) {
-                    if (value.length !== 15) {
-                      formik.setFieldError("GSTNo", "GST No. must be exactly 15 characters");
-                    } else if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/.test(value)) {
-                      formik.setFieldError("GSTNo", "Invalid GST format (e.g. 22AAAAA0000A1Z5)");
-                    } else {
-                      formik.setFieldError("GSTNo", undefined);
+            <Box display="flex" gap={2} mb={1} alignItems="flex-end">
+              {/* GST Field */}
+              <Box sx={{ width: '24.2%' }}>
+                <ThemeInput
+                  labelName="GST No."
+                  placeholder="22AAAAA0000A1Z5"
+                  fullWidth
+                  name="GSTNo"
+                  value={formik.values.GSTNo}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15);
+                    formik.setFieldValue("GSTNo", value);
+                    if (value) {
+                      if (value.length !== 15) {
+                        formik.setFieldError("GSTNo", "GST No. must be exactly 15 characters");
+                      } else if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/.test(value)) {
+                        formik.setFieldError("GSTNo", "Invalid GST format (e.g. 22AAAAA0000A1Z5)");
+                      } else {
+                        formik.setFieldError("GSTNo", undefined);
+                      }
                     }
+                  }}
+                  onBlur={formik.handleBlur}
+                  error={Boolean(formik.errors.GSTNo)}
+                  helperText={formik.touched.GSTNo && formik.errors.GSTNo}
+                />
+              </Box>
+              <Box sx={{ width: '24.2%' }}>
+                <ThemeSelect
+                  label="Party Tag"
+                  placeholder="Select Tag"
+                  options={[
+                    { value: "Customer", label: "Customer" },
+                    { value: "New", label: "New" },
+                  ]}
+                  value={
+                    formik.values.partyTag
+                      ? { value: formik.values.partyTag, label: formik.values.partyTag }
+                      : null
                   }
-                }}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.errors.GSTNo)}
-                helperText={formik.touched.GSTNo && formik.errors.GSTNo}
-              />
+                  onChange={(e, val: any) => {
+                    formik.setFieldValue("partyTag", val?.value || "");
+                  }}
+                  error={Boolean(formik.errors.partyTag)}
+                  helperText={formik.touched.partyTag && formik.errors.partyTag}
+                />
+              </Box>
+
+              {/* Reference Radio Buttons */}
+              <Box sx={{ width: '20%', mt: 2 }}>
+                <FormControl component="fieldset" fullWidth>
+                  <FormLabel component="legend">Reference</FormLabel>
+                  <RadioGroup
+                    row
+                    name="hasReference"
+                    value={hasReference}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setHasReference(value);
+                      if (value === "no") {
+                        formik.setFieldValue("reference", "");
+                      }
+                    }}
+                  >
+                    <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+                    <FormControlLabel value="no" control={<Radio />} label="No" />
+                  </RadioGroup>
+                </FormControl>
+              </Box>
+
+              {/* Reference Input Field - Only shows when "Yes" is selected */}
+              {hasReference === "yes" && (
+                <Box sx={{ width: '50%' }}>
+                  <ThemeInput
+                    labelName="Reference Details"
+                    placeholder="Enter Reference"
+                    fullWidth
+                    name="reference"
+                    value={formik.values.reference}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={Boolean(formik.errors.reference)}
+                    helperText={formik.touched.reference && formik.errors.reference}
+                  />
+                </Box>
+              )}
             </Box>
-  
-  {/* Reference Radio Buttons */}
-  <Box sx={{ width: '20%', mt: 2 }}>
-    <FormControl component="fieldset" fullWidth>
-      <FormLabel component="legend">Reference</FormLabel>
-      <RadioGroup
-        row
-        name="hasReference"
-        value={hasReference}
-        onChange={(e) => {
-          const value = e.target.value;
-          setHasReference(value);
-          if (value === "no") {
-            formik.setFieldValue("reference", "");
-          }
-        }}
-      >
-        <FormControlLabel value="yes" control={<Radio />} label="Yes" />
-        <FormControlLabel value="no" control={<Radio />} label="No" />
-      </RadioGroup>
-    </FormControl>
-  </Box>
-  
-  {/* Reference Input Field - Only shows when "Yes" is selected */}
-  {hasReference === "yes" && (
-    <Box sx={{ width: '50%' }}>
-      <ThemeInput
-        labelName="Reference Details"
-        placeholder="Enter Reference"
-        fullWidth
-        name="reference"
-        value={formik.values.reference}
-        onChange={formik.handleChange}
-        onBlur={formik.handleBlur}
-        error={Boolean(formik.errors.reference)}
-        helperText={formik.touched.reference && formik.errors.reference}
-      />
-    </Box>
-  )}
-</Box>
 
             <Box>
               <Typography fontWeight={500} fontSize={14} mb={1}>

@@ -566,7 +566,8 @@ const ViewCompanyPage: React.FC = () => {
   {/* Right side: Assign button */}
   <ThemeButton
     onClick={() => {
-      router.push("/admin/assign-task");
+      // router.push("/admin/assign-task");
+      setOpenAssignTaskDialog(true)
     }}
   >
     + Assign New task
@@ -615,7 +616,7 @@ const ViewCompanyPage: React.FC = () => {
             <Typography component="div" fontWeight={600}>
               Unit Name
             </Typography>
-            <Typography component="div">{singleAccountMaster.address.unitNo}</Typography>
+            <Typography component="div">{singleAccountMaster?.address?.unitNo}</Typography>
           </Box>
           <Box>
             <Typography component="div" fontWeight={600}>
@@ -634,7 +635,7 @@ const ViewCompanyPage: React.FC = () => {
               Address
             </Typography>
             <Typography component="div">
-              {singleAccountMaster.address.unitNo}, {singleAccountMaster.address.marketName},{' '}
+              {singleAccountMaster?.address?.unitNo}, {singleAccountMaster.address.marketName},{' '}
               {singleAccountMaster.address.streetAddress}, {singleAccountMaster.address.area},{' '}
               {singleAccountMaster.address.pincode}
             </Typography>

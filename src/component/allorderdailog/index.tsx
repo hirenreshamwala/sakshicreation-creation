@@ -56,7 +56,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     personName: "",
     whatsapp: "",
     binding: false,
-    bindingType: "",
+    bindingType: null,
     itemName: "",
     qty: "",
     gst: "",
