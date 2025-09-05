@@ -24,6 +24,7 @@ import companyNameReducer from '@/store/slices/companyNameSlice';
 import vendorReducer from '@/store/slices/vendorSlice';
 import inventoryReducer from '@/store/slices/inventorySlice';
 import binderTypeReducer from '@/store/slices/binderTypeSlice';
+import marketDataReducer from '@/store/slices/marketDataSlice';
 // Persist configuration
 export const persistConfig = {
   key: 'auth',
@@ -50,16 +51,17 @@ export const store = configureStore({
     fileUpload: fileUploadReducer,
     orders: orderReducer,
     qpOrders: qpOrderReducer,
-    packagingOptions : packagingOptionReducer,
+    packagingOptions: packagingOptionReducer,
     status: statusReducer,
     roles: roleReducer,
     materials: materialReducer,
     roleDepartments: roleDepartmentReducer,
-    performanceInvoices:performanceInvoiceReducer,
+    performanceInvoices: performanceInvoiceReducer,
     companyNames: companyNameReducer,
     vendors: vendorReducer,
     inventory: inventoryReducer,
-    binderType: binderTypeReducer
+    binderType: binderTypeReducer,
+    marketData: marketDataReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

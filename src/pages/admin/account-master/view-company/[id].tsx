@@ -622,7 +622,7 @@ const ViewCompanyPage: React.FC = () => {
             <Typography component="div" fontWeight={600}>
               Market Name
             </Typography>
-            <Typography component="div">{singleAccountMaster.address.marketName}</Typography>
+            <Typography component="div">{singleAccountMaster.address?.marketName}</Typography>
           </Box>
           <Box>
             <Typography component="div" fontWeight={600}>
@@ -635,7 +635,7 @@ const ViewCompanyPage: React.FC = () => {
               Address
             </Typography>
             <Typography component="div">
-              {singleAccountMaster?.address?.unitNo}, {singleAccountMaster.address.marketName},{' '}
+              {singleAccountMaster?.address?.unitNo}, {singleAccountMaster.address?.marketName},{' '}
               {singleAccountMaster.address.streetAddress}, {singleAccountMaster.address.area},{' '}
               {singleAccountMaster.address.pincode}
             </Typography>

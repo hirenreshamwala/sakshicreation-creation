@@ -47,9 +47,9 @@ const Endpoint = {
 
   //Inventory
 
-  GET_BY_CATEGORY : `${BaseURL}/api/inventory/bycategory`,
-  GET_CATEGORY : `${BaseURL}/api/inventory/summary`,
-  GET_BY_COMPANY : `${BaseURL}/api/purchase/getbycompany`,
+  GET_BY_CATEGORY: `${BaseURL}/api/inventory/bycategory`,
+  GET_CATEGORY: `${BaseURL}/api/inventory/summary`,
+  GET_BY_COMPANY: `${BaseURL}/api/purchase/getbycompany`,
 
   //staff
   GET_ROLE: `${BaseURL}/api/staff/getrol`,
@@ -73,12 +73,12 @@ const Endpoint = {
 
 
   //company name 
-  
-  CREATE_COMPANY_NAME:  `${BaseURL}/api/company/create`,
-  GET_ALL_COMPANY_NAME:   `${BaseURL}/api/company/getallCompany`,
-  GET_COMPANY_NAME_WITH_ID:   `${BaseURL}/api/company/getbyid`,
-  UPDATE_COMPANY_NAME:  `${BaseURL}/api/company/update`,
-  DELETE_COMPANY_NAME:  `${BaseURL}/api/company/delete`,
+
+  CREATE_COMPANY_NAME: `${BaseURL}/api/company/create`,
+  GET_ALL_COMPANY_NAME: `${BaseURL}/api/company/getallCompany`,
+  GET_COMPANY_NAME_WITH_ID: `${BaseURL}/api/company/getbyid`,
+  UPDATE_COMPANY_NAME: `${BaseURL}/api/company/update`,
+  DELETE_COMPANY_NAME: `${BaseURL}/api/company/delete`,
 
 
   //fileupload
@@ -126,7 +126,7 @@ const Endpoint = {
   BULK_CREATE_MATERIALS: `${BaseURL}/api/material/bulk`,
 
 
-    // New vendor endpoints
+  // New vendor endpoints
   GET_ALL_VENDORS: `${BaseURL}/api/vendor/getall`,
   GET_VENDOR_BY_ID: `${BaseURL}/api/vendor/getbyid`,
   CREATE_VENDOR: `${BaseURL}/api/vendor/create`,
@@ -171,5 +171,11 @@ const Endpoint = {
   DELETE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/delete`,
   GET_ALL_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/getall`,
   BULK_UPLOAD_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/bulk`,
+
+  CREATE_MARKET: `${BaseURL}/api/market/create`,
+  GET_ALL_MARKETS: `${BaseURL}/api/market/getall`,
+  UPDATE_MARKET: `${BaseURL}/api/market/update`,
+  DELETE_MARKET: `${BaseURL}/api/market/delete`,
+  BULK_UPLOAD_MARKETS: `${BaseURL}/api/market/bulk`,
 };
 export default Endpoint;
