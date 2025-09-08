@@ -16,6 +16,9 @@ import * as Yup from "yup"
 import { AiOutlineEye } from "react-icons/ai"
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { downloadVisitingCardPDF } from "@/utills/utills"
+import { Download } from "@mui/icons-material"
+import moment from "moment"
 
 type PaperField = {
   paperName: string;
@@ -306,6 +309,27 @@ const BinderForm = () => {
     setBinderPapers(updatedPapers)
   }
 
+  const handleDownload = () => {
+    const data = {
+      ...singleOrder,
+      odNo: singleOrder.orderNumber,
+      size: singleOrder.size,
+      date: moment(singleOrder.issuedDate).format('DD-MM-YYYY'),
+      quantity: singleOrder.qty,
+      binding: singleOrder.binding,
+      col: singleOrder.color,
+      printer: `${singleOrder.printer.firstName} ${singleOrder.printer.lastName}`,
+      remark: singleOrder.remarks,
+      rate: singleOrder.rate,
+      haste: "",
+      gstin: "",
+      partyName: singleOrder?.party?.partyName || "",
+      address: "",
+    };
+
+    downloadVisitingCardPDF(data);
+  };
+
   const handleDeleteBinderPaper = (index: number) => {
     if (binderPapers.length === 1) {
       toast.error("At least one paper field is required")
@@ -344,8 +368,8 @@ const BinderForm = () => {
         <Typography fontWeight={600} fontSize={18} mb={2}>
           {singleOrder.party?.partyName || "Party Name"}
         </Typography>
-        <StepperProgress 
-          activeStep={3} 
+        <StepperProgress
+          activeStep={3}
           orderStatus={singleOrder?.status}
           designerStatus={singleOrder?.designerStatus}
           printerStatus={singleOrder?.printerStatus}
@@ -455,7 +479,7 @@ const BinderForm = () => {
               helperText={formik.touched.size && (formik.errors.size as string)}
               InputProps={{ readOnly: areFieldsReadOnly }}
             />
-              <ThemeInput
+            <ThemeInput
               labelName="Item Qty"
               name="qty"
               value={formik.values.qty}
@@ -465,7 +489,7 @@ const BinderForm = () => {
               helperText={formik.touched.qty && (formik.errors.qty as string)}
               InputProps={{ readOnly: areFieldsReadOnly || !!singleOrder.qty }}
             />
-            
+
           </Box>
           <Box display="flex" gap={2} mb={2} justifyContent={"space-between"}>
             <ThemeInput
@@ -761,7 +785,7 @@ const BinderForm = () => {
               View Designer Files ({singleOrder?.designFiles?.length || 0})
             </Button>
           </Box>
-          
+
           <Box sx={{ display: "flex", gap: 2, flexDirection: "row" }}>
             {!isBinderStatusDone && (
               <ThemeButton
@@ -829,9 +853,19 @@ const BinderForm = () => {
 
           {isBinderStatusDone && (
             <Box mt={4}>
-              <Typography fontWeight={600} mb={2} color="#12B76A">
-                ✅ Binder Work Done
-              </Typography>
+              <Stack direction='row' mb={2} gap={2}>
+                <Typography fontWeight={600} color="#12B76A">
+                  ✅ Binder Work Done
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<Download />}
+                  onClick={handleDownload}
+                >
+                  Download PDF
+                </Button>
+              </Stack>
               <Stack direction="row" spacing={2}>
                 <ThemeButton
                   sx={{

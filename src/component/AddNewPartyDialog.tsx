@@ -27,6 +27,7 @@ import type { PartySuggestion } from "@/types/partySuggestion" // Import PartySu
 import { authService } from "@/services/auth.service";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
+import { getAllMarketsThunk } from "@/store/slices/marketDataSlice";
 
 interface Address {
   unitNo: string;
@@ -84,7 +85,6 @@ const validationSchema = Yup.object({
     landMark: Yup.string(),
     area: Yup.string().required("Area is required"),
     pincode: Yup.string()
-      .matches(/^[0-9]{6}$/, "Pincode must be 6 digits")
       .required("Pincode is required"),
   }),
   reasonToVisit: Yup.string().required("Reason to Visit is required"),
@@ -109,6 +109,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     successMessage,
     partySuggestions,
   } = useAppSelector((state) => state.accountMasters);
+  const { markets } = useAppSelector((state) => state.markets);
 
   const [isLoading, setIsLoading] = useState(false);
   const [partyOptions, setPartyOptions] = useState<PartySuggestion[]>([]);
@@ -125,6 +126,10 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       dispatch(clearError());
     }
   }, [open, dispatch]);
+
+  useEffect(() => {
+    if (!markets.length) dispatch(getAllMarketsThunk());
+  }, []);
 
   const debouncedSearch = useCallback(
     debounce((query: string) => {
@@ -168,7 +173,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       },
       reasonToVisit: "Visit",
       reference: "",
-      partyTag:"New",
+      partyTag: "New",
       createdBy: isRequestMode ? (currentUser?.id || "") : "",
       isRequestMode,
     },
@@ -210,6 +215,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   //     setHasReference("no");
   //   }
   // }, [isEditMode, formik.values.reference]);
+
+  console.log(markets, 'markets')
 
   const handleDownloadSample = () => {
     const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,streetAddress,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Street 1,Near Park,Area A,400001,Visit,Ref123,FALSE,New\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Street 2,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer`;
@@ -323,6 +330,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     dispatch(clearSuggestions());
   }
 
+  console.log(markets, 'markets')
+
   const loadPartyDetails = async (selectedParty: PartySuggestion) => {
     if (!formik.values.companyName) {
       toast.error("Please select a company first")
@@ -374,6 +383,33 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       toast.error("Failed to load party details: " + err.message)
     }
   }
+
+  const getFilteredData = (array = [], value, label) => {
+    if (!array?.length) return [];
+
+    const foundItem = array.find((item) => item?._id === value);
+    if (!foundItem) return [];
+
+    const valueLabel = foundItem[label];
+    return array.filter((item) => item[label] === valueLabel);
+  };
+
+  // Utility to get unique dropdown options by label key
+  const getUniqueOptions = (array = [], labelKey = "marketName", valueKey = "_id") => {
+    if (!array?.length) return [];
+
+    const unique = array.filter(
+      (item, index, self) =>
+        index === self.findIndex((m) => m[labelKey] === item[labelKey])
+    );
+
+    return unique.map((item) => ({
+      value: item[valueKey],
+      label: item[labelKey],
+    }));
+  };
+
+
 
   return (
     <CustomDialog
@@ -725,13 +761,14 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             </Box>
 
             <Box>
-              <Typography fontWeight={500} fontSize={14} mb={1}>
+              <Typography fontWeight={500} fontSize={14} mb={-3}>
                 Address
               </Typography>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Box display="flex" gap={2}>
                   <ThemeInput
                     label="Unit No."
+                    sx={{ mt: 3.5 }}
                     name="address.unitNo"
                     value={formik.values.address.unitNo}
                     onChange={formik.handleChange}
@@ -740,51 +777,110 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                     helperText={formik.touched.address?.unitNo && formik.errors.address?.unitNo}
                     required
                   />
-                  <ThemeInput
+                  <ThemeSelect
                     label="Market Name"
+                    options={getUniqueOptions(markets, "marketName", "_id")}
+                    value={getSelectedOption(
+                      formik.values?.address?.marketName,
+                      getUniqueOptions(markets, "marketName", "_id")
+                    )}
+                    onChange={(event, newValue) =>
+                      formik.setFieldValue("address.marketName", newValue ? newValue.value : "")
+                    }
                     name="address.marketName"
-                    value={formik.values.address.marketName}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
                     error={Boolean(formik.errors.address?.marketName)}
                     helperText={formik.touched.address?.marketName && formik.errors.address?.marketName}
                     required
                   />
-                  <ThemeInput
+
+                  <ThemeSelect
                     label="Area"
+                    options={getUniqueOptions(
+                      getFilteredData(markets, formik.values?.address?.marketName, "marketName"),
+                      "area",
+                      "_id"
+                    )}
+                    value={getSelectedOption(
+                      formik.values?.address?.area,
+                      getUniqueOptions(
+                        getFilteredData(markets, formik.values?.address?.marketName, "marketName"),
+                        "area",
+                        "_id"
+                      )
+                    )}
+                    onChange={(event, newValue) => {
+                      formik.setFieldValue("address.area", newValue ? newValue.value : "");
+                    }}
                     name="address.area"
-                    value={formik.values.address.area}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
                     error={Boolean(formik.errors.address?.area)}
                     helperText={formik.touched.address?.area && formik.errors.address?.area}
                     required
                   />
-                  <ThemeInput
+                  <ThemeSelect
                     label="Street Address"
+                    options={getUniqueOptions(
+                      getFilteredData(markets, formik.values?.address?.area, "streetAddress"),
+                      "streetAddress",
+                      "_id"
+                    )}
+                    value={getSelectedOption(
+                      formik.values?.address?.streetAddress,
+                      getUniqueOptions(
+                        getFilteredData(markets, formik.values?.address?.area, "area"),
+                        "streetAddress",
+                        "_id"
+                      )
+                    )}
+                    onChange={(event, newValue) => {
+                      formik.setFieldValue("address.streetAddress", newValue ? newValue.value : "");
+                    }}
                     name="address.streetAddress"
-                    value={formik.values.address.streetAddress}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
                     error={Boolean(formik.errors.address?.streetAddress)}
                     helperText={formik.touched.address?.streetAddress && formik.errors.address?.streetAddress}
                     required
                   />
-                  <ThemeInput
+                  <ThemeSelect
                     label="Land Mark"
+                    options={getUniqueOptions(
+                      getFilteredData(markets, formik.values?.address?.streetAddress, "streetAddress"),
+                      "landmark",
+                      "_id"
+                    )}
+                    value={getSelectedOption(
+                      formik.values?.address?.landMark,
+                      getUniqueOptions(
+                        getFilteredData(markets, formik.values?.address?.streetAddress, "streetAddress"),
+                        "landmark",
+                        "_id"
+                      )
+                    )}
+                    onChange={(event, newValue) => {
+                      formik.setFieldValue("address.landMark", newValue ? newValue.value : "");
+                    }}
                     name="address.landMark"
-                    value={formik.values.address.landMark}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
                     error={Boolean(formik.errors.address?.landMark)}
                     helperText={formik.touched.address?.landMark && formik.errors.address?.landMark}
+                    required
                   />
-                  <ThemeInput
+                  <ThemeSelect
                     label="Pin Code"
+                    options={getUniqueOptions(
+                      getFilteredData(markets, formik.values?.address?.landMark, "landmark"),
+                      "pincode",
+                      "_id"
+                    )}
+                    value={getSelectedOption(
+                      formik.values?.address?.pincode,
+                      getUniqueOptions(
+                        getFilteredData(markets, formik.values?.address?.landMark, "landmark"),
+                        "pincode",
+                        "_id"
+                      )
+                    )}
+                    onChange={(event, newValue) => {
+                      formik.setFieldValue("address.pincode", newValue ? newValue.value : "");
+                    }}
                     name="address.pincode"
-                    value={formik.values.address.pincode}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
                     error={Boolean(formik.errors.address?.pincode)}
                     helperText={formik.touched.address?.pincode && formik.errors.address?.pincode}
                     required

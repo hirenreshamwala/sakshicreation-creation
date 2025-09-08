@@ -478,8 +478,8 @@ const IndexPage: React.FC = () => {
       mobile: account.party?.ownerWhatsAppNo || "N/A",
       reason: account.reasonToVisit || "N/A",
       unitno: account.party?.address?.unitNo || "N/A",
-      market: account.party?.address?.marketName || "N/A",
-      area: account.party?.address?.area || "N/A",
+      market: account.party?.address?.marketName || account.party?.address?.marketName?.marketName,
+      area: account.party?.address?.area || account.party?.address?.area?.area,
       remarks: account.assignment?.remarks || "N/A",
       status: account.assignment?.status || "Not Started",
       statusType: mapStatusToType(account.assignment?.status || "Not Started"),
@@ -720,8 +720,8 @@ const IndexPage: React.FC = () => {
               <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.unitno}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.market}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.market?.marketName}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.area?.area}</TableCell>
               <TableCell sx={{ fontSize: 14 }}><Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
                       ? `${row.remarks.substring(0, 10)}...`
                       : row.remarks}</Typography></TableCell>

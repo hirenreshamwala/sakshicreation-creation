@@ -622,22 +622,22 @@ const ViewCompanyPage: React.FC = () => {
             <Typography component="div" fontWeight={600}>
               Market Name
             </Typography>
-            <Typography component="div">{singleAccountMaster.address?.marketName}</Typography>
+            <Typography component="div">{singleAccountMaster.address?.marketName?.marketName}</Typography>
           </Box>
           <Box>
             <Typography component="div" fontWeight={600}>
               Area
             </Typography>
-            <Typography component="div">{singleAccountMaster.address.area}</Typography>
+            <Typography component="div">{singleAccountMaster.address?.area?.area}</Typography>
           </Box>
            <Box>
             <Typography component="div" fontWeight={600}>
               Address
             </Typography>
             <Typography component="div">
-              {singleAccountMaster?.address?.unitNo}, {singleAccountMaster.address?.marketName},{' '}
-              {singleAccountMaster.address.streetAddress}, {singleAccountMaster.address.area},{' '}
-              {singleAccountMaster.address.pincode}
+              {singleAccountMaster?.address?.unitNo}, {singleAccountMaster.address?.marketName?.marketName},{' '}
+              {singleAccountMaster.address?.streetAddress?.streetAddress}, {singleAccountMaster.address?.area?.area},{' '}
+              {singleAccountMaster.address?.pincode?.pincode}
             </Typography>
           </Box>
         </Box>

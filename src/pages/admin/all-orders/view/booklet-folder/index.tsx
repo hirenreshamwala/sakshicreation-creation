@@ -1,17 +1,17 @@
 "use client"
 import { useRef, useEffect, useState } from "react"
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  Button, 
-  CircularProgress, 
-  Stack, 
-  FormControl, 
-  FormLabel, 
-  RadioGroup, 
-  FormControlLabel, 
-  Radio, 
+import {
+  Box,
+  Typography,
+  Paper,
+  Button,
+  CircularProgress,
+  Stack,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
   Grid,
   IconButton
 } from "@mui/material"
@@ -31,6 +31,9 @@ import { AiOutlineEye } from "react-icons/ai"
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ThemeCheckbox from "@/component/common_component/themecheckbox"
+import { Download } from "@mui/icons-material"
+import { downloadBookletPDF } from "@/utills/utills"
+import moment from "moment"
 
 type OptionType = {
   label: string
@@ -106,17 +109,17 @@ const BookletFolderBinderForm = () => {
       }),
       uv: Yup.string().required("UV selection is required"),
       bookletPapers: Yup.array()
-      .of(
-        Yup.object({
-          paperName: Yup.string().required("Paper Name is required"),
-          numberOfSheetsUsed: Yup.string().required("Number of Sheets Used is required"),
-          sheetSize: Yup.string().required("Sheet Size is required"),
-          paperType: Yup.string().required("Paper Type is required"),
-          gsm: Yup.string().required("GSM is required"),
-          ratePerUnit: Yup.string().required("Rate / Unit is required"),
-        })
-      )
-      .min(1, "At least one booklet paper is required"),
+        .of(
+          Yup.object({
+            paperName: Yup.string().required("Paper Name is required"),
+            numberOfSheetsUsed: Yup.string().required("Number of Sheets Used is required"),
+            sheetSize: Yup.string().required("Sheet Size is required"),
+            paperType: Yup.string().required("Paper Type is required"),
+            gsm: Yup.string().required("GSM is required"),
+            ratePerUnit: Yup.string().required("Rate / Unit is required"),
+          })
+        )
+        .min(1, "At least one booklet paper is required"),
     }),
     onSubmit: async (values) => {
       if (!orderId || typeof orderId !== "string") {
@@ -265,6 +268,30 @@ const BookletFolderBinderForm = () => {
     setSelectedBookletBinder(newValue)
   }
 
+  const handleDownload = () => {
+    const data = {
+      ...singleOrder,
+      odNo: singleOrder.orderNumber,
+      size: singleOrder.size,
+      date: moment(singleOrder.issuedDate).format('DD-MM-YYYY'),
+      quantity: singleOrder.qty,
+      binding: singleOrder.binding,
+      col: singleOrder.color,
+      printer: `${singleOrder.printer.firstName} ${singleOrder.printer.lastName}`,
+      remark: singleOrder.remarks,
+      rate: singleOrder.rate,
+      lamination: singleOrder.isLamination ? "Yes" : "No",
+      haste: "",
+      gst: "",
+      partyName: singleOrder?.party?.partyName || "",
+      address: "",
+    };
+
+    downloadBookletPDF(data);
+  };
+
+  console.log(singleOrder, 'kdnjikdnjhi')
+
   const handleHoldToggle = async () => {
     if (!orderId || typeof orderId !== "string") {
       toast.error("Order ID not found")
@@ -378,65 +405,65 @@ const BookletFolderBinderForm = () => {
     )
   }
 
-const isHeld = singleOrder?.status === "Hold";
-const isBookletBinderAssigned = !!singleOrder?.bookletBinder;
-const isBookletBinderStatusPending = singleOrder?.bookletBinderStatus === "Pending";
-const isBookletBinderStatusInProgress = singleOrder?.bookletBinderStatus === "In Progress";
-const isBookletBinderStatusDone = singleOrder?.bookletBinderStatus === "Done";
-const isPrinterStatusDone = singleOrder?.printerStatus === "Done";
-const isBinderStatusDone = singleOrder?.binderStatus === "Done" || singleOrder?.binderStatus === "Pending"; // Allow skipped binder
-const areFieldsReadOnly = isHeld || isBookletBinderStatusInProgress || isBookletBinderStatusDone;
+  const isHeld = singleOrder?.status === "Hold";
+  const isBookletBinderAssigned = !!singleOrder?.bookletBinder;
+  const isBookletBinderStatusPending = singleOrder?.bookletBinderStatus === "Pending";
+  const isBookletBinderStatusInProgress = singleOrder?.bookletBinderStatus === "In Progress";
+  const isBookletBinderStatusDone = singleOrder?.bookletBinderStatus === "Done";
+  const isPrinterStatusDone = singleOrder?.printerStatus === "Done";
+  const isBinderStatusDone = singleOrder?.binderStatus === "Done" || singleOrder?.binderStatus === "Pending"; // Allow skipped binder
+  const areFieldsReadOnly = isHeld || isBookletBinderStatusInProgress || isBookletBinderStatusDone;
 
   return (
     <>
       <Box className="p-4 border rounded-md">
         <Typography fontWeight={600} fontSize={18} mb={2}>
-        {singleOrder.party?.partyName || "Party Name"}
-      </Typography>
-
-      <StepperProgress 
-        activeStep={4} 
-        orderStatus={singleOrder?.status}
-        designerStatus={singleOrder?.designerStatus}
-        printerStatus={singleOrder?.printerStatus}
-      />
-
-      <Paper
-        variant="outlined"
-        sx={{
-          borderColor: "#12B76A",
-          borderWidth: 2,
-          borderRadius: 2,
-          mt: 2,
-          p: 2,
-          background: "#fff",
-        }}
-      >
-        <Typography fontWeight={600} fontSize={16} mb={2}>
-          Booklet Folder Binding
+          {singleOrder.party?.partyName || "Party Name"}
         </Typography>
 
-        {isHeld && (
-          <Box mb={3} sx={{ p: 2, bgcolor: "#FFF0F0", borderRadius: 2, border: "1px solid #F04438" }}>
-            <Typography fontWeight={500} fontSize={14} mb={1} color="#F04438">
-              🚫 Order On Hold
-            </Typography>
-            <Typography fontSize={13} color="#666">
-              This order is currently on hold. You cannot update the booklet binder task until it is unheld.
-            </Typography>
-          </Box>
-        )}
+        <StepperProgress
+          activeStep={4}
+          orderStatus={singleOrder?.status}
+          designerStatus={singleOrder?.designerStatus}
+          printerStatus={singleOrder?.printerStatus}
+        />
 
-        {isBookletBinderStatusDone && (
-          <Box mb={3} sx={{ p: 2, bgcolor: "#E8F5E8", borderRadius: 2, border: "1px solid #4CAF50" }}>
-            <Typography fontWeight={500} fontSize={14} mb={1} color="#4CAF50">
-              ✅ Booklet Binder Work Completed
-            </Typography>
-            <Typography fontSize={13} color="#666">
-              This booklet binder task has been marked as done.
-            </Typography>
-          </Box>
-        )}
+        <Paper
+          variant="outlined"
+          sx={{
+            borderColor: "#12B76A",
+            borderWidth: 2,
+            borderRadius: 2,
+            mt: 2,
+            p: 2,
+            background: "#fff",
+          }}
+        >
+          <Typography fontWeight={600} fontSize={16} mb={2}>
+            Booklet Folder Binding
+          </Typography>
+
+          {isHeld && (
+            <Box mb={3} sx={{ p: 2, bgcolor: "#FFF0F0", borderRadius: 2, border: "1px solid #F04438" }}>
+              <Typography fontWeight={500} fontSize={14} mb={1} color="#F04438">
+                🚫 Order On Hold
+              </Typography>
+              <Typography fontSize={13} color="#666">
+                This order is currently on hold. You cannot update the booklet binder task until it is unheld.
+              </Typography>
+            </Box>
+          )}
+
+          {isBookletBinderStatusDone && (
+            <Box mb={3} sx={{ p: 2, bgcolor: "#E8F5E8", borderRadius: 2, border: "1px solid #4CAF50" }}>
+              <Typography fontWeight={500} fontSize={14} mb={1} color="#4CAF50">
+                ✅ Booklet Binder Work Completed
+              </Typography>
+              <Typography fontSize={13} color="#666">
+                This booklet binder task has been marked as done.
+              </Typography>
+            </Box>
+          )}
 
           <Stack spacing={2} mb={2}>
             {/* Basic Details */}
@@ -471,11 +498,11 @@ const areFieldsReadOnly = isHeld || isBookletBinderStatusInProgress || isBooklet
                 fullWidth
               />
             </Stack>
-         
 
-         
 
-        
+
+
+
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <ThemeInput
                 labelName="Item Name"
@@ -518,95 +545,95 @@ const areFieldsReadOnly = isHeld || isBookletBinderStatusInProgress || isBooklet
                 InputProps={{ readOnly: areFieldsReadOnly }}
               />
             </Stack>
-         <Box>
-          <Grid container spacing={2} alignItems="center">
-            {/* Quantity */}
-            <Grid item xs={12} sm={3}>
-              <ThemeInput
-                labelName="Quantity"
-                name="qty"
-                value={formik.values.qty}
-                onChange={formik.handleChange}
-                fullWidth
-                error={formik.touched.qty && Boolean(formik.errors.qty)}
-                helperText={formik.touched.qty && formik.errors.qty}
-                InputProps={{ readOnly: areFieldsReadOnly }}
-              />
-              
-            </Grid>
-            
-
-            {/* Lamination */}
-            <Grid item xs={12} sm={3}>
-              <FormControl component="fieldset" disabled={areFieldsReadOnly}>
-                <FormLabel component="legend">Lamination</FormLabel>
-                <RadioGroup
-                  row
-                  name="isLamination"
-                  value={formik.values.isLamination}
-                  onChange={(e) => {
-                    formik.handleChange(e)
-                    if (e.target.value === "No") {
-                      formik.setFieldValue("laminationType", "")
-                    }
-                  }}
-                >
-                  <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
-                </RadioGroup>
-                {formik.touched.isLamination && formik.errors.isLamination && (
-                  <Typography color="error" variant="caption">
-                    {formik.errors.isLamination}
-                  </Typography>
-                )}
-              </FormControl>
-            </Grid>
-
-            {/* Lamination Type → Only show when Lamination = Yes */}
-            {formik.values.isLamination === "Yes" && (
-              <Grid item xs={12} sm={3}>
-                <FormControl component="fieldset" disabled={areFieldsReadOnly}>
-                  <FormLabel component="legend">Lamination Type</FormLabel>
-                  <RadioGroup
-                    row
-                    name="laminationType"
-                    value={formik.values.laminationType}
+            <Box>
+              <Grid container spacing={2} alignItems="center">
+                {/* Quantity */}
+                <Grid item xs={12} sm={3}>
+                  <ThemeInput
+                    labelName="Quantity"
+                    name="qty"
+                    value={formik.values.qty}
                     onChange={formik.handleChange}
-                  >
-                    <FormControlLabel value="Matte" control={<Radio />} label="Matte" />
-                    <FormControlLabel value="Gloss" control={<Radio />} label="Gloss" />
-                  </RadioGroup>
-                  {formik.touched.laminationType && formik.errors.laminationType && (
-                    <Typography color="error" variant="caption">
-                      {formik.errors.laminationType}
-                    </Typography>
-                  )}
-                </FormControl>
-              </Grid>
-            )}
+                    fullWidth
+                    error={formik.touched.qty && Boolean(formik.errors.qty)}
+                    helperText={formik.touched.qty && formik.errors.qty}
+                    InputProps={{ readOnly: areFieldsReadOnly }}
+                  />
 
-            {/* UV */}
-            <Grid item xs={12} sm={3}>
-              <FormControl component="fieldset" disabled={areFieldsReadOnly}>
-                <FormLabel component="legend">UV</FormLabel>
-                <RadioGroup
-                  row
-                  name="uv"
-                  value={formik.values.uv}
-                  onChange={formik.handleChange}
-                >
-                  <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
-                </RadioGroup>
-                {formik.touched.uv && formik.errors.uv && (
-                  <Typography color="error" variant="caption">
-                    {formik.errors.uv}
-                  </Typography>
+                </Grid>
+
+
+                {/* Lamination */}
+                <Grid item xs={12} sm={3}>
+                  <FormControl component="fieldset" disabled={areFieldsReadOnly}>
+                    <FormLabel component="legend">Lamination</FormLabel>
+                    <RadioGroup
+                      row
+                      name="isLamination"
+                      value={formik.values.isLamination}
+                      onChange={(e) => {
+                        formik.handleChange(e)
+                        if (e.target.value === "No") {
+                          formik.setFieldValue("laminationType", "")
+                        }
+                      }}
+                    >
+                      <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
+                      <FormControlLabel value="No" control={<Radio />} label="No" />
+                    </RadioGroup>
+                    {formik.touched.isLamination && formik.errors.isLamination && (
+                      <Typography color="error" variant="caption">
+                        {formik.errors.isLamination}
+                      </Typography>
+                    )}
+                  </FormControl>
+                </Grid>
+
+                {/* Lamination Type → Only show when Lamination = Yes */}
+                {formik.values.isLamination === "Yes" && (
+                  <Grid item xs={12} sm={3}>
+                    <FormControl component="fieldset" disabled={areFieldsReadOnly}>
+                      <FormLabel component="legend">Lamination Type</FormLabel>
+                      <RadioGroup
+                        row
+                        name="laminationType"
+                        value={formik.values.laminationType}
+                        onChange={formik.handleChange}
+                      >
+                        <FormControlLabel value="Matte" control={<Radio />} label="Matte" />
+                        <FormControlLabel value="Gloss" control={<Radio />} label="Gloss" />
+                      </RadioGroup>
+                      {formik.touched.laminationType && formik.errors.laminationType && (
+                        <Typography color="error" variant="caption">
+                          {formik.errors.laminationType}
+                        </Typography>
+                      )}
+                    </FormControl>
+                  </Grid>
                 )}
-              </FormControl>
-            </Grid>
-          </Grid>
-        </Box>
+
+                {/* UV */}
+                <Grid item xs={12} sm={3}>
+                  <FormControl component="fieldset" disabled={areFieldsReadOnly}>
+                    <FormLabel component="legend">UV</FormLabel>
+                    <RadioGroup
+                      row
+                      name="uv"
+                      value={formik.values.uv}
+                      onChange={formik.handleChange}
+                    >
+                      <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
+                      <FormControlLabel value="No" control={<Radio />} label="No" />
+                    </RadioGroup>
+                    {formik.touched.uv && formik.errors.uv && (
+                      <Typography color="error" variant="caption">
+                        {formik.errors.uv}
+                      </Typography>
+                    )}
+                  </FormControl>
+                </Grid>
+              </Grid>
+            </Box>
             {/* Display Printer Papers */}
             {/* {isPrinterStatusDone && singleOrder?.printerPapers?.length > 0 && (
               <Box mb={3}>
@@ -779,10 +806,10 @@ const areFieldsReadOnly = isHeld || isBookletBinderStatusInProgress || isBooklet
               )}
             </Box>
 
-           
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          {/*  <ThemeInput
+
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              {/*  <ThemeInput
               labelName="Number of Sheets Used"
               name="numberOfSheetUsed"
               value={formik.values.numberOfSheetUsed}
@@ -832,16 +859,16 @@ const areFieldsReadOnly = isHeld || isBookletBinderStatusInProgress || isBooklet
               helperText={formik.touched.ratePerUnit && formik.errors.ratePerUnit}
               InputProps={{ readOnly: areFieldsReadOnly }}
             /> */}
-            {(isBookletBinderStatusDone || isBookletBinderStatusInProgress) && (
-              <ThemeInput
-                labelName="Booklet Binder Wasted Sheet"
-                value={singleOrder?.bookletBinderWastedSheet?.toString() || "0"}
-                type="number"
-            fullWidth
-            InputProps={{ readOnly: true }}
-            />
-        )}
-          </Stack>
+              {(isBookletBinderStatusDone || isBookletBinderStatusInProgress) && (
+                <ThemeInput
+                  labelName="Booklet Binder Wasted Sheet"
+                  value={singleOrder?.bookletBinderWastedSheet?.toString() || "0"}
+                  type="number"
+                  fullWidth
+                  InputProps={{ readOnly: true }}
+                />
+              )}
+            </Stack>
 
             <Stack direction="row" spacing={2} justifyContent="space-between" flexWrap="wrap">
               <ThemeCheckbox
@@ -916,7 +943,7 @@ const areFieldsReadOnly = isHeld || isBookletBinderStatusInProgress || isBooklet
                 helperText="Upload any relevant files related to the booklet binding process"
                 disabled={areFieldsReadOnly}
               />
-          </Box>
+            </Box>
 
             <Button
               variant="outlined"
@@ -953,99 +980,110 @@ const areFieldsReadOnly = isHeld || isBookletBinderStatusInProgress || isBooklet
             >
               View Binder Files ({singleOrder?.binderFiles?.length || 0})
             </Button>
-          
+
 
             <Box sx={{ display: "flex", gap: 2, flexDirection: "row" }}>
               {/* {isBookletBinderStatusPending && ( */}
-            <ThemeButton
-              sx={{
-                background: areFieldsReadOnly || !selectedBookletBinder ? "#ccc" : "#12B76A",
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: 18,
-                borderRadius: 2,
-                py: 1.2,
-                    width: "100%",
-                "&:hover": {
-                  background: areFieldsReadOnly || !selectedBookletBinder ? "#ccc" : "#079455",
-                },
-              }}
-              onClick={() => formik.handleSubmit()}
-              disabled={areFieldsReadOnly || loading || !selectedBookletBinder}
-            >
-              {loading || formik.isSubmitting ? "Assigning..." : "Assign to Booklet Binder →"}
-            </ThemeButton>
-              {/* )} */}
-
-            <ThemeButton
-              sx={{
-                background: isHeld ? "#6366F1" : "#F04438",
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: 18,
-                borderRadius: 2,
-                py: 1.2,
-                  width: "100%",
-                "&:hover": { background: isHeld ? "#4F46E5" : "#D92D20" },
-              }}
-              onClick={handleHoldToggle}
-              disabled={loading}
-            >
-              {loading ? "Processing..." : isHeld ? "Unhold" : "Hold"}
-            </ThemeButton>
-          </Box>
-
-          {isBookletBinderStatusDone && singleOrder?.bookletBinderFiles && singleOrder.bookletBinderFiles.length > 0 && (
-            <Box mt={3}>
-                  <Typography fontWeight={600} mb={1}>
-                Booklet Binder Uploaded Files
-              </Typography>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={handleViewBookletFiles}
-                sx={{
-                  color: "#344054",
-                  borderColor: "#D0D5DD",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  fontSize: 16,
-                  py: 1.2,
-                  background: "#fff",
-                  "&:hover": { background: "#f6fef9" },
-                }}
-                startIcon={<AiOutlineEye />}
-              >
-                View All Booklet Uploaded Files ({singleOrder.bookletBinderFiles.length})
-              </Button>
-            </Box>
-          )}
-
-          {isBookletBinderStatusDone && (
-            <Box mt={4}>
-                <Typography fontWeight={600} mb={2} color="#12B76A">
-                ✅ Booklet Binder Work Done
-              </Typography>
               <ThemeButton
                 sx={{
-                  background: isHeld ? "#ccc" : "#12B76A",
+                  background: areFieldsReadOnly || !selectedBookletBinder ? "#ccc" : "#12B76A",
                   color: "#fff",
                   fontWeight: 600,
-                  fontSize: 16,
+                  fontSize: 18,
                   borderRadius: 2,
                   py: 1.2,
                   width: "100%",
-                  "&:hover": { background: isHeld ? "#ccc" : "#079455" },
+                  "&:hover": {
+                    background: areFieldsReadOnly || !selectedBookletBinder ? "#ccc" : "#079455",
+                  },
                 }}
-                onClick={handleProceedToDelivery}
-                disabled={isHeld || loading}
+                onClick={() => formik.handleSubmit()}
+                disabled={areFieldsReadOnly || loading || !selectedBookletBinder}
               >
-                Proceed to Delivery
+                {loading || formik.isSubmitting ? "Assigning..." : "Assign to Booklet Binder →"}
+              </ThemeButton>
+              {/* )} */}
+
+              <ThemeButton
+                sx={{
+                  background: isHeld ? "#6366F1" : "#F04438",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: 18,
+                  borderRadius: 2,
+                  py: 1.2,
+                  width: "100%",
+                  "&:hover": { background: isHeld ? "#4F46E5" : "#D92D20" },
+                }}
+                onClick={handleHoldToggle}
+                disabled={loading}
+              >
+                {loading ? "Processing..." : isHeld ? "Unhold" : "Hold"}
               </ThemeButton>
             </Box>
-          )}
-        </Stack>
-      </Paper>
+
+            {isBookletBinderStatusDone && singleOrder?.bookletBinderFiles && singleOrder.bookletBinderFiles.length > 0 && (
+              <Box mt={3}>
+                <Typography fontWeight={600} mb={1}>
+                  Booklet Binder Uploaded Files
+                </Typography>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={handleViewBookletFiles}
+                  sx={{
+                    color: "#344054",
+                    borderColor: "#D0D5DD",
+                    fontWeight: 600,
+                    textTransform: "none",
+                    fontSize: 16,
+                    py: 1.2,
+                    background: "#fff",
+                    "&:hover": { background: "#f6fef9" },
+                  }}
+                  startIcon={<AiOutlineEye />}
+                >
+                  View All Booklet Uploaded Files ({singleOrder.bookletBinderFiles.length})
+                </Button>
+              </Box>
+            )}
+
+            {isBookletBinderStatusDone && (
+              <Box mt={4}>
+                <Stack direction='row' mb={2} gap={2}>
+                  <Typography fontWeight={600} color="#12B76A">
+                    ✅ Booklet Binder Work Done
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<Download />}
+                    onClick={handleDownload}
+                  >
+                    Download PDF
+                  </Button>
+                </Stack>
+
+                <ThemeButton
+                  sx={{
+                    background: isHeld ? "#ccc" : "#12B76A",
+                    color: "#fff",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    borderRadius: 2,
+                    py: 1.2,
+                    width: "100%",
+                    "&:hover": { background: isHeld ? "#ccc" : "#079455" },
+                  }}
+                  onClick={handleProceedToDelivery}
+                  disabled={isHeld || loading}
+                >
+                  Proceed to Delivery
+                </ThemeButton>
+              </Box>
+            )}
+          </Stack>
+        </Paper>
       </Box>
 
       <ViewFilesDialog

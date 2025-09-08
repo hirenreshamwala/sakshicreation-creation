@@ -503,14 +503,14 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
             <ThemeInput
               labelName="Market Name"
               type="text"
-              value={partyDetails.marketName}
+              value={partyDetails.marketName?.marketName}
               disabled
               fullWidth
             />
             <ThemeInput
               labelName="Area"
               type="text"
-              value={partyDetails.area}
+              value={partyDetails?.area?.area}
               disabled
               fullWidth
             />

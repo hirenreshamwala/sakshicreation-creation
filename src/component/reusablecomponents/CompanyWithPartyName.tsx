@@ -46,6 +46,8 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
   const [partyOptions, setPartyOptions] = useState<{ label: string; value: string }[]>([])
   const [defaultSet, setDefaultSet] = useState(() => !!value || !!partyName)
 
+  console.log(parties,'parties')
+
 
   // Fetch companies on component mount
   useEffect(() => {
@@ -123,7 +125,7 @@ useEffect(() => {
   useEffect(() => {
     if (parties && parties.length > 0) {
       const options = parties.map((party: any) => ({
-        label: `${party?.partyName?.trim() || ""} - ${party?.unitNo?.trim() || ""}, ${party?.marketName?.trim() || ""}`,
+        label: `${party?.partyName?.trim() || ""} - ${party?.unitNo?.trim() || ""}, ${party?.marketName|| ""}`,
         value: party._id,
       }));
       setPartyOptions(options)
