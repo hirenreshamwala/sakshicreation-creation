@@ -210,8 +210,8 @@ const AssignTaskPage: React.FC = () => {
       party: task.partyName?.partyName || "Unknown",
       reason: task.reasonForVisit || "N/A",
       address: task.partyName?.address?.unitNo || "N/A",
-      market: task.partyName?.address?.marketName || "N/A",
-      area: task.partyName?.address?.area || "N/A",
+      market: task.partyName?.address?.marketName?.marketName || "N/A",
+      area: task.partyName?.address?.area?.area || "N/A",
       mobile: task.partyName?.ownerWhatsAppNo || "N/A",
       remarks: task.remarks || "N/A",
       assignBy: task.createdBy

@@ -84,12 +84,16 @@ const InventoryPage = () => {
   const [selectedVendor, setSelectedVendor] = useState<string>('');
   const [selectedPrinterFilter, setSelectedPrinterFilter] = useState<string>('');
 
+
+  console.log(vendors,'vendors')
   useEffect(() => {
     dispatch(getAllMaterialsThunk());
     dispatch(getAllVendorsThunk());
     dispatch(getInventoryByCategoryThunk(activeMainTab));
     dispatch(getInventorySummaryThunk(activeMainTab));
   }, [dispatch, activeMainTab]);
+
+  console.log(inventory,'jdhuj')
 
   useEffect(() => {
     if (error) {
@@ -110,16 +114,15 @@ const InventoryPage = () => {
   const handleWardTabChange = (_: React.SyntheticEvent, newValue: string | number) => {
     setActiveWardTab(newValue as WardTab);
   };
+  
 const aggregateInventory = (): AggregatedInventory[] => {
-    // Always use ALL inventory data for aggregation, not just filtered by activeWardTab
   const aggregated: Record<string, AggregatedInventory> = {};
 
-    // First pass: aggregate all inward items (regardless of current tab)
-    inventory?.forEach(item => {
-     if (!item.forCompany || !item.material || item.type !== 'inward') return;
+  inventory?.forEach(item => {
+    if (!item.forCompany || !item.material) return;
 
     const key = `${item.forCompany._id}-${item.material._id}`;
-    
+
     if (!aggregated[key]) {
       aggregated[key] = {
         printerId: item.forCompany._id,
@@ -130,41 +133,35 @@ const aggregateInventory = (): AggregatedInventory[] => {
         materialGSM: item.material.materialGSM,
         totalQuantity: 0,
         lastPurchase: 0,
-        lastPurchaseDate: null, // Track the actual date of last purchase
+        lastPurchaseDate: null,
         usedQty: 0,
         balance: 0,
         purchases: []
       };
     }
 
-    aggregated[key].totalQuantity += item.quantity;
-    aggregated[key].purchases.push(item);
-    
-    // Track the most recent inward purchase
+    if (item.type === 'inward') {
+      aggregated[key].totalQuantity += item.quantity;
+      aggregated[key].purchases.push(item);
+
       const itemDate = new Date(item.date);
       if (!aggregated[key].lastPurchaseDate || itemDate > aggregated[key].lastPurchaseDate) {
         aggregated[key].lastPurchaseDate = itemDate;
         aggregated[key].lastPurchase = item.quantity;
       }
-      });
-
-  // Second pass: calculate used quantity from ALL outward items
-   inventory?.forEach(item => {
-    if (!item.forCompany || !item.material || item.type !== 'outward') return;
-    
-    const key = `${item.forCompany._id}-${item.material._id}`;
-    if (aggregated[key]) {
+    } else if (item.type === 'outward') {
       aggregated[key].usedQty += item.quantity;
     }
   });
 
-  // Calculate balance for each item
-  Object.keys(aggregated).forEach(key => {
-    aggregated[key].balance = aggregated[key].totalQuantity - aggregated[key].usedQty;
+  // calculate balance always
+  Object.values(aggregated).forEach(item => {
+    item.balance = item.totalQuantity - item.usedQty;
   });
 
   return Object.values(aggregated);
 };
+
   const aggregatedData = aggregateInventory();
 
   const handleRowClick = (printerData: AggregatedInventory) => {
@@ -207,6 +204,11 @@ const aggregateInventory = (): AggregatedInventory[] => {
     };
   });
 
+
+  const gettableData = ()=>{
+       return inventory?.filter((item)=>item.category === activeMainTab && item.type === activeWardTab)
+  }
+
   return (
     <>
       <Box mb={3}>
@@ -236,7 +238,7 @@ const aggregateInventory = (): AggregatedInventory[] => {
               { id: 'date', label: 'DATE' },
               { id: 'vendor', label: 'VENDOR' },
             ]}
-            rowData={filteredInventory}
+            rowData={inventory?.filter((item)=>item.category === activeMainTab && item.type === activeWardTab)}
             renderRow={(row) => (
               <>
                 <TableCell>{row.material?.materialName || 'N/A'}</TableCell>
@@ -309,16 +311,13 @@ const aggregateInventory = (): AggregatedInventory[] => {
                   { id: 'balance', label: 'BALANCE' },
                   { id: 'action', label: 'ACTIONS' },
                 ]}
-                rowData={aggregatedData?.filter(item =>
-                  (!selectedMaterial || item.materialId === selectedMaterial) &&
-                  (!selectedPrinterFilter || item.printerId === selectedPrinterFilter)
-                )}
+                rowData={inventory?.filter((item)=>item.category === activeMainTab && item.type === activeWardTab)}
                 renderRow={(row) => (
                   <>
-                    <TableCell>{row.printerName}</TableCell>
-                    <TableCell>{row.materialName}</TableCell>
-                    <TableCell>{row.materialGSM}</TableCell>
-                    <TableCell>{row.materialSize}</TableCell>
+                    <TableCell>{row.forCompany.firstName} {row.forCompany.lastName}{row.printerName}</TableCell>
+                    <TableCell>{row.material.materialName}</TableCell>
+                    <TableCell>{row.material.materialGSM}</TableCell>
+                    <TableCell>{row.material.materialSize}</TableCell>
                     <TableCell>{row.totalQuantity}</TableCell>
                     <TableCell>{row.lastPurchase}</TableCell>
                     <TableCell>{row.usedQty}</TableCell>
