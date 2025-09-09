@@ -153,49 +153,60 @@ export const downloadVisitingCardPDF = (data: any) => {
     format: [105, 148],
   });
 
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Draw page border
+  doc.setLineWidth(0.5);
+  doc.setDrawColor("#252626ff");
+  doc.roundedRect(2, 2, pageWidth - 4, pageHeight - 4, 3, 3, "S");
+
   const lineColor = "#1F2020";
   const commonStyle = {
-    lineColor: lineColor,
-    lineWidth: {
-      right: 0,
-      bottom: 0.1,
-      top: 0,
-      left: 0,
-    },
-  }
+    lineColor,
+    lineWidth: { right: 0, bottom: 0.1, top: 0, left: 0 },
+  };
 
-  const getColumn = (label) => {
-    return {
-      content: label,
-      styles: commonStyle
-    }
-  }
+  const getColumn = (label: any) => ({
+    content: label,
+    styles: commonStyle,
+  });
 
-  console.log(data,'jdbfjdfbhjfhbn')
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
 
+  // define rows
   const allRows = [
-    ["OD. No", getColumn(data.odNo), "Size", getColumn(data.size), "Date", getColumn(data.date)],
-    ["Quantity", getColumn(data.quantity), "Binding", getColumn(data.binding), "Col", getColumn(data.col)],
+    [" OD. No", getColumn(data.odNo), " Size", getColumn(data.size), " Date", getColumn(data.date)],
+    [" Quantity", getColumn(data.quantity), " Binding", getColumn(data.binding), " Col", getColumn(data.col)],
   ];
+  const rows2 = [[" Printer", getColumn(data.printer), " Remark", getColumn(data.remark)]];
+  const rows3 = [[" Rate", getColumn(data.rate), " Haste", getColumn(`${data.createdBy?.firstName} ${data.createdBy?.lastName}`), " Date", getColumn(data.date)]];
+  const rows4 = [[" Party Name", getColumn(data.partyName)], [" Add", getColumn(data.add || "")]];
 
-  const rows2 = [
-    ["Printer", getColumn(data.printer), "Remark", getColumn(data.remark)],
-  ];
+  // column configs
+  const col6 = {
+    0: { cellWidth: 15, fontStyle: "bold" },
+    1: { cellWidth: 20 },
+    2: { cellWidth: 15, fontStyle: "bold" },
+    3: { cellWidth: 20 },
+    4: { cellWidth: 10, fontStyle: "bold" },
+    5: { cellWidth: 18 },
+  };
+  const col4 = {
+    0: { cellWidth: 15, fontStyle: "bold" },
+    1: { cellWidth: 20 },
+    2: { cellWidth: 15, fontStyle: "bold" },
+    3: { cellWidth: 48 },
+  };
+  const col2 = {
+    0: { cellWidth: 20, fontStyle: "bold" },
+    1: { cellWidth: 78 },
+  };
 
-  const rows3 = [
-    ["Rate", getColumn(data.rate), "Haste", getColumn(`${data.createdBy?.firstName} ${data.createdBy?.lastName}`), "Date", getColumn(data.date)],
-  ];
-
-  const rows4 = [
-    ["Party Name", getColumn(data.partyName)],
-    ["Add", getColumn(data.add || "")],
-  ];
-
-  const tableOptions = (startY: any, rows: any) => ({
+  const tableOptions = (startY: any, rows: any, col: any) => ({
     startY,
-    margin: { left: 2, right: 2 },
+    margin: { left: 3, right: 3 },
     theme: "plain",
     styles: {
       fontSize: 8,
@@ -203,189 +214,59 @@ export const downloadVisitingCardPDF = (data: any) => {
       valign: "middle",
       halign: "left",
       lineWidth: 0,
+      textColor: "#1E1F1F",
       lineColor: [255, 255, 255],
     },
-    head: [],
     body: rows,
-    columnStyles: {
-      0: { cellWidth: 15, fontStyle: "bold" },
-      1: { cellWidth: 20 },
-      2: { cellWidth: 15, fontStyle: "bold" },
-      3: { cellWidth: 20 },
-      4: { cellWidth: 10, fontStyle: "bold" },
-      5: { cellWidth: 20 },
-    },
-  });
-  const tableOptions2 = (startY: any, rows: any) => ({
-    startY,
-    margin: { left: 2, right: 2 },
-    theme: "plain",
-    styles: {
-      fontSize: 8,
-      cellPadding: 1,
-      valign: "middle",
-      halign: "left",
-      lineWidth: 0,
-      lineColor: [255, 255, 255],
-    },
-    head: [],
-    body: rows,
-    columnStyles: {
-      0: { cellWidth: 15, fontStyle: "bold" },
-      1: { cellWidth: 20 },
-      2: { cellWidth: 15, fontStyle: "bold" },
-      3: { cellWidth: 50 },
-    },
-  });
-  const tableOptions3 = (startY: any, rows: any) => ({
-    startY,
-    margin: { left: 2, right: 2 },
-    theme: "plain",
-    styles: {
-      fontSize: 8,
-      cellPadding: 1,
-      valign: "middle",
-      halign: "left",
-      lineWidth: 0,
-      lineColor: [255, 255, 255],
-    },
-    head: [],
-    body: rows,
-    columnStyles: {
-      0: { cellWidth: 20, fontStyle: "bold" },
-      1: { cellWidth: 80 },
+    columnStyles: col,
+    didParseCell: (dataCell: any) => {
+      if (dataCell.section === "body") {
+        dataCell.cell.styles.cellPadding = {
+          ...dataCell.cell.styles.cellPadding,
+          top: 4,
+        };
+      }
     },
   });
 
-  autoTable(doc, tableOptions(2, allRows) as any);
+  let currentY = 2;
+  const renderRow = (rows: any, col: any) => {
+    autoTable(doc, tableOptions(currentY, rows, col) as any);
+    currentY = doc.lastAutoTable.finalY;
+  };
 
-  const secondTableY = doc.lastAutoTable.finalY;
-  autoTable(doc, tableOptions2(secondTableY, rows2) as any);
-
-  const secondTableY2 = doc.lastAutoTable.finalY;
-  autoTable(doc, tableOptions(secondTableY2, rows3) as any);
-
-  const secondTableY3 = doc.lastAutoTable.finalY;
-  autoTable(doc, tableOptions3(secondTableY3, rows4) as any);
+  renderRow(allRows, col6);
+  renderRow(rows2, col4);
+  renderRow(rows3, col6);
+  renderRow(rows4, col2);
 
   doc.save("binder-job-card.pdf");
 };
 
-// export const downloadBookletPDF = (data: any) => {
-//   const doc: any = new jsPDF({
-//     orientation: "portrait",
-//     unit: "mm",
-//     format: [105, 148],
-//   });
-
-//   const lineColor = "#1F2020";
-//   const commonStyle = {
-//     lineColor: lineColor,
-//     lineWidth: {
-//       right: 0,
-//       bottom: 0.1,
-//       top: 0,
-//       left: 0,
-//     },
-//   }
-
-//   const getColumn = (label) => {
-//     return {
-//       content: label,
-//       styles: commonStyle
-//     }
-//   }
-
-//   doc.setFontSize(8);
-//   doc.setFont("helvetica", "normal");
-
-//   const row1 = [["Ord No.", getColumn(data.odNo), "Date:", getColumn(data.date)]];
-//   const row2 = [["Party Name", getColumn(data.partyname)]];
-//   const row3 = [["Address", getColumn(data.address), "GST", getColumn(data.gst)],];
-//   const row4 = [["Item", getColumn(data.item), "Size", getColumn(data.size), "Qty", getColumn(data.qty)],]
-//   const row5 = [["Rate", getColumn(data.address), "Printer", getColumn(data.gst)]];
-//   const row6 = [["Lamination", getColumn(data.rate), "Glossy", "Matt", 'UV']];
-//   const row7 = [
-//     ["Pasting ", "/ Cutting ", "/ Creasing :", getColumn(data.rate)],
-//     ["Foil :", getColumn(data.rate), "Punching :", getColumn(data.rate)]
-//   ];
-//   const row8 = [["Binding", getColumn(data.binding)]];
-//   const row9 = [["Vendor", getColumn(data.rate), "Paper", getColumn(data.rate)]]
-//   const row10 = [["Date", getColumn(data.rate), "GSM", getColumn(data.rate), "Size", getColumn(data.rate), "Qty", getColumn(data.rate)]]
-//   const row11 = [["Vendor", getColumn(data.rate), "Paper", getColumn(data.rate)]]
-//   const row12 = [["Date", getColumn(data.rate), "GSM", getColumn(data.rate), "Size", getColumn(data.rate), "Qty", getColumn(data.rate)]]
-//   const row13 = [["Remarks", getColumn(data.binding)]];
-
-//   const col4 = {
-//     0: { cellWidth: 15, fontStyle: "bold" },
-//     1: { cellWidth: 20 },
-//     2: { cellWidth: 15, fontStyle: "bold" },
-//     3: { cellWidth: 20 },
-//     4: { cellWidth: 10, fontStyle: "bold" },
-//     5: { cellWidth: 20 },
-//     6: { cellWidth: 10, fontStyle: "bold" },
-//     7: { cellWidth: 20 },
-//   }
-
-//   const col3 = {
-//     0: { cellWidth: 15, fontStyle: "bold" },
-//     1: { cellWidth: 20 },
-//     2: { cellWidth: 15, fontStyle: "bold" },
-//     3: { cellWidth: 20 },
-//     4: { cellWidth: 10, fontStyle: "bold" },
-//     5: { cellWidth: 20 },
-//   }
-
-//   const col2 = {
-//     0: { cellWidth: 15, fontStyle: "bold" },
-//     1: { cellWidth: 20 },
-//     2: { cellWidth: 15, fontStyle: "bold" },
-//     3: { cellWidth: 50 },
-//   }
-
-//   const col1 = {
-//     0: { cellWidth: 20, fontStyle: "bold" },
-//     1: { cellWidth: 80 },
-//   }
-
-//   const tableOptions = (startY: any, rows: any, col: any) => ({
-//     startY,
-//     margin: { left: 2, right: 2 },
-//     theme: "plain",
-//     styles: {
-//       fontSize: 8,
-//       cellPadding: 1,
-//       valign: "middle",
-//       halign: "left",
-//       lineWidth: 0,
-//       lineColor: [255, 255, 255],
-//     },
-//     head: [],
-//     body: rows,
-//     columnStyles: col
-//   });
-
-
-//   autoTable(doc, tableOptions(2, row1, col2) as any);
-
-//   const secondTableY = doc.lastAutoTable.finalY;
-//   autoTable(doc, tableOptions(secondTableY, row2, col1) as any);
-
-//   const secondTableY2 = doc.lastAutoTable.finalY;
-//   autoTable(doc, tableOptions(secondTableY2, row3, col2) as any);
-
-//   const secondTableY3 = doc.lastAutoTable.finalY;
-//   autoTable(doc, tableOptions(secondTableY3, row4, col3) as any);
-
-//   doc.save("binder-job-card.pdf");
-// };
 
 export const downloadBookletPDF = (data: any) => {
   const doc: any = new jsPDF({
     orientation: "portrait",
     unit: "mm",
-    format: [105, 148], // A6 size
+    format: [105, 148],
   });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const borderRadius = 3;
+  const borderMargin = 2;
+
+  doc.setLineWidth(0.5);
+  doc.setDrawColor("#252626ff");
+  doc.roundedRect(
+    borderMargin,
+    borderMargin,
+    pageWidth - borderMargin * 2,
+    pageHeight - borderMargin * 2,
+    borderRadius,
+    borderRadius,
+    "S"
+  );
 
   const lineColor = "#1F2020";
   const textColor = "#3a3737ff"
@@ -401,7 +282,7 @@ export const downloadBookletPDF = (data: any) => {
 
   const commonStyle2 = {
     fontStyle: "bold",
-    textColor: textColor,
+    textColor: "#302e2eff",
     font: "helvetica",
   };
   const getColumn = (label: any) => {
@@ -413,12 +294,10 @@ export const downloadBookletPDF = (data: any) => {
 
   const label = (label: any) => {
     return {
-      content: label,
+      content: ` ${label.trim()}`,
       styles: commonStyle2,
     };
   }
-
-  console.log(data,'dfatda')
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
@@ -454,7 +333,7 @@ export const downloadBookletPDF = (data: any) => {
     4: { cellWidth: 8, fontStyle: "bold" },
     5: { cellWidth: 17 },
     6: { cellWidth: 7, fontStyle: "bold" },
-    7: { cellWidth: 16 },
+    7: { cellWidth: 14 },
   };
 
   const col3 = {
@@ -463,14 +342,14 @@ export const downloadBookletPDF = (data: any) => {
     2: { cellWidth: 15, fontStyle: "bold" },
     3: { cellWidth: 20 },
     4: { cellWidth: 10, fontStyle: "bold" },
-    5: { cellWidth: 20 },
+    5: { cellWidth: 18 },
   };
 
   const col2 = {
     0: { cellWidth: 16, fontStyle: "bold" },
     1: { cellWidth: 34 },
     2: { cellWidth: 16, fontStyle: "bold" },
-    3: { cellWidth: 34 },
+    3: { cellWidth: 32 },
   };
 
   const col1 = {
@@ -480,18 +359,18 @@ export const downloadBookletPDF = (data: any) => {
 
   const col5 = {
     0: { cellWidth: 50, fontStyle: "bold" },
-    1: { cellWidth: 50 },
+    1: { cellWidth: 48 },
   };
   const col6 = {
     0: { cellWidth: 25, fontStyle: "bold" },
     1: { cellWidth: 25 },
-    2: { cellWidth: 50, fontStyle: "bold" },
+    2: { cellWidth: 48, fontStyle: "bold" },
   };
 
 
   const tableOptions = (startY: any, rows: any, col: any) => ({
     startY,
-    margin: { left: 2, right: 2 },
+    margin: { left: 3, right: 3 },
     theme: "plain",
     styles: {
       fontSize: 8,
@@ -499,11 +378,21 @@ export const downloadBookletPDF = (data: any) => {
       valign: "middle",
       halign: "left",
       lineWidth: 0,
+      textColor: "#1E1F1F",
       lineColor: [255, 255, 255],
     },
     head: [],
     body: rows,
     columnStyles: col,
+    didParseCell: (dataCell: any) => {
+      // Add top margin only for body cells
+      if (dataCell.section === "body") {
+        dataCell.cell.styles.cellPadding = {
+          ...dataCell.cell.styles.cellPadding,
+          top: 4, // adjust top margin here
+        };
+      }
+    },
   });
 
   // sequentially render all rows
