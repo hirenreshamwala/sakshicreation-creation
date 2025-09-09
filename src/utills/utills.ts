@@ -146,6 +146,50 @@ export const getDisplayStatus = (row: OrderRow): { text: string; isHold: boolean
   return { text: displayText, isHold: false };
 };
 
+// ✅ Reusable border drawer
+const drawBorder = (
+  doc: any,
+  type: "simple" | "rounded" | "double" | "dashed" | "thick" | "none" = "simple"
+) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  doc.setDrawColor("#343436");
+  doc.setLineWidth(0.5);
+
+  switch (type) {
+    case "simple":
+      doc.rect(2, 2, pageWidth - 4, pageHeight - 4, "S");
+      break;
+
+    case "rounded":
+      doc.roundedRect(2, 2, pageWidth - 4, pageHeight - 4, 3, 3, "S");
+      break;
+
+    case "double":
+      doc.rect(2, 2, pageWidth - 4, pageHeight - 4, "S");
+      doc.rect(4, 4, pageWidth - 8, pageHeight - 8, "S");
+      break;
+
+    case "dashed":
+      doc.setLineDash([2, 2]); // dash length, gap
+      doc.rect(2, 2, pageWidth - 4, pageHeight - 4, "S");
+      doc.setLineDash(); // reset
+      break;
+
+    case "thick":
+      doc.setLineWidth(2);
+      doc.rect(2, 2, pageWidth - 4, pageHeight - 4, "S");
+      break;
+
+    case "none":
+    default:
+      // no border
+      break;
+  }
+};
+
+
 export const downloadVisitingCardPDF = (data: any) => {
   const doc: any = new jsPDF({
     orientation: "portrait",
@@ -156,10 +200,21 @@ export const downloadVisitingCardPDF = (data: any) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
+    // 🔥 Choose border type here
+  drawBorder(doc, "rounded"); // simple | rounded | double | dashed | thick | none
   // Draw page border
-  doc.setLineWidth(0.5);
-  doc.setDrawColor("#252626ff");
-  doc.roundedRect(2, 2, pageWidth - 4, pageHeight - 4, 3, 3, "S");
+  // doc.setLineWidth(0.5);
+  // doc.setDrawColor("#343436");
+  // doc.roundedRect(2, 2, pageWidth - 4, pageHeight - 4, 3, 3, "S");
+
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(15, 15, 43);
+  doc.text("BINDER JOB CARD", pageWidth / 2, 10, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
 
   const lineColor = "#1F2020";
   const commonStyle = {
@@ -175,14 +230,28 @@ export const downloadVisitingCardPDF = (data: any) => {
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
 
+
+  const commonStyle2 = {
+    fontStyle: "bold",
+    textColor: "#13132e",
+    font: "helvetica",
+  };
+
+  const label = (label: any) => {
+    return {
+      content: ` ${label.trim()}`,
+      styles: commonStyle2,
+    };
+  }
+
   // define rows
   const allRows = [
-    [" OD. No", getColumn(data.odNo), " Size", getColumn(data.size), " Date", getColumn(data.date)],
-    [" Quantity", getColumn(data.quantity), " Binding", getColumn(data.binding), " Col", getColumn(data.col)],
+    [label("OD. No"), getColumn(data.odNo), label("Size"), getColumn(data.size), label("Date"), getColumn(data.date)],
+    [label("Quantity"), getColumn(data.quantity), label("Binding"), getColumn(data.binding), label("Col"), getColumn(data.col)],
   ];
-  const rows2 = [[" Printer", getColumn(data.printer), " Remark", getColumn(data.remark)]];
-  const rows3 = [[" Rate", getColumn(data.rate), " Haste", getColumn(`${data.createdBy?.firstName} ${data.createdBy?.lastName}`), " Date", getColumn(data.date)]];
-  const rows4 = [[" Party Name", getColumn(data.partyName)], [" Add", getColumn(data.add || "")]];
+  const rows2 = [[label("Printer"), getColumn(data.printer), label("Remark"), getColumn(data.remark)]];
+  const rows3 = [[label("Rate"), getColumn(data.rate), label("Haste"), getColumn(`${data.createdBy?.firstName} ${data.createdBy?.lastName}`), label("Date"), getColumn(data.date)]];
+  const rows4 = [[label("Party Name"), getColumn(data.partyName)], [label("Add"), getColumn(data.add || "")]];
 
   // column configs
   const col6 = {
@@ -229,7 +298,7 @@ export const downloadVisitingCardPDF = (data: any) => {
     },
   });
 
-  let currentY = 2;
+  let currentY = 10;
   const renderRow = (rows: any, col: any) => {
     autoTable(doc, tableOptions(currentY, rows, col) as any);
     currentY = doc.lastAutoTable.finalY;
@@ -256,8 +325,8 @@ export const downloadBookletPDF = (data: any) => {
   const borderRadius = 3;
   const borderMargin = 2;
 
-  doc.setLineWidth(0.5);
-  doc.setDrawColor("#252626ff");
+  doc.setLineWidth(0.3);
+  doc.setDrawColor("#343436");
   doc.roundedRect(
     borderMargin,
     borderMargin,
@@ -268,7 +337,16 @@ export const downloadBookletPDF = (data: any) => {
     "S"
   );
 
-  const lineColor = "#1F2020";
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(15, 15, 43);
+  doc.text("BOOKLET & FOLDER BINDER JOB CARD", pageWidth / 2, 10, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+
+  const lineColor = "#2b2b2e";
   const textColor = "#3a3737ff"
   const commonStyle = {
     lineColor: lineColor,
@@ -282,7 +360,7 @@ export const downloadBookletPDF = (data: any) => {
 
   const commonStyle2 = {
     fontStyle: "bold",
-    textColor: "#302e2eff",
+    textColor: "#13132e",
     font: "helvetica",
   };
   const getColumn = (label: any) => {
@@ -378,7 +456,6 @@ export const downloadBookletPDF = (data: any) => {
       valign: "middle",
       halign: "left",
       lineWidth: 0,
-      textColor: "#1E1F1F",
       lineColor: [255, 255, 255],
     },
     head: [],
@@ -396,7 +473,7 @@ export const downloadBookletPDF = (data: any) => {
   });
 
   // sequentially render all rows
-  let currentY = 2;
+  let currentY = 10;
   const renderRow = (rows: any, col: any) => {
     autoTable(doc, tableOptions(currentY, rows, col) as any);
     currentY = doc.lastAutoTable.finalY; // update Y for next row

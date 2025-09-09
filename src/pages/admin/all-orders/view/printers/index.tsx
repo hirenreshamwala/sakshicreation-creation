@@ -245,7 +245,7 @@ const PrinterForm = () => {
     updatedFields[index] = {
       ...updatedFields[index],
       materialName: value,
-      paperType:value,
+      paperType: value,
       gsm: "", // Reset GSM when material name changes
       materialSize: "", // Reset size when material name changes
     };
@@ -256,7 +256,7 @@ const PrinterForm = () => {
     const updatedFields = [...paperFields];
     updatedFields[index] = {
       ...updatedFields[index],
-      gsm:value,
+      gsm: value,
       materialSize: "", // Reset size when GSM changes
     };
     setPaperFields(updatedFields);
@@ -534,55 +534,43 @@ const PrinterForm = () => {
                 )}
               </Box>
               <Stack direction="row" spacing={2}>
-                <Stack direction="row" spacing={2} mb={2}>
-                  <ThemeSelect
-                    label="Paper Type"
-                    options={materialNameOptions}
-                    value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
-                    onChange={(e, newValue) => handleMaterialNameChange(index, newValue?.value as string || "")}
-                    required
-                    fullWidth
-                    disabled={areFieldsReadOnly}
-                  />
-                  <ThemeSelect
-                    label="GSM"
-                    options={getMaterialGSMOptions(paper.paperType)}
-                    value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
-                    onChange={(e, newValue) => handleMaterialGSMChange(index, newValue?.value as string || "")}
-                    required
-                    fullWidth
-                    disabled={!paper.paperType || areFieldsReadOnly}
-                  />
-                  <ThemeSelect
-                    label="Size"
-                    options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
-                    value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.materialSize) || null}
-                    onChange={(e, newValue) => handleMaterialSizeChange(index, newValue?.value as string || "")}
-                    required
-                    fullWidth
-                    disabled={!paper.paperType || areFieldsReadOnly}
-                  />
-                </Stack>
-                <ThemeInput
-                  labelName="Paper Type"
-                  value={paper.paperType}
-                  onChange={(e) => handlePaperFieldChange(index, 'paperType', e.target.value)}
-                  fullWidth
+                {/* <Stack direction="row" spacing={2} mb={2}> */}
+                <ThemeSelect
+                  label="Paper Type"
+                  options={materialNameOptions}
+                  value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
+                  onChange={(e, newValue) => handleMaterialNameChange(index, newValue?.value as string || "")}
                   required
-                  error={!paper.paperType && formik.submitCount > 0}
-                  helperText={!paper.paperType && formik.submitCount > 0 ? "This field is required" : ""}
+                  disabled={areFieldsReadOnly}
+                />
+                <ThemeSelect
+                  label="GSM"
+                  options={getMaterialGSMOptions(paper.paperType)}
+                  value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
+                  onChange={(e, newValue) => handleMaterialGSMChange(index, newValue?.value as string || "")}
+                  required
+                  disabled={!paper.paperType || areFieldsReadOnly}
+                />
+                <ThemeSelect
+                  label="Size"
+                  options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
+                  value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.materialSize) || null}
+                  onChange={(e, newValue) => handleMaterialSizeChange(index, newValue?.value as string || "")}
+                  required
+                  disabled={!paper.paperType || areFieldsReadOnly}
+                />
+                {/* </Stack> */}
+                <ThemeInput
+                  labelName="Paper No. Of Sheet Used"
+                  name="rowPaperUser"
+                  value={formik.values.rowPaperUser}
+                  onChange={formik.handleChange}
+                  fullWidth
+                  error={formik.touched.rowPaperUser && Boolean(formik.errors.rowPaperUser)}
+                  helperText={formik.touched.rowPaperUser && formik.errors.rowPaperUser}
                   InputProps={{ readOnly: areFieldsReadOnly }}
                 />
-                <ThemeInput
-                  labelName="GSM"
-                  value={paper.gsm}
-                  onChange={(e) => handlePaperFieldChange(index, 'gsm', e.target.value)}
-                  fullWidth
-                  required
-                  error={!paper.gsm && formik.submitCount > 0}
-                  helperText={!paper.gsm && formik.submitCount > 0 ? "This field is required" : ""}
-                  InputProps={{ readOnly: areFieldsReadOnly }}
-                />
+
                 <ThemeInput
                   labelName="Rate / Unit"
                   value={paper.ratePerUnit}

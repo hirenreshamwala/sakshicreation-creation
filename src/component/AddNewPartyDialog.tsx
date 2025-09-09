@@ -238,9 +238,9 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       setIsLoading(true);
       try {
         await dispatch(getAllStaffThunk());
-
         if (isEditMode && accountId) {
           const result = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
+          console.log(result,'partyData')
           formik.setValues({
             companyName: result.companyName || "",
             partyName: result.partyName || "",
@@ -260,11 +260,11 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             partyTag: result.partyTag,
             address: {
               unitNo: result.address?.unitNo || "",
-              marketName: result.address?.marketName || "",
-              streetAddress: result.address?.streetAddress || "",
-              landMark: result.address?.landMark || "",
-              area: result.address?.area || "",
-              pincode: result.address?.pincode || "",
+              marketName: result.address?.marketName?._id || "",
+              streetAddress: result.address?.streetAddress?._id || "",
+              landMark: result.address?.landMark?._id || "",
+              area: result.address?.area?._id || "",
+              pincode: result.address?.pincode?._id || "",
             },
             reasonToVisit: result.reasonToVisit || "Visit",
             reference: result.reference || "",
@@ -330,7 +330,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     dispatch(clearSuggestions());
   }
 
-  console.log(markets, 'markets')
+  
 
   const loadPartyDetails = async (selectedParty: PartySuggestion) => {
     if (!formik.values.companyName) {
@@ -347,6 +347,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       ).unwrap()
 
       const partyData = response.data?.party || response.accountMaster?.party
+      console.log(partyData,'partyData')
       if (partyData) {
         formik.setValues({
           ...formik.values,
@@ -367,11 +368,11 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
           partyTag: partyData.partyTag || "",
           address: {
             unitNo: partyData.address?.unitNo || "",
-            marketName: partyData.address?.marketName || "",
-            streetAddress: partyData.address?.streetAddress || "",
-            landMark: partyData.address?.landMark || "",
-            area: partyData.address?.area || "",
-            pincode: partyData.address?.pincode || "",
+            marketName: partyData.address?.marketName?._id || "",
+            streetAddress: partyData.address?.streetAddress?._id || "",
+            landMark: partyData.address?.landMark?._id || "",
+            area: partyData.address?.area?._id || "",
+            pincode: partyData.address?.pincode?._id || "",
           },
           reference: partyData.reference || "",
         })
