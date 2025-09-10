@@ -11,6 +11,8 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { getOrderByIdThunk, updateOrderThunk } from "@/store/slices/orderSlice"
 import { useRouter } from "next/router"
 import { toast } from "react-toastify"
+import ThemeSelect from "@/component/common_component/themeselect";
+import { getAllMaterialsThunk } from "@/store/slices/materialSlice";
 
 type PaperField = {
   paperName: string;
@@ -27,7 +29,7 @@ const BinderTaskView = () => {
   const router = useRouter()
   const { id: orderId } = router.query
   const { singleOrder } = useAppSelector((state) => state.orders)
-
+  const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [openDesignFilesDialog, setOpenDesignFilesDialog] = useState(false)
@@ -99,7 +101,9 @@ const BinderTaskView = () => {
     console.error("Upload error:", error)
     toast.error(error)
   }
-
+  useEffect(() => {
+    if (!materials.length) dispatch(getAllMaterialsThunk());
+  }, [])
   const handleViewDesignFiles = () => setOpenDesignFilesDialog(true)
   const handleCloseDesignFilesDialog = () => setOpenDesignFilesDialog(false)
 
@@ -218,6 +222,83 @@ const BinderTaskView = () => {
     }
   }
 
+  // Get unique material names
+  const materialNameOptions = materials.map(material => ({
+    value: material._id, // Use _id as value
+    label: material.materialName,
+  }));
+
+  // Get GSM options for a specific material name
+  const getMaterialGSMOptions = (materialId: string) => {
+    const filteredMaterials = materials.filter(material => material._id === materialId);
+
+    return Array.from(
+      new Map(
+        filteredMaterials.map(material => [
+          material.materialGSM.toString(),
+          {
+            value: material._id, // store _id for selection
+            label: `${material.materialGSM} GSM`,
+          },
+        ])
+      ).values()
+    );
+  };
+
+
+  // Get size options for a specific material name and GSM
+  const getMaterialSizeOptions = (materialId: string, gsmId: string) => {
+    const filteredMaterials = materials.filter(
+      material => material._id === materialId && material._id === gsmId
+    );
+
+    return Array.from(
+      new Map(
+        filteredMaterials.map(material => [
+          material.materialSize,
+          {
+            value: material._id, // use material’s _id
+            label: material.materialSize,
+          },
+        ])
+      ).values()
+    );
+  };
+
+
+  // Handle material name selection
+  const handleMaterialNameChange = (index: number, value: string) => {
+    const updatedPapers = [...binderPapers];
+    updatedPapers[index] = {
+      ...updatedPapers[index],
+      paperType: value,
+      gsm: "", // Reset GSM when material name changes
+      sheetSize: "", // Reset size when material name changes
+    };
+    setBinderPapers(updatedPapers);
+  };
+
+  // Handle GSM selection
+  const handleMaterialGSMChange = (index: number, value: string) => {
+    const updatedPapers = [...binderPapers];
+    updatedPapers[index] = {
+      ...updatedPapers[index],
+      gsm: value,
+      sheetSize: "", // Reset size when GSM changes
+    };
+    setBinderPapers(updatedPapers);
+  };
+
+  // Handle size selection
+  const handleMaterialSizeChange = (index: number, value: string) => {
+    const updatedPapers = [...binderPapers];
+    updatedPapers[index] = {
+      ...updatedPapers[index],
+      sheetSize: value,
+    };
+    setBinderPapers(updatedPapers);
+  };
+
   if (pageLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -243,27 +324,27 @@ const BinderTaskView = () => {
     <Box>
       {/* Order Details */}
       <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6" fontWeight={600} color="#1976D2">
-              Order Details
-            </Typography>
-              {singleOrder.binderStatus === "Pending" && (
-                <ThemeButton
-                  sx={{
-                    background: "#1976D2",
-                    color: "#fff",
-                    fontWeight: 600,
-                    fontSize: 16,
-                    borderRadius: 2,
-                    py: 1,
-                    px: 2.5,
-                    "&:hover": { background: "#1565C0" },
-                  }}
-                  onClick={() => handleUpdateStatus(singleOrder._id, "binder", "In Progress")}
-                >
-                  Start Task
-                </ThemeButton>
-              )}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h6" fontWeight={600} color="#1976D2">
+            Order Details
+          </Typography>
+          {singleOrder.binderStatus === "Pending" && (
+            <ThemeButton
+              sx={{
+                background: "#1976D2",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 16,
+                borderRadius: 2,
+                py: 1,
+                px: 2.5,
+                "&:hover": { background: "#1565C0" },
+              }}
+              onClick={() => handleUpdateStatus(singleOrder._id, "binder", "In Progress")}
+            >
+              Start Task
+            </ThemeButton>
+          )}
         </Box>
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <ThemeInput
@@ -442,52 +523,6 @@ const BinderTaskView = () => {
           </Box>
         )}
 
-        {/* Display Printer Papers */}
-        {/* {isPrinterStatusDone && singleOrder?.printerPapers?.length > 0 && (
-          <Box mb={3}>
-            <Typography fontWeight={600} mb={2}>
-              Printer Papers
-            </Typography>
-            {singleOrder.printerPapers.map((paper, index) => (
-              <Box key={`printer-${index}`} mb={2} p={2} border={1} borderRadius={2} borderColor="#ddd">
-                <Typography fontWeight={600}>{paper.paperName}</Typography>
-                <Stack direction="row" spacing={2} mt={1}>
-                  <ThemeInput
-                    labelName="Number of Sheets Used"
-                    value={paper.numberOfSheetsUsed}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
-                  <ThemeInput
-                    labelName="Sheet Size"
-                    value={paper.sheetSize}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
-                  <ThemeInput
-                    labelName="Paper Type"
-                    value={paper.paperType}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
-                  <ThemeInput
-                    labelName="GSM"
-                    value={paper.gsm}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
-                  <ThemeInput
-                    labelName="Rate / Unit"
-                    value={paper.ratePerUnit}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
-                </Stack>
-              </Box>
-            ))}
-          </Box>
-        )} */}
-
         {/* Binder Papers Section */}
         <Box mb={3}>
           <Typography fontWeight={600} mb={2}>
@@ -504,26 +539,29 @@ const BinderTaskView = () => {
                   fullWidth
                   InputProps={{ readOnly: !canEditBinderTask }}
                 />
-                <ThemeInput
-                  labelName="Sheet Size"
-                  value={paper.sheetSize}
-                  onChange={(e) => handleBinderPaperChange(index, 'sheetSize', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditBinderTask }}
+                <ThemeSelect
+                  label="Paper Type"
+                  options={materialNameOptions}
+                  value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
+                  onChange={(e, newValue) => handleMaterialNameChange(index, newValue?.value as string || "")}
+                  required
+                  disabled={!canEditBinderTask}
                 />
-                <ThemeInput
-                  labelName="Paper Type"
-                  value={paper.paperType}
-                  onChange={(e) => handleBinderPaperChange(index, 'paperType', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditBinderTask }}
+                <ThemeSelect
+                  label="GSM"
+                  options={getMaterialGSMOptions(paper.paperType)}
+                  value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
+                  onChange={(e, newValue) => handleMaterialGSMChange(index, newValue?.value as string || "")}
+                  required
+                  disabled={!paper.paperType || !canEditBinderTask}
                 />
-                <ThemeInput
-                  labelName="GSM"
-                  value={paper.gsm}
-                  onChange={(e) => handleBinderPaperChange(index, 'gsm', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditBinderTask }}
+                <ThemeSelect
+                  label="Size"
+                  options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
+                  value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.sheetSize) || null}
+                  onChange={(e, newValue) => handleMaterialSizeChange(index, newValue?.value as string || "")}
+                  required
+                  disabled={!paper.paperType || !paper.gsm || !canEditBinderTask}
                 />
                 <ThemeInput
                   labelName="Rate / Unit"
@@ -535,23 +573,23 @@ const BinderTaskView = () => {
               </Stack>
             </Box>
           ))}
-        {/* {canEditBinderTask && (
-        <Box display="flex" justifyContent="flex-end">
-          <ThemeButton
-            onClick={handleAddBinderPaper}
-            disabled={!canEditBinderTask}
-            startIcon={<AddIcon />}
-            sx={{
-              backgroundColor: "#6366F1",
-              borderRadius: "8px",
-              color: "#fff",
-              "&:hover": { backgroundColor: "#4F46E5" },
-            }}
-          >
-            Add Binder Paper
-          </ThemeButton>
-        </Box>
-      )} */}
+          {canEditBinderTask && (
+            <Box display="flex" justifyContent="flex-end">
+              <ThemeButton
+                onClick={handleAddBinderPaper}
+                disabled={!canEditBinderTask}
+                startIcon={<AddIcon />}
+                sx={{
+                  backgroundColor: "#6366F1",
+                  borderRadius: "8px",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#4F46E5" },
+                }}
+              >
+                Add Binder Paper
+              </ThemeButton>
+            </Box>
+          )}
         </Box>
 
         {/* Binder Wasted Sheet */}
@@ -628,41 +666,26 @@ const BinderTaskView = () => {
           </Box>
         )}
 
-        {/* Removed Status Select */}
-        {/* <Box mb={3}>
-          <Typography fontSize={14} fontWeight={500} color="#475467" mb={1}>
-            Status
-          </Typography>
-          <ThemeSelect
-            options={statusOptions}
-            value={binderStatus}
-            onChange={(_, newValue) => setBinderStatus(newValue)}
-            placeholder="Select Status"
-            sx={{ minWidth: 140, width: "auto" }}
-            disabled={!canEditBinderTask}
-          />
-        </Box> */}
-
         {/* Submit Button */}
         {singleOrder.binderStatus === "In Progress" && (
 
-        <ThemeButton
-          sx={{
-            background: "#12B76A",
-            color: "#fff",
-            fontWeight: 600,
-            fontSize: 18,
-            borderRadius: 2,
-            py: 1.2,
-            mt: 1,
-            "&:hover": { background: "#079455" },
-            width: "100%",
-          }}
-          onClick={handleSubmit}
-          disabled={submitLoading || !canEditBinderTask}
-        >
-          {submitLoading ? "Updating..." : "Mark As Done"}
-        </ThemeButton>
+          <ThemeButton
+            sx={{
+              background: "#12B76A",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 18,
+              borderRadius: 2,
+              py: 1.2,
+              mt: 1,
+              "&:hover": { background: "#079455" },
+              width: "100%",
+            }}
+            onClick={handleSubmit}
+            disabled={submitLoading || !canEditBinderTask}
+          >
+            {submitLoading ? "Updating..." : "Mark As Done"}
+          </ThemeButton>
         )}
       </Paper>
 

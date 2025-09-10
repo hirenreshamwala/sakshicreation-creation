@@ -17,7 +17,7 @@ import { authService } from "@/services/auth.service";
 
 type PaperField = {
   paperName: string;
-  numberOfSheetsUsed: string;
+  rowPaperUser: string;
   sheetSize: string;
   paperType: string;
   gsm: string;
@@ -545,18 +545,18 @@ const PrinterTaskView = () => {
                 />
                 <ThemeInput
                   labelName="Number of Sheets Used"
-                  value={paper.numberOfSheetsUsed}
+                  value={paper.rowPaperUser}
                   onChange={(e) => handlePrinterPaperChange(index, 'rowPaperUser', e.target.value)}
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />
-                <ThemeInput
+                {/* <ThemeInput
                   labelName="Sheet Size"
                   value={paper.sheetSize}
                   onChange={(e) => handlePrinterPaperChange(index, 'sheetSize', e.target.value)}
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
-                />
+                /> */}
                 {/* <ThemeInput
                   labelName="Paper Type"
                   value={paper.paperType}

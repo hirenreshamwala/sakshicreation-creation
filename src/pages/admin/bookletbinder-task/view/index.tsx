@@ -12,6 +12,8 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { getOrderByIdThunk, updateOrderThunk } from "@/store/slices/orderSlice"
 import { useRouter } from "next/router"
 import { toast } from "react-toastify"
+import { getAllMaterialsThunk } from "@/store/slices/materialSlice";
+import ThemeSelect from "@/component/common_component/themeselect";
 
 type PaperField = {
   paperName: string;
@@ -28,7 +30,7 @@ const BookletBinderTaskView = () => {
   const router = useRouter()
   const { id: orderId } = router.query
   const { singleOrder } = useAppSelector((state) => state.orders)
-
+  const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [openDesignFilesDialog, setOpenDesignFilesDialog] = useState(false)
@@ -141,6 +143,11 @@ const BookletBinderTaskView = () => {
     console.error("Upload error:", error)
     toast.error(error)
   }
+
+
+  useEffect(() => {
+    if (!materials.length) dispatch(getAllMaterialsThunk());
+  }, [])
 
   const handleViewDesignFiles = () => setOpenDesignFilesDialog(true)
   const handleCloseDesignFilesDialog = () => setOpenDesignFilesDialog(false)
@@ -291,6 +298,70 @@ const BookletBinderTaskView = () => {
       setSubmitLoading(false)
     }
   }
+
+
+  const materialNameOptions = materials.map(material => ({
+    value: material._id, // Use _id as value
+    label: material.materialName,
+  }));
+
+  // Get GSM options for a specific material (_id)
+  const getMaterialGSMOptions = (materialId: string) => {
+    const filteredMaterials = materials.filter(m => m._id === materialId);
+    return Array.from(
+      new Set(filteredMaterials.map(m => m.materialGSM.toString()))
+    ).map(gsm => {
+      const gsmMaterial = filteredMaterials.find(m => m.materialGSM.toString() === gsm);
+      return {
+        value: gsmMaterial?._id, // Use _id for GSM too
+        label: `${gsm} GSM`,
+      };
+    });
+  };
+
+  // Get size options for a specific material + GSM
+  const getMaterialSizeOptions = (materialId: string, materialGSM: string) => {
+    const filteredMaterials = materials.filter(
+      m => m._id === materialGSM
+    );
+    return filteredMaterials.map(m => ({
+      value: m._id, // Each size option tied to material _id
+      label: m.materialSize,
+    }));
+  };
+
+  // Handle material name selection
+  const handleMaterialNameChange = (index: number, id: string) => {
+    const updatedPapers = [...bookletPapers];
+    updatedPapers[index] = {
+      ...updatedPapers[index],
+      paperType: id, // store _id
+      gsm: "",       // reset gsm
+      sheetSize: "", // reset size
+    };
+    setBookletPapers(updatedPapers);
+  };
+
+  // Handle GSM selection
+  const handleMaterialGSMChange = (index: number, id: string) => {
+    const updatedPapers = [...bookletPapers];
+    updatedPapers[index] = {
+      ...updatedPapers[index],
+      gsm: id,       // store _id
+      sheetSize: "", // reset size
+    };
+    setBookletPapers(updatedPapers);
+  };
+
+  // Handle size selection
+  const handleMaterialSizeChange = (index: number, id: string) => {
+    const updatedPapers = [...bookletPapers];
+    updatedPapers[index] = {
+      ...updatedPapers[index],
+      sheetSize: id, // store _id
+    };
+    setBookletPapers(updatedPapers);
+  };
 
   if (pageLoading) {
     return (
@@ -563,25 +634,43 @@ const BookletBinderTaskView = () => {
                   InputProps={{ readOnly: !canEditBookletBinderTask }}
                 />
                 <ThemeInput
-                  labelName="Sheet Size"
-                  value={paper.sheetSize}
-                  onChange={(e) => handleBookletPaperChange(index, 'sheetSize', e.target.value)}
+                  labelName="Number of Sheets Used"
+                  value={paper.numberOfSheetsUsed}
+                  onChange={(e) => handleBookletPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
                   fullWidth
-                  InputProps={{ readOnly: !canEditBookletBinderTask }}
+                  InputProps={{ readOnly: canEditBookletBinderTask }}
                 />
-                <ThemeInput
-                  labelName="Paper Type"
-                  value={paper.paperType}
-                  onChange={(e) => handleBookletPaperChange(index, 'paperType', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditBookletBinderTask }}
+                <ThemeSelect
+                  label="Paper Type"
+                  options={materialNameOptions}
+                  value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
+                  onChange={(e, newValue) =>
+                    handleMaterialNameChange(index, newValue?.value as string || "")
+                  }
+                  required
+                  disabled={canEditBookletBinderTask}
                 />
-                <ThemeInput
-                  labelName="GSM"
-                  value={paper.gsm}
-                  onChange={(e) => handleBookletPaperChange(index, 'gsm', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditBookletBinderTask }}
+
+                <ThemeSelect
+                  label="GSM"
+                  options={getMaterialGSMOptions(paper.paperType)}
+                  value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
+                  onChange={(e, newValue) =>
+                    handleMaterialGSMChange(index, newValue?.value as string || "")
+                  }
+                  required
+                  disabled={!paper.paperType || canEditBookletBinderTask}
+                />
+
+                <ThemeSelect
+                  label="Size"
+                  options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
+                  value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.sheetSize) || null}
+                  onChange={(e, newValue) =>
+                    handleMaterialSizeChange(index, newValue?.value as string || "")
+                  }
+                  required
+                  disabled={!paper.paperType || !paper.gsm || canEditBookletBinderTask}
                 />
                 <ThemeInput
                   labelName="Rate / Unit"
@@ -593,7 +682,7 @@ const BookletBinderTaskView = () => {
               </Stack>
             </Box>
           ))}
-         {/* {canEditBookletBinderTask && (
+          {/* {canEditBookletBinderTask && (
           <Box display="flex" justifyContent="flex-end">
             <ThemeButton
               onClick={handleAddBookletPaper}
@@ -617,68 +706,68 @@ const BookletBinderTaskView = () => {
           <Typography fontWeight={600} mb={2}>
             Booklet Specifications
           </Typography>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={6} md={3}>
-                <ThemeInput
-                  labelName="Size"
-                  value={formData.size}
-                  onChange={(e) => handleInputChange("size", e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditBookletBinderTask }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <ThemeInput
-                  labelName="Qty"
-                  value={formData.qty}
-                  onChange={(e) => handleInputChange("qty", e.target.value)}
-                  type="number"
-                  fullWidth
-                  InputProps={{ readOnly: !canEditBookletBinderTask }}
-                />
-              </Grid>
-
-              {/* Lamination */}
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl component="fieldset" disabled={!canEditBookletBinderTask}>
-                  <FormLabel component="legend">Lamination</FormLabel>
-                  <RadioGroup
-                    row
-                    value={formData.isLamination}
-                    onChange={(e) => handleInputChange("isLamination", e.target.value)}
-                  >
-                    <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                    <FormControlLabel value="No" control={<Radio />} label="No" />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
-              {formData.isLamination === "Yes" && (
-                <Grid item xs={12} sm={6} md={3}>
-                  <ThemeInput
-                    labelName="Lamination Type"
-                    value={formData.laminationType}
-                    onChange={(e) => handleInputChange("laminationType", e.target.value)}
-                    placeholder="e.g., Matte, Gloss"
-                    fullWidth
-                    InputProps={{ readOnly: !canEditBookletBinderTask }}
-                  />
-                </Grid>
-              )}
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl component="fieldset" disabled={!canEditBookletBinderTask}>
-                  <FormLabel component="legend">UV</FormLabel>
-                  <RadioGroup
-                    row
-                    value={formData.uv}
-                    onChange={(e) => handleInputChange("uv", e.target.value)}
-                  >
-                    <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                    <FormControlLabel value="No" control={<Radio />} label="No" />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
+          <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={6} md={3}>
-            {/* <ThemeInput
+              <ThemeInput
+                labelName="Size"
+                value={formData.size}
+                onChange={(e) => handleInputChange("size", e.target.value)}
+                fullWidth
+                InputProps={{ readOnly: !canEditBookletBinderTask }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <ThemeInput
+                labelName="Qty"
+                value={formData.qty}
+                onChange={(e) => handleInputChange("qty", e.target.value)}
+                type="number"
+                fullWidth
+                InputProps={{ readOnly: !canEditBookletBinderTask }}
+              />
+            </Grid>
+
+            {/* Lamination */}
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl component="fieldset" disabled={!canEditBookletBinderTask}>
+                <FormLabel component="legend">Lamination</FormLabel>
+                <RadioGroup
+                  row
+                  value={formData.isLamination}
+                  onChange={(e) => handleInputChange("isLamination", e.target.value)}
+                >
+                  <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
+                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+            {formData.isLamination === "Yes" && (
+              <Grid item xs={12} sm={6} md={3}>
+                <ThemeInput
+                  labelName="Lamination Type"
+                  value={formData.laminationType}
+                  onChange={(e) => handleInputChange("laminationType", e.target.value)}
+                  placeholder="e.g., Matte, Gloss"
+                  fullWidth
+                  InputProps={{ readOnly: !canEditBookletBinderTask }}
+                />
+              </Grid>
+            )}
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl component="fieldset" disabled={!canEditBookletBinderTask}>
+                <FormLabel component="legend">UV</FormLabel>
+                <RadioGroup
+                  row
+                  value={formData.uv}
+                  onChange={(e) => handleInputChange("uv", e.target.value)}
+                >
+                  <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
+                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              {/* <ThemeInput
               labelName="Number of Sheets Used"
               value={formData.numberOfSheetUsed}
               onChange={(e) => handleInputChange("numberOfSheetUsed", e.target.value)}
@@ -686,8 +775,8 @@ const BookletBinderTaskView = () => {
               fullWidth
               InputProps={{ readOnly: !canEditBookletBinderTask }}
             /> */}
-          </Grid>
-          {/* <Grid item xs={12} sm={6} md={3}>
+            </Grid>
+            {/* <Grid item xs={12} sm={6} md={3}>
             <ThemeInput
               labelName="Sheet Size"
               value={formData.sheetSize}
@@ -696,7 +785,7 @@ const BookletBinderTaskView = () => {
               InputProps={{ readOnly: !canEditBookletBinderTask }}
             />
           </Grid> */}
-          {/* <Grid item xs={12} sm={6} md={3}>
+            {/* <Grid item xs={12} sm={6} md={3}>
             <ThemeInput
               labelName="Paper Type"
               value={formData.paperType}
@@ -705,7 +794,7 @@ const BookletBinderTaskView = () => {
               InputProps={{ readOnly: !canEditBookletBinderTask }}
             />
           </Grid> */}
-          {/* <Grid item xs={12} sm={6} md={3}>
+            {/* <Grid item xs={12} sm={6} md={3}>
             <ThemeInput
               labelName="GSM"
               value={formData.gsm}
@@ -724,42 +813,42 @@ const BookletBinderTaskView = () => {
               InputProps={{ readOnly: !canEditBookletBinderTask }}
             />
           </Grid> */}
-        </Grid>
+          </Grid>
         </Box>
 
         {/* Additional Options */}
         <Box display="flex" gap={4} justifyContent={"space-between"} my={2}>
-            <ThemeCheckbox
-              label="Pasting"
-              checked={formData.isPasting}
-              onChange={(e) => handleInputChange("isPasting", e.target.checked)}
-              disabled={!canEditBookletBinderTask}
-            />
-            <ThemeCheckbox
-              label="Cutting"
-              checked={formData.isCutting}
-              onChange={(e) => handleInputChange("isCutting", e.target.checked)}
-              disabled={!canEditBookletBinderTask}
-            />
-            <ThemeCheckbox
-              label="Creasing"
-              checked={formData.isCreasing}
-              onChange={(e) => handleInputChange("isCreasing", e.target.checked)}
-              disabled={!canEditBookletBinderTask}
-            />
-            <ThemeCheckbox
-              label="Foil"
-              checked={formData.isFoil}
-              onChange={(e) => handleInputChange("isFoil", e.target.checked)}
-              disabled={!canEditBookletBinderTask}
-            />
-            <ThemeCheckbox
-              label="Punching"
-              checked={formData.isPunching}
-              onChange={(e) => handleInputChange("isPunching", e.target.checked)}
-              disabled={!canEditBookletBinderTask}
-            />
-            {/* <ThemeCheckbox
+          <ThemeCheckbox
+            label="Pasting"
+            checked={formData.isPasting}
+            onChange={(e) => handleInputChange("isPasting", e.target.checked)}
+            disabled={!canEditBookletBinderTask}
+          />
+          <ThemeCheckbox
+            label="Cutting"
+            checked={formData.isCutting}
+            onChange={(e) => handleInputChange("isCutting", e.target.checked)}
+            disabled={!canEditBookletBinderTask}
+          />
+          <ThemeCheckbox
+            label="Creasing"
+            checked={formData.isCreasing}
+            onChange={(e) => handleInputChange("isCreasing", e.target.checked)}
+            disabled={!canEditBookletBinderTask}
+          />
+          <ThemeCheckbox
+            label="Foil"
+            checked={formData.isFoil}
+            onChange={(e) => handleInputChange("isFoil", e.target.checked)}
+            disabled={!canEditBookletBinderTask}
+          />
+          <ThemeCheckbox
+            label="Punching"
+            checked={formData.isPunching}
+            onChange={(e) => handleInputChange("isPunching", e.target.checked)}
+            disabled={!canEditBookletBinderTask}
+          />
+          {/* <ThemeCheckbox
               label="Paper-1"
               checked={formData.isPaper1}
               onChange={(e) => handleInputChange("isPaper1", e.target.checked)}
@@ -771,7 +860,7 @@ const BookletBinderTaskView = () => {
               onChange={(e) => handleInputChange("isPaper2", e.target.checked)}
               disabled={!canEditBookletBinderTask}
             /> */}
-          </Box>
+        </Box>
 
         {/* Booklet Binder Wasted Sheet */}
         <Box mb={3}>
@@ -849,23 +938,23 @@ const BookletBinderTaskView = () => {
 
         {/* Submit Button */}
         {singleOrder.bookletBinderStatus === "In Progress" && (
-        <ThemeButton
-          sx={{
-            background: "#12B76A",
-            color: "#fff",
-            fontWeight: 600,
-            fontSize: 18,
-            borderRadius: 2,
-            py: 1.2,
-            mt: 1,
-            "&:hover": { background: "#079455" },
-            width: "100%",
-          }}
-          onClick={handleSubmit}
-          disabled={submitLoading || !canEditBookletBinderTask}
-        >
-          {submitLoading ? "Updating..." : "Mark As Done"}
-        </ThemeButton>
+          <ThemeButton
+            sx={{
+              background: "#12B76A",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 18,
+              borderRadius: 2,
+              py: 1.2,
+              mt: 1,
+              "&:hover": { background: "#079455" },
+              width: "100%",
+            }}
+            onClick={handleSubmit}
+            disabled={submitLoading || !canEditBookletBinderTask}
+          >
+            {submitLoading ? "Updating..." : "Mark As Done"}
+          </ThemeButton>
         )}
       </Paper>
 

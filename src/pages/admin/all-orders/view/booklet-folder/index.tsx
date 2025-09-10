@@ -34,6 +34,8 @@ import ThemeCheckbox from "@/component/common_component/themecheckbox"
 import { Download } from "@mui/icons-material"
 import { downloadBookletPDF } from "@/utills/utills"
 import moment from "moment"
+import { getAllMaterialsThunk } from "@/store/slices/materialSlice"
+import ThemeSelect from "@/component/common_component/themeselect"
 
 type OptionType = {
   label: string
@@ -55,7 +57,7 @@ const BookletFolderBinderForm = () => {
   const dispatch = useAppDispatch()
   const { singleOrder } = useAppSelector((state) => state.orders)
   const fileUploadRef = useRef<any>(null)
-
+  const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
   const [loading, setLoading] = useState(false)
   const [selectedBookletBinder, setSelectedBookletBinder] = useState<OptionType | null>(null)
@@ -207,6 +209,11 @@ const BookletFolderBinderForm = () => {
     }
     fetchOrderData()
   }, [dispatch, orderId])
+
+  useEffect(() => {
+    if (!materials.length) dispatch(getAllMaterialsThunk());
+  }, [])
+
 
   useEffect(() => {
     if (singleOrder) {
@@ -388,6 +395,70 @@ const BookletFolderBinderForm = () => {
     setBookletPapers(updatedPapers)
     formik.setFieldValue('bookletPapers', updatedPapers)
   }
+
+  const materialNameOptions = materials.map(material => ({
+    value: material._id, // Use _id as value
+    label: material.materialName,
+  }));
+
+  // Get GSM options for a specific material (_id)
+  const getMaterialGSMOptions = (materialId: string) => {
+    const filteredMaterials = materials.filter(m => m._id === materialId);
+    return Array.from(
+      new Set(filteredMaterials.map(m => m.materialGSM.toString()))
+    ).map(gsm => {
+      const gsmMaterial = filteredMaterials.find(m => m.materialGSM.toString() === gsm);
+      return {
+        value: gsmMaterial?._id, // Use _id for GSM too
+        label: `${gsm} GSM`,
+      };
+    });
+  };
+
+  // Get size options for a specific material + GSM
+  const getMaterialSizeOptions = (materialId: string, materialGSM: string) => {
+    const filteredMaterials = materials.filter(
+      m => m._id === materialGSM
+    );
+    return filteredMaterials.map(m => ({
+      value: m._id, // Each size option tied to material _id
+      label: m.materialSize,
+    }));
+  };
+
+  // Handle material name selection
+  const handleMaterialNameChange = (index: number, id: string) => {
+    const updatedPapers = [...bookletPapers];
+    updatedPapers[index] = {
+      ...updatedPapers[index],
+      paperType: id, // store _id
+      gsm: "",       // reset gsm
+      sheetSize: "", // reset size
+    };
+    setBookletPapers(updatedPapers);
+  };
+
+  // Handle GSM selection
+  const handleMaterialGSMChange = (index: number, id: string) => {
+    const updatedPapers = [...bookletPapers];
+    updatedPapers[index] = {
+      ...updatedPapers[index],
+      gsm: id,       // store _id
+      sheetSize: "", // reset size
+    };
+    setBookletPapers(updatedPapers);
+  };
+
+  // Handle size selection
+  const handleMaterialSizeChange = (index: number, id: string) => {
+    const updatedPapers = [...bookletPapers];
+    updatedPapers[index] = {
+      ...updatedPapers[index],
+      sheetSize: id, // store _id
+    };
+    setBookletPapers(updatedPapers);
+  };
+
 
   if (pageLoading) {
     return (
@@ -756,26 +827,37 @@ const BookletFolderBinderForm = () => {
                       fullWidth
                       InputProps={{ readOnly: areFieldsReadOnly }}
                     />
-                    <ThemeInput
-                      labelName="Sheet Size"
-                      value={paper.sheetSize}
-                      onChange={(e) => handleBookletPaperChange(index, 'sheetSize', e.target.value)}
-                      fullWidth
-                      InputProps={{ readOnly: areFieldsReadOnly }}
+                    <ThemeSelect
+                      label="Paper Type"
+                      options={materialNameOptions}
+                      value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
+                      onChange={(e, newValue) =>
+                        handleMaterialNameChange(index, newValue?.value as string || "")
+                      }
+                      required
+                      disabled={areFieldsReadOnly}
                     />
-                    <ThemeInput
-                      labelName="Paper Type"
-                      value={paper.paperType}
-                      onChange={(e) => handleBookletPaperChange(index, 'paperType', e.target.value)}
-                      fullWidth
-                      InputProps={{ readOnly: areFieldsReadOnly }}
+
+                    <ThemeSelect
+                      label="GSM"
+                      options={getMaterialGSMOptions(paper.paperType)}
+                      value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
+                      onChange={(e, newValue) =>
+                        handleMaterialGSMChange(index, newValue?.value as string || "")
+                      }
+                      required
+                      disabled={!paper.paperType || areFieldsReadOnly}
                     />
-                    <ThemeInput
-                      labelName="GSM"
-                      value={paper.gsm}
-                      onChange={(e) => handleBookletPaperChange(index, 'gsm', e.target.value)}
-                      fullWidth
-                      InputProps={{ readOnly: areFieldsReadOnly }}
+
+                    <ThemeSelect
+                      label="Size"
+                      options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
+                      value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.sheetSize) || null}
+                      onChange={(e, newValue) =>
+                        handleMaterialSizeChange(index, newValue?.value as string || "")
+                      }
+                      required
+                      disabled={!paper.paperType || !paper.gsm || areFieldsReadOnly}
                     />
                     <ThemeInput
                       labelName="Rate / Unit"

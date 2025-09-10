@@ -110,64 +110,100 @@ const InventoryPage = () => {
   const handleWardTabChange = (_: React.SyntheticEvent, newValue: string | number) => {
     setActiveWardTab(newValue as WardTab);
   };
-const aggregateInventory = (): AggregatedInventory[] => {
-  const filtered = inventory.filter(item => item.type === activeWardTab);
-  const aggregated: Record<string, AggregatedInventory> = {};
+  const aggregateInventory = (): AggregatedInventory[] => {
+    const filtered = inventory.filter(item => item.type === activeWardTab);
+    const aggregated: Record<string, AggregatedInventory> = {};
 
-  // First pass: aggregate all inward items
-  filtered.forEach(item => {
-    if (!item.forCompany || !item.material) return;
+    // First pass: aggregate items based on current ward tab
+    filtered.forEach(item => {
+      if (!item.forCompany || !item.material) return;
 
-    const key = `${item.forCompany._id}-${item.material._id}`;
-    
-    if (!aggregated[key]) {
-      aggregated[key] = {
-        printerId: item.forCompany._id,
-        printerName: `${item.forCompany.firstName} ${item.forCompany.lastName}`,
-        materialId: item.material._id,
-        materialName: item.material.materialName,
-        materialSize: item.material.materialSize,
-        materialGSM: item.material.materialGSM,
-        totalQuantity: 0,
-        lastPurchase: 0,
-        lastPurchaseDate: null, // Track the actual date of last purchase
-        usedQty: 0,
-        balance: 0,
-        purchases: []
-      };
-    }
+      const key = `${item.forCompany._id}-${item.material._id}`;
 
-    aggregated[key].totalQuantity += item.quantity;
-    aggregated[key].purchases.push(item);
-    
-    // Track the most recent inward purchase
-    if (item.type === 'inward') {
-      const itemDate = new Date(item.date);
-      if (!aggregated[key].lastPurchaseDate || itemDate > aggregated[key].lastPurchaseDate) {
-        aggregated[key].lastPurchaseDate = itemDate;
-        aggregated[key].lastPurchase = item.quantity;
+      if (!aggregated[key]) {
+        aggregated[key] = {
+          printerId: item.forCompany._id,
+          printerName: `${item.forCompany.firstName} ${item.forCompany.lastName}`,
+          materialId: item.material._id,
+          materialName: item.material.materialName,
+          materialSize: item.material.materialSize,
+          materialGSM: item.material.materialGSM,
+          totalQuantity: 0,
+          lastPurchase: 0,
+          lastPurchaseDate: null,
+          usedQty: 0,
+          balance: 0,
+          purchases: []
+        };
       }
-    }
-  });
 
-  // Second pass: calculate used quantity from outward items
-  const outwardItems = inventory.filter(item => item.type === 'outward');
-  outwardItems.forEach(item => {
-    if (!item.forCompany || !item.material) return;
-    
-    const key = `${item.forCompany._id}-${item.material._id}`;
-    if (aggregated[key]) {
-      aggregated[key].usedQty += item.quantity;
-    }
-  });
+      // Add quantity based on type
+      if (item.type === 'inward') {
+        aggregated[key].totalQuantity += item.quantity;
+        aggregated[key].purchases.push(item);
 
-  // Calculate balance for each item
-  Object.keys(aggregated).forEach(key => {
-    aggregated[key].balance = aggregated[key].totalQuantity - aggregated[key].usedQty;
-  });
+        // Track the most recent inward purchase
+        const itemDate = new Date(item.date);
+        if (!aggregated[key].lastPurchaseDate || itemDate > aggregated[key].lastPurchaseDate) {
+          aggregated[key].lastPurchaseDate = itemDate;
+          aggregated[key].lastPurchase = item.quantity;
+        }
+      } else if (item.type === 'outward') {
+        aggregated[key].usedQty += item.quantity;
+        aggregated[key].purchases.push(item);
+      }
+    });
 
-  return Object.values(aggregated);
-};
+    // Second pass: calculate total inward and outward for balance
+    // Get all items for the category to calculate proper balance
+    const allCategoryItems = inventory.filter(item => item.category === activeMainTab);
+
+    Object.keys(aggregated).forEach(key => {
+      const [printerId, materialId] = key.split('-');
+
+      // Calculate total inward for this printer/material
+      const totalInward = allCategoryItems
+        .filter(item =>
+          item.type === 'inward' &&
+          item.forCompany?._id === printerId &&
+          item.material?._id === materialId
+        )
+        .reduce((sum, item) => sum + item.quantity, 0);
+
+      // Calculate total outward for this printer/material
+      const totalOutward = allCategoryItems
+        .filter(item =>
+          item.type === 'outward' &&
+          item.forCompany?._id === printerId &&
+          item.material?._id === materialId
+        )
+        .reduce((sum, item) => sum + item.quantity, 0);
+
+      // Update the aggregated data with proper calculations
+      aggregated[key].totalQuantity = totalInward;
+      aggregated[key].usedQty = totalOutward;
+      aggregated[key].balance = totalInward - totalOutward;
+
+      // For outward tab, we need to show the current outward records
+      if (activeWardTab === 'outward') {
+        // Find the most recent purchase for this material
+        const lastPurchase = allCategoryItems
+          .filter(item =>
+            item.type === 'inward' &&
+            item.forCompany?._id === printerId &&
+            item.material?._id === materialId
+          )
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+        if (lastPurchase) {
+          aggregated[key].lastPurchase = lastPurchase.quantity;
+          aggregated[key].lastPurchaseDate = new Date(lastPurchase.date);
+        }
+      }
+    });
+
+    return Object.values(aggregated);
+  };
   const aggregatedData = aggregateInventory();
 
   const handleRowClick = (printerData: AggregatedInventory) => {
@@ -180,7 +216,7 @@ const aggregateInventory = (): AggregatedInventory[] => {
     setSelectedPrinter(null);
   };
 
-  const filteredInventory = inventory.filter(item => 
+  const filteredInventory = inventory.filter(item =>
     item.type === activeWardTab &&
     (!selectedMaterial || item.material?._id === selectedMaterial) &&
     (!selectedVendor || item.vendor?._id === selectedVendor) &&
@@ -312,7 +348,7 @@ const aggregateInventory = (): AggregatedInventory[] => {
                   { id: 'balance', label: 'BALANCE' },
                   { id: 'action', label: 'ACTIONS' },
                 ]}
-                rowData={aggregatedData.filter(item => 
+                rowData={aggregatedData.filter(item =>
                   (!selectedMaterial || item.materialId === selectedMaterial) &&
                   (!selectedPrinterFilter || item.printerId === selectedPrinterFilter)
                 )}
@@ -344,61 +380,44 @@ const aggregateInventory = (): AggregatedInventory[] => {
           ) : (
             <>
               <Box sx={styles.filterContainer}>
-                {/* <Select
-                  size="small"
-                  value={selectedMaterial}
-                  onChange={(e) => setSelectedMaterial(e.target.value)}
-                  sx={{ minWidth: 120 }}
-                  displayEmpty
-                >
-                  <MenuItem value="">All Materials</MenuItem>
-                  {materialOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select> */}
-
-                {/* <Select
-                  size="small"
-                  value={selectedVendor}
-                  onChange={(e) => setSelectedVendor(e.target.value)}
-                  sx={{ minWidth: 120 }}
-                  displayEmpty
-                >
-                  <MenuItem value="">All Vendors</MenuItem>
-                  {vendorOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select> */}
-
-                <Typography variant="body2" fontWeight={700}>
-                  LAST PURCHASE - {selectedPrinter?.lastPurchase || 0}
-                </Typography>
-                <Typography variant="body2" fontWeight={700}>
-                  USED QUANTITY - {selectedPrinter?.usedQty || 0}
-                </Typography>
-                <Typography variant="body2" fontWeight={700}>
-                  BALANCE - {selectedPrinter?.balance || 0}
-                </Typography>
+                {activeWardTab === WardTab.OUTWARD && (
+                  <>
+                    <Typography variant="body2" fontWeight={700}>
+                      USED QUANTITY - {selectedPrinter?.usedQty || 0}
+                    </Typography>
+                    <Typography variant="body2" fontWeight={700}>
+                      BALANCE - {selectedPrinter?.balance || 0}
+                    </Typography>
+                  </>
+                )}
+                {activeWardTab === WardTab.INWARD && (
+                  <Typography variant="body2" fontWeight={700}>
+                    LAST PURCHASE - {selectedPrinter?.lastPurchase || 0}
+                  </Typography>
+                )}
               </Box>
 
-              {/* <Typography variant="h6" mb={2}>
-                Purchase Details for {selectedPrinter?.printerName} - {selectedPrinter?.materialName} ({selectedPrinter?.materialGSM} GSM, {selectedPrinter?.materialSize})
-              </Typography> */}
-
               <BasicTable
-                tableHeader={[
-                  { id: 'paper', label: 'PAPER' },
-                  { id: 'gsm', label: 'GSM' },
-                  { id: 'size', label: 'SIZE' },
-                  { id: 'qty', label: 'QTY' },
-                  { id: 'date', label: 'DATE IN WARD' },
-                  { id: 'vendor', label: 'VENDOR' },
-                ]}
-                rowData={filteredInventory.filter(item => 
+                tableHeader={
+                  activeWardTab === WardTab.INWARD
+                    ? [
+                      { id: 'paper', label: 'PAPER' },
+                      { id: 'gsm', label: 'GSM' },
+                      { id: 'size', label: 'SIZE' },
+                      { id: 'qty', label: 'QTY' },
+                      { id: 'date', label: 'DATE IN WARD' },
+                      { id: 'vendor', label: 'VENDOR' },
+                    ]
+                    : [
+                      { id: 'paper', label: 'PAPER' },
+                      { id: 'gsm', label: 'GSM' },
+                      { id: 'size', label: 'SIZE' },
+                      { id: 'qty', label: 'QTY' },
+                      { id: 'date', label: 'DATE' },
+                      { id: 'order', label: 'ORDER ID' },
+                    ]
+                }
+                rowData={filteredInventory.filter(item =>
                   item.forCompany?._id === selectedPrinter?.printerId &&
                   item.material?._id === selectedPrinter?.materialId
                 )}
@@ -413,10 +432,14 @@ const aggregateInventory = (): AggregatedInventory[] => {
                     <TableCell>{row.quantity}</TableCell>
                     <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <span>{row.vendor?.name || 'N/A'}</span>
-                        <FaChevronRight style={styles.tableActionIcon} />
-                      </Box>
+                      {activeWardTab === WardTab.INWARD ? (
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <span>{row.vendor?.name || 'N/A'}</span>
+                          <FaChevronRight style={styles.tableActionIcon} />
+                        </Box>
+                      ) : (
+                        row.orderId || 'N/A'
+                      )}
                     </TableCell>
                   </>
                 )}
