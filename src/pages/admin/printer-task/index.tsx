@@ -4,6 +4,7 @@ import BasicTable from "@/component/common_component/Table/themetable";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getPrinterOrdersThunk } from "@/store/slices/orderSlice";
 import { useRouter } from "next/router";
+import { authService } from "@/services/auth.service";
 
 interface Column {
   id: string;
@@ -95,9 +96,11 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
     status: string
   ) => {
     try {
+        const token = authService.getToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/status`, {
         method: "PUT",
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

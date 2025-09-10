@@ -164,9 +164,9 @@ interface TaskCardProps {
 const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true, onReschedule }) => {
   const party = typeof task.partyName === 'object' ? task.partyName : task.accountMaster?.party;
   const personName = party?.contactPerson || party?.ownerName || 'Unknown';
-  const address = party?.address
-    ? `${party.address.unitNo}, ${party.address.marketName}, ${party.address.streetAddress}, ${party.address.area}`
-    : 'Address not available';
+  // const address = party?.address
+  //   ? `${party.address.unitNo}, ${party.address?.marketName}, ${party.address.streetAddress}, ${party.address.area}`
+  //   : 'Address not available';
   // Determine which createdAt to display
   const createdAtToShow = task.isRescheduledTask && task.originalTaskId?.createdAt
     ? task.originalTaskId.createdAt
@@ -336,7 +336,7 @@ const ViewTaskPage: React.FC = () => {
         companyName: typeof fullTask?.companyName === 'string' ? fullTask.companyName : undefined,
         companyNameObj: company ? { companyName: company.companyName } : undefined,
         address: party.address
-          ? `${party.address.unitNo}, ${party.address.marketName}, ${party.address.streetAddress}, ${party.address.landMark || ''}, ${party.address.area} - ${party.address.pincode}`
+          ? `${party.address.unitNo}, ${party.address?.marketName?.marketName}, ${party.address.streetAddress?.streetAddress}, ${party.address?.landMark?.landMark || ''}, ${party.address?.area?.area} - ${party.address?.pincode?.pincode}`
           : 'Address not available',
         createdByObj: fullTask?.createdBy || singleAssignTask?.createdBy,
         ownerMobileNo: party.ownerMobileNo || 'Not available',
@@ -348,8 +348,8 @@ const ViewTaskPage: React.FC = () => {
         contactPerson: party.contactPerson || 'Not available',
         contactMobileNo: party.contactMobileNo || 'Not available',
         contactForPayment: party.contactForPayment || 'Not available',
-        marketName: party.address?.marketName || 'Not available',
-        area: party.address?.area || 'Not available',
+        marketName: party.address?.marketName?.marketName || 'Not available',
+        area: party.address?.area?.area || 'Not available',
       });
     } else {
       setPartyDetails(null);

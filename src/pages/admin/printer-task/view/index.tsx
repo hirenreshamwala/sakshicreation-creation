@@ -13,6 +13,7 @@ import { useRouter } from "next/router"
 import { toast } from "react-toastify"
 import ThemeSelect from "@/component/common_component/themeselect";
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice";
+import { authService } from "@/services/auth.service";
 
 type PaperField = {
   paperName: string;
@@ -70,7 +71,7 @@ const PrinterTaskView = () => {
       } else {
         setPrinterPapers([{
           paperName: "Paper-1",
-          numberOfSheetsUsed: "",
+          rowPaperUser: "",
           sheetSize: "",
           paperType: "",
           gsm: "",
@@ -115,9 +116,11 @@ const PrinterTaskView = () => {
   const handleUpdateStatus = async (orderId: string, statusType: string, status: string) => {
     try {
       setSubmitLoading(true)
+      const token = authService.getToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/status`, {
         method: "PUT",
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -145,7 +148,7 @@ const PrinterTaskView = () => {
     const paperCount = printerPapers.length
     setPrinterPapers([...printerPapers, {
       paperName: `Paper-${paperCount + 1}`,
-      numberOfSheetsUsed: "",
+      rowPaperUser: "",
       sheetSize: "",
       paperType: "",
       gsm: "",
@@ -176,7 +179,7 @@ const PrinterTaskView = () => {
 
     // Validate printer papers
     for (const paper of printerPapers) {
-      if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm || !paper.ratePerUnit) {
+      if (!paper.rowPaperUser || !paper.sheetSize || !paper.paperType || !paper.gsm || !paper.ratePerUnit) {
         toast.error("All paper fields must be filled")
         return
       }
@@ -224,29 +227,45 @@ const PrinterTaskView = () => {
     }
   }
 
-  const materialNameOptions = Array.from(new Set(materials.map(material => material.materialName))).map(name => ({
-    value: name,
-    label: name
-  }));
+    const materialNameOptions = Array.from(
+    new Set(materials.map(material => material.materialName))
+  ).map(name => {
+    const materialObj = materials.find(m => m.materialName === name)!;
+    return {
+      value: materialObj._id, // store _id
+      label: name
+    };
+  });
 
+  // GSM Options
   const getMaterialGSMOptions = (materialName: string) => {
-    const filteredMaterials = materials.filter(material => material.materialName === materialName);
-    return Array.from(new Set(filteredMaterials.map(material => material.materialGSM.toString()))).map(gsm => ({
-      value: gsm,
-      label: `${gsm} GSM`
-    }));
+    const filteredMaterials = materials.filter(material => material._id === materialName);
+    return Array.from(
+      new Set(filteredMaterials.map(material => material.materialGSM.toString()))
+    ).map(gsm => {
+      const materialObj = filteredMaterials.find(m => m.materialGSM.toString() === gsm)!;
+      return {
+        value: materialObj._id, // store _id
+        label: `${gsm} GSM`
+      };
+    });
   };
 
+  // Size Options
   const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
     const filteredMaterials = materials.filter(
       material =>
-        material.materialName === materialName &&
-        material.materialGSM.toString() === materialGSM
+        material._id === materialName
     );
-    return Array.from(new Set(filteredMaterials.map(material => material.materialSize))).map(size => ({
-      value: size,
-      label: size
-    }));
+    return Array.from(
+      new Set(filteredMaterials.map(material => material.materialSize))
+    ).map(size => {
+      const materialObj = filteredMaterials.find(m => m.materialSize === size)!;
+      return {
+        value: materialObj._id, // store _id
+        label: size
+      };
+    });
   };
 
   // Handle material selection for a specific paper field
@@ -527,7 +546,7 @@ const PrinterTaskView = () => {
                 <ThemeInput
                   labelName="Number of Sheets Used"
                   value={paper.numberOfSheetsUsed}
-                  onChange={(e) => handlePrinterPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
+                  onChange={(e) => handlePrinterPaperChange(index, 'rowPaperUser', e.target.value)}
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />
@@ -538,7 +557,7 @@ const PrinterTaskView = () => {
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />
-                <ThemeInput
+                {/* <ThemeInput
                   labelName="Paper Type"
                   value={paper.paperType}
                   onChange={(e) => handlePrinterPaperChange(index, 'paperType', e.target.value)}
@@ -551,7 +570,7 @@ const PrinterTaskView = () => {
                   onChange={(e) => handlePrinterPaperChange(index, 'gsm', e.target.value)}
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
-                />
+                /> */}
                 <ThemeInput
                   labelName="Rate / Unit"
                   value={paper.ratePerUnit}

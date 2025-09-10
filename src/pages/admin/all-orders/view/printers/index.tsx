@@ -214,29 +214,45 @@ const PrinterForm = () => {
     },
   });
 
-  const materialNameOptions = Array.from(new Set(materials.map(material => material.materialName))).map(name => ({
-    value: name,
-    label: name
-  }));
+  const materialNameOptions = Array.from(
+    new Set(materials.map(material => material.materialName))
+  ).map(name => {
+    const materialObj = materials.find(m => m.materialName === name)!;
+    return {
+      value: materialObj._id, // store _id
+      label: name
+    };
+  });
 
+  // GSM Options
   const getMaterialGSMOptions = (materialName: string) => {
-    const filteredMaterials = materials.filter(material => material.materialName === materialName);
-    return Array.from(new Set(filteredMaterials.map(material => material.materialGSM.toString()))).map(gsm => ({
-      value: gsm,
-      label: `${gsm} GSM`
-    }));
+    const filteredMaterials = materials.filter(material => material._id === materialName);
+    return Array.from(
+      new Set(filteredMaterials.map(material => material.materialGSM.toString()))
+    ).map(gsm => {
+      const materialObj = filteredMaterials.find(m => m.materialGSM.toString() === gsm)!;
+      return {
+        value: materialObj._id, // store _id
+        label: `${gsm} GSM`
+      };
+    });
   };
 
+  // Size Options
   const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
     const filteredMaterials = materials.filter(
       material =>
-        material.materialName === materialName &&
-        material.materialGSM.toString() === materialGSM
+        material._id === materialName
     );
-    return Array.from(new Set(filteredMaterials.map(material => material.materialSize))).map(size => ({
-      value: size,
-      label: size
-    }));
+    return Array.from(
+      new Set(filteredMaterials.map(material => material.materialSize))
+    ).map(size => {
+      const materialObj = filteredMaterials.find(m => m.materialSize === size)!;
+      return {
+        value: materialObj._id, // store _id
+        label: size
+      };
+    });
   };
 
   // Handle material selection for a specific paper field
