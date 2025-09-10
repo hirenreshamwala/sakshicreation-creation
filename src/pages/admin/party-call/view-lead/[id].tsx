@@ -298,7 +298,7 @@ const ViewLeadPage: React.FC = () => {
         setSelectedLead(lead);
         setPartyDetails({
           address: lead.partyName?.address
-            ? `${lead.partyName.address.unitNo}, ${lead.partyName.address.marketName}, ${lead.partyName.address.streetAddress}, ${lead.partyName.address.area} - ${lead.partyName.address.pincode}`
+            ? `${lead.partyName.address.unitNo}, ${lead.partyName.address.marketName?.marketName}, ${lead.partyName.address.streetAddress?.streetAddress}, ${lead.partyName.address.area?.area} - ${lead.partyName.address.pincode?.pincode}`
             : 'N/A',
           ownerMobileNo: lead.partyName?.ownerMobileNo || 'N/A',
           ownerName: lead.partyName?.ownerName || 'N/A',
@@ -309,8 +309,8 @@ const ViewLeadPage: React.FC = () => {
           contactPerson: lead.partyName?.contactPerson || 'N/A',
           contactMobileNo: lead.partyName?.contactMobileNo || 'N/A',
           contactForPayment: lead.partyName?.contactForPayment || 'N/A',
-          marketName: lead.partyName?.address?.marketName || 'N/A',
-          area: lead.partyName?.address?.area || 'N/A',
+          marketName: lead.partyName?.address?.marketName?.marketName || 'N/A',
+          area: lead.partyName?.address?.area?.area || 'N/A',
           partyName: lead.partyName?.partyName || 'N/A',
           companyName: lead.companyName?.companyName || 'N/A',
         });
