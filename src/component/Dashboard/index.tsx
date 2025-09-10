@@ -290,6 +290,11 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       path: "/admin/setup/markets",
       icon: <MdGroup size={18} />,
     },
+      {
+      label: "Kantan",
+      path: "/admin/setup/kantan",
+      icon: <MdGroup size={18} />,
+    },
     // {
     //   label: "Department Company",
     //   path: "/admin/setup/department-company",

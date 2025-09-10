@@ -177,5 +177,11 @@ const Endpoint = {
   UPDATE_MARKET: `${BaseURL}/api/market/update`,
   DELETE_MARKET: `${BaseURL}/api/market/delete`,
   BULK_UPLOAD_MARKETS: `${BaseURL}/api/market/bulk`,
+  
+  CREATE_KANTAN: `${BaseURL}/api/kantan/create`,
+  GET_ALL_KANTANS: `${BaseURL}/api/kantan/getall`,
+  UPDATE_KANTAN: `${BaseURL}/api/kantan/update`,
+  DELETE_KANTAN: `${BaseURL}/api/kantan/delete`,
+  BULK_UPLOAD_KANTANS: `${BaseURL}/api/kantan/bulk`,
 };
 export default Endpoint;
