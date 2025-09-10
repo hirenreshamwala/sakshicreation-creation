@@ -11,6 +11,8 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { getOrderByIdThunk, updateOrderThunk } from "@/store/slices/orderSlice"
 import { useRouter } from "next/router"
 import { toast } from "react-toastify"
+import ThemeSelect from "@/component/common_component/themeselect";
+import { getAllMaterialsThunk } from "@/store/slices/materialSlice";
 
 type PaperField = {
   paperName: string;
@@ -27,7 +29,7 @@ const PrinterTaskView = () => {
   const router = useRouter()
   const { id: orderId } = router.query
   const { singleOrder } = useAppSelector((state) => state.orders)
-
+  const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [openDesignFilesDialog, setOpenDesignFilesDialog] = useState(false)
@@ -36,6 +38,7 @@ const PrinterTaskView = () => {
   const [printerWastedSheet, setPrinterWastedSheet] = useState("")
   const [uploadedPrinterFiles, setUploadedPrinterFiles] = useState<any[]>([])
   const [printerPapers, setPrinterPapers] = useState<PaperField[]>([])
+  const [paperFields, setPaperFields] = useState<PaperField[]>([]);
 
   // Fetch order data
   useEffect(() => {
@@ -99,40 +102,44 @@ const PrinterTaskView = () => {
     toast.error(error)
   }
 
+  useEffect(() => {
+    dispatch(getAllMaterialsThunk());
+  }, []);
+
   const handleViewDesignFiles = () => setOpenDesignFilesDialog(true)
   const handleCloseDesignFilesDialog = () => setOpenDesignFilesDialog(false)
 
   const handleViewPrinterFiles = () => setOpenPrinterFilesDialog(true)
   const handleClosePrinterFilesDialog = () => setOpenPrinterFilesDialog(false)
 
-const handleUpdateStatus = async (orderId: string, statusType: string, status: string) => {
-  try {
-    setSubmitLoading(true)
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/status`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        statusType,
-        status,
-      }),
-    })
+  const handleUpdateStatus = async (orderId: string, statusType: string, status: string) => {
+    try {
+      setSubmitLoading(true)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          statusType,
+          status,
+        }),
+      })
 
-    if (response.ok) {
-      await dispatch(getOrderByIdThunk(orderId)).unwrap()
-      toast.success(`Status updated to ${status}`)
-    } else {
-      console.error("Failed to update status")
-      toast.error("Failed to update status")
+      if (response.ok) {
+        await dispatch(getOrderByIdThunk(orderId)).unwrap()
+        toast.success(`Status updated to ${status}`)
+      } else {
+        console.error("Failed to update status")
+        toast.error("Failed to update status")
+      }
+    } catch (error) {
+      console.error("Error updating status:", error)
+      toast.error("Error updating status")
+    } finally {
+      setSubmitLoading(false)
     }
-  } catch (error) {
-    console.error("Error updating status:", error)
-    toast.error("Error updating status")
-  } finally {
-    setSubmitLoading(false)
   }
-}
 
   const handleAddPrinterPaper = () => {
     const paperCount = printerPapers.length
@@ -217,6 +224,64 @@ const handleUpdateStatus = async (orderId: string, statusType: string, status: s
     }
   }
 
+  const materialNameOptions = Array.from(new Set(materials.map(material => material.materialName))).map(name => ({
+    value: name,
+    label: name
+  }));
+
+  const getMaterialGSMOptions = (materialName: string) => {
+    const filteredMaterials = materials.filter(material => material.materialName === materialName);
+    return Array.from(new Set(filteredMaterials.map(material => material.materialGSM.toString()))).map(gsm => ({
+      value: gsm,
+      label: `${gsm} GSM`
+    }));
+  };
+
+  const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
+    const filteredMaterials = materials.filter(
+      material =>
+        material.materialName === materialName &&
+        material.materialGSM.toString() === materialGSM
+    );
+    return Array.from(new Set(filteredMaterials.map(material => material.materialSize))).map(size => ({
+      value: size,
+      label: size
+    }));
+  };
+
+  // Handle material selection for a specific paper field
+  const handleMaterialNameChange = (index: number, value: string) => {
+    const updatedFields = [...paperFields];
+    updatedFields[index] = {
+      ...updatedFields[index],
+      materialName: value,
+      paperType: value,
+      gsm: "", // Reset GSM when material name changes
+      materialSize: "", // Reset size when material name changes
+    };
+    setPaperFields(updatedFields);
+  };
+
+  const handleMaterialGSMChange = (index: number, value: string) => {
+    const updatedFields = [...paperFields];
+    updatedFields[index] = {
+      ...updatedFields[index],
+      gsm: value,
+      materialSize: "", // Reset size when GSM changes
+    };
+    setPaperFields(updatedFields);
+  };
+
+  const handleMaterialSizeChange = (index: number, value: string) => {
+    const updatedFields = [...paperFields];
+    updatedFields[index] = {
+      ...updatedFields[index],
+      materialSize: value,
+      sheetSize: value // Set sheetSize to match material size
+    };
+    setPaperFields(updatedFields);
+  };
+
   if (pageLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -242,25 +307,25 @@ const handleUpdateStatus = async (orderId: string, statusType: string, status: s
       {/* Order Details */}
       <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h6" fontWeight={600} color="#1976D2">
-          Order Details
-        </Typography>
-              {singleOrder.printerStatus === "Pending" && (
-              <ThemeButton
-                sx={{
-                  background: "#1976D2",
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: 18,
-                  borderRadius: 2,
-                  py: 1.2,
-                  "&:hover": { background: "#1565C0" },
-                  width: "auto",
-                }}
-                onClick={() => handleUpdateStatus(singleOrder._id, "printer", "In Progress")}
-              >
-                Start Task
-              </ThemeButton>
+          <Typography variant="h6" fontWeight={600} color="#1976D2">
+            Order Details
+          </Typography>
+          {singleOrder.printerStatus === "Pending" && (
+            <ThemeButton
+              sx={{
+                background: "#1976D2",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 18,
+                borderRadius: 2,
+                py: 1.2,
+                "&:hover": { background: "#1565C0" },
+                width: "auto",
+              }}
+              onClick={() => handleUpdateStatus(singleOrder._id, "printer", "In Progress")}
+            >
+              Start Task
+            </ThemeButton>
           )}
         </Box>
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
@@ -435,6 +500,30 @@ const handleUpdateStatus = async (orderId: string, statusType: string, status: s
             <Box key={`printer-${index}`} mb={2} p={2} border={1} borderRadius={2} borderColor="#ddd">
               <Typography fontWeight={600}>{paper.paperName}</Typography>
               <Stack direction="row" spacing={2} mt={1}>
+                <ThemeSelect
+                  label="Paper Type"
+                  options={materialNameOptions}
+                  value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
+                  onChange={(e, newValue) => handleMaterialNameChange(index, newValue?.value as string || "")}
+                  required
+                  InputProps={{ readOnly: !canEditPrinterTask }}
+                />
+                <ThemeSelect
+                  label="GSM"
+                  options={getMaterialGSMOptions(paper.paperType)}
+                  value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
+                  onChange={(e, newValue) => handleMaterialGSMChange(index, newValue?.value as string || "")}
+                  required
+                  InputProps={{ readOnly: !canEditPrinterTask }}
+                />
+                <ThemeSelect
+                  label="Size"
+                  options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
+                  value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.materialSize) || null}
+                  onChange={(e, newValue) => handleMaterialSizeChange(index, newValue?.value as string || "")}
+                  required
+                  InputProps={{ readOnly: !canEditPrinterTask }}
+                />
                 <ThemeInput
                   labelName="Number of Sheets Used"
                   value={paper.numberOfSheetsUsed}

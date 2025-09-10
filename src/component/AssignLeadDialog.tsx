@@ -25,55 +25,55 @@ interface AssignLeadDialogProps {
 }
 
 const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead, partyIds, onSuccess }) => {
-  const dispatch = useAppDispatch();
-  const { accountMasters, loading: accountLoading, error: accountError } = useAppSelector(
-    (state) => state.accountMasters || {}
-  );
-  const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
-    (state) => state.staff || {}
-  );
-  const { loading: leadLoading, error: leadError, successMessage } = useAppSelector(
-    (state) => state.leads || {}
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [inputReasonOpen, setInputReasonOpen] = useState(false);
-  const [customReason, setCustomReason] = useState(lead?.reason === 'Other' ? lead?.customReason || '' : '');
-  const [partyDetails, setPartyDetails] = useState({
-    unitNo: '',
-    marketName: '',
-    area: '',
-    ownerWhatsAppNo: '',
-  });
+    const dispatch = useAppDispatch();
+    const { accountMasters, loading: accountLoading, error: accountError } = useAppSelector(
+        (state) => state.accountMasters || {}
+    );
+    const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
+        (state) => state.staff || {}
+    );
+    const { loading: leadLoading, error: leadError, successMessage } = useAppSelector(
+        (state) => state.leads || {}
+    );
+    const [isLoading, setIsLoading] = useState(false);
+    const [inputReasonOpen, setInputReasonOpen] = useState(false);
+    const [customReason, setCustomReason] = useState(lead?.reason === 'Other' ? lead?.customReason || '' : '');
+    const [partyDetails, setPartyDetails] = useState({
+        unitNo: '',
+        marketName: '',
+        area: '',
+        ownerWhatsAppNo: '',
+    });
 
-  const validationSchema = Yup.object({
-    date: Yup.string().required('Date is required'),
-    time: Yup.string(),
-    reason: Yup.string().required('Reason for Visit is required'),
-    assignedTo: Yup.string().required('Assign To is required'),
-    remark: Yup.string(),
-    status: Yup.string().required('Status is required'),
-      rescheduleDate: Yup.string().when('status', {
-    is: 'rescheduled',
-    then: () =>
-      Yup.string()
-        .required('Reschedule Date is required when status is Rescheduled')
-        .test('is-future-date', 'Reschedule Date must be a future date', (value) => {
-          if (!value) return false;
-          const selectedDate = new Date(value);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          return selectedDate >= today;
+    const validationSchema = Yup.object({
+        date: Yup.string().required('Date is required'),
+        time: Yup.string(),
+        reason: Yup.string().required('Reason for Visit is required'),
+        assignedTo: Yup.string().required('Assign To is required'),
+        remark: Yup.string(),
+        status: Yup.string().required('Status is required'),
+        rescheduleDate: Yup.string().when('status', {
+            is: 'rescheduled',
+            then: () =>
+                Yup.string()
+                    .required('Reschedule Date is required when status is Rescheduled')
+                    .test('is-future-date', 'Reschedule Date must be a future date', (value) => {
+                        if (!value) return false;
+                        const selectedDate = new Date(value);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        return selectedDate >= today;
+                    }),
+            otherwise: () => Yup.string().nullable(),
         }),
-    otherwise: () => Yup.string().nullable(),
-    }),
-    callFeedback: lead ? Yup.string().required('Call feedback is required') : Yup.string(),
-    ...(partyIds
-      ? {}
-      : {
-          companyName: Yup.string().required('Company Name is required'),
-          partyName: Yup.string().required('Party Name is required'),
-        }),
-});
+        callFeedback: lead ? Yup.string().required('Call feedback is required') : Yup.string(),
+        ...(partyIds
+            ? {}
+            : {
+                companyName: Yup.string().required('Company Name is required'),
+                partyName: Yup.string().required('Party Name is required'),
+            }),
+    });
 
     const formik = useFormik<Partial<Lead>>({
         initialValues: {
@@ -101,68 +101,68 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
         validateOnBlur: true, // Enable validation on blur for better UX
         validateOnChange: true, // Enable validation on change
         onSubmit: async (values) => {
-        setIsLoading(true);
-        try {
+            setIsLoading(true);
+            try {
 
-            if (partyIds && partyIds.length > 0) {
-            // Bulk lead creation
-            if (!values.reason || !values.assignedTo || !values.date) {
-        toast.error('Please fill all required fields: Reason, Assigned To, and Date');
-        setIsLoading(false);
-        return;
-        }
-        // Bulk lead creation
-        const leadsData = partyIds.map((partyId) => {
-        const account = accountMasters.find((acc) => acc.party?._id === partyId);
-        if (!account) {
-            console.error(`Account not found for party ID: ${partyId}`);
-            throw new Error(`Account not found for party ID: ${partyId}`);
-        }
-        const leadData = {
-            companyName: account.companyName?._id,
-            partyName: partyId,
-            reason: values.reason === 'Other' ? customReason : values.reason,
-            customReason: values.reason === 'Other' ? customReason : undefined,
-            assignedTo: values.assignedTo,
-            date: values.date,
-            time: values.time || undefined,
-            status: values.status,
-            remark: values.remark || undefined,
-            callFeedback: values.callFeedback || undefined,
-            rescheduleDate: values.rescheduleDate || undefined,
-        };
-        return leadData;
-        });
+                if (partyIds && partyIds.length > 0) {
+                    // Bulk lead creation
+                    if (!values.reason || !values.assignedTo || !values.date) {
+                        toast.error('Please fill all required fields: Reason, Assigned To, and Date');
+                        setIsLoading(false);
+                        return;
+                    }
+                    // Bulk lead creation
+                    const leadsData = partyIds.map((partyId) => {
+                        const account = accountMasters.find((acc) => acc.party?._id === partyId);
+                        if (!account) {
+                            console.error(`Account not found for party ID: ${partyId}`);
+                            throw new Error(`Account not found for party ID: ${partyId}`);
+                        }
+                        const leadData = {
+                            companyName: account.companyName?._id,
+                            partyName: partyId,
+                            reason: values.reason === 'Other' ? customReason : values.reason,
+                            customReason: values.reason === 'Other' ? customReason : undefined,
+                            assignedTo: values.assignedTo,
+                            date: values.date,
+                            time: values.time || undefined,
+                            status: values.status,
+                            remark: values.remark || undefined,
+                            callFeedback: values.callFeedback || undefined,
+                            rescheduleDate: values.rescheduleDate || undefined,
+                        };
+                        return leadData;
+                    });
 
-            // Dispatch bulk create and handle response
-            const response = await dispatch(bulkCreateLeadsThunk(leadsData)).unwrap();
+                    // Dispatch bulk create and handle response
+                    const response = await dispatch(bulkCreateLeadsThunk(leadsData)).unwrap();
 
-            // Check for errors in the response
-            if (response.errors && response.errors.length > 0) {
-                response.errors.forEach((error: any) => {
-                toast.error(`Error for party ${error.partyName}: ${error.message}`);
-                });
-            } else {
-                toast.success('Leads created successfully for selected parties');
-            }
-            } else if (lead?._id) {
-            // Update existing lead
-                const leadData = {
-                    ...values,
-                    reason: values.reason === 'Other' ? customReason : values.reason,
-                    customReason: values.reason === 'Other' ? customReason : undefined,
-                };
-                await dispatch(updateLeadThunk({ id: lead._id, data: leadData })).unwrap();
-                toast.success('Party Call updated successfully');
+                    // Check for errors in the response
+                    if (response.errors && response.errors.length > 0) {
+                        response.errors.forEach((error: any) => {
+                            toast.error(`Error for party ${error.partyName}: ${error.message}`);
+                        });
+                    } else {
+                        toast.success('Leads created successfully for selected parties');
+                    }
+                } else if (lead?._id) {
+                    // Update existing lead
+                    const leadData = {
+                        ...values,
+                        reason: values.reason === 'Other' ? customReason : values.reason,
+                        customReason: values.reason === 'Other' ? customReason : undefined,
+                    };
+                    await dispatch(updateLeadThunk({ id: lead._id, data: leadData })).unwrap();
+                    toast.success('Party Call updated successfully');
                 } else {
-                // Create single lead
-                const leadData = {
-                    ...values,
-                    reason: values.reason === 'Other' ? customReason : values.reason,
-                    customReason: values.reason === 'Other' ? customReason : undefined,
-                };
-                await dispatch(createLeadThunk(leadData)).unwrap();
-                toast.success('Party Call created successfully');
+                    // Create single lead
+                    const leadData = {
+                        ...values,
+                        reason: values.reason === 'Other' ? customReason : values.reason,
+                        customReason: values.reason === 'Other' ? customReason : undefined,
+                    };
+                    await dispatch(createLeadThunk(leadData)).unwrap();
+                    toast.success('Party Call created successfully');
                 }
                 formik.resetForm();
                 setCustomReason('');
@@ -174,10 +174,10 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
             } finally {
                 setIsLoading(false);
             }
-            },
-        });
+        },
+    });
 
-        const staffOptions = useMemo(() => {
+    const staffOptions = useMemo(() => {
         const currentAssignedTo = lead?._id && formik.values.assignedTo
             ? staffList.find((staff) => staff._id === formik.values.assignedTo)
             : null;
@@ -195,29 +195,29 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
     }, [staffList, lead?._id, formik.values.assignedTo]);
 
     const reasonOptions = useMemo(
-    () => [
-        { label: 'Cold Call', value: 'Cold Call' },
-        { label: 'Proof Approval', value: 'Proof Approval' },
-        // { label: 'Sample Approval', value: 'Sample Approval' },
-        // { label: 'Delivery', value: 'Delivery' },
-        { label: 'Inquiry Call', value: 'Inquiry Call' },
-        { label: 'Confirmation Call', value: 'Confirmation Call' },
-        { label: 'Other', value: 'Other' },
-    ],
-    []
+        () => [
+            { label: 'Cold Call', value: 'Cold Call' },
+            { label: 'Proof Approval', value: 'Proof Approval' },
+            // { label: 'Sample Approval', value: 'Sample Approval' },
+            // { label: 'Delivery', value: 'Delivery' },
+            { label: 'Inquiry Call', value: 'Inquiry Call' },
+            { label: 'Confirmation Call', value: 'Confirmation Call' },
+            { label: 'Other', value: 'Other' },
+        ],
+        []
     );
 
     const statusOptions = useMemo(
-    () => [
-        { label: 'Pending', value: 'pending' },
-        { label: 'Completed', value: 'completed' },
-        { label: 'Cancelled', value: 'cancelled' },
-        { label: 'Rescheduled', value: 'rescheduled' },
-],
-[]
-);
+        () => [
+            { label: 'Pending', value: 'pending' },
+            { label: 'Completed', value: 'completed' },
+            { label: 'Cancelled', value: 'cancelled' },
+            { label: 'Rescheduled', value: 'rescheduled' },
+        ],
+        []
+    );
 
-        useEffect(() => {
+    useEffect(() => {
         if (open) {
             dispatch(clearSuccessMessage());
             dispatch(clearError());
@@ -358,58 +358,58 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
                     component="form"
                     onSubmit={formik.handleSubmit}
                 >
-                {!partyIds && (
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
-                        <CompanySelect
-                            name="companyName"
-                            value={formik.values.companyName}
-                            onChange={handleCompanyChange}
-                            error={formik.touched.companyName && Boolean(formik.errors.companyName)}
-                            helperText={formik.touched.companyName && formik.errors.companyName}
-                            hasParties={true}
-                            required
-                            showPartyName={true}
-                            partyName={formik.values.partyName}
-                            onPartyChange={handlePartyChange}
-                            partyError={formik.touched.partyName && Boolean(formik.errors.partyName)}
-                            partyHelperText={formik.touched.partyName && formik.errors.partyName}
-                        />
-                    </Stack>
+                    {!partyIds && (
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
+                            <CompanySelect
+                                name="companyName"
+                                value={formik.values.companyName}
+                                onChange={handleCompanyChange}
+                                error={formik.touched.companyName && Boolean(formik.errors.companyName)}
+                                helperText={formik.touched.companyName && formik.errors.companyName}
+                                hasParties={true}
+                                required
+                                showPartyName={true}
+                                partyName={formik.values.partyName}
+                                onPartyChange={handlePartyChange}
+                                partyError={formik.touched.partyName && Boolean(formik.errors.partyName)}
+                                partyHelperText={formik.touched.partyName && formik.errors.partyName}
+                            />
+                        </Stack>
                     )}
 
                     {/* Party Details Fields (only shown for single lead creation/editing) */}
-                 {!partyIds && (
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
-                        <ThemeInput
-                            labelName="Unit No"
-                            type="text"
-                            value={partyDetails.unitNo}
-                            disabled
-                            fullWidth
-                        />
-                        <ThemeInput
-                            labelName="Market Name"
-                            type="text"
-                            value={partyDetails.marketName}
-                            disabled
-                            fullWidth
-                        />
-                        <ThemeInput
-                            labelName="Area"
-                            type="text"
-                            value={partyDetails.area}
-                            disabled
-                            fullWidth
-                        />
-                        <ThemeInput
-                            labelName="Owner WhatsApp No"
-                            type="text"
-                            value={partyDetails.ownerWhatsAppNo}
-                            disabled
-                            fullWidth
-                        />
-                    </Stack>
-                )}
+                    {!partyIds && (
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
+                            <ThemeInput
+                                labelName="Unit No"
+                                type="text"
+                                value={partyDetails.unitNo}
+                                disabled
+                                fullWidth
+                            />
+                            <ThemeInput
+                                labelName="Market Name"
+                                type="text"
+                                value={partyDetails.marketName?.marketName}
+                                disabled
+                                fullWidth
+                            />
+                            <ThemeInput
+                                labelName="Area"
+                                type="text"
+                                value={partyDetails.area?.area}
+                                disabled
+                                fullWidth
+                            />
+                            <ThemeInput
+                                labelName="Owner WhatsApp No"
+                                type="text"
+                                value={partyDetails.ownerWhatsAppNo}
+                                disabled
+                                fullWidth
+                            />
+                        </Stack>
+                    )}
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
                         <ThemeInput
@@ -516,19 +516,19 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
                                     required
                                     sx={{ mb: 3 }}
                                 />
-                            {formik.values.status === 'rescheduled' && (
-                                <ThemeInput
-                                labelName="Reschedule Date"
-                                type="date"
-                                value={formik.values.rescheduleDate}
-                                onChange={formik.handleChange}
-                                name="rescheduleDate"
-                                error={formik.submitCount > 0 && Boolean(formik.errors.rescheduleDate)}
-                                helperText={formik.submitCount > 0 && formik.errors.rescheduleDate}
-                                fullWidth
-                                required
-                                />
-                            )}
+                                {formik.values.status === 'rescheduled' && (
+                                    <ThemeInput
+                                        labelName="Reschedule Date"
+                                        type="date"
+                                        value={formik.values.rescheduleDate}
+                                        onChange={formik.handleChange}
+                                        name="rescheduleDate"
+                                        error={formik.submitCount > 0 && Boolean(formik.errors.rescheduleDate)}
+                                        helperText={formik.submitCount > 0 && formik.errors.rescheduleDate}
+                                        fullWidth
+                                        required
+                                    />
+                                )}
                             </Stack>
                             <Box mb={2}>
                                 <ThemeInput
@@ -561,15 +561,15 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
                         }}
                         disabled={isLoading || formik.isSubmitting}
                     >
-                {isLoading || formik.isSubmitting
-                    ? lead?._id
-                    ? 'Updating...'
-                    : 'Assigning...'
-                    : lead?._id
-                    ? 'Update Party Call'
-                    : partyIds
-                    ? 'Create Party Call'
-                    : 'Assign Party Call'}
+                        {isLoading || formik.isSubmitting
+                            ? lead?._id
+                                ? 'Updating...'
+                                : 'Assigning...'
+                            : lead?._id
+                                ? 'Update Party Call'
+                                : partyIds
+                                    ? 'Create Party Call'
+                                    : 'Assign Party Call'}
                     </ThemeButton>
                 </Box>
             </CustomDialog>

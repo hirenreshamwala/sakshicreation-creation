@@ -240,7 +240,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         await dispatch(getAllStaffThunk());
         if (isEditMode && accountId) {
           const result = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
-          console.log(result,'partyData')
+          console.log(result, 'partyData')
           formik.setValues({
             companyName: result.companyName || "",
             partyName: result.partyName || "",
@@ -330,7 +330,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     dispatch(clearSuggestions());
   }
 
-  
+
 
   const loadPartyDetails = async (selectedParty: PartySuggestion) => {
     if (!formik.values.companyName) {
@@ -347,7 +347,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       ).unwrap()
 
       const partyData = response.data?.party || response.accountMaster?.party
-      console.log(partyData,'partyData')
+      console.log(partyData, 'partyData')
       if (partyData) {
         formik.setValues({
           ...formik.values,
@@ -785,9 +785,13 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                       formik.values?.address?.marketName,
                       getUniqueOptions(markets, "marketName", "_id")
                     )}
-                    onChange={(event, newValue) =>
+                    onChange={(event, newValue) => {
                       formik.setFieldValue("address.marketName", newValue ? newValue.value : "")
-                    }
+                      formik.setFieldValue("address.area", newValue ? newValue.value : "")
+                      formik.setFieldValue("address.streetAddress", newValue ? newValue.value : "")
+                      formik.setFieldValue("address.landMark", newValue ? newValue.value : "")
+                      formik.setFieldValue("address.pincode", newValue ? newValue.value : "")
+                    }}
                     name="address.marketName"
                     error={Boolean(formik.errors.address?.marketName)}
                     helperText={formik.touched.address?.marketName && formik.errors.address?.marketName}

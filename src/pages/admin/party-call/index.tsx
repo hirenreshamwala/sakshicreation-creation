@@ -196,8 +196,8 @@ const LeadManagementPage: React.FC = () => {
     "Reason to Call": "reason",
     "Mobile No.": "partyName.ownerWhatsAppNo",
     "Unit No": "partyName.address.unitNo",
-    "Market Name": "partyName.address.marketName",
-    Area: "partyName.address.area",
+    "Market Name": "partyName.address.marketName.marketName",
+    Area: "partyName.address.area.area",
     "Status of Party": "partyName.partyTag",
     Status: "status",
     "Created By": "partyName.createdBy",
@@ -469,8 +469,8 @@ const filteredLeads = useMemo(() => {
             )
           : "N/A"}
       </TableCell>
-      <TableCell sx={{fontSize:14}}>{row.partyName?.address?.marketName || "N/A"}</TableCell>
-      <TableCell sx={{fontSize:14}}>{row.partyName?.address?.area || "N/A"}</TableCell>
+      <TableCell sx={{fontSize:14}}>{row.partyName?.address?.marketName?.marketName || "N/A"}</TableCell>
+      <TableCell sx={{fontSize:14}}>{row.partyName?.address?.area?.area || "N/A"}</TableCell>
       <TableCell sx={{fontSize:14}}>
         <ThemeChip
           label={row.partyName?.partyTag || "N/A"}
