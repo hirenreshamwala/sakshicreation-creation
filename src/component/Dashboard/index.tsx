@@ -281,7 +281,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       icon: <MdGroup size={18} />,
     },
      {
-      label: "Packaging Option",
+      label: "Cartoon",
       path: "/admin/setup/packaging-options",
       icon: <MdGroup size={18} />,
     },

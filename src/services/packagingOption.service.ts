@@ -6,17 +6,11 @@ const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
 
 export interface PackagingOption {
   _id: string;
+  ply: string;
+  length: string;
+  width: string;
+  height: string;
   name: string;
-  description?: string;
-  price: number;
-  weight: number;
-  dimensions: {
-    length: number;
-    width: number;
-    height: number;
-  };
-  material: string;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -29,7 +23,7 @@ export interface ApiResponse<T> {
 }
 
 export const packagingOptionService = {
-  async createPackagingOption(packagingData: Omit<PackagingOption, '_id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<PackagingOption>> {
+  async createPackagingOption(packagingData: Omit<PackagingOption, '_id' | 'createdAt' | 'updatedAt'>): Promise<PackagingOption> {
     try {
       const token = authService.getToken();
       if (!token) {
@@ -54,7 +48,7 @@ export const packagingOptionService = {
     }
   },
 
-  async getAllPackagingOptions(): Promise<ApiResponse<PackagingOption[]>> {
+  async getAllPackagingOptions(): Promise<PackagingOption[]> {
     try {
       const token = authService.getToken();
       if (!token) {
@@ -75,7 +69,7 @@ export const packagingOptionService = {
     }
   },
 
-  async updatePackagingOption(id: string, updateData: Partial<PackagingOption>): Promise<ApiResponse<PackagingOption>> {
+  async updatePackagingOption(id: string, updateData: Partial<PackagingOption>): Promise<PackagingOption> {
     try {
       const token = authService.getToken();
       if (!token) {
@@ -100,7 +94,7 @@ export const packagingOptionService = {
     }
   },
 
-  async deletePackagingOption(id: string): Promise<ApiResponse<void>> {
+  async deletePackagingOption(id: string): Promise<AxiosResponse<ApiResponse<void>>> {
     try {
       const token = authService.getToken();
       if (!token) {

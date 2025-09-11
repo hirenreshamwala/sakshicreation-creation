@@ -70,7 +70,7 @@ export const deletePackagingOptionThunk = createAsyncThunk(
 );
 
 export const bulkCreatePackagingOptionThunk = createAsyncThunk(
-  'staff/bulkCreate',
+  'packagingOptions/bulkCreate',
   async (formData: FormData, { rejectWithValue }) => {
     try {
       const token = authService.getToken();
