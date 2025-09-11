@@ -25,6 +25,7 @@ import vendorReducer from '@/store/slices/vendorSlice';
 import inventoryReducer from '@/store/slices/inventorySlice';
 import binderTypeReducer from '@/store/slices/binderTypeSlice';
 import marketDataReducer from '@/store/slices/marketDataSlice';
+import kantanReducer from '@/store/slices/kantanSlice';
 // Persist configuration
 export const persistConfig = {
   key: 'auth',
@@ -61,7 +62,8 @@ export const store = configureStore({
     vendors: vendorReducer,
     inventory: inventoryReducer,
     binderType: binderTypeReducer,
-    markets: marketDataReducer
+    markets: marketDataReducer,
+    kantans: kantanReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

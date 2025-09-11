@@ -19,6 +19,7 @@ import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { createQpOrderThunk } from "@/store/slices/qpOrderSlice"
 import { getAllPackagingOptionsThunk } from "@/store/slices/packagingOptionSlice"
+import { getAllKantansThunk } from "@/store/slices/kantanSlice"
 
 interface OptionType {
   label: string
@@ -36,12 +37,13 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
   const fileUploadRef = useRef<FileUploadRef>(null)
 
   // Redux state
-  const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
+  const { packagingOptions } = useAppSelector((state) => state.packagingOptions)
+  const { kantans } = useAppSelector((state) => state.kantans)
   const { companies } = useAppSelector((state) => state.company)
   const { productItems, loading: productLoading } = useAppSelector((state) => state.productItems)
   const { singleAccountMaster, loading: accountLoading }: any = useAppSelector((state) => state.accountMasters)
   const { loading: orderLoading, error: orderError, successMessage } = useAppSelector((state) => state.orders)
-  const { binderTypes } = useAppSelector((state) => state.binderType);
+  const { binderTypes } = useAppSelector((state) => state.binderType)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [gstNotApplicable, setGstNotApplicable] = useState(false)
@@ -56,7 +58,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     personName: "",
     whatsapp: "",
     binding: false,
-    bindingType: null,
+    bindingType: null as string | null,
     itemName: "",
     qty: "",
     gst: "",
@@ -77,23 +79,26 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     partyName: "",
     date: "",
     orderFrom: "",
-    size: null,
-    ply: null,
-    gsm: null,
+    name: "",
+    ply: "",
+    length: "",
+    width: "",
+    height: "",
+    gsm: "",
     deckal: "",
-    rate: "",
-    dyeNumber: "",
-    dyeSize: "",
-    dySheetSize: "",
-    dyeRemark: "",
-    godownRemark: "",
-    factoryRemark: "",
-    delivery: ""
+    noOfPieces: "",
+    ratePerPiece: "",
+    amount: "",
+    kgPerUnit: "",
+    totalKg: "",
+    kantan: null as string | null,
+    kantanDeckal: "",
+    salesRemark: "",
   })
 
   // Determine which form to show based on selected company
   const isQualityPackaging = selectedCompany === companies?.find((item) => item?.companyName?.toLowerCase() === 'quality packaging')?._id
-  const isSakshiCreation = selectedCompany === companies?.find((item) => item?.companyName?.toLowerCase() === 'sakshi creation')?._id // Replace with actual ID
+  const isSakshiCreation = selectedCompany === companies?.find((item) => item?.companyName?.toLowerCase() === 'sakshi creation')?._id
 
   // Clear messages when dialog opens
   useEffect(() => {
@@ -129,10 +134,11 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
   }, [open, dispatch])
 
   useEffect(() => {
-    if (!binderTypes.length) dispatch(getAllBinderTypesThunk());
+    if (!binderTypes.length) dispatch(getAllBinderTypesThunk())
     if (!companies.length) dispatch(getAllCompaniesThunk())
-    if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
-  }, []);
+    if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk())
+    if (!kantans.length) dispatch(getAllKantansThunk())
+  }, [dispatch])
 
   // Set item options when product items are loaded
   useEffect(() => {
@@ -175,9 +181,6 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
 
   const handleCompanyChange = (event: any, newValue: any) => {
     const companyId = newValue ? newValue.value : ""
-    const companyLabel = newValue ? newValue.label : ""
-    console.log(companyId, 'niskjhdoihnj')
-
     setSelectedCompany(companyId)
 
     // Update both form company fields
@@ -287,7 +290,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
 
   const handleQpSubmit = async () => {
     if (!qpFormData.companyName || !qpFormData.partyName) {
-      toast.error("Please fill all required fields")
+      toast.error("Please fill all required fields (Company Name and Party Name)")
       return
     }
 
@@ -298,23 +301,26 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         isQp: true,
         companyName: qpFormData.companyName,
         party: qpFormData.partyName,
-        date: qpFormData.date,
-        orderFrom: qpFormData.orderFrom,
-        size: qpFormData.size,
-        ply: qpFormData.ply,
-        gsm: qpFormData.gsm,
-        deckal: qpFormData.deckal,
-        rate: qpFormData.rate,
-        dyeNumber: qpFormData.dyeNumber,
-        dyeSize: qpFormData.dyeSize,
-        dySheetSize: qpFormData.dySheetSize,
-        dyeRemark: qpFormData.dyeRemark,
-        godownRemark: qpFormData.godownRemark,
-        factoryRemark: qpFormData.factoryRemark,
-        delivery: qpFormData.delivery
+        date: qpFormData.date || undefined,
+        orderFrom: qpFormData.orderFrom || undefined,
+        name: qpFormData.name || undefined,
+        ply: qpFormData.ply || undefined,
+        length: qpFormData.length || undefined,
+        width: qpFormData.width || undefined,
+        height: qpFormData.height || undefined,
+        gsm: qpFormData.gsm || undefined,
+        deckal: qpFormData.deckal || undefined,
+        noOfPieces: qpFormData.noOfPieces ? Number(qpFormData.noOfPieces) : undefined,
+        ratePerPiece: qpFormData.ratePerPiece ? Number(qpFormData.ratePerPiece) : undefined,
+        amount: qpFormData.amount ? Number(qpFormData.amount) : undefined,
+        kgPerUnit: qpFormData.kgPerUnit ? Number(qpFormData.kgPerUnit) : undefined,
+        totalKg: qpFormData.totalKg ? Number(qpFormData.totalKg) : undefined,
+        kantan: qpFormData.kantan || undefined,
+        kantanDeckal: qpFormData.kantanDeckal || undefined,
+        salesRemark: qpFormData.salesRemark || undefined,
       }
 
-      await dispatch(createQpOrderThunk(orderData as any)).unwrap()
+      await dispatch(createQpOrderThunk(orderData)).unwrap()
 
       if (refreshData) refreshData()
       resetForm()
@@ -353,18 +359,21 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       partyName: "",
       date: "",
       orderFrom: "",
-      size: null,
-      ply: null,
-      gsm: null,
+      name: "",
+      ply: "",
+      length: "",
+      width: "",
+      height: "",
+      gsm: "",
       deckal: "",
-      rate: "",
-      dyeNumber: "",
-      dyeSize: "",
-      dySheetSize: "",
-      dyeRemark: "",
-      godownRemark: "",
-      factoryRemark: "",
-      delivery: ""
+      noOfPieces: "",
+      ratePerPiece: "",
+      amount: "",
+      kgPerUnit: "",
+      totalKg: "",
+      kantan: null,
+      kantanDeckal: "",
+      salesRemark: "",
     })
     setGstNotApplicable(false)
     setSelectedFiles([])
@@ -381,6 +390,75 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
 
   const getSelectedOption = (value: string, options: OptionType[]) => {
     return options.find((option) => option.value === value) || null
+  }
+
+  // Helper functions to get unique values for dropdowns with dynamic filtering
+  const getUniqueNameOptions = () => {
+    const uniqueNames = [...new Set(packagingOptions.map((item: any) => item.name))].sort()
+    return uniqueNames.map((name) => {
+      const option = packagingOptions.find((item: any) => item.name === name)
+      return { value: option?._id || "", label: name }
+    }).filter(option => option.value)
+  }
+
+  const getUniquePlyOptions = () => {
+    const filteredOptions = packagingOptions.filter(
+      (item: any) =>
+        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
+        (!qpFormData.length || item.length === packagingOptions.find((opt: any) => opt._id === qpFormData.length)?.length) &&
+        (!qpFormData.width || item.width === packagingOptions.find((opt: any) => opt._id === qpFormData.width)?.width) &&
+        (!qpFormData.height || item.height === packagingOptions.find((opt: any) => opt._id === qpFormData.height)?.height)
+    )
+    const uniquePlies = [...new Set(filteredOptions.map((item: any) => item.ply))].sort()
+    return uniquePlies.map((ply) => {
+      const option = filteredOptions.find((item: any) => item.ply === ply)
+      return { value: option?._id || "", label: `${ply}` }
+    }).filter(option => option.value)
+  }
+
+  const getUniqueLengthOptions = () => {
+    const filteredOptions = packagingOptions.filter(
+      (item: any) =>
+        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
+        (!qpFormData.ply || item.ply === packagingOptions.find((opt: any) => opt._id === qpFormData.ply)?.ply) &&
+        (!qpFormData.width || item.width === packagingOptions.find((opt: any) => opt._id === qpFormData.width)?.width) &&
+        (!qpFormData.height || item.height === packagingOptions.find((opt: any) => opt._id === qpFormData.height)?.height)
+    )
+    const uniqueLengths = [...new Set(filteredOptions.map((item: any) => item.length))].sort()
+    return uniqueLengths.map((length) => {
+      const option = filteredOptions.find((item: any) => item.length === length)
+      return { value: option?._id || "", label: length }
+    }).filter(option => option.value)
+  }
+
+  const getUniqueWidthOptions = () => {
+    const filteredOptions = packagingOptions.filter(
+      (item: any) =>
+        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
+        (!qpFormData.ply || item.ply === packagingOptions.find((opt: any) => opt._id === qpFormData.ply)?.ply) &&
+        (!qpFormData.length || item.length === packagingOptions.find((opt: any) => opt._id === qpFormData.length)?.length) &&
+        (!qpFormData.height || item.height === packagingOptions.find((opt: any) => opt._id === qpFormData.height)?.height)
+    )
+    const uniqueWidths = [...new Set(filteredOptions.map((item: any) => item.width))].sort()
+    return uniqueWidths.map((width) => {
+      const option = filteredOptions.find((item: any) => item.width === width)
+      return { value: option?._id || "", label: width }
+    }).filter(option => option.value)
+  }
+
+  const getUniqueHeightOptions = () => {
+    const filteredOptions = packagingOptions.filter(
+      (item: any) =>
+        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
+        (!qpFormData.ply || item.ply === packagingOptions.find((opt: any) => opt._id === qpFormData.ply)?.ply) &&
+        (!qpFormData.length || item.length === packagingOptions.find((opt: any) => opt._id === qpFormData.length)?.length) &&
+        (!qpFormData.width || item.width === packagingOptions.find((opt: any) => opt._id === qpFormData.width)?.width)
+    )
+    const uniqueHeights = [...new Set(filteredOptions.map((item: any) => item.height))].sort()
+    return uniqueHeights.map((height) => {
+      const option = filteredOptions.find((item: any) => item.height === height)
+      return { value: option?._id || "", label: height }
+    }).filter(option => option.value)
   }
 
   const renderSakshiForm = () => (
@@ -451,13 +529,15 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
           }
           label="Binding"
         />
-        {sakshiFormData.binding ? <ThemeSelect
-          label="Binding Type"
-          value={getSelectedOption(sakshiFormData.bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
-          options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
-          onChange={(_, v) => { handleSakshiChange("bindingType", v ? v.value : "") }}
-          required
-        /> : null}
+        {sakshiFormData.binding ? (
+          <ThemeSelect
+            label="Binding Type"
+            value={getSelectedOption(sakshiFormData.bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
+            options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
+            onChange={(_, v) => handleSakshiChange("bindingType", v ? v.value : "")}
+            required
+          />
+        ) : null}
         <ThemeSelect
           label="Printing Type"
           value={getSelectedOption(sakshiFormData.pType, printerTypeOption)}
@@ -497,7 +577,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
             placeholder="Enter GST number"
             fullWidth
             value={gstNotApplicable ? "Not Applicable" : sakshiFormData.gst}
-            onChange={(e) => { }}
+            onChange={(e) => {}}
             disabled={true}
             sx={{
               "& .MuiInputBase-input": {
@@ -508,7 +588,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         </Box>
       </Stack>
       <Stack direction="row" spacing={2}>
-        <FormControl sx={{ flex: 1, minWidth: 120 }} >
+        <FormControl sx={{ flex: 1, minWidth: 120 }}>
           <InputLabel id="color-label">Color</InputLabel>
           <Select
             labelId="color-label"
@@ -525,7 +605,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
             ))}
           </Select>
         </FormControl>
-        <FormControl sx={{ flex: 1, minWidth: 120 }} >
+        <FormControl sx={{ flex: 1, minWidth: 120 }}>
           <InputLabel id="number-label">Number</InputLabel>
           <Select
             labelId="number-label"
@@ -541,22 +621,24 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         </FormControl>
       </Stack>
 
-      {sakshiFormData.number === 'Yes' ? <Stack direction="row" spacing={2}>
-        <ThemeInput
-          labelName="Start Number"
-          name="startNumber"
-          value={sakshiFormData.startNumber}
-          onChange={(e) => handleSakshiChange("startNumber", e.target.value)}
-          sx={{ flex: 1, minWidth: 120 }}
-        />
-        <ThemeInput
-          labelName="End Number"
-          name="endNumber"
-          value={sakshiFormData.endNumber}
-          onChange={(e) => handleSakshiChange("endNumber", e.target.value)}
-          sx={{ flex: 1, minWidth: 120 }}
-        />
-      </Stack> : null}
+      {sakshiFormData.number === 'Yes' ? (
+        <Stack direction="row" spacing={2}>
+          <ThemeInput
+            labelName="Start Number"
+            name="startNumber"
+            value={sakshiFormData.startNumber}
+            onChange={(e) => handleSakshiChange("startNumber", e.target.value)}
+            sx={{ flex: 1, minWidth: 120 }}
+          />
+          <ThemeInput
+            labelName="End Number"
+            name="endNumber"
+            value={sakshiFormData.endNumber}
+            onChange={(e) => handleSakshiChange("endNumber", e.target.value)}
+            sx={{ flex: 1, minWidth: 120 }}
+          />
+        </Stack>
+      ) : null}
 
       <ThemeInput
         labelName="Remarks"
@@ -589,147 +671,133 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
   const renderQpForm = () => (
     <>
       <Stack direction="row" spacing={2} mb={2}>
-        <ThemeInput
-          labelName="Order From"
-          placeholder="Order From"
-          fullWidth
-          value={qpFormData.orderFrom}
-          onChange={(e) => handleQpChange("orderFrom", e.target.value)}
-        />
-        <ThemeInput
-          labelName="Date"
-          placeholder="Date"
-          fullWidth
-          type="date"
-          value={qpFormData.date}
-          onChange={(e) => handleQpChange("date", e.target.value)}
+        <ThemeSelect
+          label="Name"
+          options={getUniqueNameOptions()}
+          value={getSelectedOption(qpFormData.name, getUniqueNameOptions())}
+          onChange={(_, val: any) => handleQpChange("name", val?.value || "")}
+          name="name"
         />
         <ThemeSelect
           label="Ply"
-          options={packagingOptions?.map((item: any) => ({ value: item?._id, label: item?.ply }))}
-          value={packagingOptions?.map((item: any) => ({ value: item?._id, label: item?.ply }))?.find((item) => item.value === qpFormData.ply)}
-          onChange={(e, val: any) => {
-            handleQpChange("ply", val.value)
-            handleQpChange("size", null)
-            handleQpChange("gsm", null)
-            handleQpChange("deckal", null)
-          }}
+          options={getUniquePlyOptions()}
+          value={getSelectedOption(qpFormData.ply, getUniquePlyOptions())}
+          onChange={(_, val: any) => handleQpChange("ply", val?.value || "")}
           name="ply"
-        // error={error}
-        // helperText={helperText}
-        // required={required}
+        />
+        <ThemeSelect
+          label="Sheet Length"
+          options={getUniqueLengthOptions()}
+          value={getSelectedOption(qpFormData.length, getUniqueLengthOptions())}
+          onChange={(_, val: any) => handleQpChange("length", val?.value || "")}
+          name="length"
+        />
+        <ThemeSelect
+          label="Sheet Width"
+          options={getUniqueWidthOptions()}
+          value={getSelectedOption(qpFormData.width, getUniqueWidthOptions())}
+          onChange={(_, val: any) => handleQpChange("width", val?.value || "")}
+          name="width"
+        />
+        <ThemeSelect
+          label="Sheet Height"
+          options={getUniqueHeightOptions()}
+          value={getSelectedOption(qpFormData.height, getUniqueHeightOptions())}
+          onChange={(_, val: any) => handleQpChange("height", val?.value || "")}
+          name="height"
         />
       </Stack>
       <Stack direction="row" spacing={2} mb={2}>
-        <ThemeSelect
-          label="Size"
-          options={packagingOptions?.filter((item) => item._id !== qpFormData.ply)?.map((item: any) => ({ value: item?._id, label: item?.size }))}
-          value={packagingOptions?.filter((item) => item._id !== qpFormData.ply)?.map((item: any) => ({ value: item?._id, label: item?.size }))?.find((item) => item.value === qpFormData.size)}
-          onChange={(e, val: any) => {
-            handleQpChange("size", val.value)
-            handleQpChange("gsm", null)
-            handleQpChange("deckal", null)
-          }}
-          name="size"
-        // error={error}
-        // helperText={helperText}
-        // required={required}
-        />
-        <ThemeSelect
-          label="GSM"
-          options={packagingOptions?.filter((item) => item._id !== qpFormData.size)?.map((item: any) => ({ value: item?._id, label: item?.gsm }))}
-          value={packagingOptions?.filter((item) => item._id !== qpFormData.size)?.map((item: any) => ({ value: item?._id, label: item?.gsm }))?.find((item) => item.value === qpFormData.gsm)}
-          onChange={(e, val: any) => {
-            handleQpChange("gsm", val.value)
-            handleQpChange("deckal", null)
-          }}
-          name="size"
-        // error={error}
-        // helperText={helperText}
-        // required={required}
-        />
-
-      </Stack>
-      <Stack direction="row" spacing={2} mb={2}>
-        <ThemeSelect
-          label="Deckal"
-          options={packagingOptions?.filter((item) => item._id !== qpFormData.gsm)?.map((item: any) => ({ value: item?._id, label: item?.deckal }))}
-          value={packagingOptions?.filter((item) => item._id !== qpFormData.gsm)?.map((item: any) => ({ value: item?._id, label: item?.deckal }))?.find((item) => item.value === qpFormData.deckal)}
-          onChange={(e, val: any) => {
-            handleQpChange("deckal", val.value)
-          }}
-          name="size"
-        // error={error}
-        // helperText={helperText}
-        // required={required}
+        <ThemeInput
+          labelName="GSM"
+          placeholder="GSM"
+          fullWidth
+          value={qpFormData.gsm}
+          onChange={(e) => handleQpChange("gsm", e.target.value)}
         />
         <ThemeInput
-          labelName="Rate"
-          placeholder="Rate"
+          labelName="Deckal"
+          placeholder="Deckal"
           fullWidth
-          value={qpFormData.rate}
+          value={qpFormData.deckal}
+          onChange={(e) => handleQpChange("deckal", e.target.value)}
+        />
+        <ThemeInput
+          labelName="No of Pieces"
+          placeholder="No of Pieces"
+          fullWidth
+          value={qpFormData.noOfPieces}
           onChange={(e) => {
-            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
-            handleQpChange("rate", numericValue)
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+            handleQpChange("noOfPieces", numericValue)
+          }}
+        />
+        <ThemeInput
+          labelName="Rate Per Piece"
+          placeholder="Rate Per Piece"
+          fullWidth
+          value={qpFormData.ratePerPiece}
+          onChange={(e) => {
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+            handleQpChange("ratePerPiece", numericValue)
+          }}
+        />
+        <ThemeInput
+          labelName="Amount"
+          placeholder="Amount"
+          fullWidth
+          value={qpFormData.amount}
+          onChange={(e) => {
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+            handleQpChange("amount", numericValue)
           }}
         />
       </Stack>
       <Stack direction="row" spacing={2} mb={2}>
         <ThemeInput
-          labelName="DYE Number"
-          placeholder="Dye Number"
+          labelName="KG Per Unit"
+          placeholder="KG Per Unit"
           fullWidth
-          value={qpFormData.dyeNumber}
-          onChange={(e) => handleQpChange("dyeNumber", e.target.value)}
+          value={qpFormData.kgPerUnit}
+          onChange={(e) => {
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+            handleQpChange("kgPerUnit", numericValue)
+          }}
         />
         <ThemeInput
-          labelName="DYE Size"
-          placeholder="Dye Size"
+          labelName="Total KG"
+          placeholder="Total KG"
           fullWidth
-          value={qpFormData.dyeSize}
-          onChange={(e) => handleQpChange("dyeSize", e.target.value)}
+          value={qpFormData.totalKg}
+          onChange={(e) => {
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+            handleQpChange("totalKg", numericValue)
+          }}
+        />
+        <ThemeSelect
+          label="Kantan"
+          options={kantans?.map((item: any) => ({ value: item?._id, label: item?.kantanName }))}
+          value={kantans?.map((item: any) => ({ value: item?._id, label: item?.kantanName }))?.find((item) => item.value === qpFormData.kantan) || null}
+          onChange={(_, val: any) => handleQpChange("kantan", val?.value || null)}
+          name="kantan"
+        />
+        <ThemeInput
+          labelName="Kantan Deckal"
+          placeholder="Kantan Deckal"
+          fullWidth
+          value={qpFormData.kantanDeckal}
+          onChange={(e) => handleQpChange("kantanDeckal", e.target.value)}
         />
       </Stack>
-      <Stack direction="row" spacing={2} mb={2}>
-        <ThemeInput
-          labelName="DYE Sheet Size"
-          placeholder="DYE Sheet Size"
-          fullWidth
-          value={qpFormData.dySheetSize}
-          onChange={(e) => handleQpChange("dySheetSize", e.target.value)}
-        />
-        <ThemeInput
-          labelName="DYE Remark"
-          placeholder="DYE Remark"
-          fullWidth
-          value={qpFormData.dyeRemark}
-          onChange={(e) => handleQpChange("dyeRemark", e.target.value)}
-        />
-      </Stack>
-      <Stack direction="row" spacing={2} mb={2}>
-        <ThemeInput
-          labelName="Godown Remark"
-          placeholder="Godown Remark"
-          fullWidth
-          value={qpFormData.godownRemark}
-          onChange={(e) => handleQpChange("godownRemark", e.target.value)}
-        />
-        <ThemeInput
-          labelName="Factory Remark"
-          placeholder="Factory Remark"
-          fullWidth
-          value={qpFormData.factoryRemark}
-          onChange={(e) => handleQpChange("factoryRemark", e.target.value)}
-        />
-      </Stack>
-
       <ThemeInput
-        labelName="Delivery"
-        placeholder="Delivery"
+        labelName="Sales Remarks"
+        placeholder="Sales Remarks"
         fullWidth
-        value={qpFormData.delivery}
-        onChange={(e) => handleQpChange("delivery", e.target.value)}
+        value={qpFormData.salesRemark}
+        onChange={(e) => handleQpChange("salesRemark", e.target.value)}
         sx={{ mb: 2 }}
+        multiline
+        rows={3}
       />
     </>
   )

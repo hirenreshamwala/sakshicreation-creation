@@ -4,6 +4,7 @@ import {
   Typography,
   IconButton,
   TableCell,
+  Grid,
 } from "@mui/material";
 import { Add, Edit, Delete, CloudUpload } from "@mui/icons-material";
 import { useSelector } from "react-redux";
@@ -14,7 +15,6 @@ import CustomDialog from "@/component/customdialog";
 import { RootState, useAppDispatch } from "@/store";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import axios from "axios"; // <-- Add axios
 import {
   createPackagingOptionThunk,
   getAllPackagingOptionsThunk,
@@ -25,12 +25,13 @@ import {
 import { PackagingOption } from "@/services/packagingOption.service";
 
 const columns = [
-    { id: "id", label: "ID" },
-    { id: "ply", label: "Ply" },
-    { id: "size", label: "Size" },
-    { id: "gsm", label: "GSM" },
-    { id: "deckal", label: "Deckal" },
-    { id: "options", label: "Options" },
+  { id: "id", label: "ID" },
+  { id: "name", label: "Name" },
+  { id: "ply", label: "Ply" },
+  { id: "length", label: "Length" },
+  { id: "width", label: "Width" },
+  { id: "height", label: "Height" },
+  { id: "options", label: "Options" },
 ];
 
 const PackagingOptionsPage = () => {
@@ -40,15 +41,16 @@ const PackagingOptionsPage = () => {
   );
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [bulkDialogOpen, setBulkDialogOpen] = useState(false); // Bulk dialog
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
+    name: "",
     ply: "",
-    size: "",
-    gsm: "",
-    deckal: "",
+    length: "",
+    width: "",
+    height: "",
   });
-  const [file, setFile] = useState<File | null>(null); // File state
+  const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
@@ -63,14 +65,15 @@ const PackagingOptionsPage = () => {
     if (option) {
       setEditId(option._id);
       setForm({
-        ply: option.ply,
-        size: option.size,
-        gsm: option.gsm,
-        deckal: option.deckal,
+        name: option.name || "",
+        ply: option.ply || "",
+        length: option.length || "",
+        width: option.width || "",
+        height: option.height || "",
       });
     } else {
       setEditId(null);
-      setForm({ ply: "", size: "", gsm: "", deckal: "" });
+      setForm({ name: "", ply: "", length: "", width: "", height: "" });
     }
     setDialogOpen(true);
   };
@@ -81,7 +84,7 @@ const PackagingOptionsPage = () => {
   };
 
   const handleSave = () => {
-    if (!form.ply.trim() || !form.size.trim() || !form.gsm.trim() || !form.deckal.trim()) {
+    if (!form.name.trim() || !form.ply.trim() || !form.length.trim() || !form.width.trim() || !form.height.trim()) {
       toast.error("All fields are required");
       return;
     }
@@ -134,16 +137,18 @@ const PackagingOptionsPage = () => {
     formData.append("file", file);
 
     try {
-      dispatch(bulkCreatePackagingOptionThunk(formData))
+      await dispatch(bulkCreatePackagingOptionThunk(formData)).unwrap();
       toast.success("Bulk upload successful");
       setBulkDialogOpen(false);
+      setFile(null);
+      dispatch(getAllPackagingOptionsThunk());
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Bulk upload failed");
+      toast.error(error?.message || "Bulk upload failed");
     }
   };
 
   const handleDownloadSample = () => {
-    const csvContent = "ply,size,gsm,deckal\n3,10x20,200,40\n";
+    const csvContent = "name,ply,length,width,height\nSample Packaging,3,10,20,30\n";
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -153,24 +158,21 @@ const PackagingOptionsPage = () => {
     document.body.removeChild(link);
   };
 
-  // Open Bulk Upload Modal
-const openBulkDialog = () => {
-  setFile(null); // Clear previously selected file
-  setBulkDialogOpen(true);
-};
+  const openBulkDialog = () => {
+    setFile(null);
+    setBulkDialogOpen(true);
+  };
 
-// Close Bulk Upload Modal
-const closeBulkDialog = () => {
-  setFile(null); // Clear file on close
-  setBulkDialogOpen(false);
-};
-
+  const closeBulkDialog = () => {
+    setFile(null);
+    setBulkDialogOpen(false);
+  };
 
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" fontWeight={600}>
-          Packaging Options
+          Cartoon
         </Typography>
         <Box display="flex" gap={2}>
           <Button
@@ -183,7 +185,7 @@ const closeBulkDialog = () => {
           <Button
             variant="contained"
             startIcon={<CloudUpload />}
-             onClick={openBulkDialog} 
+            onClick={openBulkDialog}
           >
             Bulk Upload
           </Button>
@@ -197,7 +199,7 @@ const closeBulkDialog = () => {
               fontWeight: 600,
             }}
           >
-            New Packaging Option
+            New Cartoon
           </Button>
         </Box>
       </Box>
@@ -209,10 +211,11 @@ const closeBulkDialog = () => {
         renderRow={(row: PackagingOption, idx: number) => (
           <>
             <TableCell>{idx + 1}</TableCell>
-            <TableCell>{row.ply}</TableCell>
-            <TableCell>{row.size}</TableCell>
-            <TableCell>{row.gsm}</TableCell>
-            <TableCell>{row.deckal}</TableCell>
+            <TableCell>{row.name || ""}</TableCell>
+            <TableCell>{row.ply || ""}</TableCell>
+            <TableCell>{row.length || ""}</TableCell>
+            <TableCell>{row.width || ""}</TableCell>
+            <TableCell>{row.height || ""}</TableCell>
             <TableCell>
               <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                 <Edit />
@@ -226,112 +229,149 @@ const closeBulkDialog = () => {
       />
 
       {/* Add/Edit Dialog */}
+      {/* Add/Edit Dialog */}
       <CustomDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        title={editId ? "Edit Packaging Option" : "New Packaging Option"}
+        title={editId ? "Edit Cartoon" : "New Cartoon"}
         maxWidth="sm"
         fullWidth
       >
-        <Box display="grid" gap={2}>
-          {["ply", "size", "gsm", "deckal"].map((field) => (
+        <Box display="flex" flexDirection="column" gap={2}>
+          {/* Row for Name + Ply */}
+          <Box display="flex" gap={2}>
             <Input
-              key={field}
-              label={field.toUpperCase()}
-              name={field}
-              value={(form as any)[field]}
+              label="NAME"
+              name="name"
+              value={form.name}
               onChange={handleFormChange}
               fullWidth
               required
             />
-          ))}
+            <Input
+              label="PLY"
+              name="ply"
+              value={form.ply}
+              onChange={handleFormChange}
+              fullWidth
+              required
+            />
+          </Box>
+
+          {/* Row for Length + Width + Height */}
+          <Box display="flex" gap={2}>
+            <Input
+              label="LENGTH"
+              name="length"
+              value={form.length}
+              onChange={handleFormChange}
+              fullWidth
+              required
+            />
+            <Input
+              label="WIDTH"
+              name="width"
+              value={form.width}
+              onChange={handleFormChange}
+              fullWidth
+              required
+            />
+            <Input
+              label="HEIGHT"
+              name="height"
+              value={form.height}
+              onChange={handleFormChange}
+              fullWidth
+              required
+            />
+          </Box>
         </Box>
+
+        {/* Footer Buttons */}
         <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
-          <Button variant="outlined" onClick={() => setDialogOpen(false)}>Close</Button>
+          <Button variant="outlined" onClick={() => setDialogOpen(false)}>
+            Close
+          </Button>
           <Button variant="contained" onClick={handleSave}>
             {operationLoading ? "Saving..." : "Save"}
           </Button>
         </Box>
       </CustomDialog>
 
+
+
       {/* Bulk Upload Dialog */}
-      {/* Bulk Upload Dialog */}
-<CustomDialog
-  open={bulkDialogOpen}
-  onClose={() => setBulkDialogOpen(false)}
-  title="Bulk Upload Packaging Options"
-  maxWidth="sm"
-  fullWidth
->
-  <Box display="flex" flexDirection="column" alignItems="center" gap={3}>
-    {/* Drag & Drop Upload Area */}
-    <Box
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault();
-        if (e.dataTransfer.files.length > 0) {
-          setFile(e.dataTransfer.files[0]);
-        }
-      }}
-      sx={{
-        border: "2px dashed #7f56d9",
-        borderRadius: 3,
-        p: 4,
-        textAlign: "center",
-        width: "100%",
-        cursor: "pointer",
-        background: "#FAF5FF",
-        "&:hover": { background: "#F3E8FF" },
-      }}
-      onClick={() => document.getElementById("fileInput")?.click()}
-    >
-      <Typography variant="body1" color="textSecondary">
-        Drag & Drop CSV file here or click to select
-      </Typography>
-      <input
-        type="file"
-        id="fileInput"
-        style={{ display: "none" }}
-        accept=".csv"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
-      />
-    </Box>
+      <CustomDialog
+        open={bulkDialogOpen}
+        onClose={closeBulkDialog}
+        title="Bulk Upload Packaging Options"
+        maxWidth="sm"
+        fullWidth
+      >
+        <Box display="flex" flexDirection="column" alignItems="center" gap={3}>
+          <Box
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (e.dataTransfer.files.length > 0) {
+                setFile(e.dataTransfer.files[0]);
+              }
+            }}
+            sx={{
+              border: "2px dashed #7f56d9",
+              borderRadius: 3,
+              p: 4,
+              textAlign: "center",
+              width: "100%",
+              cursor: "pointer",
+              background: "#FAF5FF",
+              "&:hover": { background: "#F3E8FF" },
+            }}
+            onClick={() => document.getElementById("fileInput")?.click()}
+          >
+            <Typography variant="body1" color="textSecondary">
+              Drag & Drop CSV file here or click to select
+            </Typography>
+            <input
+              type="file"
+              id="fileInput"
+              style={{ display: "none" }}
+              accept=".csv"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+          </Box>
 
-    {/* Show Selected File */}
-    {file && (
-      <Typography variant="body2" color="primary">
-        Selected File: {file.name}
-      </Typography>
-    )}
+          {file && (
+            <Typography variant="body2" color="primary">
+              Selected File: {file.name}
+            </Typography>
+          )}
 
-    {/* Download Sample CSV */}
-    <Button
-      variant="outlined"
-      onClick={handleDownloadSample}
-    >
-      Download Sample CSV
-    </Button>
-  </Box>
+          <Button
+            variant="outlined"
+            onClick={handleDownloadSample}
+          >
+            Download Sample CSV
+          </Button>
+        </Box>
 
-  {/* Modal Actions */}
-  <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
-    <Button
-      variant="outlined"
-      onClose={closeBulkDialog}
-    >
-      Close
-    </Button>
-    <Button
-      variant="contained"
-      onClick={handleFileUpload}
-      disabled={!file}
-      sx={{ background: "primary", "&:hover": { background: "primary" } }}
-    >
-      Upload
-    </Button>
-  </Box>
-</CustomDialog>
-
+        <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
+          <Button
+            variant="outlined"
+            onClick={closeBulkDialog}
+          >
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleFileUpload}
+            disabled={!file}
+            sx={{ background: "primary", "&:hover": { background: "primary" } }}
+          >
+            Upload
+          </Button>
+        </Box>
+      </CustomDialog>
     </Box>
   );
 };

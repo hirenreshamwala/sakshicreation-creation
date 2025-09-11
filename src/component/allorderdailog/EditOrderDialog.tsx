@@ -11,6 +11,8 @@ import { clearOrderError, clearOrderSuccessMessage } from "@/store/slices/orderS
 import { toast } from "react-toastify"
 import { updateQPOrderThunk } from "@/store/slices/qpOrderSlice"
 import { getAllPackagingOptionsThunk } from "@/store/slices/packagingOptionSlice"
+import { getAllKantansThunk } from "@/store/slices/kantanSlice"
+import { Height } from "@mui/icons-material"
 
 interface AddOrderDialogProps {
   open: boolean
@@ -24,6 +26,7 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
 
   // Redux state
   const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
+  const { kantans } = useAppSelector((state) => state.kantans)
   const { singleAccountMaster, loading: accountLoading } = useAppSelector((state) => state.accountMasters)
   const { loading: orderLoading, error: orderError, successMessage } = useAppSelector((state) => state.orders)
 
@@ -31,30 +34,57 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
 
   // Quality Packaging form data
   const [qpFormData, setQpFormData] = useState({
-    date: editData?.date,
-    orderFrom: editData?.orderFrom,
-    size: editData?.size?._id,
-    ply: editData?.ply?._id,
-    gsm: editData?.gsm?._id,
-    deckal: editData?.deckal?._id,
-    rate: editData?.rate,
-    dyeNumber: editData?.dyeNumber,
-    dyeSize: editData?.dyeSize,
-    dySheetSize: editData?.dySheetSize,
-    dyeRemark: editData?.dyeRemark,
-    godownRemark: editData?.godownRemark,
-    factoryRemark: editData?.factoryRemark,
-    delivery: editData?.delivery,
-    _id: editData?._id
+    date: editData?.date || "",
+    orderFrom: editData?.orderFrom || "",
+    name: editData?.name?._id || null,
+    length: editData?.length?._id || null,
+    height: editData?.height?._id || null,
+    width: editData?.width?._id || null,
+    ply: editData?.ply?._id || null,
+    gsm: editData?.gsm || "", // Changed to string for text input
+    deckal: editData?.deckal || "",
+    noOfPieces: editData?.noOfPieces || "",
+    ratePerPiece: editData?.ratePerPiece || "",
+    amount: editData?.amount || "",
+    kgPerUnit: editData?.kgPerUnit || "",
+    totalKg: editData?.totalKg || "",
+    kantan: editData?.kantan?._id || null,
+    kantanDeckal: editData?.kantanDeckal || "",
+    salesRemark: editData?.salesRemark || "",
+    companyName: editData?.companyName?._id || null, // Add companyName
+    party: editData?.party?._id || null,
+    _id: editData?._id || ""
   })
 
   // Clear messages when dialog opens
   useEffect(() => {
-    if (open) {
+    if (open && editData) {
+      setQpFormData({
+        date: editData?.date || "",
+        orderFrom: editData?.orderFrom || "",
+        name: editData?.name?._id || null,
+        length: editData?.length?._id || null,
+        height: editData?.height?._id || null,
+        width: editData?.width?._id || null,
+        ply: editData?.ply?._id || null,
+        gsm: editData?.gsm || "",
+        deckal: editData?.deckal || "",
+        noOfPieces: editData?.noOfPieces?.toString() || "",
+        ratePerPiece: editData?.ratePerPiece?.toString() || "",
+        amount: editData?.amount || "",
+        kgPerUnit: editData?.kgPerUnit || "",
+        totalKg: editData?.totalKg || "",
+        kantan: editData?.kantan?._id || null,
+        kantanDeckal: editData?.kantanDeckal || "",
+        salesRemark: editData?.salesRemark || "",
+        companyName: editData?.companyName?._id || null, // Initialize companyName
+        party: editData?.party?._id || null, // Initialize party
+        _id: editData?._id || ""
+      })
       dispatch(clearOrderError())
       dispatch(clearOrderSuccessMessage())
     }
-  }, [open, dispatch])
+  }, [open, editData, dispatch])
 
   // Handle success message
   useEffect(() => {
@@ -74,6 +104,7 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
 
   useEffect(() => {
     if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
+    if (!kantans.length) dispatch(getAllKantansThunk())
   }, []);
 
   const handleQpChange = (field: string, value: any) => {
@@ -81,7 +112,7 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
   }
 
   const handleSubmit = async () => {
-
+    
     setIsSubmitting(true)
 
     try {
@@ -89,18 +120,23 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
         isQp: true,
         date: qpFormData.date,
         orderFrom: qpFormData.orderFrom,
-        size: qpFormData.size,
+        name: qpFormData.name,
+        length: qpFormData.length,
+        height: qpFormData.height,
+        width: qpFormData.width,
         ply: qpFormData.ply,
-        gsm: qpFormData.gsm,
+        gsm: qpFormData.gsm, // Send as string
         deckal: qpFormData.deckal,
-        rate: qpFormData.rate,
-        dyeNumber: qpFormData.dyeNumber,
-        dyeSize: qpFormData.dyeSize,
-        dySheetSize: qpFormData.dySheetSize,
-        dyeRemark: qpFormData.dyeRemark,
-        godownRemark: qpFormData.godownRemark,
-        factoryRemark: qpFormData.factoryRemark,
-        delivery: qpFormData.delivery
+        noOfPieces: Number(qpFormData.noOfPieces),
+        ratePerPiece: Number(qpFormData.ratePerPiece),
+        amount: qpFormData.amount,
+        kgPerUnit: qpFormData.kgPerUnit,
+        totalKg: qpFormData.totalKg,
+        kantan: qpFormData.kantan,
+        kantanDeckal: qpFormData.kantanDeckal,
+        salesRemark: qpFormData.salesRemark,
+        companyName: qpFormData.companyName, // Include companyName
+        party: qpFormData.party // Include party
       }
 
       await dispatch(updateQPOrderThunk({ id: qpFormData?._id, data: orderData })).unwrap();
@@ -120,18 +156,23 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
     setQpFormData({
       date: "",
       orderFrom: "",
-      size: null,
+      name: null,
+      length: null,
+      height: null,
+      width: null,
       ply: null,
-      gsm: null,
+      gsm: "",
       deckal: "",
-      rate: "",
-      dyeNumber: "",
-      dyeSize: "",
-      dySheetSize: "",
-      dyeRemark: "",
-      godownRemark: "",
-      factoryRemark: "",
-      delivery: "",
+      noOfPieces: "",
+      ratePerPiece: "",
+      amount: "",
+      kgPerUnit: "",
+      totalKg: "",
+      kantan: null,
+      kantanDeckal: "",
+      salesRemark: "",
+      companyName: null, // Reset companyName
+      party: null,
       _id: ""
     })
   }
@@ -140,139 +181,213 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
     resetForm()
     onClose()
   }
+  interface OptionType {
+    label: string
+    value: string
+  }
+  const getSelectedOption = (value: string, options: OptionType[]) => {
+    return options.find((option) => option.value === value) || null
+  }
+
+  // Helper functions to get unique values for dropdowns with dynamic filtering
+  const getUniqueNameOptions = () => {
+    const uniqueNames = [...new Set(packagingOptions.map((item: any) => item.name))].sort()
+    return uniqueNames.map((name) => {
+      const option = packagingOptions.find((item: any) => item.name === name)
+      return { value: option?._id || "", label: name }
+    }).filter(option => option.value)
+  }
+
+  const getUniquePlyOptions = () => {
+    const filteredOptions = packagingOptions.filter(
+      (item: any) =>
+        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
+        (!qpFormData.length || item.length === packagingOptions.find((opt: any) => opt._id === qpFormData.length)?.length) &&
+        (!qpFormData.width || item.width === packagingOptions.find((opt: any) => opt._id === qpFormData.width)?.width) &&
+        (!qpFormData.height || item.height === packagingOptions.find((opt: any) => opt._id === qpFormData.height)?.height)
+    )
+    const uniquePlies = [...new Set(filteredOptions.map((item: any) => item.ply))].sort()
+    return uniquePlies.map((ply) => {
+      const option = filteredOptions.find((item: any) => item.ply === ply)
+      return { value: option?._id || "", label: `${ply}` }
+    }).filter(option => option.value)
+  }
+
+  const getUniqueLengthOptions = () => {
+    const filteredOptions = packagingOptions.filter(
+      (item: any) =>
+        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
+        (!qpFormData.ply || item.ply === packagingOptions.find((opt: any) => opt._id === qpFormData.ply)?.ply) &&
+        (!qpFormData.width || item.width === packagingOptions.find((opt: any) => opt._id === qpFormData.width)?.width) &&
+        (!qpFormData.height || item.height === packagingOptions.find((opt: any) => opt._id === qpFormData.height)?.height)
+    )
+    const uniqueLengths = [...new Set(filteredOptions.map((item: any) => item.length))].sort()
+    return uniqueLengths.map((length) => {
+      const option = filteredOptions.find((item: any) => item.length === length)
+      return { value: option?._id || "", label: length }
+    }).filter(option => option.value)
+  }
+
+  const getUniqueWidthOptions = () => {
+    const filteredOptions = packagingOptions.filter(
+      (item: any) =>
+        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
+        (!qpFormData.ply || item.ply === packagingOptions.find((opt: any) => opt._id === qpFormData.ply)?.ply) &&
+        (!qpFormData.length || item.length === packagingOptions.find((opt: any) => opt._id === qpFormData.length)?.length) &&
+        (!qpFormData.height || item.height === packagingOptions.find((opt: any) => opt._id === qpFormData.height)?.height)
+    )
+    const uniqueWidths = [...new Set(filteredOptions.map((item: any) => item.width))].sort()
+    return uniqueWidths.map((width) => {
+      const option = filteredOptions.find((item: any) => item.width === width)
+      return { value: option?._id || "", label: width }
+    }).filter(option => option.value)
+  }
+
+  const getUniqueHeightOptions = () => {
+    const filteredOptions = packagingOptions.filter(
+      (item: any) =>
+        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
+        (!qpFormData.ply || item.ply === packagingOptions.find((opt: any) => opt._id === qpFormData.ply)?.ply) &&
+        (!qpFormData.length || item.length === packagingOptions.find((opt: any) => opt._id === qpFormData.length)?.length) &&
+        (!qpFormData.width || item.width === packagingOptions.find((opt: any) => opt._id === qpFormData.width)?.width)
+    )
+    const uniqueHeights = [...new Set(filteredOptions.map((item: any) => item.height))].sort()
+    return uniqueHeights.map((height) => {
+      const option = filteredOptions.find((item: any) => item.height === height)
+      return { value: option?._id || "", label: height }
+    }).filter(option => option.value)
+  }
 
   const renderQpForm = () => (
     <>
       <Stack direction="row" spacing={2} mb={2}>
-        <ThemeInput
-          labelName="Order From"
-          placeholder="Order From"
-          fullWidth
-          value={qpFormData.orderFrom}
-          onChange={(e) => handleQpChange("orderFrom", e.target.value)}
-        />
-        <ThemeInput
-          labelName="Date"
-          placeholder="Date"
-          fullWidth
-          type="date"
-          value={qpFormData.date}
-          onChange={(e) => handleQpChange("date", e.target.value)}
+        <ThemeSelect
+          label="Name"
+          options={getUniqueNameOptions()}
+          value={getSelectedOption(qpFormData.name, getUniqueNameOptions())}
+          onChange={(_, val: any) => handleQpChange("name", val?.value || "")}
+          name="name"
         />
         <ThemeSelect
           label="Ply"
-          options={packagingOptions?.map((item: any) => ({
-            value: item?._id,
-            label: item?.ply,
-          }))}
-          value={packagingOptions
-            ?.map((item: any) => ({ value: item?._id, label: item?.ply }))
-            ?.find((item) => item.value === qpFormData.ply)}
-          onChange={(e, val: any) => {
-            handleQpChange("ply", val.value)
-            handleQpChange("size", null)
-            handleQpChange("gsm", null)
-            handleQpChange("deckal", null)
-          }}
+          options={getUniquePlyOptions()}
+          value={getSelectedOption(qpFormData.ply, getUniquePlyOptions())}
+          onChange={(_, val: any) => handleQpChange("ply", val?.value || "")}
+          name="ply"
         />
-
-      </Stack>
-      <Stack direction="row" spacing={2} mb={2}>
         <ThemeSelect
-          label="Size"
-          options={packagingOptions?.filter((item) => item._id !== qpFormData.ply)?.map((item: any) => ({ value: item?._id, label: item?.size }))}
-          value={packagingOptions?.filter((item) => item._id !== qpFormData.ply)?.map((item: any) => ({ value: item?._id, label: item?.size }))?.find((item) => item.value === qpFormData.size)}
-          onChange={(e, val: any) => {
-            handleQpChange("size", val.value)
-            handleQpChange("gsm", null)
-            handleQpChange("deckal", null)
-          }}
+          label="Sheet Length"
+          options={getUniqueLengthOptions()}
+          value={getSelectedOption(qpFormData.length, getUniqueLengthOptions())}
+          onChange={(_, val: any) => handleQpChange("length", val?.value || "")}
+          name="length"
         />
-
         <ThemeSelect
-          label="GSM"
-          options={packagingOptions?.filter((item) => item._id !== qpFormData.size)?.map((item: any) => ({ value: item?._id, label: item?.gsm }))}
-          value={packagingOptions?.filter((item) => item._id !== qpFormData.size)?.map((item: any) => ({ value: item?._id, label: item?.gsm }))?.find((item) => item.value === qpFormData.gsm)}
-          onChange={(e, val: any) => {
-            handleQpChange("gsm", val.value)
-            handleQpChange("deckal", null)
-          }}
+          label="Sheet Width"
+          options={getUniqueWidthOptions()}
+          value={getSelectedOption(qpFormData.width, getUniqueWidthOptions())}
+          onChange={(_, val: any) => handleQpChange("width", val?.value || "")}
+          name="width"
+        />
+        <ThemeSelect
+          label="Sheet Height"
+          options={getUniqueHeightOptions()}
+          value={getSelectedOption(qpFormData.height, getUniqueHeightOptions())}
+          onChange={(_, val: any) => handleQpChange("height", val?.value || "")}
+          name="height"
         />
       </Stack>
       <Stack direction="row" spacing={2} mb={2}>
-        <ThemeSelect
-          label="Deckal"
-          options={packagingOptions?.filter((item) => item._id !== qpFormData.gsm)?.map((item: any) => ({ value: item?._id, label: item?.deckal }))}
-          value={packagingOptions?.filter((item) => item._id !== qpFormData.gsm)?.map((item: any) => ({ value: item?._id, label: item?.deckal }))?.find((item) => item.value === qpFormData.deckal)}
-          onChange={(e, val: any) => handleQpChange("deckal", val.value)}
+        <ThemeInput
+          labelName="GSM"
+          placeholder="GSM"
+          fullWidth
+          value={qpFormData.gsm}
+          onChange={(e) => handleQpChange("gsm", e.target.value)}
         />
         <ThemeInput
-          labelName="Rate"
-          placeholder="Rate"
+          labelName="Deckal"
+          placeholder="Deckal"
           fullWidth
-          value={qpFormData.rate}
+          value={qpFormData.deckal}
+          onChange={(e) => handleQpChange("deckal", e.target.value)}
+        />
+        <ThemeInput
+          labelName="No of Pieces"
+          placeholder="No of Pieces"
+          fullWidth
+          value={qpFormData.noOfPieces}
           onChange={(e) => {
-            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
-            handleQpChange("rate", numericValue)
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+            handleQpChange("noOfPieces", numericValue)
+          }}
+        />
+        <ThemeInput
+          labelName="Rate Per Piece"
+          placeholder="Rate Per Piece"
+          fullWidth
+          value={qpFormData.ratePerPiece}
+          onChange={(e) => {
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+            handleQpChange("ratePerPiece", numericValue)
+          }}
+        />
+        <ThemeInput
+          labelName="Amount"
+          placeholder="Amount"
+          fullWidth
+          value={qpFormData.amount}
+          onChange={(e) => {
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+            handleQpChange("amount", numericValue)
           }}
         />
       </Stack>
       <Stack direction="row" spacing={2} mb={2}>
         <ThemeInput
-          labelName="DYE Number"
-          placeholder="Dye Number"
+          labelName="KG Per Unit"
+          placeholder="KG Per Unit"
           fullWidth
-          value={qpFormData.dyeNumber}
-          onChange={(e) => handleQpChange("dyeNumber", e.target.value)}
+          value={qpFormData.kgPerUnit}
+          onChange={(e) => {
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+            handleQpChange("kgPerUnit", numericValue)
+          }}
         />
         <ThemeInput
-          labelName="DYE Size"
-          placeholder="Dye Size"
+          labelName="Total KG"
+          placeholder="Total KG"
           fullWidth
-          value={qpFormData.dyeSize}
-          onChange={(e) => handleQpChange("dyeSize", e.target.value)}
+          value={qpFormData.totalKg}
+          onChange={(e) => {
+            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+            handleQpChange("totalKg", numericValue)
+          }}
+        />
+        <ThemeSelect
+          label="Kantan"
+          options={kantans?.map((item: any) => ({ value: item?._id, label: item?.kantanName }))}
+          value={kantans?.map((item: any) => ({ value: item?._id, label: item?.kantanName }))?.find((item) => item.value === qpFormData.kantan) || null}
+          onChange={(_, val: any) => handleQpChange("kantan", val?.value || null)}
+          name="kantan"
+        />
+        <ThemeInput
+          labelName="Kantan Deckal"
+          placeholder="Kantan Deckal"
+          fullWidth
+          value={qpFormData.kantanDeckal}
+          onChange={(e) => handleQpChange("kantanDeckal", e.target.value)}
         />
       </Stack>
-      <Stack direction="row" spacing={2} mb={2}>
-        <ThemeInput
-          labelName="DYE Sheet Size"
-          placeholder="DYE Sheet Size"
-          fullWidth
-          value={qpFormData.dySheetSize}
-          onChange={(e) => handleQpChange("dySheetSize", e.target.value)}
-        />
-        <ThemeInput
-          labelName="DYE Remark"
-          placeholder="DYE Remark"
-          fullWidth
-          value={qpFormData.dyeRemark}
-          onChange={(e) => handleQpChange("dyeRemark", e.target.value)}
-        />
-      </Stack>
-      <Stack direction="row" spacing={2} mb={2}>
-        <ThemeInput
-          labelName="Godown Remark"
-          placeholder="Godown Remark"
-          fullWidth
-          value={qpFormData.godownRemark}
-          onChange={(e) => handleQpChange("godownRemark", e.target.value)}
-        />
-        <ThemeInput
-          labelName="Factory Remark"
-          placeholder="Factory Remark"
-          fullWidth
-          value={qpFormData.factoryRemark}
-          onChange={(e) => handleQpChange("factoryRemark", e.target.value)}
-        />
-      </Stack>
-
       <ThemeInput
-        labelName="Delivery"
-        placeholder="Delivery"
+        labelName="Sales Remarks"
+        placeholder="Sales Remarks"
         fullWidth
-        value={qpFormData.delivery}
-        onChange={(e) => handleQpChange("delivery", e.target.value)}
+        value={qpFormData.salesRemark}
+        onChange={(e) => handleQpChange("salesRemark", e.target.value)}
         sx={{ mb: 2 }}
+        multiline
+        rows={3}
       />
     </>
   )

@@ -18,28 +18,24 @@ import { RootState, useAppDispatch } from "@/store";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import {
-    createMarketThunk,
-    getAllMarketsThunk,
-    updateMarketThunk,
-    deleteMarketThunk,
-    bulkCreateMarketsThunk,
-} from "@/store/slices/marketDataSlice";
-import { Market } from "@/services/marketData.service";
+    createKantanThunk,
+    getAllKantansThunk,
+    updateKantanThunk,
+    deleteKantanThunk,
+    bulkCreateKantansThunk,
+} from "@/store/slices/kantanSlice";
+import { Kantan } from "@/services/kantan.service";
 
 const columns = [
     { id: "id", label: "ID" },
-    { id: "name", label: "Market Name" },
-    { id: "area", label: "Area" },
-    { id: "streetAddress", label: "Street Address" },
-    { id: "landmark", label: "Landmark" },
-    { id: "pincode", label: "Pincode" },
+    { id: "name", label: "Kantan Name" },
     { id: "options", label: "Options" },
 ];
 
-const MarketPage = () => {
+const KantanPage = () => {
     const dispatch = useAppDispatch();
-    const { markets, loading, operationLoading, error, operationError } =
-        useSelector((state: RootState) => state.markets);
+    const { kantans, loading, operationLoading, error, operationError } =
+        useSelector((state: RootState) => state.kantans);
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
@@ -47,7 +43,7 @@ const MarketPage = () => {
     const [file, setFile] = useState<File | null>(null);
 
     useEffect(() => {
-        if (!markets.length) dispatch(getAllMarketsThunk());
+        if (!kantans.length) dispatch(getAllKantansThunk());
     }, []);
 
     useEffect(() => {
@@ -57,45 +53,31 @@ const MarketPage = () => {
 
     // ✅ Yup validation schema
     const validationSchema = Yup.object({
-        marketName: Yup.string().required("Market Name is required"),
-        area: Yup.string().required("Area is required"),
-        streetAddress: Yup.string().nullable(),
-        landmark: Yup.string().nullable(),
-        pincode: Yup.string()
-            .matches(/^\d{6}$/, "Pincode must be 6 digits")
-            .required("Pincode is required"),
+        kantanName: Yup.string().required("Kantan Name is required"),
     });
 
     // ✅ Formik hook
     const formik = useFormik({
         initialValues: {
-            marketName: "",
-            area: "",
-            streetAddress: "",
-            landmark: "",
-            pincode: "",
+            kantanName: "",
         },
         validationSchema,
         onSubmit: (values) => {
             if (editId) {
-                dispatch(updateMarketThunk({ id: editId, updateData: values }));
+                dispatch(updateKantanThunk({ id: editId, updateData: values }));
             } else {
-                dispatch(createMarketThunk(values));
+                dispatch(createKantanThunk(values));
             }
             setDialogOpen(false);
         },
         enableReinitialize: true, // ✅ important for edit mode
     });
 
-    const handleOpenDialog = (market?: any) => {
-        if (market) {
-            setEditId(market._id);
+    const handleOpenDialog = (kantan?: any) => {
+        if (kantan) {
+            setEditId(kantan._id);
             formik.setValues({
-                marketName: market.marketName,
-                area: market.area,
-                streetAddress: market.streetAddress,
-                landmark: market.landmark,
-                pincode: market.pincode,
+                kantanName: kantan.kantanName,
             });
         } else {
             setEditId(null);
@@ -117,17 +99,17 @@ const MarketPage = () => {
 
         if (result.isConfirmed) {
             try {
-                await dispatch(deleteMarketThunk(id)).unwrap();
+                await dispatch(deleteKantanThunk(id)).unwrap();
                 Swal.fire({
                     title: "Deleted!",
-                    text: "Market deleted successfully",
+                    text: "Kantan deleted successfully",
                     icon: "success",
                     confirmButtonColor: "#7F56D9",
                 });
             } catch (err: any) {
                 Swal.fire({
                     title: "Error!",
-                    text: err?.message || "Failed to delete market",
+                    text: err?.message || "Failed to delete kantan",
                     icon: "error",
                     confirmButtonColor: "#7F56D9",
                 });
@@ -144,7 +126,7 @@ const MarketPage = () => {
         formData.append("file", file);
 
         try {
-            dispatch(bulkCreateMarketsThunk(formData));
+            dispatch(bulkCreateKantansThunk(formData));
             toast.success("Bulk upload successful");
             setBulkDialogOpen(false);
         } catch (error: any) {
@@ -154,11 +136,11 @@ const MarketPage = () => {
 
     const handleDownloadSample = () => {
         const csvContent =
-            "marketName,area,streetAddress,landmark,pincode\nMain Market,Downtown,123 Street,Near Temple,400001\n";
+            "kantanName\nSample Kantan\n";
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "sample_markets.csv");
+        link.setAttribute("download", "sample_kantans.csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -169,7 +151,7 @@ const MarketPage = () => {
             {/* Top Bar */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h5" fontWeight={600}>
-                    Markets
+                    Kantans
                 </Typography>
                 <Box display="flex" gap={2}>
                     <Button variant="outlined" onClick={handleDownloadSample}>
@@ -184,24 +166,20 @@ const MarketPage = () => {
                         onClick={() => handleOpenDialog()}
                         disabled={loading || operationLoading}
                     >
-                        New Market
+                        New Kantan
                     </Button>
                 </Box>
             </Box>
 
             {/* Table */}
             <BasicTable
-                showDatePicker={false}
                 tableHeader={columns}
-                rowData={markets as any}
-                renderRow={(row: Market, idx: number) => (
+                rowData={kantans as any}
+                showDatePicker={false}
+                renderRow={(row: Kantan, idx: number) => (
                     <>
                         <TableCell>{idx + 1}</TableCell>
-                        <TableCell>{row?.marketName}</TableCell>
-                        <TableCell>{row?.area}</TableCell>
-                        <TableCell>{row?.streetAddress}</TableCell>
-                        <TableCell>{row?.landmark}</TableCell>
-                        <TableCell>{row?.pincode}</TableCell>
+                        <TableCell>{row?.kantanName}</TableCell>
                         <TableCell>
                             <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                                 <Edit />
@@ -217,25 +195,19 @@ const MarketPage = () => {
             <CustomDialog
                 open={dialogOpen}
                 onClose={() => setDialogOpen(false)}
-                title={editId ? "Edit Market" : "New Market"}
+                title={editId ? "Edit Kantan" : "New Kantan"}
                 maxWidth="sm"
                 fullWidth
             >
                 <form onSubmit={formik.handleSubmit}>
                     <Box display="grid" gap={2}>
-                        {["marketName", "area", "streetAddress", "landmark", "pincode"].map((field) => (
+                        {["kantanName"].map((field) => (
                             <Box key={field}>
                                 <Input
                                     label={field.toUpperCase()}
                                     name={field}
                                     value={formik.values[field as keyof typeof formik.values]}
-                                    onChange={(e) => {
-                                        if (field === 'pincode') {
-                                            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
-                                            formik.setFieldValue("pincode", numericValue);
-                                        }
-                                        else formik.handleChange(e)
-                                    }}
+                                    onChange={formik.handleChange}
                                     fullWidth
                                     error={formik.touched[field as keyof typeof formik.touched] && Boolean(formik.errors[field as keyof typeof formik.errors])}
                                     helperText={formik.touched[field as keyof typeof formik.touched] && formik.errors[field as keyof typeof formik.errors]}
@@ -254,11 +226,11 @@ const MarketPage = () => {
                 </form>
             </CustomDialog>
 
-            {/* Bulk Upload Dialog (unchanged) */}
+            {/* Bulk Upload Dialog */}
             <CustomDialog
                 open={bulkDialogOpen}
                 onClose={() => setBulkDialogOpen(false)}
-                title="Bulk Upload Markets"
+                title="Bulk Upload Kantans"
                 maxWidth="sm"
                 fullWidth
             >
@@ -284,13 +256,13 @@ const MarketPage = () => {
                         onClick={() => document.getElementById("fileInput")?.click()}
                     >
                         <Typography variant="body1" color="textSecondary">
-                            Drag & Drop CSV file here or click to select
+                            Drag & Drop CSV/Excel file here or click to select
                         </Typography>
                         <input
                             type="file"
                             id="fileInput"
                             style={{ display: "none" }}
-                            accept=".csv"
+                            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                             onChange={(e) => setFile(e.target.files?.[0] || null)}
                         />
                     </Box>
@@ -319,4 +291,4 @@ const MarketPage = () => {
     );
 };
 
-export default MarketPage;
+export default KantanPage;
