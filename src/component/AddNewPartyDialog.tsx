@@ -1002,7 +1002,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                         📁 Choose File to Upload
                       </Typography>
                       <Typography variant="body2" color="textSecondary">
-                        Click here to select CSV or Excel file
+                        Click here to select CSV file
                       </Typography>
                       <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
                         Supported formats: .csv

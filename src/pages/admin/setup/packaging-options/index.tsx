@@ -286,13 +286,13 @@ const closeBulkDialog = () => {
       onClick={() => document.getElementById("fileInput")?.click()}
     >
       <Typography variant="body1" color="textSecondary">
-        Drag & Drop CSV/Excel file here or click to select
+        Drag & Drop CSV file here or click to select
       </Typography>
       <input
         type="file"
         id="fileInput"
         style={{ display: "none" }}
-        accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+        accept=".csv"
         onChange={(e) => setFile(e.target.files?.[0] || null)}
       />
     </Box>
