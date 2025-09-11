@@ -73,6 +73,7 @@ interface AggregatedInventory {
 
 const InventoryPage = () => {
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth)
   const { inventory, summary, loading, error } = useAppSelector(state => state.inventory);
   const { materials } = useAppSelector(state => state.materials);
   const { vendors } = useAppSelector(state => state.vendors);
@@ -83,6 +84,19 @@ const InventoryPage = () => {
   const [selectedMaterial, setSelectedMaterial] = useState<string>('');
   const [selectedVendor, setSelectedVendor] = useState<string>('');
   const [selectedPrinterFilter, setSelectedPrinterFilter] = useState<string>('');
+  const permissions = user.role.permissions;
+
+  const getPermissionWiseInventory = () => {
+    if (permissions?.inventory?.view_global) {
+      return inventory;
+    } else if (permissions?.inventory?.view_own) {
+      return inventory?.filter(
+        (item) =>
+          item.forCompany?._id === user.id
+      );
+    }
+    return [];
+  };
 
   useEffect(() => {
     dispatch(getAllMaterialsThunk());
@@ -111,7 +125,7 @@ const InventoryPage = () => {
     setActiveWardTab(newValue as WardTab);
   };
   const aggregateInventory = (): AggregatedInventory[] => {
-    const filtered = inventory.filter(item => item.type === activeWardTab);
+    const filtered = getPermissionWiseInventory().filter(item => item.type === activeWardTab);
     const aggregated: Record<string, AggregatedInventory> = {};
 
     // First pass: aggregate items based on current ward tab
@@ -156,7 +170,7 @@ const InventoryPage = () => {
 
     // Second pass: calculate total inward and outward for balance
     // Get all items for the category to calculate proper balance
-    const allCategoryItems = inventory.filter(item => item.category === activeMainTab);
+    const allCategoryItems = getPermissionWiseInventory().filter(item => item.category === activeMainTab);
 
     Object.keys(aggregated).forEach(key => {
       const [printerId, materialId] = key.split('-');
@@ -216,7 +230,7 @@ const InventoryPage = () => {
     setSelectedPrinter(null);
   };
 
-  const filteredInventory = inventory.filter(item =>
+  const filteredInventory = getPermissionWiseInventory().filter(item =>
     item.type === activeWardTab &&
     (!selectedMaterial || item.material?._id === selectedMaterial) &&
     (!selectedVendor || item.vendor?._id === selectedVendor) &&
@@ -235,11 +249,11 @@ const InventoryPage = () => {
 
   // Create unique printer options
   const printerOptions = Array.from(new Set(
-    inventory
+    getPermissionWiseInventory()
       .filter(item => item.forCompany)
       .map(item => item.forCompany._id)
   )).map(printerId => {
-    const printer = inventory.find(item => item.forCompany?._id === printerId)?.forCompany;
+    const printer = getPermissionWiseInventory().find(item => item.forCompany?._id === printerId)?.forCompany;
     return {
       value: printerId,
       label: printer ? `${printer.firstName} ${printer.lastName}` : 'Unknown'
