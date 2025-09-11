@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Box,
   Paper,
@@ -39,14 +39,32 @@ interface BasicTableProps<T> {
   onSelectAll?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSelectRow?: (id: string) => void;
   selectedRows?: string[];
-  totalCount?: number; // Total number of orders from backend
+  totalCount?: number;
   pagination?: {
     currentPage: number;
     totalPages: number;
     hasNext: boolean;
     hasPrev: boolean;
   };
+  renderExpandedRow?: (row: T) => React.ReactNode;
 }
+
+// Debounce hook
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 const BasicTable = <T extends { id: string }>({
   tableHeader,
@@ -66,16 +84,17 @@ const BasicTable = <T extends { id: string }>({
     hasNext: rowData.length > 10,
     hasPrev: false,
   },
-  renderExpandedRow, // New prop
+  renderExpandedRow,
 }: BasicTableProps<T>) => {
   const [page, setPage] = useState(pagination.currentPage - 1 || 0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms delay
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
-  const [expandedRowId, setExpandedRowId] = useState<string | null>(null); // State for expanded row
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   // Dynamically generate filter options from tableHeader, excluding "action" and "checkbox"
   const filterOptions = useMemo(() => {
@@ -91,39 +110,39 @@ const BasicTable = <T extends { id: string }>({
       let key: keyof T;
       switch (col.label) {
         case "Company":
-          key = "company";
+          key = "company" as keyof T;
           break;
         case "Created Date":
         case "Date":
           key = "createdDate" as keyof T;
           break;
         case "Party":
-          key = "party";
+          key = "party" as keyof T;
           break;
         case "Contact Person":
-          key = "contactPerson";
+          key = "contactPerson" as keyof T;
           break;
         case "Party Tag":
-          key = "partyTag";
+          key = "partyTag" as keyof T;
           break;
         case "Mobile No.":
-          key = "mobile";
+          key = "mobile" as keyof T;
           break;
         case "Reason to Visit":
-          key = "reason";
+          key = "reason" as keyof T;
           break;
         case "Market":
         case "Market Name":
-          key = "market";
+          key = "market" as keyof T;
           break;
         case "Area":
-          key = "area";
+          key = "area" as keyof T;
           break;
         case "Remarks":
-          key = "remarks";
+          key = "remarks" as keyof T;
           break;
         case "Status":
-          key = "status";
+          key = "status" as keyof T;
           break;
         case "Created By":
         case "Assign By":
@@ -134,7 +153,7 @@ const BasicTable = <T extends { id: string }>({
           key = "assignedTo" as keyof T;
           break;
         case "Address":
-          key = "address";
+          key = "address" as keyof T;
           break;
         default:
           key = col.id as keyof T;
@@ -163,12 +182,17 @@ const BasicTable = <T extends { id: string }>({
   const filteredRows = useMemo(() => {
     let filtered = rowData;
 
-    // Apply search query filter
-    if (searchQuery.trim()) {
+    // Apply search query filter (using debounced value)
+    if (debouncedSearchQuery.trim()) {
       filtered = filtered.filter((row) =>
         Object.values(row).some((value) => {
-          const stringValue = typeof value === "object" ? JSON.stringify(value) : String(value);
-          return stringValue.toLowerCase().includes(searchQuery.toLowerCase());
+          if (value === null || value === undefined) return false;
+          
+          const stringValue = typeof value === "object" 
+            ? JSON.stringify(value).toLowerCase() 
+            : String(value).toLowerCase();
+          
+          return stringValue.includes(debouncedSearchQuery.toLowerCase());
         })
       );
     }
@@ -176,7 +200,10 @@ const BasicTable = <T extends { id: string }>({
     // Apply date range filter (if applicable)
     if (startDate || endDate) {
       filtered = filtered.filter((row) => {
-        const rowDate = new Date((row as any).createdDate || (row as any).date);
+        const rowDateValue = (row as any).createdDate || (row as any).date;
+        if (!rowDateValue) return true;
+        
+        const rowDate = new Date(rowDateValue);
         const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
         const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
         return (!start || rowDate >= start) && (!end || rowDate <= end);
@@ -189,23 +216,27 @@ const BasicTable = <T extends { id: string }>({
         Object.entries(filters).every(([field, values]) => {
           const key = filterFieldToKey[field];
           if (!key) return true;
-          const value = key === "company" ? (row[key] as any)?.name : row[key];
-          return values.includes(String(value));
+          
+          const value = key === "company" 
+            ? (row[key] as any)?.name 
+            : row[key];
+          
+          return values.includes(String(value || "N/A"));
         })
       );
     }
 
     return filtered;
-  }, [rowData, searchQuery, startDate, endDate, filters, filterFieldToKey]);
+  }, [rowData, debouncedSearchQuery, startDate, endDate, filters, filterFieldToKey]);
 
-  // Use backend totalCount for pagination
-  const pageCount = Math.ceil(totalCount / rowsPerPage);
+  // Use filteredRows length for pagination when using client-side filtering
+  const pageCount = Math.ceil(filteredRows.length / rowsPerPage);
   const paginatedRows = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   // Reset page when filters or search change
   useEffect(() => {
     setPage(0);
-  }, [searchQuery, filters, startDate, endDate]);
+  }, [debouncedSearchQuery, filters, startDate, endDate]);
 
   // Handle rows per page change
   const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -216,7 +247,7 @@ const BasicTable = <T extends { id: string }>({
 
   // Pagination logic with ellipsis
   const getPaginationItems = () => {
-    const maxVisiblePages = 5; // Show up to 5 page buttons
+    const maxVisiblePages = 5;
     const items: React.ReactNode[] = [];
 
     // Always show first page
@@ -377,7 +408,6 @@ const BasicTable = <T extends { id: string }>({
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    setPage(0);
                   }}
                   sx={{ ml: 1, fontSize: 14 }}
                 />
@@ -448,106 +478,122 @@ const BasicTable = <T extends { id: string }>({
             </TableHead>
 
             <TableBody>
-              {paginatedRows.map((row, index) => (
-                <React.Fragment key={row.id}>
-                  <TableRow
-                    hover
-                    sx={{
-                      borderBottom: "2px solid #F2F4F7",
-                      "& .MuiTableCell-root": {
-                        padding: "6px 10px",
-                        fontSize: "14px",
-                        lineHeight: "1.2",
-                      },
-                    }}
-                  >
-                    {tableHeader[0].id === "checkbox" && (
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedRows.includes(row.id)}
-                          onChange={() => onSelectRow && onSelectRow(row.id)}
-                        />
-                      </TableCell>
-                    )}
-                    {renderRow(row, index)}
-                    {/* Add expand/collapse button in the last column */}
-                    {renderExpandedRow && (
-                      <TableCell>
-                        <IconButton
-                          onClick={() => toggleExpandRow(row._id)}
-                          size="small"
-                          sx={{ padding: 0 }}
-                        >
-                          {expandedRowId === row._id ? (
-                            <FaChevronUp size={14} />
-                          ) : (
-                            <FaChevronDown size={14} />
-                          )}
-                        </IconButton>
-                      </TableCell>
-                    )}
-                  </TableRow>
-
-                  {/* Expanded row content */}
-                  {renderExpandedRow && expandedRowId === row._id && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={tableHeader.length + (tableHeader[0].id === "checkbox" ? 1 : 0) + 1}
-                        sx={{
-                          padding: 0,
-                          backgroundColor: "#f9f9f9",
-                          borderBottom: "2px solid #F2F4F7",
-                        }}
-                      >
-                        <Collapse in={expandedRowId === row._id} timeout="auto" unmountOnExit>
-                          <Box sx={{ p: 2 }}>
-                            {renderExpandedRow(row)}
-                          </Box>
-                        </Collapse>
-                      </TableCell>
+              {paginatedRows.length > 0 ? (
+                paginatedRows.map((row, index) => (
+                  <React.Fragment key={row.id}>
+                    <TableRow
+                      hover
+                      sx={{
+                        borderBottom: "2px solid #F2F4F7",
+                        "& .MuiTableCell-root": {
+                          padding: "6px 10px",
+                          fontSize: "14px",
+                          lineHeight: "1.2",
+                        },
+                      }}
+                    >
+                      {tableHeader[0].id === "checkbox" && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedRows.includes(row.id)}
+                            onChange={() => onSelectRow && onSelectRow(row.id)}
+                          />
+                        </TableCell>
+                      )}
+                      {renderRow(row, index)}
+                      {/* Add expand/collapse button in the last column */}
+                      {renderExpandedRow && (
+                        <TableCell>
+                          <IconButton
+                            onClick={() => toggleExpandRow(row.id)}
+                            size="small"
+                            sx={{ padding: 0 }}
+                          >
+                            {expandedRowId === row.id ? (
+                              <FaChevronUp size={14} />
+                            ) : (
+                              <FaChevronDown size={14} />
+                            )}
+                          </IconButton>
+                        </TableCell>
+                      )}
                     </TableRow>
-                  )}
-                </React.Fragment>
-              ))}
+
+                    {/* Expanded row content */}
+                    {renderExpandedRow && expandedRowId === row.id && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={tableHeader.length + (tableHeader[0].id === "checkbox" ? 1 : 0) + 1}
+                          sx={{
+                            padding: 0,
+                            backgroundColor: "#f9f9f9",
+                            borderBottom: "2px solid #F2F4F7",
+                          }}
+                        >
+                          <Collapse in={expandedRowId === row.id} timeout="auto" unmountOnExit>
+                            <Box sx={{ p: 2 }}>
+                              {renderExpandedRow(row)}
+                            </Box>
+                          </Collapse>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell 
+                    colSpan={tableHeader.length + (renderExpandedRow ? 1 : 0)} 
+                    align="center"
+                    sx={{ py: 3 }}
+                  >
+                    <Typography variant="body2" color="textSecondary">
+                      No matching records found
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </Box>
       </TableContainer>
 
       {/* Pagination */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          py: 2,
-          px: 2,
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Button
-          variant="outlined"
-          size="small"
-          disabled={page === 0}
-          onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+      {filteredRows.length > 0 && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            py: 2,
+            px: 2,
+            flexWrap: "wrap",
+            gap: 2,
+          }}
         >
-          ← Previous
-        </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={page === 0}
+            onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+          >
+            ← Previous
+          </Button>
 
-        <Box sx={{ display: "flex", gap: 1 }}>
-          {getPaginationItems()}
+          <Box sx={{ display: "flex", gap: 1 }}>
+            {getPaginationItems()}
+          </Box>
+
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={page >= pageCount - 1}
+            onClick={() => setPage((prev) => Math.min(prev + 1, pageCount - 1))}
+          >
+            Next →
+          </Button>
         </Box>
-
-        <Button
-          variant="outlined"
-          size="small"
-          disabled={page >= pageCount - 1}
-          onClick={() => setPage((prev) => Math.min(prev + 1, pageCount - 1))}
-        >
-          Next →
-        </Button>
-      </Box>
+      )}
     </Paper>
   );
 };

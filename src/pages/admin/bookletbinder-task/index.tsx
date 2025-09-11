@@ -6,6 +6,7 @@ import BasicTable from "@/component/common_component/Table/themetable"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { getBookletBinderThunk } from "@/store/slices/orderSlice"
 import { useRouter } from "next/router"
+import { authService } from "@/services/auth.service"
 
 interface Column {
   id: string
@@ -20,7 +21,7 @@ const tableHeader: Column[] = [
   { id: "itemName", label: "Item Name" },
   { id: "remarks", label: "Remarks" },
   { id: "status", label: "Status", align: "center" as const },
-    { id: "action", label: "Action", align: "center" as const },
+  { id: "action", label: "Action", align: "center" as const },
 
 ]
 
@@ -64,7 +65,7 @@ interface BookletBinderTaskProps {
   tasks: any
 }
 
-const BookletBinderTask : React.FC<BookletBinderTaskProps> = ({ tasks }) => {
+const BookletBinderTask: React.FC<BookletBinderTaskProps> = ({ tasks }) => {
   const dispatch = useAppDispatch()
   const { orders, loading } = useAppSelector((state) => state.orders)
   const router = useRouter()
@@ -78,9 +79,11 @@ const BookletBinderTask : React.FC<BookletBinderTaskProps> = ({ tasks }) => {
     status: string
   ) => {
     try {
+      const token = authService.getToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/status`, {
         method: "PUT",
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -138,7 +141,7 @@ const BookletBinderTask : React.FC<BookletBinderTaskProps> = ({ tasks }) => {
       <TableCell align="center">
         <StatusBadge status={row.status} />
       </TableCell>
-       <TableCell align="center">
+      <TableCell align="center">
         {row.status === "Pending" && (
           <Button
             onClick={() => handleUpdateStatus(row.id, "bookletBinder", "In Progress")}

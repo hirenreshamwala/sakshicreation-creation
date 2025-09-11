@@ -14,6 +14,7 @@ import { useRouter } from "next/router"
 import { toast } from "react-toastify"
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice";
 import ThemeSelect from "@/component/common_component/themeselect";
+import { authService } from "@/services/auth.service";
 
 type PaperField = {
   paperName: string;
@@ -22,6 +23,7 @@ type PaperField = {
   paperType: string;
   gsm: string;
   ratePerUnit: string;
+  wastage: string;
 };
 
 const BookletBinderTaskView = () => {
@@ -104,7 +106,10 @@ const BookletBinderTaskView = () => {
       const binderPaperCount = singleOrder.binderPapers?.length || 0
       const totalPreviousPapers = printerPaperCount + binderPaperCount
       if (singleOrder.bookletPapers && singleOrder.bookletPapers.length > 0) {
-        setBookletPapers(singleOrder.bookletPapers)
+        setBookletPapers(singleOrder.bookletPapers.map((paper: any) => ({
+          ...paper,
+          wastage: paper.wastage?.toString() || "0" // Initialize wastage field
+        })))
       } else {
         setBookletPapers([{
           paperName: `Paper-${totalPreviousPapers + 1}`,
@@ -112,11 +117,21 @@ const BookletBinderTaskView = () => {
           sheetSize: "",
           paperType: "",
           gsm: "",
-          ratePerUnit: ""
+          ratePerUnit: "",
+          wastage: "0"
         }])
       }
     }
   }, [singleOrder])
+
+  // Calculate total wastage whenever printerPapers changes
+  useEffect(() => {
+    const totalWastage = bookletPapers?.reduce((sum, paper) => {
+      return sum + (parseFloat(paper.wastage) || 0)
+    }, 0)
+
+    setBookletBinderWastedSheet(totalWastage.toString())
+  }, [bookletPapers])
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -169,7 +184,8 @@ const BookletBinderTaskView = () => {
       sheetSize: "",
       paperType: "",
       gsm: "",
-      ratePerUnit: ""
+      ratePerUnit: "",
+      wastage: "0"
     }])
   }
 
@@ -185,9 +201,11 @@ const BookletBinderTaskView = () => {
   const handleUpdateStatus = async (orderId: string, statusType: string, status: string) => {
     try {
       setSubmitLoading(true)
+      const token = authService.getToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/status`, {
         method: "PUT",
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -267,7 +285,7 @@ const BookletBinderTaskView = () => {
         bookletBinderStatus: "Done",
         status: "Delivery",
         bookletBinderRemarks,
-        bookletBinderWastedSheet: bookletBinderWastedSheetNum,
+        bookletBinderWastedSheet: parseFloat(bookletBinderWastedSheet) || 0,
         bookletBinderFiles: allBookletFiles,
         bookletPapers, // Include booklet papers
         size: formData.size,
@@ -633,13 +651,6 @@ const BookletBinderTaskView = () => {
                   fullWidth
                   InputProps={{ readOnly: !canEditBookletBinderTask }}
                 />
-                <ThemeInput
-                  labelName="Number of Sheets Used"
-                  value={paper.numberOfSheetsUsed}
-                  onChange={(e) => handleBookletPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: canEditBookletBinderTask }}
-                />
                 <ThemeSelect
                   label="Paper Type"
                   options={materialNameOptions}
@@ -678,6 +689,14 @@ const BookletBinderTaskView = () => {
                   onChange={(e) => handleBookletPaperChange(index, 'ratePerUnit', e.target.value)}
                   fullWidth
                   InputProps={{ readOnly: !canEditBookletBinderTask }}
+                />
+                <ThemeInput
+                  labelName="Wastage"
+                  value={paper.wastage}
+                  onChange={(e) => handleBookletPaperChange(index, 'wastage', e.target.value)}
+                  type="number"
+                  fullWidth
+                InputProps={{ readOnly: !canEditBookletBinderTask }}
                 />
               </Stack>
             </Box>

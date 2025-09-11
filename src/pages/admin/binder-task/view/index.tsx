@@ -13,6 +13,7 @@ import { useRouter } from "next/router"
 import { toast } from "react-toastify"
 import ThemeSelect from "@/component/common_component/themeselect";
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice";
+import { authService } from "@/services/auth.service";
 
 type PaperField = {
   paperName: string;
@@ -21,6 +22,7 @@ type PaperField = {
   paperType: string;
   gsm: string;
   ratePerUnit: string;
+  wastage: string;
 };
 
 const BinderTaskView = () => {
@@ -66,7 +68,10 @@ const BinderTaskView = () => {
       // Initialize binder papers
       const printerPaperCount = singleOrder.printerPapers?.length || 0
       if (singleOrder.binderPapers && singleOrder.binderPapers.length > 0) {
-        setBinderPapers(singleOrder.binderPapers)
+        setBinderPapers(singleOrder.binderPapers.map((paper: any) => ({
+          ...paper,
+          wastage: paper.wastage?.toString() || "0" // Initialize wastage field
+        })))
       } else {
         setBinderPapers([{
           paperName: `Paper-${printerPaperCount + 1}`,
@@ -74,11 +79,22 @@ const BinderTaskView = () => {
           sheetSize: "",
           paperType: "",
           gsm: "",
-          ratePerUnit: ""
+          ratePerUnit: "",
+          wastage: "0"
         }])
       }
     }
   }, [singleOrder])
+
+
+  // Calculate total wastage whenever printerPapers changes
+  useEffect(() => {
+    const totalWastage = binderPapers.reduce((sum, paper) => {
+      return sum + (parseFloat(paper.wastage) || 0)
+    }, 0)
+
+    setBinderWastedSheet(totalWastage.toString())
+  }, [binderPapers])
 
   const handleBinderFilesSelected = (selectedFiles: File[]) => {
     const newFileList = selectedFiles.map((file) => ({
@@ -119,7 +135,8 @@ const BinderTaskView = () => {
       sheetSize: "",
       paperType: "",
       gsm: "",
-      ratePerUnit: ""
+      ratePerUnit: "",
+      wastage: "0"
     }])
   }
 
@@ -135,9 +152,11 @@ const BinderTaskView = () => {
   const handleUpdateStatus = async (orderId: string, statusType: string, status: string) => {
     try {
       setSubmitLoading(true)
+      const token = authService.getToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/status`, {
         method: "PUT",
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -167,11 +186,11 @@ const BinderTaskView = () => {
       return
     }
 
-    const binderWastedSheetNum = Number(binderWastedSheet)
-    if (isNaN(binderWastedSheetNum) || binderWastedSheetNum < 0) {
-      toast.error("Binder Wasted Sheet must be a non-negative number")
-      return
-    }
+    // const binderWastedSheetNum = Number(binderWastedSheet)
+    // if (isNaN(binderWastedSheetNum) || binderWastedSheetNum < 0) {
+    //   toast.error("Binder Wasted Sheet must be a non-negative number")
+    //   return
+    // }
 
     // Validate binder papers
     for (const paper of binderPapers) {
@@ -205,7 +224,7 @@ const BinderTaskView = () => {
       const updateData: any = {
         binderStatus: "Done",
         binderRemarks,
-        binderWastedSheet: binderWastedSheetNum,
+        binderWastedSheet: parseFloat(binderWastedSheet) || 0,
         binderFiles: allBinderFiles,
         binderPapers, // Include binder papers
         receivedDate: currentDate
@@ -570,6 +589,14 @@ const BinderTaskView = () => {
                   fullWidth
                   InputProps={{ readOnly: !canEditBinderTask }}
                 />
+                <ThemeInput
+                  labelName="Wastage"
+                  value={paper.wastage}
+                  onChange={(e) => handleBinderPaperChange(index, 'wastage', e.target.value)}
+                  type="number"
+                  fullWidth
+                  InputProps={{ readOnly: !canEditBinderTask }}
+                />
               </Stack>
             </Box>
           ))}
@@ -598,10 +625,10 @@ const BinderTaskView = () => {
             labelName="Binder Wasted Sheet"
             placeholder="Enter number of wasted sheets"
             value={binderWastedSheet}
-            onChange={(e) => setBinderWastedSheet(e.target.value)}
+            // onChange={(e) => setBinderWastedSheet(e.target.value)}
             type="number"
             sx={{ width: "100%" }}
-            InputProps={{ readOnly: !canEditBinderTask }}
+          // InputProps={{ readOnly: !canEditBinderTask }}
           />
         </Box>
 

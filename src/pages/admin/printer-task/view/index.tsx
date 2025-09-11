@@ -22,6 +22,7 @@ type PaperField = {
   paperType: string;
   gsm: string;
   ratePerUnit: string;
+  wastage: string; // Added wastage field
 };
 
 const PrinterTaskView = () => {
@@ -65,9 +66,13 @@ const PrinterTaskView = () => {
       setPrinterRemarks(singleOrder.printerRemarks || "")
       setPrinterWastedSheet(singleOrder.printerWastedSheet?.toString() || "")
       setUploadedPrinterFiles(singleOrder.printerFiles || [])
-      // Initialize printer papers
+      
+      // Initialize printer papers with wastage field
       if (singleOrder.printerPapers && singleOrder.printerPapers.length > 0) {
-        setPrinterPapers(singleOrder.printerPapers)
+        setPrinterPapers(singleOrder.printerPapers.map((paper: any) => ({
+          ...paper,
+          wastage: paper.wastage?.toString() || "0" // Initialize wastage field
+        })))
       } else {
         setPrinterPapers([{
           paperName: "Paper-1",
@@ -75,11 +80,21 @@ const PrinterTaskView = () => {
           sheetSize: "",
           paperType: "",
           gsm: "",
-          ratePerUnit: ""
+          ratePerUnit: "",
+          wastage: "0" // Default wastage value
         }])
       }
     }
   }, [singleOrder])
+
+  // Calculate total wastage whenever printerPapers changes
+  useEffect(() => {
+    const totalWastage = printerPapers.reduce((sum, paper) => {
+      return sum + (parseFloat(paper.wastage) || 0)
+    }, 0)
+    
+    setPrinterWastedSheet(totalWastage.toString())
+  }, [printerPapers])
 
   const handlePrinterFilesSelected = (selectedFiles: File[]) => {
     const newFileList = selectedFiles.map((file) => ({
@@ -109,7 +124,6 @@ const PrinterTaskView = () => {
 
   const handleViewDesignFiles = () => setOpenDesignFilesDialog(true)
   const handleCloseDesignFilesDialog = () => setOpenDesignFilesDialog(false)
-
   const handleViewPrinterFiles = () => setOpenPrinterFilesDialog(true)
   const handleClosePrinterFilesDialog = () => setOpenPrinterFilesDialog(false)
 
@@ -128,7 +142,6 @@ const PrinterTaskView = () => {
           status,
         }),
       })
-
       if (response.ok) {
         await dispatch(getOrderByIdThunk(orderId)).unwrap()
         toast.success(`Status updated to ${status}`)
@@ -152,7 +165,8 @@ const PrinterTaskView = () => {
       sheetSize: "",
       paperType: "",
       gsm: "",
-      ratePerUnit: ""
+      ratePerUnit: "",
+      wastage: "0" // Default wastage value
     }])
   }
 
@@ -170,13 +184,7 @@ const PrinterTaskView = () => {
       toast.error("Order ID not found")
       return
     }
-
-    const printerWastedSheetNum = Number(printerWastedSheet)
-    if (isNaN(printerWastedSheetNum) || printerWastedSheetNum < 0) {
-      toast.error("Printer Wasted Sheet must be a non-negative number")
-      return
-    }
-
+    
     // Validate printer papers
     for (const paper of printerPapers) {
       if (!paper.rowPaperUser || !paper.sheetSize || !paper.paperType || !paper.gsm || !paper.ratePerUnit) {
@@ -211,11 +219,11 @@ const PrinterTaskView = () => {
       const updateData: any = {
         printerStatus: "Done",
         printerRemarks,
-        printerWastedSheet: printerWastedSheetNum,
+        printerWastedSheet: parseFloat(printerWastedSheet) || 0, // Use calculated total
         printerFiles: allPrinterFiles,
-        printerPapers, // Include printer papers
+        printerPapers, // Include printer papers with wastage
       }
-
+      
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
       toast.success("Printer task updated successfully!")
       await dispatch(getOrderByIdThunk(orderId)).unwrap()
@@ -227,7 +235,7 @@ const PrinterTaskView = () => {
     }
   }
 
-    const materialNameOptions = Array.from(
+  const materialNameOptions = Array.from(
     new Set(materials.map(material => material.materialName))
   ).map(name => {
     const materialObj = materials.find(m => m.materialName === name)!;
@@ -487,7 +495,7 @@ const PrinterTaskView = () => {
         <Typography variant="h6" fontWeight={600} mb={2} color="#FF9800">
           Printer Work
         </Typography>
-
+        
         {isHeld && (
           <Box mb={3} sx={{ p: 2, bgcolor: "#FFF0F0", borderRadius: 2, border: "1px solid #F04438" }}>
             <Typography fontWeight={500} fontSize={14} mb={1} color="#F04438">
@@ -498,7 +506,7 @@ const PrinterTaskView = () => {
             </Typography>
           </Box>
         )}
-
+        
         {isPrinterWorkDone && (
           <Box mb={3} sx={{ p: 2, bgcolor: "#E8F5E8", borderRadius: 2, border: "1px solid #4CAF50" }}>
             <Typography fontWeight={500} fontSize={14} mb={1} color="#4CAF50">
@@ -515,6 +523,7 @@ const PrinterTaskView = () => {
           <Typography fontWeight={600} mb={2}>
             Printer Papers
           </Typography>
+          
           {printerPapers.map((paper, index) => (
             <Box key={`printer-${index}`} mb={2} p={2} border={1} borderRadius={2} borderColor="#ddd">
               <Typography fontWeight={600}>{paper.paperName}</Typography>
@@ -550,27 +559,6 @@ const PrinterTaskView = () => {
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />
-                {/* <ThemeInput
-                  labelName="Sheet Size"
-                  value={paper.sheetSize}
-                  onChange={(e) => handlePrinterPaperChange(index, 'sheetSize', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditPrinterTask }}
-                /> */}
-                {/* <ThemeInput
-                  labelName="Paper Type"
-                  value={paper.paperType}
-                  onChange={(e) => handlePrinterPaperChange(index, 'paperType', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditPrinterTask }}
-                />
-                <ThemeInput
-                  labelName="GSM"
-                  value={paper.gsm}
-                  onChange={(e) => handlePrinterPaperChange(index, 'gsm', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditPrinterTask }}
-                /> */}
                 <ThemeInput
                   labelName="Rate / Unit"
                   value={paper.ratePerUnit}
@@ -578,38 +566,44 @@ const PrinterTaskView = () => {
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />
+                <ThemeInput
+                  labelName="Wastage"
+                  value={paper.wastage}
+                  onChange={(e) => handlePrinterPaperChange(index, 'wastage', e.target.value)}
+                  type="number"
+                  fullWidth
+                  InputProps={{ readOnly: !canEditPrinterTask }}
+                />
               </Stack>
             </Box>
           ))}
-          {/* {canEditPrinterTask && (
-          <Box display="flex" justifyContent="flex-end">
-            <ThemeButton
-              onClick={handleAddPrinterPaper}
-              disabled={!canEditPrinterTask}
-              startIcon={<AddIcon />}
-              sx={{
-                backgroundColor: "#6366F1",
-                borderRadius: "8px",
-                color: "#fff",
-                "&:hover": { backgroundColor: "#4F46E5" },
-              }}
-            >
-              Add Printer Paper
-            </ThemeButton>
-          </Box>
-        )} */}
+          
+          {canEditPrinterTask && (
+            <Box display="flex" justifyContent="flex-end">
+              <ThemeButton
+                onClick={handleAddPrinterPaper}
+                disabled={!canEditPrinterTask}
+                startIcon={<AddIcon />}
+                sx={{
+                  backgroundColor: "#6366F1",
+                  borderRadius: "8px",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#4F46E5" },
+                }}
+              >
+                Add Printer Paper
+              </ThemeButton>
+            </Box>
+          )}
         </Box>
 
-        {/* Printer Wasted Sheet */}
+        {/* Total Printer Wasted Sheet (Calculated) */}
         <Box mb={3}>
           <ThemeInput
-            labelName="Printer Wasted Sheet"
-            placeholder="Enter number of wasted sheets"
+            labelName="Total Printer Wasted Sheet"
             value={printerWastedSheet}
-            onChange={(e) => setPrinterWastedSheet(e.target.value)}
-            type="number"
             sx={{ width: "100%" }}
-            InputProps={{ readOnly: !canEditPrinterTask }}
+            InputProps={{ readOnly: true }}
           />
         </Box>
 

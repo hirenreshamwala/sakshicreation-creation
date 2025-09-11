@@ -96,7 +96,7 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
     status: string
   ) => {
     try {
-        const token = authService.getToken();
+      const token = authService.getToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/status`, {
         method: "PUT",
         headers: {

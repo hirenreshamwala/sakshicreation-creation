@@ -311,10 +311,10 @@ const IndexPage: React.FC = () => {
           value = account.reasonToVisit;
           break;
         case 'market':
-          value = account.party?.address?.marketName;
+          value = account.party?.address?.marketName?.marketName;
           break;
         case 'area':
-          value = account.party?.address?.area;
+          value = account.party?.address?.area?.area;
           break;
         case 'remarks':
           value = account.assignment?.remarks;
@@ -424,10 +424,10 @@ const IndexPage: React.FC = () => {
           value = account.reasonToVisit;
           break;
         case 'market':
-          value = account.party?.address?.marketName;
+          value = account.party?.address?.marketName?.marketName;
           break;
         case 'area':
-          value = account.party?.address?.area;
+          value = account.party?.address?.area?.area;
           break;
         case 'remarks':
           value = account.assignment?.remarks;

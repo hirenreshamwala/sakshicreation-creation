@@ -987,7 +987,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 <input
                   id="bulk-file-input"
                   type="file"
-                  accept=".csv, .xlsx"
+                  accept=".csv"
                   onChange={(e) => {
                     const selectedFile = e.target.files?.[0];
                     if (selectedFile) setFile(selectedFile);
@@ -1005,7 +1005,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                         Click here to select CSV or Excel file
                       </Typography>
                       <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
-                        Supported formats: .csv, .xlsx
+                        Supported formats: .csv
                       </Typography>
                     </Box>
                   </>

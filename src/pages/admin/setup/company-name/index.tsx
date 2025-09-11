@@ -339,6 +339,7 @@ const CompanyNamePage = () => {
           onChange={handleFormChange}
           fullWidth
           required
+          disabled={form.companyName === "Quality Packaging" || form.companyName === "Sakshi Creation"}
           sx={{ mb: 2, mt: 1 }}
         />
 
