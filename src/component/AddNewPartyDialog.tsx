@@ -203,6 +203,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         formik.resetForm();
         if (refreshData) refreshData();
         onClose();
+        setSkippedRecords([])
       } catch (err: any) {
         toast.error(err.message || "Operation failed");
       } finally {
@@ -419,7 +420,10 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     <CustomDialog
       open={open}
       maxWidth="xl"
-      onClose={onClose}
+      onClose={() => {
+        onClose()
+        setSkippedRecords([])
+      }}
       title={
         isEditMode
           ? "Edit Party"
@@ -1077,6 +1081,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                         if (refreshData) refreshData();
                         setFile(null);
                         onClose();
+                        setSkippedRecords([])
                       } catch (err: any) {
                         toast.error(err.message || "Bulk upload failed");
                       } finally {
