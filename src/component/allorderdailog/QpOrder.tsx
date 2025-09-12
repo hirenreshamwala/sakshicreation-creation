@@ -22,10 +22,11 @@ const columns = [
   { id: "companyName", label: "Company Name" },
   { id: "party", label: "Party Name" },
   { id: "date", label: "Order Date" },
-  { id: "name", label: "Name" },
+  { id: "name", label: "Item Name" },
   { id: "ply", label: "Ply" },
   { id: "size", label: "Size" },
   { id: "gsm", label: "GSM" },
+  { id: "deckalCalculation", label: "Cal Deckal" },
   { id: "deckal", label: "Deckal" },
   { id: "noOfPieces", label: "Piece No" },
   { id: "ratePerPiece", label: "Rate/Piece" },
@@ -33,10 +34,13 @@ const columns = [
   { id: "kgPerUnit", label: "KG Per Unit" },
   { id: "totalKg", label: "Total KG" },
   { id: "kantan", label: "Kantan" },
-  { id: "kantanDeckal", label: "Kantan Deckal" },
+  { id: "kantanPerUnit", label: "Kantan/Piece" },
+  { id: "totalKantan", label: "Total Kantan" },
+  { id: "kantanDeckal", label: "Kantan Dec" },
   { id: "salesRemark", label: "Sales Remarks" },
   { id: "status", label: "Status" },
 ]
+
 
 type OrderRow = {
   _id: string
@@ -56,6 +60,7 @@ type OrderRow = {
   ply?: {
     ply: string
   }
+  deckalCalculation?: string
   deckal?: string
   gsm?: string
   noOfPieces?: number
@@ -65,6 +70,11 @@ type OrderRow = {
   totalKg?: string
   kantan?: {
     kantanName: string
+  }
+  kantanPerUnit?: string
+  totalKantan?: {
+    reel: string
+    inch: string
   }
   kantanDeckal?: string
   salesRemark?: string
@@ -269,7 +279,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
               variant="outlined"
               size="small"
               multiline
-              rows={4}
+              rows={2}
               sx={{ flex: 1, minWidth: 220 }}
             />
             <TextField
@@ -279,7 +289,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
               variant="outlined"
               size="small"
               multiline
-              rows={4}
+              rows={2}
               sx={{ flex: 1, minWidth: 220 }}
             />
             <TextField
@@ -289,7 +299,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
               variant="outlined"
               size="small"
               multiline
-              rows={4}
+              rows={2}
               sx={{ flex: 1, minWidth: 220 }}
             />
           </Stack>
@@ -377,6 +387,9 @@ const AllOrdersPage = () => {
         // case "size":
         //   value = order.size?.size
         //   break
+        case "deckalCalculation":
+          value = order.deckalCalculation
+          break
         case "deckal":
           value = order.deckal
           break
@@ -398,11 +411,20 @@ const AllOrdersPage = () => {
         case "kantan":
           value = order.kantan?.kantanName
           break
+        case "kantanPerUnit":
+          value = order.kantanPerUnit
+          break
+        case "totalKantan":
+          value = order.totalKantan ? `${order.totalKantan.reel} reel ${order.totalKantan.inch} inch` : "N/A"
+          break
         case "kantanDeckal":
           value = order.kantanDeckal
           break
         case "salesRemark":
           value = order.salesRemark
+          break
+        case "status":
+          value = order.status
           break
       }
       return value?.toString() || "N/A"
@@ -430,6 +452,7 @@ const AllOrdersPage = () => {
         order.width?.width?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.gsm?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         // order.size?.size?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.deckalCalculation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.deckal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.noOfPieces?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.ratePerPiece?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -437,8 +460,11 @@ const AllOrdersPage = () => {
         order.kgPerUnit?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.totalKg?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.kantan?.kantanName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.kantanPerUnit?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (order.totalKantan && `${order.totalKantan.reel} reel ${order.totalKantan.inch} inch`.toLowerCase().includes(searchQuery.toLowerCase())) ||
         order.kantanDeckal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.salesRemark?.toLowerCase().includes(searchQuery.toLowerCase())
+        order.salesRemark?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.status?.toLowerCase().includes(searchQuery.toLowerCase())
         : true
 
       const matchesFilters = Object.keys(filters).every((columnId) => {
@@ -479,6 +505,9 @@ const AllOrdersPage = () => {
           // case "size":
           //   value = order.size?.size
           //   break
+          case "deckalCalculation":
+            value = order.deckalCalculation
+            break
           case "deckal":
             value = order.deckal
             break
@@ -500,11 +529,20 @@ const AllOrdersPage = () => {
           case "kantan":
             value = order.kantan?.kantanName
             break
+          case "kantanPerUnit":
+            value = order.kantanPerUnit
+            break
+          case "totalKantan":
+            value = order.totalKantan ? `${order.totalKantan.reel} reel ${order.totalKantan.inch} inch` : "N/A"
+            break
           case "kantanDeckal":
             value = order.kantanDeckal
             break
           case "salesRemark":
             value = order.salesRemark
+            break
+          case "status":
+            value = order.status
             break
         }
         return value && filters[columnId].includes(value.toString())
@@ -698,7 +736,7 @@ const AllOrdersPage = () => {
           </ThemeButton>
         </Box>
       </Box>
-      <Box px={2} py={2}>
+      <Box py={2}>
         <BasicTable
           showDatePicker={false}
           tableHeader={columns}
@@ -753,8 +791,13 @@ const AllOrdersPage = () => {
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography fontSize="14px" color="#6B7280">  
+                <Typography fontSize="14px" color="#6B7280">
                   {row.gsm || "N/A"}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.deckalCalculation || "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -790,6 +833,16 @@ const AllOrdersPage = () => {
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
                   {row.kantan?.kantanName || "N/A"}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.kantanPerUnit || "N/A"} {/* Added */}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.totalKantan ? `${row.totalKantan.reel} reel ${row.totalKantan.inch} inch` : "N/A"} {/* Added */}
                 </Typography>
               </TableCell>
               <TableCell>

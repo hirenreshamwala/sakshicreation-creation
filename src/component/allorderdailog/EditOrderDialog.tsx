@@ -12,7 +12,7 @@ import { toast } from "react-toastify"
 import { updateQPOrderThunk } from "@/store/slices/qpOrderSlice"
 import { getAllPackagingOptionsThunk } from "@/store/slices/packagingOptionSlice"
 import { getAllKantansThunk } from "@/store/slices/kantanSlice"
-import { Height } from "@mui/icons-material"
+import { calculateDeckal, calculateGSM, calculateKgPerPiece, calculateTotalKg, calculateTotalAmount, calculateKantan } from "@/utills/qpCalculations"
 
 interface AddOrderDialogProps {
   open: boolean
@@ -25,128 +25,183 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
   const dispatch = useAppDispatch()
 
   // Redux state
-  const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
+  const { packagingOptions } = useAppSelector((state) => state.packagingOptions)
   const { kantans } = useAppSelector((state) => state.kantans)
   const { singleAccountMaster, loading: accountLoading } = useAppSelector((state) => state.accountMasters)
   const { loading: orderLoading, error: orderError, successMessage } = useAppSelector((state) => state.orders)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeckalManual, setIsDeckalManual] = useState(false)
 
   // Quality Packaging form data
   const [qpFormData, setQpFormData] = useState({
-    date: editData?.date || "",
-    orderFrom: editData?.orderFrom || "",
-    name: editData?.name?._id || null,
-    length: editData?.length?._id || null,
-    height: editData?.height?._id || null,
-    width: editData?.width?._id || null,
-    ply: editData?.ply?._id || null,
-    gsm: editData?.gsm || "", // Changed to string for text input
-    deckal: editData?.deckal || "",
-    noOfPieces: editData?.noOfPieces || "",
-    ratePerPiece: editData?.ratePerPiece || "",
-    amount: editData?.amount || "",
-    kgPerUnit: editData?.kgPerUnit || "",
-    totalKg: editData?.totalKg || "",
-    kantan: editData?.kantan?._id || null,
-    kantanDeckal: editData?.kantanDeckal || "",
-    salesRemark: editData?.salesRemark || "",
-    companyName: editData?.companyName?._id || null, // Add companyName
-    party: editData?.party?._id || null,
-    _id: editData?._id || ""
+    date: "",
+    orderFrom: "",
+    name: "",
+    length: "",
+    height: "",
+    width: "",
+    ply: "",
+    gsm: "",
+    deckal: "",
+    deckalCalculation: "",
+    noOfPieces: "",
+    ratePerPiece: "",
+    amount: "",
+    kgPerUnit: "",
+    totalKg: "",
+    kantan: null as string | null,
+    kantanPerUnit: "",
+    totalKantan: {
+      reel: "",
+      inch: ""
+    },
+    kantanDeckal: "",
+    salesRemark: "",
+    companyName: null,
+    party: null,
+    _id: ""
   })
 
-  // Clear messages when dialog opens
+  // Initialize form data when dialog opens
   useEffect(() => {
     if (open && editData) {
+      const initialIsManual = editData?.deckal !== editData?.deckalCalculation
+      setIsDeckalManual(initialIsManual)
+
       setQpFormData({
         date: editData?.date || "",
         orderFrom: editData?.orderFrom || "",
-        name: editData?.name?._id || null,
-        length: editData?.length?._id || null,
-        height: editData?.height?._id || null,
-        width: editData?.width?._id || null,
-        ply: editData?.ply?._id || null,
+        name: editData?.name?.name || "",
+        length: editData?.length?.length || "",
+        height: editData?.height?.height || "",
+        width: editData?.width?.width || "",
+        ply: editData?.ply?.ply || "",
         gsm: editData?.gsm || "",
         deckal: editData?.deckal || "",
+        deckalCalculation: editData?.deckalCalculation || "",
         noOfPieces: editData?.noOfPieces?.toString() || "",
         ratePerPiece: editData?.ratePerPiece?.toString() || "",
         amount: editData?.amount || "",
         kgPerUnit: editData?.kgPerUnit || "",
         totalKg: editData?.totalKg || "",
         kantan: editData?.kantan?._id || null,
+        kantanPerUnit: editData?.kantanPerUnit || "",
+        totalKantan: {
+          reel: editData?.totalKantan?.reel?.toString() || "",
+          inch: editData?.totalKantan?.inch?.toString() || ""
+        },
         kantanDeckal: editData?.kantanDeckal || "",
         salesRemark: editData?.salesRemark || "",
-        companyName: editData?.companyName?._id || null, // Initialize companyName
-        party: editData?.party?._id || null, // Initialize party
+        companyName: editData?.companyName?._id || null,
+        party: editData?.party?._id || null,
         _id: editData?._id || ""
       })
+
       dispatch(clearOrderError())
       dispatch(clearOrderSuccessMessage())
     }
   }, [open, editData, dispatch])
 
-  // Handle success message
+  // Handle success and error messages with toast
   useEffect(() => {
     if (successMessage) {
-      toast.success(successMessage)
+      toast.success(successMessage, { autoClose: 3000 })
       dispatch(clearOrderSuccessMessage())
     }
   }, [successMessage, dispatch])
 
-  // Handle error message
   useEffect(() => {
     if (orderError) {
-      toast.error(orderError)
+      toast.error(orderError, { autoClose: 3000 })
       dispatch(clearOrderError())
     }
   }, [orderError, dispatch])
 
+  // Fetch packaging options and kantans
   useEffect(() => {
-    if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
+    if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk())
     if (!kantans.length) dispatch(getAllKantansThunk())
-  }, []);
+  }, [dispatch, packagingOptions.length, kantans.length])
 
   const handleQpChange = (field: string, value: any) => {
     setQpFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleDeckalChange = (e: any) => {
+    const value = e.target.value
+    handleQpChange("deckal", value)
+    setIsDeckalManual(!!value && value !== "")
+  }
+
   const handleSubmit = async () => {
-    
+    if (!qpFormData.companyName || !qpFormData.party) {
+      toast.error("Please fill all required fields (Company Name and Party Name)", { autoClose: 3000 })
+      return
+    }
+
+    if (!qpFormData._id) {
+      toast.error("Invalid order ID. Cannot update order.", { autoClose: 3000 })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      const orderData = {
-        isQp: true,
-        date: qpFormData.date,
-        orderFrom: qpFormData.orderFrom,
-        name: qpFormData.name,
-        length: qpFormData.length,
-        height: qpFormData.height,
-        width: qpFormData.width,
-        ply: qpFormData.ply,
-        gsm: qpFormData.gsm, // Send as string
-        deckal: qpFormData.deckal,
-        noOfPieces: Number(qpFormData.noOfPieces),
-        ratePerPiece: Number(qpFormData.ratePerPiece),
-        amount: qpFormData.amount,
-        kgPerUnit: qpFormData.kgPerUnit,
-        totalKg: qpFormData.totalKg,
-        kantan: qpFormData.kantan,
-        kantanDeckal: qpFormData.kantanDeckal,
-        salesRemark: qpFormData.salesRemark,
-        companyName: qpFormData.companyName, // Include companyName
-        party: qpFormData.party // Include party
+      const findOptionId = (field: string, value: string) => {
+        if (!value) return undefined
+        const filteredOptions = packagingOptions.filter((option: any) => {
+          return (
+            (!qpFormData.name || option.name === qpFormData.name) &&
+            (!qpFormData.ply || option.ply === qpFormData.ply) &&
+            (!qpFormData.length || option.length === qpFormData.length) &&
+            (!qpFormData.width || option.width === qpFormData.width) &&
+            (!qpFormData.height || option.height === qpFormData.height)
+          )
+        })
+        const matchingOption = filteredOptions.find((option: any) => option[field] === value)
+        return matchingOption ? matchingOption._id : undefined
       }
 
-      await dispatch(updateQPOrderThunk({ id: qpFormData?._id, data: orderData })).unwrap();
+      const orderData = {
+        isQp: true,
+        date: qpFormData.date || undefined,
+        orderFrom: qpFormData.orderFrom || undefined,
+        name: findOptionId('name', qpFormData.name),
+        ply: findOptionId('ply', qpFormData.ply),
+        length: findOptionId('length', qpFormData.length),
+        width: findOptionId('width', qpFormData.width),
+        height: findOptionId('height', qpFormData.height),
+        gsm: qpFormData.gsm || undefined,
+        deckal: qpFormData.deckal || undefined,
+        deckalCalculation: qpFormData.deckalCalculation || undefined,
+        noOfPieces: qpFormData.noOfPieces ? Number(qpFormData.noOfPieces) : undefined,
+        ratePerPiece: qpFormData.ratePerPiece ? Number(qpFormData.ratePerPiece) : undefined,
+        amount: qpFormData.amount ? Number(qpFormData.amount) : undefined,
+        kgPerUnit: qpFormData.kgPerUnit ? Number(qpFormData.kgPerUnit) : undefined,
+        totalKg: qpFormData.totalKg ? Number(qpFormData.totalKg) : undefined,
+        kantan: qpFormData.kantan || undefined,
+        kantanDeckal: qpFormData.kantanDeckal || undefined,
+        salesRemark: qpFormData.salesRemark || undefined,
+        companyName: qpFormData.companyName,
+        party: qpFormData.party
+      }
+
+      if (orderData.name === undefined || orderData.ply === undefined || orderData.length === undefined ||
+        orderData.width === undefined || orderData.height === undefined) {
+        toast.error("Invalid packaging options selected. Please check name, ply, and dimensions.", { autoClose: 3000 })
+        setIsSubmitting(false)
+        return
+      }
+
+      await dispatch(updateQPOrderThunk({ id: qpFormData._id, data: orderData })).unwrap()
+      toast.success("Order updated successfully!", { autoClose: 3000 })
 
       if (refreshData) refreshData()
-      resetForm()
-      onClose()
+      handleClose()
     } catch (error: any) {
-      console.error("QP Order creation error:", error)
-      toast.error(error?.message || "Failed to create QP order")
+      console.error("QP Order update error:", error)
+      toast.error(error?.message || "Failed to update QP order", { autoClose: 3000 })
     } finally {
       setIsSubmitting(false)
     }
@@ -156,106 +211,107 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
     setQpFormData({
       date: "",
       orderFrom: "",
-      name: null,
-      length: null,
-      height: null,
-      width: null,
-      ply: null,
+      name: "",
+      length: "",
+      height: "",
+      width: "",
+      ply: "",
       gsm: "",
       deckal: "",
+      deckalCalculation: "",
       noOfPieces: "",
       ratePerPiece: "",
       amount: "",
       kgPerUnit: "",
       totalKg: "",
       kantan: null,
+      kantanPerUnit: "",
+      totalKantan: { reel: "", inch: "" },
       kantanDeckal: "",
       salesRemark: "",
-      companyName: null, // Reset companyName
+      companyName: null,
       party: null,
       _id: ""
     })
+    setIsDeckalManual(false)
   }
 
   const handleClose = () => {
     resetForm()
     onClose()
   }
+
   interface OptionType {
     label: string
     value: string
   }
+
   const getSelectedOption = (value: string, options: OptionType[]) => {
     return options.find((option) => option.value === value) || null
   }
 
-  // Helper functions to get unique values for dropdowns with dynamic filtering
   const getUniqueNameOptions = () => {
     const uniqueNames = [...new Set(packagingOptions.map((item: any) => item.name))].sort()
-    return uniqueNames.map((name) => {
-      const option = packagingOptions.find((item: any) => item.name === name)
-      return { value: option?._id || "", label: name }
-    }).filter(option => option.value)
+    return uniqueNames.map((name) => ({
+      value: name,
+      label: name
+    }))
   }
 
   const getUniquePlyOptions = () => {
-    const filteredOptions = packagingOptions.filter(
-      (item: any) =>
-        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
-        (!qpFormData.length || item.length === packagingOptions.find((opt: any) => opt._id === qpFormData.length)?.length) &&
-        (!qpFormData.width || item.width === packagingOptions.find((opt: any) => opt._id === qpFormData.width)?.width) &&
-        (!qpFormData.height || item.height === packagingOptions.find((opt: any) => opt._id === qpFormData.height)?.height)
+    const filteredOptions = packagingOptions.filter((item: any) =>
+      (!qpFormData.name || item.name === qpFormData.name) &&
+      (!qpFormData.length || item.length === qpFormData.length) &&
+      (!qpFormData.width || item.width === qpFormData.width) &&
+      (!qpFormData.height || item.height === qpFormData.height)
     )
     const uniquePlies = [...new Set(filteredOptions.map((item: any) => item.ply))].sort()
-    return uniquePlies.map((ply) => {
-      const option = filteredOptions.find((item: any) => item.ply === ply)
-      return { value: option?._id || "", label: `${ply}` }
-    }).filter(option => option.value)
+    return uniquePlies.map((ply) => ({
+      value: ply,
+      label: `${ply}`
+    }))
   }
 
   const getUniqueLengthOptions = () => {
-    const filteredOptions = packagingOptions.filter(
-      (item: any) =>
-        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
-        (!qpFormData.ply || item.ply === packagingOptions.find((opt: any) => opt._id === qpFormData.ply)?.ply) &&
-        (!qpFormData.width || item.width === packagingOptions.find((opt: any) => opt._id === qpFormData.width)?.width) &&
-        (!qpFormData.height || item.height === packagingOptions.find((opt: any) => opt._id === qpFormData.height)?.height)
+    const filteredOptions = packagingOptions.filter((item: any) =>
+      (!qpFormData.name || item.name === qpFormData.name) &&
+      (!qpFormData.ply || item.ply === qpFormData.ply) &&
+      (!qpFormData.width || item.width === qpFormData.width) &&
+      (!qpFormData.height || item.height === qpFormData.height)
     )
     const uniqueLengths = [...new Set(filteredOptions.map((item: any) => item.length))].sort()
-    return uniqueLengths.map((length) => {
-      const option = filteredOptions.find((item: any) => item.length === length)
-      return { value: option?._id || "", label: length }
-    }).filter(option => option.value)
+    return uniqueLengths.map((length) => ({
+      value: length,
+      label: length
+    }))
   }
 
   const getUniqueWidthOptions = () => {
-    const filteredOptions = packagingOptions.filter(
-      (item: any) =>
-        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
-        (!qpFormData.ply || item.ply === packagingOptions.find((opt: any) => opt._id === qpFormData.ply)?.ply) &&
-        (!qpFormData.length || item.length === packagingOptions.find((opt: any) => opt._id === qpFormData.length)?.length) &&
-        (!qpFormData.height || item.height === packagingOptions.find((opt: any) => opt._id === qpFormData.height)?.height)
+    const filteredOptions = packagingOptions.filter((item: any) =>
+      (!qpFormData.name || item.name === qpFormData.name) &&
+      (!qpFormData.ply || item.ply === qpFormData.ply) &&
+      (!qpFormData.length || item.length === qpFormData.length) &&
+      (!qpFormData.height || item.height === qpFormData.height)
     )
     const uniqueWidths = [...new Set(filteredOptions.map((item: any) => item.width))].sort()
-    return uniqueWidths.map((width) => {
-      const option = filteredOptions.find((item: any) => item.width === width)
-      return { value: option?._id || "", label: width }
-    }).filter(option => option.value)
+    return uniqueWidths.map((width) => ({
+      value: width,
+      label: width
+    }))
   }
 
   const getUniqueHeightOptions = () => {
-    const filteredOptions = packagingOptions.filter(
-      (item: any) =>
-        (!qpFormData.name || item.name === packagingOptions.find((opt: any) => opt._id === qpFormData.name)?.name) &&
-        (!qpFormData.ply || item.ply === packagingOptions.find((opt: any) => opt._id === qpFormData.ply)?.ply) &&
-        (!qpFormData.length || item.length === packagingOptions.find((opt: any) => opt._id === qpFormData.length)?.length) &&
-        (!qpFormData.width || item.width === packagingOptions.find((opt: any) => opt._id === qpFormData.width)?.width)
+    const filteredOptions = packagingOptions.filter((item: any) =>
+      (!qpFormData.name || item.name === qpFormData.name) &&
+      (!qpFormData.ply || item.ply === qpFormData.ply) &&
+      (!qpFormData.length || item.length === qpFormData.length) &&
+      (!qpFormData.width || item.width === qpFormData.width)
     )
     const uniqueHeights = [...new Set(filteredOptions.map((item: any) => item.height))].sort()
-    return uniqueHeights.map((height) => {
-      const option = filteredOptions.find((item: any) => item.height === height)
-      return { value: option?._id || "", label: height }
-    }).filter(option => option.value)
+    return uniqueHeights.map((height) => ({
+      value: height,
+      label: height
+    }))
   }
 
   const renderQpForm = () => (
@@ -297,21 +353,8 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
           name="height"
         />
       </Stack>
+
       <Stack direction="row" spacing={2} mb={2}>
-        <ThemeInput
-          labelName="GSM"
-          placeholder="GSM"
-          fullWidth
-          value={qpFormData.gsm}
-          onChange={(e) => handleQpChange("gsm", e.target.value)}
-        />
-        <ThemeInput
-          labelName="Deckal"
-          placeholder="Deckal"
-          fullWidth
-          value={qpFormData.deckal}
-          onChange={(e) => handleQpChange("deckal", e.target.value)}
-        />
         <ThemeInput
           labelName="No of Pieces"
           placeholder="No of Pieces"
@@ -337,39 +380,73 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
           placeholder="Amount"
           fullWidth
           value={qpFormData.amount}
-          onChange={(e) => {
-            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
-            handleQpChange("amount", numericValue)
-          }}
+          disabled
         />
       </Stack>
       <Stack direction="row" spacing={2} mb={2}>
+        <ThemeInput
+          labelName="Deckal Calculation"
+          placeholder="Deckal Calculation"
+          fullWidth
+          value={qpFormData.deckalCalculation}
+          disabled
+        />
+        <ThemeInput
+          labelName="Deckal"
+          placeholder="Deckal"
+          fullWidth
+          value={qpFormData.deckal}
+          onChange={handleDeckalChange}
+        />
+        <ThemeInput
+          labelName="GSM"
+          placeholder="GSM"
+          fullWidth
+          value={qpFormData.gsm}
+          disabled
+        />
         <ThemeInput
           labelName="KG Per Unit"
           placeholder="KG Per Unit"
           fullWidth
           value={qpFormData.kgPerUnit}
-          onChange={(e) => {
-            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
-            handleQpChange("kgPerUnit", numericValue)
-          }}
+          disabled
         />
         <ThemeInput
           labelName="Total KG"
           placeholder="Total KG"
           fullWidth
           value={qpFormData.totalKg}
-          onChange={(e) => {
-            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
-            handleQpChange("totalKg", numericValue)
-          }}
+          disabled
         />
+      </Stack>
+      <Stack direction="row" spacing={2} mb={2}>
         <ThemeSelect
           label="Kantan"
-          options={kantans?.map((item: any) => ({ value: item?._id, label: item?.kantanName }))}
-          value={kantans?.map((item: any) => ({ value: item?._id, label: item?.kantanName }))?.find((item) => item.value === qpFormData.kantan) || null}
+          options={kantans.map((item: any) => ({ value: item._id, label: item.kantanName }))}
+          value={kantans
+            .map((item: any) => ({ value: item._id, label: item.kantanName }))
+            .find((item) => item.value === qpFormData.kantan) || null}
           onChange={(_, val: any) => handleQpChange("kantan", val?.value || null)}
           name="kantan"
+        />
+        <ThemeInput
+          labelName="Kantan Per Unit"
+          placeholder="Kantan Per Unit"
+          fullWidth
+          value={qpFormData.kantanPerUnit}
+          disabled
+        />
+        <ThemeInput
+          labelName="Total Kantan"
+          placeholder="Total Kantan"
+          fullWidth
+          value={
+            qpFormData.totalKantan.reel && qpFormData.totalKantan.inch
+              ? `${qpFormData.totalKantan.reel} reel ${qpFormData.totalKantan.inch} inch`
+              : ""
+          }
+          disabled
         />
         <ThemeInput
           labelName="Kantan Deckal"
@@ -392,6 +469,64 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
     </>
   )
 
+  // Automatic calculations
+  useEffect(() => {
+    const { length, width, height, ply, noOfPieces, ratePerPiece, deckal } = qpFormData
+
+    if (!length || !width || !height || !ply) return
+
+    const selectedPackagingOption = packagingOptions.find((item: any) =>
+      item.name === qpFormData.name &&
+      item.ply === qpFormData.ply &&
+      item.length === qpFormData.length &&
+      item.width === qpFormData.width &&
+      item.height === qpFormData.height
+    )
+
+    const calcLength = selectedPackagingOption?.length ? Number(selectedPackagingOption.length) : Number(length)
+    const calcWidth = selectedPackagingOption?.width ? Number(selectedPackagingOption.width) : Number(width)
+    const calcHeight = selectedPackagingOption?.height ? Number(selectedPackagingOption.height) : Number(height)
+    const calcPly = selectedPackagingOption?.ply ? Number(selectedPackagingOption.ply) : Number(ply)
+
+    const deckalValue = calculateDeckal(calcWidth, calcHeight)
+    const formattedDeckalValue = deckalValue.toFixed(2)
+    handleQpChange("deckalCalculation", formattedDeckalValue)
+
+    if (!isDeckalManual) {
+      handleQpChange("deckal", formattedDeckalValue)
+    }
+
+    const gsmValue = calculateGSM(calcPly, calcLength, calcWidth, calcHeight)
+    handleQpChange("gsm", gsmValue.toFixed(2))
+
+    const effectiveDeckal = Number(deckal || formattedDeckalValue)
+    const kgPerPiece = calculateKgPerPiece(calcLength, calcWidth, effectiveDeckal, Number(gsmValue))
+    handleQpChange("kgPerUnit", kgPerPiece.toFixed(4))
+
+    const totalKg = calculateTotalKg(Number(noOfPieces || 0), kgPerPiece)
+    handleQpChange("totalKg", totalKg.toFixed(2))
+
+    const amount = calculateTotalAmount(Number(noOfPieces || 0), Number(ratePerPiece || 0))
+    handleQpChange("amount", amount.toFixed(2))
+
+    const calcNoOfPieces = Number(noOfPieces || 0)
+    const { kantanPerUnit, reel, inch } = calculateKantan(calcLength, calcWidth, calcNoOfPieces)
+
+    handleQpChange("kantanPerUnit", kantanPerUnit.toFixed(2))
+    handleQpChange("totalKantan", { reel: reel.toString(), inch: inch.toString() })
+  }, [
+    qpFormData.length,
+    qpFormData.width,
+    qpFormData.height,
+    qpFormData.ply,
+    qpFormData.name,
+    qpFormData.noOfPieces,
+    qpFormData.ratePerPiece,
+    qpFormData.deckal,
+    isDeckalManual,
+    packagingOptions
+  ])
+
   return (
     <CustomDialog open={open} onClose={handleClose} maxWidth="md" title="Edit Order">
       <Box sx={{ p: 2, background: "#fff", borderRadius: 2 }}>
@@ -399,7 +534,7 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
 
         <ThemeButton
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || accountLoading || orderLoading || !qpFormData.companyName}
           sx={{
             background: "#12B76A",
             color: "#fff",

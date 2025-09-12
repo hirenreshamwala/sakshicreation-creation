@@ -505,11 +505,11 @@ const BasicTable = <T extends { id: string }>({
                       {renderExpandedRow && (
                         <TableCell>
                           <IconButton
-                            onClick={() => toggleExpandRow(row.id)}
+                            onClick={() => toggleExpandRow(row._id)}
                             size="small"
                             sx={{ padding: 0 }}
                           >
-                            {expandedRowId === row.id ? (
+                            {expandedRowId === row._id ? (
                               <FaChevronUp size={14} />
                             ) : (
                               <FaChevronDown size={14} />
@@ -520,7 +520,7 @@ const BasicTable = <T extends { id: string }>({
                     </TableRow>
 
                     {/* Expanded row content */}
-                    {renderExpandedRow && expandedRowId === row.id && (
+                    {renderExpandedRow && expandedRowId === row._id && (
                       <TableRow>
                         <TableCell
                           colSpan={tableHeader.length + (tableHeader[0].id === "checkbox" ? 1 : 0) + 1}
@@ -530,7 +530,7 @@ const BasicTable = <T extends { id: string }>({
                             borderBottom: "2px solid #F2F4F7",
                           }}
                         >
-                          <Collapse in={expandedRowId === row.id} timeout="auto" unmountOnExit>
+                          <Collapse in={expandedRowId === row._id} timeout="auto" unmountOnExit>
                             <Box sx={{ p: 2 }}>
                               {renderExpandedRow(row)}
                             </Box>

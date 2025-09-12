@@ -1,0 +1,103 @@
+// Deckal Calculation = width + height
+
+export const calculateDeckal = (width: number, height: number): number => {
+  if (!width || !height) return 0
+  return width + height
+}
+
+
+// GSM Calculation based on Ply
+// length + (width+(width/2)) + height => for 3 ply
+// length + (width+(width/2)) + length + (width+(width/2)) + height => for 5 ply
+// length + (width+(width/2)) + length + (width+(width/2)) + length + (width+(width/2)) + height => for 7 ply
+
+export const calculateGSM = (
+  ply: number,
+  length: number,
+  width: number,
+  height: number
+): number => {
+  if (!ply || !length || !width || !height) return 0
+
+  let total = 0
+  const widthHalf = width / 2
+
+  // loop: till ply-1 (last always height)
+  for (let i = 1; i < ply; i++) {
+    if (i % 2 !== 0) {
+      // odd index -> length
+      total += length
+    } else {
+      // even index -> width + width/2
+      total += width + widthHalf
+    }
+  }
+
+  // last ply always height
+  total += height
+
+  return total
+}
+
+// KG per Piece
+// abc=(length + width + 2)*2 
+// kgperpeice = abc * deckal * gsm /1550 / 1000
+
+export const calculateKgPerPiece = (
+  length: number,
+  width: number,
+  deckal: number,
+  gsm: number
+): number => {
+  if (!length || !width || !deckal || !gsm) return 0
+
+  const abc = (length + width + 2) * 2
+  return (abc * deckal * gsm) / 1550 / 1000
+}
+
+// Total KG
+// totalkg = noofpieces * kgperpeice
+
+export const calculateTotalKg = (
+  noOfPieces: number,
+  kgPerPiece: number
+): number => {
+  if (!noOfPieces || !kgPerPiece) return 0
+  return noOfPieces * kgPerPiece
+}
+
+// Total Amount
+// totalamount = noofpieces * rateperpiece
+
+export const calculateTotalAmount = (
+  noOfPieces: number,
+  ratePerPiece: number
+): number => {
+  if (!noOfPieces || !ratePerPiece) return 0
+  return noOfPieces * ratePerPiece
+}
+
+// Kantan Calculation
+// kantanperunit = length * width + 3 * 2
+// totalkantaninch = noofpieces * kantanperunit
+// reel = Math.floor(totalkantaninch / 7200)
+// inch = totalkantaninch % 7200
+
+
+
+export const calculateKantan = (
+  length: number,
+  width: number,
+  noOfPieces: number
+) => {
+  if (!length || !width || !noOfPieces) return { kantanPerUnit: 0, reel: 0, inch: 0 };
+
+  const kantanPerUnit = length * width + 3 * 2;
+  const totalKantanInch = noOfPieces * kantanPerUnit;
+
+  const reelSizeInInch = 200 * 36; // 7200
+  const reel = Math.floor(totalKantanInch / reelSizeInInch);
+  const inch = totalKantanInch % reelSizeInInch;
+
+  return { kantanPerUnit, reel, inch };
+};
