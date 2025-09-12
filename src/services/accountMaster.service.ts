@@ -208,7 +208,7 @@ export const accountMasterService = {
           withCredentials: true,
         }
       );
-      return response.data;
+      return response;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to bulk create account masters");
     }

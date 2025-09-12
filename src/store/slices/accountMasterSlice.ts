@@ -84,7 +84,7 @@ export const bulkCreateAccountMastersThunk = createAsyncThunk(
   async (formData: FormData, { rejectWithValue }) => {
     try {
       const response = await accountMasterService.bulkCreateAccountMasters(formData);
-      toast.success(response.message);
+      toast.success(response.data.message);
       return response.data;
     } catch (error: any) {
       toast.error(error.message);
@@ -303,13 +303,13 @@ const accountMasterSlice = createSlice({
         bulkCreateAccountMastersThunk.fulfilled,
         (state, action: PayloadAction<AccountMaster[]>) => {
           state.loading = false;
-          state.accountMasters = [...state.accountMasters, ...action.payload];
+          state.accountMasters = [...state.accountMasters, ...action.payload.data];
           state.successMessage = "Account masters created successfully";
         }
       )
       .addCase(bulkCreateAccountMastersThunk.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = action.payload.data as string;
       })
       // Update Account Master
       .addCase(updateAccountMasterThunk.pending, (state) => {

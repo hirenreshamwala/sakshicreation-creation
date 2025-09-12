@@ -147,7 +147,7 @@ const packagingOptionsSlice = createSlice({
         createPackagingOptionThunk.fulfilled,
         (state, action: PayloadAction<PackagingOption>) => {
           state.operationLoading = false;
-          state.packagingOptions.push(action.payload);
+          state.packagingOptions = [action.payload, ...state.packagingOptions];
         }
       )
       .addCase(createPackagingOptionThunk.rejected, (state, action) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, Checkbox, debounce, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Typography } from "@mui/material";
+import { Box, Checkbox, debounce, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Stack, Typography } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { toast } from "react-toastify";
@@ -28,6 +28,7 @@ import { authService } from "@/services/auth.service";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice";
+import { downloadSkippedRecordsAsCSV } from "@/utills/utills";
 
 interface Address {
   unitNo: string;
@@ -88,7 +89,7 @@ const validationSchema = Yup.object({
       .required("Pincode is required"),
   }),
   reasonToVisit: Yup.string().required("Reason to Visit is required"),
-  createdBy: Yup.string().required("Created By is required"),
+  // createdBy: Yup.string().required("Created By is required"),
 });
 
 const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
@@ -111,6 +112,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   } = useAppSelector((state) => state.accountMasters);
   const { markets } = useAppSelector((state) => state.markets);
 
+  const [recordSkipped, setRecordSkipped] = useState(false)
+  const [skippedRecords, setSkippedRecords] = useState([])
   const [isLoading, setIsLoading] = useState(false);
   const [partyOptions, setPartyOptions] = useState<PartySuggestion[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -219,7 +222,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   console.log(markets, 'markets')
 
   const handleDownloadSample = () => {
-    const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,streetAddress,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Street 1,Near Park,Area A,400001,Visit,Ref123,FALSE,New\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Street 2,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer`;
+    const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,streetAddress,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,createdBy\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Street 1,Near Park,Area A,400001,Visit,Ref123,FALSE,New,SUSHIL CHHAJER\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Street 2,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer,SUSHIL CHHAJER`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -944,7 +947,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 required
                 showPartyName={false}
               />
-              {!isRequestMode && (
+              {/* {!isRequestMode && (
                 <ThemeSelect
                   label="Created By"
                   options={staffOptions}
@@ -957,7 +960,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                   helperText={formik.touched.createdBy && formik.errors.createdBy}
                   required
                 />
-              )}
+              )} */}
             </Box>
 
             <Box mt={2}>
@@ -1026,9 +1029,32 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 )}
               </Box>
 
+              {skippedRecords?.length ? <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column", // stack items vertically
+                  justifyContent: "center",
+                  alignItems: "center",
+                  pt: 2,
+                  textAlign: "center", // optional for Typography centering
+                }}
+              >
+                <Typography color="error" mb={1}>
+                  Note: Some records are not uploaded. Click the button below to download skipped records.
+                </Typography>
+                <ThemeButton onClick={() => {
+                  downloadSkippedRecordsAsCSV(skippedRecords)
+                  setSkippedRecords([])
+                  onClose()
+                }}>
+                  Download Skipped Records
+                </ThemeButton>
+              </Box> : null}
+
+
               <Box display="flex" gap={2} alignItems="center" justifyContent="center" mt={2}>
                 <ThemeButton
-                  disabled={!formik.values.companyName || !formik.values.createdBy || !file}
+                  disabled={!formik.values.companyName || !file}
                   onClick={async () => {
                     if (file) {
                       setIsLoading(true);
@@ -1037,7 +1063,16 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                         formData.append("file", file);
                         formData.append("companyName", formik.values.companyName);
                         formData.append("createdBy", formik.values.createdBy);
-                        await dispatch(bulkCreateAccountMastersThunk(formData)).unwrap();
+                        const res = await dispatch(bulkCreateAccountMastersThunk(formData)).unwrap();
+                        console.log(res, 'jdshbfjkdhbjkn')
+                        if (res?.skippedCount > 0) {
+                          setRecordSkipped(true)
+                          setSkippedRecords(res?.skippedRecords)
+                          setFile(null);
+                          if (refreshData) refreshData();
+                          toast.success("Bulk upload completed successfully");
+                          return
+                        }
                         toast.success("Bulk upload completed successfully");
                         if (refreshData) refreshData();
                         setFile(null);
@@ -1053,6 +1088,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 >
                   {isLoading ? "Uploading..." : "Upload Bulk File"}
                 </ThemeButton>
+
 
                 {file && (
                   <ThemeButton

@@ -498,3 +498,43 @@ export const downloadBookletPDF = (data: any) => {
 
   doc.save("binder-job-card.pdf");
 };
+
+
+export function downloadSkippedRecordsAsCSV(skippedRecords) {
+  if (!skippedRecords || skippedRecords.length === 0) return;
+
+  // 1. Get CSV headers from the keys of the first object
+  const headers = Object.keys(skippedRecords[0]);
+  const csvRows = [];
+
+  // 2. Add header row
+  csvRows.push(headers.join(','));
+
+  // 3. Add data rows
+  skippedRecords.forEach(record => {
+    const values = headers.map(header => {
+      let val = record[header] ?? ''; // handle null/undefined
+      val = typeof val === 'string' ? val.replace(/"/g, '""') : val; // escape quotes
+      return `"${val}"`; // wrap in quotes
+    });
+    csvRows.push(values.join(','));
+  });
+
+  // 4. Combine rows into CSV string
+  const csvString = csvRows.join('\n');
+
+  // 5. Create a blob and trigger download
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'skipped_records.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// Usage example
+// downloadSkippedRecordsAsCSV(skippedRecords);
