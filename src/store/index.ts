@@ -8,6 +8,7 @@ import staffReducer from './slices/staffSlice';
 import assignTaskReducer from './slices/assignTaskSlice';
 import leadReducer from './slices/leadSlice';
 import purchaseReducer from './slices/purchaseSlice';
+import qpPurchaseReducer from './slices/qpPurchaseSlice'
 import companyReducer from './slices/compnaySlice';
 import partyReducer from './slices/partySlice';
 import productItemReducer from './slices/productItemSlice';
@@ -46,6 +47,7 @@ export const store = configureStore({
     assignTasks: assignTaskReducer,
     leads: leadReducer, // Add leadReducer
     purchase: purchaseReducer,
+    qpPurchase: qpPurchaseReducer,
     company: companyReducer,
     party: partyReducer,
     productItems: productItemReducer,

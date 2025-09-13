@@ -204,10 +204,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true 
                 task.status === 'Completed'
                   ? 'success'
                   : task.status === 'Pending'
-                  ? 'warning'
-                  : task.status === 'Cancelled'
-                  ? 'error'
-                  : 'primary'
+                    ? 'warning'
+                    : task.status === 'Cancelled'
+                      ? 'error'
+                      : 'primary'
               }
               variant="outlined"
               sx={{
@@ -215,18 +215,18 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true 
                   task.status === 'Completed'
                     ? '#DCFCE7'
                     : task.status === 'Pending'
-                    ? '#FEF9C3'
-                    : task.status === 'Cancelled'
-                    ? '#FEE2E2'
-                    : '#E0F2FE',
+                      ? '#FEF9C3'
+                      : task.status === 'Cancelled'
+                        ? '#FEE2E2'
+                        : '#E0F2FE',
                 color:
                   task.status === 'Completed'
                     ? '#166534'
                     : task.status === 'Pending'
-                    ? '#854D0E'
-                    : task.status === 'Cancelled'
-                    ? '#B91C1C'
-                    : '#0369A1',
+                      ? '#854D0E'
+                      : task.status === 'Cancelled'
+                        ? '#B91C1C'
+                        : '#0369A1',
                 fontWeight: 600,
                 fontSize: 13,
                 height: 24,
@@ -313,10 +313,10 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, title = 'Lead' }) => {
               lead.status === 'completed'
                 ? 'success'
                 : lead.status === 'pending'
-                ? 'warning'
-                : lead.status === 'cancelled'
-                ? 'error'
-                : 'primary'
+                  ? 'warning'
+                  : lead.status === 'cancelled'
+                    ? 'error'
+                    : 'primary'
             }
             variant="outlined"
             sx={{
@@ -324,18 +324,18 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, title = 'Lead' }) => {
                 lead.status === 'completed'
                   ? '#DCFCE7'
                   : lead.status === 'pending'
-                  ? '#FEF9C3'
-                  : lead.status === 'cancelled'
-                  ? '#FEE2E2'
-                  : '#E0F2FE',
+                    ? '#FEF9C3'
+                    : lead.status === 'cancelled'
+                      ? '#FEE2E2'
+                      : '#E0F2FE',
               color:
                 lead.status === 'completed'
                   ? '#166534'
                   : lead.status === 'pending'
-                  ? '#854D0E'
-                  : lead.status === 'cancelled'
-                  ? '#B91C1C'
-                  : '#0369A1',
+                    ? '#854D0E'
+                    : lead.status === 'cancelled'
+                      ? '#B91C1C'
+                      : '#0369A1',
               fontWeight: 600,
               fontSize: 13,
               height: 24,
@@ -393,67 +393,69 @@ const ViewCompanyPage: React.FC = () => {
 
   // Transform API data to match Task and Lead interfaces
   const transformedTasks: Task[] = assignTasks.map((task: any) => ({
-  _id: task._id || '',
-  companyName: task.companyName?.companyName || '',
-  partyName: task.partyName?.partyName || '',
-  date: task.date || '',
-  time: task.time || '',
-  reasonForVisit: task.reasonForVisit || '',
-  status: task.status || '',
-  assignTo: {
-    _id: task.assignTo?._id || '',
-    firstName: task.assignTo?.firstName || '',
-    lastName: task.assignTo?.lastName || '',
-  },
-  feedback: task.feedback || '',
-  createdAt: task.createdAt || '',
-  updatedAt: task.updatedAt || '',
-  accountDetails: {
-    _id: task.accountMaster?._id || '',
-    companyName: task.accountMaster?.companyName?.companyName || '',
-    partyName: task.accountMaster?.party?.partyName || '',
-    address: {
-      unitNo: task.accountMaster?.party?.address?.unitNo || '',
-      marketName: task.accountMaster?.party?.address?.marketName || '',
-      streetAddress: task.accountMaster?.party?.address?.streetAddress || '',
-      area: task.accountMaster?.party?.address?.area || '',
-      pincode: task.accountMaster?.party?.address?.pincode || '',
+    _id: task._id || '',
+    companyName: task.companyName?.companyName || '',
+    partyName: task.partyName?.partyName || '',
+    date: task.date || '',
+    time: task.time || '',
+    reasonForVisit: task.reasonForVisit || '',
+    status: task.status || '',
+    assignTo: {
+      _id: task.assignTo?._id || '',
+      firstName: task.assignTo?.firstName || '',
+      lastName: task.assignTo?.lastName || '',
     },
-    contactPerson: task.accountMaster?.party?.contactPerson || '',
-    personMobileNo: task.accountMaster?.party?.personMobileNo || '',
-  },
-}));
+    feedback: task.feedback || '',
+    createdAt: task.createdAt || '',
+    updatedAt: task.updatedAt || '',
+    accountDetails: {
+      _id: task.accountMaster?._id || '',
+      companyName: task.accountMaster?.companyName?.companyName || '',
+      partyName: task.accountMaster?.party?.partyName || '',
+      address: {
+        unitNo: task.accountMaster?.party?.address?.unitNo || '',
+        marketName: task.accountMaster?.party?.address?.marketName || '',
+        streetAddress: task.accountMaster?.party?.address?.streetAddress || '',
+        area: task.accountMaster?.party?.address?.area || '',
+        pincode: task.accountMaster?.party?.address?.pincode || '',
+      },
+      contactPerson: task.accountMaster?.party?.contactPerson || '',
+      personMobileNo: task.accountMaster?.party?.personMobileNo || '',
+    },
+  }));
 
   const transformedLeads: Lead[] = leads.map((lead: any) => ({
-  _id: lead._id || '',
-  companyName: lead.companyName?.companyName || '',
-  partyName: lead.partyName?.partyName || '',
-  mobile: lead.partyName?.personMobileNo || '',
-  status: lead.status || '',
-  reason: lead.reason || '',
-  remark: lead.callFeedback || '',
-  assignedTo: {
-    _id: lead.assignedTo?._id || '',
-    firstName: lead.assignedTo?.firstName || '',
-    lastName: lead.assignedTo?.lastName || '',
-  },
-  createdAt: lead.createdAt || '',
-  date: lead.date || '',
-  time: '',
-  accountDetails: {
-    _id: lead.partyName?._id || '',
+    _id: lead._id || '',
     companyName: lead.companyName?.companyName || '',
     partyName: lead.partyName?.partyName || '',
-    address: {
-      unitNo: lead.partyName?.address?.unitNo || '',
-      marketName: lead.partyName?.address?.marketName || '',
-      streetAddress: lead.partyName?.address?.streetAddress || '',
-      area: lead.partyName?.address?.area || '',
+    mobile: lead.partyName?.personMobileNo || '',
+    status: lead.status || '',
+    reason: lead.reason || '',
+    remark: lead.callFeedback || '',
+    assignedTo: {
+      _id: lead.assignedTo?._id || '',
+      firstName: lead.assignedTo?.firstName || '',
+      lastName: lead.assignedTo?.lastName || '',
     },
-    contactPerson: lead.partyName?.contactPerson || '',
-    personMobileNo: lead.partyName?.personMobileNo || '',
-  },
-}));
+    createdAt: lead.createdAt || '',
+    date: lead.date || '',
+    time: '',
+    accountDetails: {
+      _id: lead.partyName?._id || '',
+      companyName: lead.companyName?.companyName || '',
+      partyName: lead.partyName?.partyName || '',
+      address: {
+        unitNo: lead.partyName?.address?.unitNo || '',
+        marketName: lead.partyName?.address?.marketName || '',
+        streetAddress: lead.partyName?.address?.streetAddress || '',
+        area: lead.partyName?.address?.area || '',
+      },
+      contactPerson: lead.partyName?.contactPerson || '',
+      personMobileNo: lead.partyName?.personMobileNo || '',
+    },
+  }));
+
+  console.log(singleAccountMaster, 'singleAccountMaster')
 
   // Filter tasks and leads based on party/company ID
   const pendingTasks = transformedTasks.filter(
@@ -547,49 +549,49 @@ const ViewCompanyPage: React.FC = () => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-    <IconButton
-      onClick={() => router.back()}
-      sx={{ p: 0, color: 'primary.main' }}
-    >
-      <MdTurnLeft size={24} />
-    </IconButton>
-    <Typography variant="h6" component="div" sx={{ fontWeight: 400 }}>
-      {singleAccountMaster.partyName} |{" "}
-      {singleAccountMaster.companyNameObj?.companyName ||
-        singleAccountMaster.companyName}{" "}
-      | created by{" "}
-      {singleAccountMaster.createdByObj?.firstName || "Staff"}
-    </Typography>
-  </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton
+              onClick={() => router.back()}
+              sx={{ p: 0, color: 'primary.main' }}
+            >
+              <MdTurnLeft size={24} />
+            </IconButton>
+            <Typography variant="h6" component="div" sx={{ fontWeight: 400 }}>
+              {singleAccountMaster.partyName} |{" "}
+              {singleAccountMaster.companyNameObj?.companyName ||
+                singleAccountMaster.companyName}{" "}
+              | created by{" "}
+              {singleAccountMaster.createdByObj?.firstName || "Staff"}
+            </Typography>
+          </Box>
 
-  {/* Right side: Assign button */}
-  <ThemeButton
-    onClick={() => {
-      // router.push("/admin/assign-task");
-      setOpenAssignTaskDialog(true)
-    }}
-  >
-    + Assign New task
-  </ThemeButton>
-</Box>
+          {/* Right side: Assign button */}
+          <ThemeButton
+            onClick={() => {
+              // router.push("/admin/assign-task");
+              setOpenAssignTaskDialog(true)
+            }}
+          >
+            + Assign New task
+          </ThemeButton>
+        </Box>
 
         <Box display="flex" flexWrap="wrap" justifyContent="space-between" mb={4} gap={2}>
-         
-        <Box>
-      <Typography component="div" fontWeight={600}>
-        Mobile No.
-      </Typography>
-      <Typography component="div">
-        <strong>Owner:</strong> {singleAccountMaster?.ownerMobileNo || '-'}
-      </Typography>
-      <Typography component="div">
-        <strong>Person:</strong> {singleAccountMaster?.personMobileNo || '-'}
-      </Typography>
-      <Typography component="div">
-        <strong>Payment:</strong> {singleAccountMaster?.contactMobileNo || '-'}
-      </Typography>
-    </Box>
+
+          <Box>
+            <Typography component="div" fontWeight={600}>
+              Mobile No.
+            </Typography>
+            <Typography component="div">
+              <strong>Owner:</strong> {singleAccountMaster?.ownerMobileNo || '-'}
+            </Typography>
+            <Typography component="div">
+              <strong>Person:</strong> {singleAccountMaster?.personMobileNo || '-'}
+            </Typography>
+            <Typography component="div">
+              <strong>Payment:</strong> {singleAccountMaster?.contactMobileNo || '-'}
+            </Typography>
+          </Box>
 
           <Box>
             <Typography component="div" fontWeight={600}>
@@ -603,15 +605,15 @@ const ViewCompanyPage: React.FC = () => {
             <Typography component="div" fontWeight={600}>
               Email Id
             </Typography>
-            <Typography component="div"> <strong>Owner Email:</strong> {singleAccountMaster.ownerEmail }</Typography>
-            <Typography component="div"> <strong>Person Email:</strong> {singleAccountMaster.contactPersonEmail }</Typography>
-            <Typography component="div"> <strong>Payment Email:</strong> {singleAccountMaster.contactForPaymentEmail }</Typography>
+            <Typography component="div"> <strong>Owner Email:</strong> {singleAccountMaster.ownerEmail}</Typography>
+            <Typography component="div"> <strong>Person Email:</strong> {singleAccountMaster.contactPersonEmail}</Typography>
+            <Typography component="div"> <strong>Payment Email:</strong> {singleAccountMaster.contactForPaymentEmail}</Typography>
           </Box>
-                  <Box>
+          <Box>
             <Typography component="div">
-            <strong>Reference:</strong> {singleAccountMaster?.reference || '-'}
-          </Typography>
-        </Box>
+              <strong>Reference:</strong> {singleAccountMaster?.reference || '-'}
+            </Typography>
+          </Box>
           <Box>
             <Typography component="div" fontWeight={600}>
               Unit Name
@@ -630,7 +632,7 @@ const ViewCompanyPage: React.FC = () => {
             </Typography>
             <Typography component="div">{singleAccountMaster.address?.area?.area}</Typography>
           </Box>
-           <Box>
+          <Box>
             <Typography component="div" fontWeight={600}>
               Address
             </Typography>
@@ -734,7 +736,7 @@ const ViewCompanyPage: React.FC = () => {
         partyOptions={[
           {
             label: singleAccountMaster?.partyName || '',
-            value: singleAccountMaster?._id || '',
+            value: singleAccountMaster?.partyId || '',
           },
         ]}
         date={date}

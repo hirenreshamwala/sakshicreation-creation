@@ -207,7 +207,7 @@ export const QualityPermissionsArray = {
 }
 
 export const companyOptions = ["Sakshi Creation", "Quality Packaging"] 
-
+export const StaticCompanyOptions = ["Sakshi Creation", "Quality Packaging"] 
 export const printerTypeOption = [
   { label: "Offset", value: 'Offset' },
   { label: "Screen Printing", value: "Screen Printing" },

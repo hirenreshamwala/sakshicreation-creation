@@ -45,6 +45,13 @@ const Endpoint = {
   GET_STAFF_BY__ROLE_ID: `${BaseURL}/api/purchase/getstaffbyrole`,
   BULK_CREATE_PURCHASES: `${BaseURL}/api/purchase/bulk`,
 
+  GET_ALL_QP_PURCHASES: `${BaseURL}/api/qppurchase/getall`,
+  CREATE_QP_PURCHASE: `${BaseURL}/api/qppurchase/create`,
+  UPDATE_QP_PURCHASE: `${BaseURL}/api/qppurchase/update`,
+  DELETE_QP_PURCHASE: `${BaseURL}/api/qppurchase/delete`,
+  GET_QP_PURCHASE_BY_ID: `${BaseURL}/api/qppurchase/getbyid`,
+  BULK_CREATE_QP_PURCHASES: `${BaseURL}/api/qppurchase/bulk`,
+
   //Inventory
 
   GET_BY_CATEGORY: `${BaseURL}/api/inventory/bycategory`,
@@ -177,7 +184,7 @@ const Endpoint = {
   UPDATE_MARKET: `${BaseURL}/api/market/update`,
   DELETE_MARKET: `${BaseURL}/api/market/delete`,
   BULK_UPLOAD_MARKETS: `${BaseURL}/api/market/bulk`,
-  
+
   CREATE_KANTAN: `${BaseURL}/api/kantan/create`,
   GET_ALL_KANTANS: `${BaseURL}/api/kantan/getall`,
   UPDATE_KANTAN: `${BaseURL}/api/kantan/update`,

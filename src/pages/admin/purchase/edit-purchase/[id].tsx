@@ -1,12 +1,17 @@
-import React from "react";
-import { useRouter } from "next/router";
-import NewPurchase from "@/pages/admin/purchase/add-purchase";
+import EditQpPurchasePage from '@/component/Purchase/QpPurchase/EditPurchase';
+import EditSakshiPurchasePage from '@/component/Purchase/SakshiPurchase/EditPurchase'
+import { useRouter } from 'next/router';
+import React from 'react'
 
-const EditPurchasePage: React.FC = () => {
-  const router = useRouter();
-  const { id } = router.query;
+function index() {
+  const router = useRouter()
+  const { id, type } = router.query;
+  console.log(id, type,'id, type')
+  return (
+    <div>
+      {type === 1 ? <EditQpPurchasePage id={id} /> : <EditSakshiPurchasePage id={id} />}
+    </div>
+  )
+}
 
-  return <NewPurchase isEditMode={true} purchaseId={id as string} />;
-};
-
-export default EditPurchasePage;
+export default index

@@ -337,7 +337,7 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
 
     const handleSaveReason = (reason: string) => {
         if (reason) {
-            formik.setFieldValue('reason', reason);
+            formik.setFieldValue('reason', "Other");
             formik.setFieldTouched('reason', true);
             setCustomReason(reason);
         }

@@ -44,42 +44,42 @@ interface AssignTaskDialogProps {
 
 const getValidationSchema = (isBulkMode: boolean) =>
   Yup.object({
-  companyName: isBulkMode
-    ? Yup.string().notRequired()
-    : Yup.string().required("Company Name is required"),
-  partyName: isBulkMode
-    ? Yup.string().notRequired()
-    : Yup.string().required("Party Name is required"),
-  date: Yup.string().required("Date is required"),
-  time: Yup.string().matches(
-    /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
-    "Invalid time format (use HH:MM)"
-  ),
-  reasonForVisit: Yup.string().required("Reason for Visit is required"),
-  remarks: Yup.string(),
-  assignTo: Yup.string().required("Assign To is required"),
-  visitDate: Yup.string(),
-  visitTime: Yup.string().matches(
-    /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
-    "Invalid time format (use HH:MM)"
-  ),
-  feedback: Yup.string(),
-  status: Yup.string().required("Status is required"),
-  rescheduleDate: Yup.string().when("status", {
-    is: "Rescheduled",
-    then: () =>
-      Yup.string()
-        .required("Reschedule Date is required when status is Rescheduled")
-        .test("is-future-date", "Reschedule Date must be a future date", (value) => {
-          if (!value) return false;
-          const selectedDate = new Date(value);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          return selectedDate >= today;
-        }),
-    otherwise: () => Yup.string().nullable(),
-  }),
-});
+    companyName: isBulkMode
+      ? Yup.string().notRequired()
+      : Yup.string().required("Company Name is required"),
+    partyName: isBulkMode
+      ? Yup.string().notRequired()
+      : Yup.string().required("Party Name is required"),
+    date: Yup.string().required("Date is required"),
+    time: Yup.string().matches(
+      /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
+      "Invalid time format (use HH:MM)"
+    ),
+    reasonForVisit: Yup.string().required("Reason for Visit is required"),
+    remarks: Yup.string(),
+    assignTo: Yup.string().required("Assign To is required"),
+    visitDate: Yup.string(),
+    visitTime: Yup.string().matches(
+      /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
+      "Invalid time format (use HH:MM)"
+    ),
+    feedback: Yup.string(),
+    status: Yup.string().required("Status is required"),
+    rescheduleDate: Yup.string().when("status", {
+      is: "Rescheduled",
+      then: () =>
+        Yup.string()
+          .required("Reschedule Date is required when status is Rescheduled")
+          .test("is-future-date", "Reschedule Date must be a future date", (value) => {
+            if (!value) return false;
+            const selectedDate = new Date(value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return selectedDate >= today;
+          }),
+      otherwise: () => Yup.string().nullable(),
+    }),
+  });
 
 const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
   open,
@@ -87,6 +87,8 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
   taskId,
   selectedParties = [],
   refreshData,
+  partyOptions,
+  companyOptions
 }) => {
   const dispatch = useAppDispatch();
   const {
@@ -118,8 +120,8 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
 
   const formik = useFormik<CreateAssignTask>({
     initialValues: {
-      companyName: "",
-      partyName: "",
+      companyName: companyOptions?.value,
+      partyName: partyOptions?.value,
       date: "",
       time: "",
       reasonForVisit: "",
@@ -215,6 +217,19 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
     ],
     []
   );
+
+
+  useEffect(() => {
+    if (open) {
+      formik.resetForm({
+        values: {
+          ...formik.initialValues,
+          companyName: companyOptions[0]?.value || "",
+          partyName: partyOptions[0]?.value || "",
+        }
+      });
+    }
+  }, [open, companyOptions, partyOptions]);
 
   const staffOptions = useMemo(() => {
     return staffList
@@ -369,31 +384,31 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
 
   useEffect(() => {
     if (open && taskError) {
-        Swal.fire({
-          title: "Error!",
-          text: taskError,
-          icon: "error",
-          confirmButtonColor: "#7F56D9",
-        });
-        dispatch(clearError());
-      }
-      if (open && accountError) {
-        Swal.fire({
-          title: "Error!",
-          text: accountError,
-          icon: "error",
-          confirmButtonColor: "#7F56D9",
-        });
-        dispatch(clearError());
-      }
-      if (open && staffError) {
-        Swal.fire({
-          title: "Error!",
-          text: staffError,
-          icon: "error",
-          confirmButtonColor: "#7F56D9",
-        });
-        dispatch(clearError());
+      Swal.fire({
+        title: "Error!",
+        text: taskError,
+        icon: "error",
+        confirmButtonColor: "#7F56D9",
+      });
+      dispatch(clearError());
+    }
+    if (open && accountError) {
+      Swal.fire({
+        title: "Error!",
+        text: accountError,
+        icon: "error",
+        confirmButtonColor: "#7F56D9",
+      });
+      dispatch(clearError());
+    }
+    if (open && staffError) {
+      Swal.fire({
+        title: "Error!",
+        text: staffError,
+        icon: "error",
+        confirmButtonColor: "#7F56D9",
+      });
+      dispatch(clearError());
     }
   }, [taskError, accountError, staffError, open, dispatch]);
 
@@ -451,8 +466,8 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
           isEditMode
             ? "Edit Task"
             : isBulkMode
-            ? `Assign Tasks to ${selectedParties.length} Parties`
-            : "Assign New Task"
+              ? `Assign Tasks to ${selectedParties.length} Parties`
+              : "Assign New Task"
         }
         maxWidth="md"
         fullWidth
@@ -473,55 +488,55 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
               Assigning tasks to {selectedParties.length} selected parties
             </Typography>
           ) : (
-          <Box mb={2}>
-            <CompanySelect
-              name="companyName"
-              value={formik.values.companyName}
-              onChange={handleCompanyChange}
-              error={formik.touched.companyName && Boolean(formik.errors.companyName)}
-              helperText={formik.touched.companyName && formik.errors.companyName}
-              hasParties={true}
-              required
-              showPartyName={true}
-              partyName={formik.values.partyName}
-              onPartyChange={handlePartyChange}
-              partyError={formik.touched.partyName && Boolean(formik.errors.partyName)}
-              partyHelperText={formik.touched.partyName && formik.errors.partyName}
-            />
-          </Box>
+            <Box mb={2}>
+              <CompanySelect
+                name="companyName"
+                value={formik.values.companyName}
+                onChange={handleCompanyChange}
+                error={formik.touched.companyName && Boolean(formik.errors.companyName)}
+                helperText={formik.touched.companyName && formik.errors.companyName}
+                hasParties={true}
+                required
+                showPartyName={true}
+                partyName={formik.values.partyName}
+                onPartyChange={handlePartyChange}
+                partyError={formik.touched.partyName && Boolean(formik.errors.partyName)}
+                partyHelperText={formik.touched.partyName && formik.errors.partyName}
+              />
+            </Box>
           )}
 
           {!isBulkMode && (
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
-            <ThemeInput
-              labelName="Unit No"
-              type="text"
-              value={partyDetails.unitNo}
-              disabled
-              fullWidth
-            />
-            <ThemeInput
-              labelName="Market Name"
-              type="text"
-              value={partyDetails.marketName?.marketName}
-              disabled
-              fullWidth
-            />
-            <ThemeInput
-              labelName="Area"
-              type="text"
-              value={partyDetails?.area?.area}
-              disabled
-              fullWidth
-            />
-            <ThemeInput
-              labelName="Owner WhatsApp No"
-              type="text"
-              value={partyDetails.ownerWhatsAppNo}
-              disabled
-              fullWidth
-            />
-          </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
+              <ThemeInput
+                labelName="Unit No"
+                type="text"
+                value={partyDetails.unitNo}
+                disabled
+                fullWidth
+              />
+              <ThemeInput
+                labelName="Market Name"
+                type="text"
+                value={partyDetails.marketName?.marketName}
+                disabled
+                fullWidth
+              />
+              <ThemeInput
+                labelName="Area"
+                type="text"
+                value={partyDetails?.area?.area}
+                disabled
+                fullWidth
+              />
+              <ThemeInput
+                labelName="Owner WhatsApp No"
+                type="text"
+                value={partyDetails.ownerWhatsAppNo}
+                disabled
+                fullWidth
+              />
+            </Stack>
           )}
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
@@ -735,13 +750,13 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
               ? isEditMode
                 ? "Updating..."
                 : isBulkMode
-                ? "Assigning Tasks..."
-                : "Assigning..."
+                  ? "Assigning Tasks..."
+                  : "Assigning..."
               : isEditMode
-              ? "Update Task"
-              : isBulkMode
-              ? "Assign Tasks"
-              : "Assign Task"}
+                ? "Update Task"
+                : isBulkMode
+                  ? "Assign Tasks"
+                  : "Assign Task"}
           </ThemeButton>
         </Box>
       </CustomDialog>

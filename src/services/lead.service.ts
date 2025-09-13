@@ -74,6 +74,7 @@ export const leadService = {
       if (!token) {
         throw new Error('No authentication token found');
       }
+      console.log(data,'fghjkijhgfdsdhjkl;')
       const response: AxiosResponse<Lead> = await axios.post(
         Endpoint.CREATE_LEAD,
         data,

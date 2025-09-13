@@ -297,8 +297,6 @@ const BookletFolderBinderForm = () => {
     downloadBookletPDF(data);
   };
 
-  console.log(singleOrder, 'kdnjikdnjhi')
-
   const handleHoldToggle = async () => {
     if (!orderId || typeof orderId !== "string") {
       toast.error("Order ID not found")
