@@ -171,6 +171,12 @@ const Endpoint = {
   DELETE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/delete`,
   GET_ALL_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/getall`,
   BULK_UPLOAD_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/bulk`,
+  
+  CREATE_PAPER_GSM: `${BaseURL}/api/paperGSM/create`,
+  UPDATE_PAPER_GSM: `${BaseURL}/api/paperGSM/update`,
+  DELETE_PAPER_GSM: `${BaseURL}/api/paperGSM/delete`,
+  GET_ALL_PAPER_GSM: `${BaseURL}/api/paperGSM/getall`,
+  BULK_UPLOAD_PAPER_GSM: `${BaseURL}/api/paperGSM/bulk`,
 
   CREATE_MARKET: `${BaseURL}/api/market/create`,
   GET_ALL_MARKETS: `${BaseURL}/api/market/getall`,

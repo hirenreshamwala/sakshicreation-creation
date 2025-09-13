@@ -15,29 +15,23 @@ import CustomDialog from "@/component/customdialog";
 import { RootState, useAppDispatch } from "@/store";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import {
-  createPackagingOptionThunk,
-  getAllPackagingOptionsThunk,
-  updatePackagingOptionThunk,
-  deletePackagingOptionThunk,
-  bulkCreatePackagingOptionThunk,
-} from "@/store/slices/packagingOptionSlice";
-import { PackagingOption } from "@/services/packagingOption.service";
+import { bulkCreatePaperGSMThunk, createPaperGSMThunk, deletePaperGSMThunk, getAllPaperGSMThunk, updatePaperGSMThunk } from "@/store/slices/paperGSMSlice";
+import { PaperGSM } from "@/services/paperGSM.service";
+
 
 const columns = [
   { id: "id", label: "ID" },
   { id: "name", label: "Name" },
-  { id: "ply", label: "Ply" },
   { id: "length", label: "Length" },
   { id: "width", label: "Width" },
   { id: "height", label: "Height" },
   { id: "options", label: "Options" },
 ];
 
-const PackagingOptionsPage = () => {
+const PaperGSMPage = () => {
   const dispatch = useAppDispatch();
-  const { packagingOptions, loading, operationLoading, error, operationError } = useSelector(
-    (state: RootState) => state.packagingOptions
+  const { paperGSM, loading, operationLoading, error, operationError } = useSelector(
+    (state: RootState) => state.paperGSMs
   );
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -45,7 +39,6 @@ const PackagingOptionsPage = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
-    ply: "",
     length: "",
     width: "",
     height: "",
@@ -53,7 +46,7 @@ const PackagingOptionsPage = () => {
   const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
-    if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
+    if (!paperGSM.length) dispatch(getAllPaperGSMThunk());
   }, []);
 
   useEffect(() => {
@@ -66,14 +59,13 @@ const PackagingOptionsPage = () => {
       setEditId(option._id);
       setForm({
         name: option.name || "",
-        ply: option.ply || "",
         length: option.length || "",
         width: option.width || "",
         height: option.height || "",
       });
     } else {
       setEditId(null);
-      setForm({ name: "", ply: "", length: "", width: "", height: "" });
+      setForm({ name: "", length: "", width: "", height: "" });
     }
     setDialogOpen(true);
   };
@@ -84,15 +76,15 @@ const PackagingOptionsPage = () => {
   };
 
   const handleSave = () => {
-    if (!form.ply.trim() || !form.length.trim() || !form.width.trim() || !form.height.trim()) {
+    if (!form.length.trim() || !form.width.trim() || !form.height.trim()) {
       toast.error("All fields are required");
       return;
     }
-    const packagingData = { ...form };
+    const paperData = { ...form };
     if (editId) {
-      dispatch(updatePackagingOptionThunk({ id: editId, updateData: packagingData }));
+      dispatch(updatePaperGSMThunk({ id: editId, updateData: paperData }));
     } else {
-      dispatch(createPackagingOptionThunk(packagingData));
+      dispatch(createPaperGSMThunk(paperData));
     }
     setDialogOpen(false);
   };
@@ -110,17 +102,17 @@ const PackagingOptionsPage = () => {
 
     if (result.isConfirmed) {
       try {
-        await dispatch(deletePackagingOptionThunk(id)).unwrap();
+        await dispatch(deletePaperGSMThunk(id)).unwrap();
         Swal.fire({
           title: "Deleted!",
-          text: "Packaging option deleted successfully",
+          text: "Paper GSM deleted successfully",
           icon: "success",
           confirmButtonColor: "#7F56D9",
         });
       } catch (err: any) {
         Swal.fire({
           title: "Error!",
-          text: err?.message || "Failed to delete packaging option",
+          text: err?.message || "Failed to delete Paper GSM",
           icon: "error",
           confirmButtonColor: "#7F56D9",
         });
@@ -137,22 +129,22 @@ const PackagingOptionsPage = () => {
     formData.append("file", file);
 
     try {
-      await dispatch(bulkCreatePackagingOptionThunk(formData)).unwrap();
+      await dispatch(bulkCreatePaperGSMThunk(formData)).unwrap();
       toast.success("Bulk upload successful");
       setBulkDialogOpen(false);
       setFile(null);
-      dispatch(getAllPackagingOptionsThunk());
+      dispatch(getAllPaperGSMThunk());
     } catch (error: any) {
       toast.error(error?.message || "Bulk upload failed");
     }
   };
 
   const handleDownloadSample = () => {
-    const csvContent = "name,ply,length,width,height\nSample Packaging,3,10,20,30\n";
+    const csvContent = "name,length,width,height\nSample paper,3,10,20\n";
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", "sample_packaging_options.csv");
+    link.setAttribute("download", "sample_paper_GSM.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -172,7 +164,7 @@ const PackagingOptionsPage = () => {
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" fontWeight={600}>
-          Cartoon
+          Paper GSM
         </Typography>
         <Box display="flex" gap={2}>
           <Button
@@ -199,23 +191,22 @@ const PackagingOptionsPage = () => {
               fontWeight: 600,
             }}
           >
-            New Cartoon
+            New Paper GSM
           </Button>
         </Box>
       </Box>
 
       <BasicTable
         tableHeader={columns}
-        rowData={packagingOptions as any}
+        rowData={paperGSM as any}
         showDatePicker={false}
-        renderRow={(row: PackagingOption, idx: number) => (
+        renderRow={(row: PaperGSM, idx: number) => (
           <>
             <TableCell>{idx + 1}</TableCell>
-            <TableCell>{row.name || ""}</TableCell>
-            <TableCell>{row.ply || ""}</TableCell>
-            <TableCell>{row.length || ""}</TableCell>
-            <TableCell>{row.width || ""}</TableCell>
-            <TableCell>{row.height || ""}</TableCell>
+            <TableCell>{row?.name || ""}</TableCell>
+            <TableCell>{row?.length || ""}</TableCell>
+            <TableCell>{row?.width || ""}</TableCell>
+            <TableCell>{row?.height || ""}</TableCell>
             <TableCell>
               <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                 <Edit />
@@ -233,7 +224,7 @@ const PackagingOptionsPage = () => {
       <CustomDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        title={editId ? "Edit Cartoon" : "New Cartoon"}
+        title={editId ? "Edit Paper GSM" : "New Paper GSM"}
         maxWidth="sm"
         fullWidth
       >
@@ -246,15 +237,6 @@ const PackagingOptionsPage = () => {
               value={form.name}
               onChange={handleFormChange}
               fullWidth
-              required
-            />
-            <Input
-              label="PLY"
-              name="ply"
-              value={form.ply}
-              onChange={handleFormChange}
-              fullWidth
-              required
             />
           </Box>
 
@@ -304,7 +286,7 @@ const PackagingOptionsPage = () => {
       <CustomDialog
         open={bulkDialogOpen}
         onClose={closeBulkDialog}
-        title="Bulk Upload Packaging Options"
+        title="Bulk Upload Paper GSM"
         maxWidth="sm"
         fullWidth
       >
@@ -376,4 +358,4 @@ const PackagingOptionsPage = () => {
   );
 };
 
-export default PackagingOptionsPage;
+export default PaperGSMPage;

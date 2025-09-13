@@ -201,11 +201,11 @@ const AllOrdersPage = () => {
       return;
     }
 
-    if (canViewGlobal) {
+    if (canViewGlobal ) {
       dispatch(getAllOrdersThunk({ limit: 100 })); // Increase limit to fetch more orders
-    } else if (canViewOwn && user?.id) {
+    } else if (canViewOwn && user?.id ) {
       dispatch(getOrdersByStaffIdThunk(user.id));
-    }
+    } 
   }, [dispatch, router, canViewGlobal, canViewOwn, user?.id]);
 
   const formatDate = (dateString: string) => {
@@ -294,6 +294,8 @@ const AllOrdersPage = () => {
   };
   const roleName = user?.role?.roleName || "";
   const company = user?.role?.company?.companyName || "";
+  console.log("DEBUG : company:", company);
+
   const isAdmin = roleName.toLowerCase() === "admin";
   const isSakshi = company === companyOptions[0]; // assuming index 0 is Sakshi Creation
   const isQuality = company === companyOptions[1];

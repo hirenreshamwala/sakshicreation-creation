@@ -15,6 +15,7 @@ import fileUploadReducer from "./slices/fileUploadSlice";
 import orderReducer from "./slices/orderSlice";
 import qpOrderReducer from "./slices/qpOrderSlice";
 import packagingOptionReducer from "./slices/packagingOptionSlice"
+import paperGSMReducer from "./slices/paperGSMSlice"
 import statusReducer from "./slices/statusSlice";
 import roleReducer from "./slices/roleSlice";
 import materialReducer from "./slices/materialSlice";
@@ -53,6 +54,7 @@ export const store = configureStore({
     orders: orderReducer,
     qpOrders: qpOrderReducer,
     packagingOptions: packagingOptionReducer,
+    paperGSMs: paperGSMReducer,
     status: statusReducer,
     roles: roleReducer,
     materials: materialReducer,
