@@ -122,7 +122,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const getCurrentPageTitle = () => {
     // First check if we're in setup submenu
     if (activeSubSidebar === "setup") {
-      const setupItem = setupSubMenuItems.find(item => 
+      const setupItem = setupSubMenuItems.find(item =>
         router.pathname === item.path || router.pathname.startsWith(item.path + "/")
       );
       if (setupItem) return setupItem.label;
@@ -133,7 +133,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     for (const item of filteredMenuItems) {
       // Exact match
       if (router.pathname === item.path) return item.label;
-      
+
       // Parent path match (for nested routes)
       if (item.path && router.pathname.startsWith(item.path + "/")) {
         return item.label;
@@ -141,7 +141,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
       // Check children
       if (item.children) {
-        const childItem = item.children.find(child => 
+        const childItem = item.children.find(child =>
           router.pathname === child.path || router.pathname.startsWith(child.path + "/")
         );
         if (childItem) return childItem.label;
@@ -168,8 +168,8 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     setSelectedItem(currentPath);
 
     // Open parent menu if child is active
-    const parentItem = menuItems.find(item => 
-      item.children && item.children.some(child => 
+    const parentItem = menuItems.find(item =>
+      item.children && item.children.some(child =>
         currentPath === child.path || currentPath.startsWith(child.path + "/")
       )
     );
@@ -259,58 +259,82 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       label: "Add Role",
       path: "/admin/setup/role",
       icon: <MdPeople size={18} />,
+      category: "general"
     },
     {
       label: "Staff",
       path: "/admin/setup/staff",
       icon: <MdGroup size={18} />,
+      category: "general"
     },
     {
       label: "Products",
       path: "/admin/setup/products",
       icon: <MdGroup size={18} />,
+      category: "sakshi"
     },
     {
       label: "Paper Material",
       path: "/admin/setup/paper-material",
       icon: <MdGroup size={18} />,
+      category: "sakshi"
     },
-     {
+    {
       label: "Binder Type",
       path: "/admin/setup/binderType",
       icon: <MdGroup size={18} />,
+      category: "sakshi"
     },
-     {
+    {
       label: "Cartoon",
       path: "/admin/setup/packaging-options",
       icon: <MdGroup size={18} />,
+      category: "quality"
     },
-      {
+    {
       label: "Market Data",
       path: "/admin/setup/markets",
       icon: <MdGroup size={18} />,
+      category: "general"
     },
-      {
+    {
       label: "Kantan",
       path: "/admin/setup/kantan",
       icon: <MdGroup size={18} />,
+      category: "quality"
     },
-    // {
-    //   label: "Department Company",
-    //   path: "/admin/setup/department-company",
-    //   icon: <MdGroup size={18} />,
-    // },
+    {
+      label: "Paper GSM",
+      path: "/admin/setup/paper-gsm",
+      icon: <MdGroup size={18} />,
+      category: "quality"
+    },
     {
       label: "Company Name",
       path: "/admin/setup/company-name",
       icon: <MdGroup size={18} />,
+      category: "general"
     },
     {
       label: "Vendor Name",
       path: "/admin/setup/vendor-name",
       icon: <MdGroup size={18} />,
+      category: "general"
     },
   ];
+
+  const categorizedSetupItems = {
+    general: setupSubMenuItems.filter(item => item.category === "general"),
+    sakshi: setupSubMenuItems.filter(item => item.category === "sakshi"),
+    quality: setupSubMenuItems.filter(item => item.category === "quality")
+  };
+
+  const [openSetupMenus, setOpenSetupMenus] = useState<string[]>([]);
+  const toggleSetupSubmenu = (category: string) => {
+    setOpenSetupMenus((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+    );
+  };
 
   return (
     <Box display="flex" fontFamily="Inter, sans-serif" minHeight="100vh" bgcolor="#FBFBFB" p={1}>
@@ -380,16 +404,48 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
         <List dense>
           <Slide direction="right" in={activeSubSidebar === "setup"} mountOnEnter unmountOnExit>
             <Box>
-              {activeSubSidebar === "setup" && (
-                <>
-                  <Tooltip title={!drawerOpen ? "Back" : ""} placement="right">
+               {activeSubSidebar === "setup" && (
+              <>
+                <Tooltip title={!drawerOpen ? "Back" : ""} placement="right">
+                  <ListItem disablePadding sx={{ mb: 0.5 }}>
+                    <ListItemButton
+                      onClick={async () => {
+                        setActiveSubSidebar(null);
+                        setDrawerOpen(false);
+                        await new Promise((resolve) => setTimeout(resolve, transitionDuration));
+                        await handleNavigation("/admin/setup");
+                      }}
+                      sx={{
+                        borderRadius: 2,
+                        py: 0.75,
+                        px: drawerOpen ? 1 : 1.5,
+                        justifyContent: drawerOpen ? "flex-start" : "center",
+                        minHeight: 48,
+                        mb: 1,
+                        "&:hover": { bgcolor: theme.palette.primary.light },
+                      }}
+                    >
+                      <ListItemIcon
+                        sx={{ minWidth: 0, mr: drawerOpen ? 2 : "auto", justifyContent: "center" }}
+                      >
+                        <IoChevronBack size={18} />
+                      </ListItemIcon>
+                      {drawerOpen && (
+                        <ListItemText primary="Back" primaryTypographyProps={{ fontSize: 14 }} />
+                      )}
+                    </ListItemButton>
+                  </ListItem>
+                </Tooltip>
+                
+                {/* General Setup Items (no dropdown) */}
+                {categorizedSetupItems.general.map((item) => (
+                  <Tooltip title={!drawerOpen ? item.label : ""} placement="right" key={item.label}>
                     <ListItem disablePadding sx={{ mb: 0.5 }}>
                       <ListItemButton
+                        selected={router.pathname === item.path || router.pathname.startsWith(item.path + "/")}
                         onClick={async () => {
-                          setActiveSubSidebar(null);
-                          setDrawerOpen(false);
-                          await new Promise((resolve) => setTimeout(resolve, transitionDuration));
-                          await handleNavigation("/admin/setup");
+                          setActiveSubSidebar("setup");
+                          await handleNavigation(item.path);
                         }}
                         sx={{
                           borderRadius: 2,
@@ -397,61 +453,183 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                           px: drawerOpen ? 1 : 1.5,
                           justifyContent: drawerOpen ? "flex-start" : "center",
                           minHeight: 48,
-                          mb: 1,
-                          "&:hover": { bgcolor: theme.palette.primary.light },
+                          "&.Mui-selected": {
+                            bgcolor: theme.palette.primary.light,
+                            color: "#344054",
+                            border: "2px solid #7F56D9",
+                          },
+                          "&:hover": {
+                            bgcolor: theme.palette.primary.light,
+                            border: "2px solid #7F56D9",
+                          },
                         }}
                       >
                         <ListItemIcon
                           sx={{ minWidth: 0, mr: drawerOpen ? 2 : "auto", justifyContent: "center" }}
                         >
-                          <IoChevronBack size={18} />
+                          {item.icon}
                         </ListItemIcon>
                         {drawerOpen && (
-                          <ListItemText primary="Back" primaryTypographyProps={{ fontSize: 14 }} />
+                          <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: 14 }} />
                         )}
                       </ListItemButton>
                     </ListItem>
                   </Tooltip>
-                  {setupSubMenuItems.map((item) => (
-                    <Tooltip title={!drawerOpen ? item.label : ""} placement="right" key={item.label}>
-                      <ListItem disablePadding sx={{ mb: 0.5 }}>
-                        <ListItemButton
-                          selected={router.pathname === item.path || router.pathname.startsWith(item.path + "/")}
-                          onClick={async () => {
-                            setActiveSubSidebar("setup");
-                            await handleNavigation(item.path);
-                          }}
-                          sx={{
-                            borderRadius: 2,
-                            py: 0.75,
-                            px: drawerOpen ? 1 : 1.5,
-                            justifyContent: drawerOpen ? "flex-start" : "center",
-                            minHeight: 48,
-                            "&.Mui-selected": {
-                              bgcolor: theme.palette.primary.light,
-                              color: "#344054",
-                              border: "2px solid #7F56D9",
-                            },
-                            "&:hover": {
-                              bgcolor: theme.palette.primary.light,
-                              border: "2px solid #7F56D9",
-                            },
-                          }}
-                        >
-                          <ListItemIcon
-                            sx={{ minWidth: 0, mr: drawerOpen ? 2 : "auto", justifyContent: "center" }}
+                ))}
+                
+                {/* Sakshi Dropdown */}
+                <Tooltip title={!drawerOpen ? "Sakshi" : ""} placement="right">
+                  <ListItem disablePadding sx={{ mb: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => toggleSetupSubmenu("sakshi")}
+                      sx={{
+                        borderRadius: 2,
+                        py: 0.75,
+                        px: drawerOpen ? 1 : 1.5,
+                        justifyContent: drawerOpen ? "flex-start" : "center",
+                        minHeight: 48,
+                        "&:hover": {
+                          bgcolor: theme.palette.primary.light,
+                          border: "2px solid #7F56D9",
+                        },
+                      }}
+                    >
+                      <ListItemIcon
+                        sx={{ minWidth: 0, mr: drawerOpen ? 2 : "auto", justifyContent: "center" }}
+                      >
+                        <MdGroup size={18} />
+                      </ListItemIcon>
+                      {drawerOpen && (
+                        <>
+                          <ListItemText primary="Sakshi Creation" primaryTypographyProps={{ fontSize: 14 }} />
+                          {openSetupMenus.includes("sakshi") ? <MdExpandLess size={18} /> : <MdExpandMore size={18} />}
+                        </>
+                      )}
+                    </ListItemButton>
+                  </ListItem>
+                </Tooltip>
+                
+                <Collapse in={openSetupMenus.includes("sakshi")} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {categorizedSetupItems.sakshi.map((item) => (
+                      <Tooltip title={!drawerOpen ? item.label : ""} placement="right" key={item.label}>
+                        <ListItem disablePadding sx={{ mb: 0.5 }}>
+                          <ListItemButton
+                            selected={router.pathname === item.path || router.pathname.startsWith(item.path + "/")}
+                            onClick={async () => {
+                              setActiveSubSidebar("setup");
+                              await handleNavigation(item.path);
+                            }}
+                            sx={{
+                              borderRadius: 2,
+                              py: 0.75,
+                              px: drawerOpen ? 1 : 1.5,
+                              pl: 4,
+                              justifyContent: drawerOpen ? "flex-start" : "center",
+                              minHeight: 48,
+                              "&.Mui-selected": {
+                                bgcolor: theme.palette.primary.light,
+                                color: "#344054",
+                                border: "2px solid #7F56D9",
+                              },
+                              "&:hover": {
+                                bgcolor: theme.palette.primary.light,
+                                border: "2px solid #7F56D9",
+                              },
+                            }}
                           >
-                            {item.icon}
-                          </ListItemIcon>
-                          {drawerOpen && (
-                            <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: 14 }} />
-                          )}
-                        </ListItemButton>
-                      </ListItem>
-                    </Tooltip>
-                  ))}
-                </>
-              )}
+                            <ListItemIcon
+                              sx={{ minWidth: 0, mr: drawerOpen ? 2 : "auto", justifyContent: "center" }}
+                            >
+                              {item.icon}
+                            </ListItemIcon>
+                            {drawerOpen && (
+                              <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: 14 }} />
+                            )}
+                          </ListItemButton>
+                        </ListItem>
+                      </Tooltip>
+                    ))}
+                  </List>
+                </Collapse>
+                
+                {/* Quality Dropdown */}
+                <Tooltip title={!drawerOpen ? "Quality" : ""} placement="right">
+                  <ListItem disablePadding sx={{ mb: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => toggleSetupSubmenu("quality")}
+                      sx={{
+                        borderRadius: 2,
+                        py: 0.75,
+                        px: drawerOpen ? 1 : 1.5,
+                        justifyContent: drawerOpen ? "flex-start" : "center",
+                        minHeight: 48,
+                        "&:hover": {
+                          bgcolor: theme.palette.primary.light,
+                          border: "2px solid #7F56D9",
+                        },
+                      }}
+                    >
+                      <ListItemIcon
+                        sx={{ minWidth: 0, mr: drawerOpen ? 2 : "auto", justifyContent: "center" }}
+                      >
+                        <MdGroup size={18} />
+                      </ListItemIcon>
+                      {drawerOpen && (
+                        <>
+                          <ListItemText primary="Quality Packgaing" primaryTypographyProps={{ fontSize: 14 }} />
+                          {openSetupMenus.includes("quality") ? <MdExpandLess size={18} /> : <MdExpandMore size={18} />}
+                        </>
+                      )}
+                    </ListItemButton>
+                  </ListItem>
+                </Tooltip>
+                
+                <Collapse in={openSetupMenus.includes("quality")} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {categorizedSetupItems.quality.map((item) => (
+                      <Tooltip title={!drawerOpen ? item.label : ""} placement="right" key={item.label}>
+                        <ListItem disablePadding sx={{ mb: 0.5 }}>
+                          <ListItemButton
+                            selected={router.pathname === item.path || router.pathname.startsWith(item.path + "/")}
+                            onClick={async () => {
+                              setActiveSubSidebar("setup");
+                              await handleNavigation(item.path);
+                            }}
+                            sx={{
+                              borderRadius: 2,
+                              py: 0.75,
+                              px: drawerOpen ? 1 : 1.5,
+                              pl: 4,
+                              justifyContent: drawerOpen ? "flex-start" : "center",
+                              minHeight: 48,
+                              "&.Mui-selected": {
+                                bgcolor: theme.palette.primary.light,
+                                color: "#344054",
+                                border: "2px solid #7F56D9",
+                              },
+                              "&:hover": {
+                                bgcolor: theme.palette.primary.light,
+                                border: "2px solid #7F56D9",
+                              },
+                            }}
+                          >
+                            <ListItemIcon
+                              sx={{ minWidth: 0, mr: drawerOpen ? 2 : "auto", justifyContent: "center" }}
+                            >
+                              {item.icon}
+                            </ListItemIcon>
+                            {drawerOpen && (
+                              <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: 14 }} />
+                            )}
+                          </ListItemButton>
+                        </ListItem>
+                      </Tooltip>
+                    ))}
+                  </List>
+                </Collapse>
+              </>
+            )}
             </Box>
           </Slide>
 

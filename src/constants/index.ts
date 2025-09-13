@@ -26,6 +26,7 @@ export const permissionsArray = {
     create: false,
     edit: false,
     delete: false,
+    status: false,
   },
   quality_packaging: {
     view_global: false,
@@ -139,7 +140,7 @@ export const QualityPermissionsArray = {
     view_own: false,
     create: false,
     edit: false,
-    delete: false,
+    status: false,
   },
   order_factory: {
     view_global: false,

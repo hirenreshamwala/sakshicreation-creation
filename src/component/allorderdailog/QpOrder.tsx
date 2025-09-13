@@ -16,6 +16,7 @@ import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk, updateQPOrderThunk } fr
 import EditOrderDialog from "./EditOrderDialog"
 import { toast } from "react-toastify"
 import moment from "moment"
+import { StatusCell } from "./StatusCell"
 
 const columns = [
   { id: "orderNo", label: "Order No" },
@@ -344,6 +345,7 @@ const AllOrdersPage = () => {
   const canViewGlobal = user?.role?.permissions?.all_orders?.view_global
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own
   const canCreate = user?.role?.permissions?.all_orders?.create
+  const canStatus = user?.role?.permissions?.all_orders?.status
 
   // Get unique values for the selected filter field
   const getUniqueValues = useMemo(() => {
@@ -552,6 +554,7 @@ const AllOrdersPage = () => {
     })
   }, [orders, startDate, endDate, searchQuery, filters])
 
+  console.log("DEBUG : AllOrdersPage : canViewOwn && user?.id:", canViewOwn && user?.id);
   useEffect(() => {
     const token = authService.getToken()
     if (!token) {
@@ -561,7 +564,9 @@ const AllOrdersPage = () => {
 
     if (canViewGlobal) {
       if (!orders.length) dispatch(getAllQPOrdersThunk())
+
     } else if (canViewOwn && user?.id) {
+
       if (!orders.length) dispatch(getQPOrdersByStaffIdThunk(user.id))
     }
   }, [dispatch, router, canViewGlobal, canViewOwn, user?.id])
@@ -645,9 +650,10 @@ const AllOrdersPage = () => {
     )
   }
 
-  const renderExpandedRow = (row: OrderRow) => (
-    <ExpandedRowForm row={row} setEditData={setEditData} setOpen={setOpen} />
-  )
+  const renderExpandedRow = (row: OrderRow) => {
+    if (!canViewGlobal) return null;
+    return <ExpandedRowForm row={row} setEditData={setEditData} setOpen={setOpen} />;
+  };
 
   if (loading) return <Typography>Loading orders...</Typography>
   if (error) return <Typography color="error">Error: {error}</Typography>
@@ -745,7 +751,9 @@ const AllOrdersPage = () => {
           rowData={filteredOrders as any}
           totalCount={totalCount}
           pagination={pagination}
-          renderExpandedRow={renderExpandedRow}
+          renderExpandedRow={
+            canViewGlobal && !canStatus ? renderExpandedRow : undefined
+          }
           renderRow={(row: any) => (
             <>
               <TableCell>
@@ -856,7 +864,7 @@ const AllOrdersPage = () => {
                 </Typography>
               </TableCell>
               <TableCell>
-                <StatusBadge row={row} />
+                <StatusCell row={row} />
               </TableCell>
             </>
           )}
