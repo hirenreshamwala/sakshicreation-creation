@@ -6,12 +6,17 @@ const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
 
 export interface PaperGSM {
   _id: string;
-  length: string;
-  width: string;
-  height: string;
+  deckal: string;
+  gsm: string;
   name: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface GSMOption {
+  id: string;
+  value: string;
+  label: string;
 }
 
 export interface ApiResponse<T> {
@@ -113,4 +118,24 @@ export const paperGSMService = {
       );
     }
   },
+   async getGSMByDeckal(deckal: string): Promise<GSMOption[]> {
+  try {
+    const token = authService.getToken();
+    if (!token) throw new Error("No authentication token found");
+
+    const response: AxiosResponse<ApiResponse<GSMOption[]>> = await axios.get(
+      `${Endpoint.GET_GSM_BY_DECKAL}?deckal=${deckal}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      }
+    );
+
+    return response || [];
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "Failed to fetch GSM by Deckal"
+    );
+  }
+}
 };

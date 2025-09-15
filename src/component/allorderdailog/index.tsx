@@ -1,7 +1,6 @@
 "use client"
-
 import type React from "react"
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect, useMemo } from "react"
 import { Box, Stack, CircularProgress, FormControlLabel, Checkbox, FormControl, FormLabel, RadioGroup, Radio, InputLabel, MenuItem, Select, Typography, Switch } from "@mui/material"
 import CustomDialog from "@/component/customdialog"
 import ThemeInput from "@/component/common_component/themeinput"
@@ -20,40 +19,37 @@ import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { createQpOrderThunk } from "@/store/slices/qpOrderSlice"
 import { getAllPackagingOptionsThunk } from "@/store/slices/packagingOptionSlice"
 import { getAllKantansThunk } from "@/store/slices/kantanSlice"
-import { calculateDeckal, calculateGSM, calculateKgPerPiece, calculateTotalKg, calculateTotalAmount, calculateKantan, } from "@/utills/qpCalculations"
+import { calculateDeckal, calculateGSM, calculateKgPerPiece, calculateTotalKg, calculateTotalAmount, calculateKantan } from "@/utills/qpCalculations"
+import { getAllPaperGSMThunk, getGSMByDeckalThunk } from "@/store/slices/paperGSMSlice"
 
 interface OptionType {
   label: string
   value: string
+  id?: string
 }
-
 interface AddOrderDialogProps {
   open: boolean
   onClose: () => void
   refreshData?: () => void
 }
-
 const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshData }) => {
   const dispatch = useAppDispatch()
   const fileUploadRef = useRef<FileUploadRef>(null)
-
   // Redux state
   const { packagingOptions } = useAppSelector((state) => state.packagingOptions)
+  const { paperGSM, gsmByDeckal } = useAppSelector((state) => state.paperGSMs)
   const { kantans } = useAppSelector((state) => state.kantans)
   const { companies } = useAppSelector((state) => state.company)
   const { productItems, loading: productLoading } = useAppSelector((state) => state.productItems)
   const { singleAccountMaster, loading: accountLoading }: any = useAppSelector((state) => state.accountMasters)
   const { loading: orderLoading, error: orderError, successMessage } = useAppSelector((state) => state.orders)
   const { binderTypes } = useAppSelector((state) => state.binderType)
-
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [gstNotApplicable, setGstNotApplicable] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [itemOptions, setItemOptions] = useState<OptionType[]>([])
   const [selectedCompany, setSelectedCompany] = useState<string>("")
-  // Track if deckal has been manually edited
   const [isDeckalManual, setIsDeckalManual] = useState(false)
-
+  
   // Sakshi Creation form data
   const [sakshiFormData, setSakshiFormData] = useState({
     companyName: "",
@@ -75,7 +71,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     endNumber: "",
     startNumber: ""
   })
-
+  
   // Quality Packaging form data
   const [qpFormData, setQpFormData] = useState({
     companyName: "",
@@ -87,6 +83,9 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     length: "",
     width: "",
     height: "",
+    paperWidth: "",
+    paperLength: "",
+    paperHeight: "",
     gsm: "",
     deckal: "",
     deckalCalculation: "",
@@ -104,12 +103,37 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     kantanDeckal: "",
     salesRemark: "",
   })
-
-
+  
   // Determine which form to show based on selected company
   const isQualityPackaging = selectedCompany === companies?.find((item) => item?.companyName?.toLowerCase() === 'quality packaging')?._id
   const isSakshiCreation = selectedCompany === companies?.find((item) => item?.companyName?.toLowerCase() === 'sakshi creation')?._id
-
+  
+  // Memoized item options
+  const itemOptions = useMemo(() => {
+    return productItems.map((item) => ({
+      label: item.itemName,
+      value: item._id,
+    }))
+  }, [productItems])
+  
+  // Memoized paper dimension options from gsmByDeckal
+  const paperDimensionOptions = useMemo(() => {
+    if (!gsmByDeckal?.gsmOptions) return { length: [], width: [], height: [] }
+    
+    // Use the same options for all three dimensions
+    const options = gsmByDeckal.gsmOptions.map((opt: any) => ({
+      value: opt.id,
+      label: opt.label,
+      id: opt.id
+    }))
+    
+    return {
+      length: options,
+      width: options,
+      height: options
+    }
+  }, [gsmByDeckal])
+  
   // Clear messages when dialog opens
   useEffect(() => {
     if (open) {
@@ -120,7 +144,13 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       setIsDeckalManual(false)
     }
   }, [open, dispatch])
-
+  
+  useEffect(() => {
+    if (qpFormData.deckal && isQualityPackaging) {
+      dispatch(getGSMByDeckalThunk(qpFormData.deckal))
+    }
+  }, [qpFormData.deckal, isQualityPackaging, dispatch])
+  
   // Handle success message
   useEffect(() => {
     if (successMessage) {
@@ -128,7 +158,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       dispatch(clearOrderSuccessMessage())
     }
   }, [successMessage, dispatch])
-
+  
   // Handle error message
   useEffect(() => {
     if (orderError) {
@@ -136,69 +166,49 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       dispatch(clearOrderError())
     }
   }, [orderError, dispatch])
-
-  // Fetch product items when dialog opens
+  
+  // Fetch data when dialog opens
   useEffect(() => {
     if (open) {
       dispatch(getAllProductItemsThunk())
+      if (!binderTypes.length) dispatch(getAllBinderTypesThunk())
+      if (!companies.length) dispatch(getAllCompaniesThunk())
+      if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk())
+      if (!paperGSM.length) dispatch(getAllPaperGSMThunk())
+      if (!kantans.length) dispatch(getAllKantansThunk())
     }
   }, [open, dispatch])
-
-  useEffect(() => {
-    if (!binderTypes.length) dispatch(getAllBinderTypesThunk())
-    if (!companies.length) dispatch(getAllCompaniesThunk())
-    if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk())
-    if (!kantans.length) dispatch(getAllKantansThunk())
-  }, [dispatch])
-
-  // Set item options when product items are loaded
-  useEffect(() => {
-    if (productItems && productItems.length > 0) {
-      const options = productItems.map((item) => ({
-        label: item.itemName,
-        value: item._id,
-      }))
-      setItemOptions(options)
-    }
-  }, [productItems])
-
+  
   // Auto-fill form when account master data is loaded
   useEffect(() => {
-    if (singleAccountMaster && singleAccountMaster.accountMaster) {
+    if (singleAccountMaster && singleAccountMaster.accountMaster && isSakshiCreation) {
       const accountData = singleAccountMaster.accountMaster
-
-      if (isSakshiCreation) {
-        setSakshiFormData((prev) => ({
-          ...prev,
-          personName: accountData.party?.contactPerson || "",
-          whatsapp: accountData.party?.personWhatsAppNo || "",
-          gst: accountData.party?.GSTNo || "",
-        }))
-      }
+      setSakshiFormData((prev) => ({
+        ...prev,
+        personName: accountData.party?.contactPerson || "",
+        whatsapp: accountData.party?.personWhatsAppNo || "",
+        gst: accountData.party?.GSTNo || "",
+      }))
     }
   }, [singleAccountMaster, isSakshiCreation])
-
+  
   const handleSakshiChange = (field: string, value: any) => {
     setSakshiFormData((prev) => ({ ...prev, [field]: value }))
   }
-
+  
   const handleQpChange = (field: string, value: any) => {
     setQpFormData((prev) => ({ ...prev, [field]: value }))
   }
-
+  
   const handleGstCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setGstNotApplicable(event.target.checked)
   }
-
+  
   const handleCompanyChange = (event: any, newValue: any) => {
     const companyId = newValue ? newValue.value : ""
     setSelectedCompany(companyId)
-
-    // Update both form company fields
     handleSakshiChange("companyName", companyId)
     handleQpChange("companyName", companyId)
-
-    // Clear party name and auto-filled fields when company changes
     handleSakshiChange("partyName", "")
     handleSakshiChange("personName", "")
     handleSakshiChange("whatsapp", "")
@@ -207,14 +217,12 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     setGstNotApplicable(false)
     setIsDeckalManual(false)
   }
-
+  
   const handlePartyChange = async (event: any, newValue: any) => {
     const partyId = newValue ? newValue.value : ""
-
-    // Update both form party fields
     handleSakshiChange("partyName", partyId)
     handleQpChange("partyName", partyId)
-
+    
     if (selectedCompany && partyId) {
       try {
         await dispatch(
@@ -229,18 +237,16 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       }
     }
   }
-
+  
   const handleFilesSelected = (files: File[]) => setSelectedFiles(files)
-
   const handleUploadError = (error: string) => toast.error(error)
-
+  
   const handleDeckalChange = (e: any) => {
     const value = e.target.value
     handleQpChange("deckal", value)
     setIsDeckalManual(!!value && value !== "")
   }
-
-
+  
   const handleSubmit = async () => {
     if (isSakshiCreation) {
       await handleSakshiSubmit()
@@ -250,28 +256,23 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       toast.error("Please select a valid company")
     }
   }
-
+  
   const handleSakshiSubmit = async () => {
     if (!sakshiFormData.companyName || !sakshiFormData.partyName || !sakshiFormData.itemName || !sakshiFormData.qty) {
       toast.error("Please fill all required fields")
       return
     }
-
     if (Number.parseInt(sakshiFormData.qty) <= 0) {
       toast.error("Quantity must be greater than 0")
       return
     }
-
     setIsSubmitting(true)
-
     try {
       let filePaths: string[] = []
-
       if (selectedFiles.length > 0 && fileUploadRef.current) {
         const uploadedFiles = await fileUploadRef.current.uploadSelectedFiles()
         filePaths = uploadedFiles.map((file) => file.path || file.url)
       }
-
       const orderData = {
         companyName: sakshiFormData.companyName,
         party: sakshiFormData.partyName,
@@ -293,9 +294,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         startNumber: sakshiFormData.startNumber,
         color: sakshiFormData.color
       }
-
       await dispatch(createOrderThunk(orderData)).unwrap()
-
       if (refreshData) refreshData()
       resetForm()
       onClose()
@@ -306,24 +305,28 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       setIsSubmitting(false)
     }
   }
-
+  
   const handleQpSubmit = async () => {
     if (!qpFormData.companyName || !qpFormData.partyName) {
       toast.error("Please fill all required fields (Company Name and Party Name)")
       return
     }
-
     setIsSubmitting(true)
-
     try {
-
       const findOptionId = (field: string, value: string) => {
-        if (!value) return undefined;
-        // Find the option where the specific field matches the selected value
-        const matchingOption = packagingOptions.find((option: any) => option[field] === value);
-        return matchingOption ? matchingOption._id : undefined;
-      };
-
+        if (!value) return undefined
+        const matchingOption = packagingOptions.find((option: any) => option[field] === value)
+        return matchingOption ? matchingOption._id : undefined
+      }
+      
+      // Find paper GSM option ID by value
+      const findPaperGsmId = (value: string) => {
+        if (!value) return undefined
+        const matchingOption = gsmByDeckal.find((option: any) => option.value === value)
+        return matchingOption ? matchingOption._id : undefined
+      }
+      
+      console.log("DEBUG : handleQpSubmit : qpFormData.paperLength:", qpFormData.paperLength);
       const orderData = {
         isQp: true,
         companyName: qpFormData.companyName,
@@ -335,6 +338,10 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         length: findOptionId('length', qpFormData.length),
         width: findOptionId('width', qpFormData.width),
         height: findOptionId('height', qpFormData.height),
+        paperLength: qpFormData.paperLength,
+
+        paperWidth: qpFormData.paperWidth,
+        paperHeight: qpFormData.paperHeight,
         gsm: qpFormData.gsm || undefined,
         deckal: qpFormData.deckal || undefined,
         deckalCalculation: qpFormData.deckalCalculation || undefined,
@@ -352,9 +359,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         kantanDeckal: qpFormData.kantanDeckal || undefined,
         salesRemark: qpFormData.salesRemark || undefined,
       }
-
       await dispatch(createQpOrderThunk(orderData)).unwrap()
-
       if (refreshData) refreshData()
       resetForm()
       onClose()
@@ -365,7 +370,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       setIsSubmitting(false)
     }
   }
-
+  
   const resetForm = () => {
     setSakshiFormData({
       companyName: "",
@@ -397,6 +402,9 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       length: "",
       width: "",
       height: "",
+      paperWidth: "",
+      paperLength: "",
+      paperHeight: "",
       gsm: "",
       deckal: "",
       deckalCalculation: "",
@@ -422,22 +430,16 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       fileUploadRef.current.clearSelectedFiles()
     }
   }
-
+  
   const handleClose = () => {
     resetForm()
     onClose()
   }
-
-  const buildUniqueOptions = (data: any[], key: string) => {
-    if (!data?.length) return []
-    const uniqueValues = [...new Set(data.map((item) => item[key]))]
-    return uniqueValues.map((val) => ({ value: val, label: String(val) }))
-  }
-
+  
   const getSelectedOption = (value: string, options: OptionType[]) => {
     return options.find((option) => option.value === value) || null
   }
-
+  
   // Helper functions to get unique values for dropdowns with dynamic filtering
   const getUniqueNameOptions = () => {
     const uniqueNames = [...new Set(packagingOptions.map((item: any) => item.name))].sort()
@@ -446,13 +448,10 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       label: name
     }))
   }
-
+  
   const getUniquePlyOptions = () => {
     const filteredOptions = packagingOptions.filter((item: any) =>
-      (!qpFormData.name || item.name === qpFormData.name) &&
-      (!qpFormData.length || item.length === qpFormData.length) &&
-      (!qpFormData.width || item.width === qpFormData.width) &&
-      (!qpFormData.height || item.height === qpFormData.height)
+      (!qpFormData.name || item.name === qpFormData.name)
     )
     const uniquePlies = [...new Set(filteredOptions.map((item: any) => item.ply))].sort()
     return uniquePlies.map((ply) => ({
@@ -460,13 +459,11 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       label: `${ply}`
     }))
   }
-
+  
   const getUniqueLengthOptions = () => {
     const filteredOptions = packagingOptions.filter((item: any) =>
       (!qpFormData.name || item.name === qpFormData.name) &&
-      (!qpFormData.ply || item.ply === qpFormData.ply) &&
-      (!qpFormData.width || item.width === qpFormData.width) &&
-      (!qpFormData.height || item.height === qpFormData.height)
+      (!qpFormData.ply || item.ply === qpFormData.ply)
     )
     const uniqueLengths = [...new Set(filteredOptions.map((item: any) => item.length))].sort()
     return uniqueLengths.map((length) => ({
@@ -474,13 +471,12 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       label: length
     }))
   }
-
+  
   const getUniqueWidthOptions = () => {
     const filteredOptions = packagingOptions.filter((item: any) =>
       (!qpFormData.name || item.name === qpFormData.name) &&
       (!qpFormData.ply || item.ply === qpFormData.ply) &&
-      (!qpFormData.length || item.length === qpFormData.length) &&
-      (!qpFormData.height || item.height === qpFormData.height)
+      (!qpFormData.length || item.length === qpFormData.length)
     )
     const uniqueWidths = [...new Set(filteredOptions.map((item: any) => item.width))].sort()
     return uniqueWidths.map((width) => ({
@@ -488,7 +484,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       label: width
     }))
   }
-
+  
   const getUniqueHeightOptions = () => {
     const filteredOptions = packagingOptions.filter((item: any) =>
       (!qpFormData.name || item.name === qpFormData.name) &&
@@ -502,7 +498,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       label: height
     }))
   }
-
+ 
   const renderSakshiForm = () => (
     <>
       <Stack direction="row" spacing={2} mb={2}>
@@ -533,7 +529,6 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
           }}
         />
       </Stack>
-
       <Stack direction="row" spacing={2} mb={2}>
         <ThemeSelect
           label="Item Name"
@@ -588,7 +583,6 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
           required
         />
       </Stack>
-
       <Stack direction="row" spacing={2} mb={2}>
         <Box sx={{ width: "100%" }}>
           <ThemeInput
@@ -662,7 +656,6 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
           </Select>
         </FormControl>
       </Stack>
-
       {sakshiFormData.number === 'Yes' ? (
         <Stack direction="row" spacing={2}>
           <ThemeInput
@@ -681,7 +674,6 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
           />
         </Stack>
       ) : null}
-
       <ThemeInput
         labelName="Remarks"
         placeholder="Enter Remarks"
@@ -690,7 +682,6 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         onChange={(e) => handleSakshiChange("remarks", e.target.value)}
         sx={{ mb: 2 }}
       />
-
       <Box sx={{ mb: 2 }}>
         <FileUpload
           ref={fileUploadRef}
@@ -709,228 +700,304 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       </Box>
     </>
   )
-
-  const renderQpForm = () => (
-    <>
-      <Stack direction="row" spacing={2} mb={2}>
-        <ThemeSelect
-          label="Item Name"
-          options={getUniqueNameOptions()}
-          value={getSelectedOption(qpFormData.name, getUniqueNameOptions())}
-          onChange={(_, val: any) => handleQpChange("name", val?.value || "")}
-          name="name"
-        />
-        <ThemeSelect
-          label="Ply"
-          options={getUniquePlyOptions()}
-          value={getSelectedOption(qpFormData.ply, getUniquePlyOptions())}
-          onChange={(_, val: any) => handleQpChange("ply", val?.value || "")}
-          name="ply"
-        />
-        <ThemeSelect
-          label="Sheet Length"
-          options={getUniqueLengthOptions()}
-          value={getSelectedOption(qpFormData.length, getUniqueLengthOptions())}
-          onChange={(_, val: any) => handleQpChange("length", val?.value || "")}
-          name="length"
-        />
-        <ThemeSelect
-          label="Sheet Width"
-          options={getUniqueWidthOptions()}
-          value={getSelectedOption(qpFormData.width, getUniqueWidthOptions())}
-          onChange={(_, val: any) => handleQpChange("width", val?.value || "")}
-          name="width"
-        />
-        <ThemeSelect
-          label="Sheet Height"
-          options={getUniqueHeightOptions()}
-          value={getSelectedOption(qpFormData.height, getUniqueHeightOptions())}
-          onChange={(_, val: any) => handleQpChange("height", val?.value || "")}
-          name="height"
-        />
-      </Stack>
-      <Stack direction="row" spacing={2} mb={2}>
+  
+  const renderQpForm = () => {
+    const handleItemNameChange = (_, val: any) => {
+      handleQpChange("name", val?.value || "");
+      handleQpChange("ply", "");
+      handleQpChange("length", "");
+      handleQpChange("width", "");
+      handleQpChange("height", "");
+    };
+    
+    const handlePlyChange = (_, val: any) => {
+      handleQpChange("ply", val?.value || "");
+      handleQpChange("length", "");
+      handleQpChange("width", "");
+      handleQpChange("height", "");
+    };
+    
+    // Handle paper dimension changes with independent selection
+    const handlePaperLengthChange = (_, val: any) => {
+      handleQpChange("paperLength", val?.value || "");
+    };
+    
+    const handlePaperWidthChange = (_, val: any) => {
+      handleQpChange("paperWidth", val?.value || "");
+    };
+    
+    const handlePaperHeightChange = (_, val: any) => {
+      handleQpChange("paperHeight", val?.value || "");
+    };
+    
+    return (
+      <>
+        <Stack direction="row" spacing={2} mb={2}>
+          <ThemeSelect
+            label="Item Name"
+            options={getUniqueNameOptions()}
+            value={getSelectedOption(qpFormData.name, getUniqueNameOptions())}
+            onChange={handleItemNameChange}
+            name="name"
+          />
+          <ThemeSelect
+            label="Ply"
+            options={getUniquePlyOptions()}
+            value={getSelectedOption(qpFormData.ply, getUniquePlyOptions())}
+            onChange={handlePlyChange}
+            name="ply"
+          />
+          <ThemeSelect
+            label="Sheet Length"
+            options={getUniqueLengthOptions()}
+            value={getSelectedOption(qpFormData.length, getUniqueLengthOptions())}
+            onChange={(_, val: any) => handleQpChange("length", val?.value || "")}
+            name="length"
+          />
+          <ThemeSelect
+            label="Sheet Width"
+            options={getUniqueWidthOptions()}
+            value={getSelectedOption(qpFormData.width, getUniqueWidthOptions())}
+            onChange={(_, val: any) => handleQpChange("width", val?.value || "")}
+            name="width"
+          />
+          <ThemeSelect
+            label="Sheet Height"
+            options={getUniqueHeightOptions()}
+            value={getSelectedOption(qpFormData.height, getUniqueHeightOptions())}
+            onChange={(_, val: any) => handleQpChange("height", val?.value || "")}
+            name="height"
+          />
+        </Stack>
+        <Stack direction="row" spacing={2} mb={2}>
+          <ThemeInput
+            labelName="Deckal Calculation"
+            placeholder="Deckal Calculation"
+            fullWidth
+            value={qpFormData.deckalCalculation}
+            disabled
+          />
+          <ThemeInput
+            labelName="Deckal"
+            placeholder="Deckal"
+            fullWidth
+            value={qpFormData.deckal}
+            onChange={handleDeckalChange}
+          />
+        </Stack>
+        <Stack direction="row" spacing={2} mb={2}>
+          <ThemeSelect
+            label="Paper Length"
+            options={paperDimensionOptions.length}
+            value={getSelectedOption(qpFormData.paperLength, paperDimensionOptions.length)}
+            onChange={handlePaperLengthChange}
+            name="paperLength"
+          />
+          <ThemeSelect
+            label="Paper Width"
+            options={paperDimensionOptions.width}
+            value={getSelectedOption(qpFormData.paperWidth, paperDimensionOptions.width)}
+            onChange={handlePaperWidthChange}
+            name="paperWidth"
+          />
+          <ThemeSelect
+            label="Paper Height"
+            options={paperDimensionOptions.height}
+            value={getSelectedOption(qpFormData.paperHeight, paperDimensionOptions.height)}
+            onChange={handlePaperHeightChange}
+            name="paperHeight"
+          />
+        </Stack>
+        <Stack direction="row" spacing={2} mb={2}>
+          <ThemeInput
+            labelName="No of Pieces"
+            placeholder="No of Pieces"
+            fullWidth
+            value={qpFormData.noOfPieces}
+            onChange={(e) => {
+              const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+              handleQpChange("noOfPieces", numericValue)
+            }}
+          />
+          <ThemeInput
+            labelName="Rate Per Piece"
+            placeholder="Rate Per Piece"
+            fullWidth
+            value={qpFormData.ratePerPiece}
+            onChange={(e) => {
+              const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
+              handleQpChange("ratePerPiece", numericValue)
+            }}
+          />
+          <ThemeInput
+            labelName="Amount"
+            placeholder="Amount"
+            fullWidth
+            value={qpFormData.amount}
+            disabled
+          />
+        </Stack>
+        <Stack direction="row" spacing={2} mb={2}>
+          <ThemeInput
+            labelName="GSM"
+            placeholder="GSM"
+            fullWidth
+            value={qpFormData.gsm}
+            disabled
+          />
+          <ThemeInput
+            labelName="KG Per Unit"
+            placeholder="KG Per Unit"
+            fullWidth
+            value={qpFormData.kgPerUnit}
+            disabled
+          />
+          <ThemeInput
+            labelName="Total KG"
+            placeholder="Total KG"
+            fullWidth
+            value={qpFormData.totalKg}
+            disabled
+          />
+        </Stack>
+        <Stack direction="row" spacing={2} mb={2}>
+          <ThemeSelect
+            label="Kantan"
+            options={kantans.map((item: any) => ({ value: item._id, label: item.kantanName }))}
+            value={kantans
+              .map((item: any) => ({ value: item._id, label: item.kantanName }))
+              .find((item) => item.value === qpFormData.kantan) || null}
+            onChange={(_, val: any) => handleQpChange("kantan", val?.value || null)}
+            name="kantan"
+          />
+          <ThemeInput
+            labelName="Kantan Per Unit"
+            placeholder="Kantan Per Unit"
+            fullWidth
+            value={qpFormData.kantanPerUnit}
+            disabled
+          />
+          <ThemeInput
+            labelName="Total Kantan"
+            placeholder="Total Kantan"
+            fullWidth
+            value={
+              qpFormData.totalKantan.reel && qpFormData.totalKantan.inch
+                ? `${qpFormData.totalKantan.reel} reel ${qpFormData.totalKantan.inch} inch`
+                : ""
+            }
+            disabled
+          />
+          <ThemeInput
+            labelName="Kantan Deckal"
+            placeholder="Kantan Deckal"
+            fullWidth
+            value={qpFormData.kantanDeckal}
+            onChange={(e) => handleQpChange("kantanDeckal", e.target.value)}
+          />
+        </Stack>
         <ThemeInput
-          labelName="No of Pieces"
-          placeholder="No of Pieces"
+          labelName="Sales Remarks"
+          placeholder="Sales Remarks"
           fullWidth
-          value={qpFormData.noOfPieces}
-          onChange={(e) => {
-            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
-            handleQpChange("noOfPieces", numericValue)
-          }}
+          value={qpFormData.salesRemark}
+          onChange={(e) => handleQpChange("salesRemark", e.target.value)}
+          sx={{ mb: 2 }}
+          multiline
+          rows={3}
         />
-        <ThemeInput
-          labelName="Rate Per Piece"
-          placeholder="Rate Per Piece"
-          fullWidth
-          value={qpFormData.ratePerPiece}
-          onChange={(e) => {
-            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6)
-            handleQpChange("ratePerPiece", numericValue)
-          }}
-        />
-        <ThemeInput
-          labelName="Amount"
-          placeholder="Amount"
-          fullWidth
-          value={qpFormData.amount}
-          disabled
-        />
-      </Stack>
-      <Stack direction="row" spacing={2} mb={2}>
-        <ThemeInput
-          labelName="Deckal Calculation"
-          placeholder="Deckal Calculation"
-          fullWidth
-          value={qpFormData.deckalCalculation}
-          disabled
-        />
-        <ThemeInput
-          labelName="Deckal"
-          placeholder="Deckal"
-          fullWidth
-          value={qpFormData.deckal}
-          onChange={handleDeckalChange}
-        />
-        <ThemeInput
-          labelName="GSM"
-          placeholder="GSM"
-          fullWidth
-          value={qpFormData.gsm}
-          disabled
-        />
-        <ThemeInput
-          labelName="KG Per Unit"
-          placeholder="KG Per Unit"
-          fullWidth
-          value={qpFormData.kgPerUnit}
-          disabled
-        />
-        <ThemeInput
-          labelName="Total KG"
-          placeholder="Total KG"
-          fullWidth
-          value={qpFormData.totalKg}
-          disabled
-        />
-      </Stack>
-
-      <Stack direction="row" spacing={2} mb={2}>
-
-        <ThemeSelect
-          label="Kantan"
-          options={kantans.map((item: any) => ({ value: item._id, label: item.kantanName }))}
-          value={kantans
-            .map((item: any) => ({ value: item._id, label: item.kantanName }))
-            .find((item) => item.value === qpFormData.kantan) || null}
-          onChange={(_, val: any) => handleQpChange("kantan", val?.value || null)}
-          name="kantan"
-        />
-        <ThemeInput
-          labelName="Kantan Per Unit"
-          placeholder="Kantan Per Unit"
-          fullWidth
-          value={qpFormData.kantanPerUnit}
-          disabled
-        />
-
-        <ThemeInput
-          labelName="Total Kantan"
-          placeholder="Total Kantan"
-          fullWidth
-          value={
-            qpFormData.totalKantan.reel && qpFormData.totalKantan.inch
-              ? `${qpFormData.totalKantan.reel} reel ${qpFormData.totalKantan.inch} inch`
-              : ""
-          }
-          disabled
-        />
-        <ThemeInput
-          labelName="Kantan Deckal"
-          placeholder="Kantan Deckal"
-          fullWidth
-          value={qpFormData.kantanDeckal}
-          onChange={(e) => handleQpChange("kantanDeckal", e.target.value)}
-        />
-      </Stack>
-      <ThemeInput
-        labelName="Sales Remarks"
-        placeholder="Sales Remarks"
-        fullWidth
-        value={qpFormData.salesRemark}
-        onChange={(e) => handleQpChange("salesRemark", e.target.value)}
-        sx={{ mb: 2 }}
-        multiline
-        rows={3}
-      />
-    </>
-  )
-
+      </>
+    )
+  }
+  
   // Automatic calculations for Quality Packaging form
   useEffect(() => {
-    const { length, width, height, ply, noOfPieces, ratePerPiece, deckal } = qpFormData
-
-    // Find the actual packaging option ID based on selected values
+    const { length, width, height, ply, noOfPieces, ratePerPiece, deckal, paperHeight, paperLength, paperWidth } = qpFormData
+    
+    // Find the actual packaging option based on selected values
     const selectedPackagingOption = packagingOptions.find((item: any) =>
       item.name === qpFormData.name &&
       item.ply === qpFormData.ply &&
       item.length === qpFormData.length &&
       item.width === qpFormData.width &&
       item.height === qpFormData.height
-    );
-
+    )
+    
+    // Find the actual paper GSM option based on selected values
+    const selectedPaperGSM = paperGSM.find((item: any) =>
+      item.value === qpFormData.paperLength &&
+      item.value === qpFormData.paperWidth &&
+      item.value === qpFormData.paperHeight
+    )
+    
     // Extract numeric values for calculation (prioritize actual option values if found)
-    const calcLength = selectedPackagingOption?.length ? Number(selectedPackagingOption.length) : Number(length);
-    const calcWidth = selectedPackagingOption?.width ? Number(selectedPackagingOption.width) : Number(width);
-    const calcHeight = selectedPackagingOption?.height ? Number(selectedPackagingOption.height) : Number(height);
-    const calcPly = selectedPackagingOption?.ply ? Number(selectedPackagingOption.ply) : Number(ply);
-
+    const calcLength = selectedPackagingOption?.length ? Number(selectedPackagingOption.length) : Number(length) || 0
+    const calcWidth = selectedPackagingOption?.width ? Number(selectedPackagingOption.width) : Number(width) || 0
+    const calcHeight = selectedPackagingOption?.height ? Number(selectedPackagingOption.height) : Number(height) || 0
+    const calcPly = selectedPackagingOption?.ply ? Number(selectedPackagingOption.ply) : Number(ply) || 0
+    
+    // For paper dimensions, use the selected values directly
+    const calcPaperHeight = Number(paperHeight) || 0
+    const calcPaperLength = Number(paperLength) || 0
+    const calcPaperWidth = Number(paperWidth) || 0
+    
     // Deckal Calculation
-    const deckalValue = calculateDeckal(calcWidth, calcHeight);
-    const formattedDeckalValue = deckalValue.toFixed(2);
-    handleQpChange("deckalCalculation", formattedDeckalValue);
-
-    // Set deckal to deckalCalculation value only if not manually edited
-    if (!isDeckalManual) {
-      handleQpChange("deckal", formattedDeckalValue);
+    if (calcWidth && calcHeight) {
+      const deckalValue = calculateDeckal(calcWidth, calcHeight)
+      const formattedDeckalValue = deckalValue.toFixed(2)
+      handleQpChange("deckalCalculation", formattedDeckalValue)
+      if (!isDeckalManual) {
+        handleQpChange("deckal", formattedDeckalValue)
+      }
+    } else {
+      handleQpChange("deckalCalculation", "")
+      if (!isDeckalManual) {
+        handleQpChange("deckal", "")
+      }
     }
-
+    
     // GSM Calculation
-    const gsmValue = calculateGSM(
-      calcPly,
-      calcLength,
-      calcWidth,
-      calcHeight
-    );
-    handleQpChange("gsm", gsmValue.toFixed(2));
-
+    if (calcPly && calcPaperLength && calcPaperWidth && calcPaperHeight) {
+      const gsmValue = calculateGSM(calcPly, calcPaperLength, calcPaperWidth, calcPaperHeight)
+      handleQpChange("gsm", gsmValue.toFixed(2))
+    } else {
+      handleQpChange("gsm", "")
+    }
+    
     // KG Per Piece
-    const effectiveDeckal = Number(deckal || formattedDeckalValue);
-    const kgPerPiece = calculateKgPerPiece(
-      calcLength,
-      calcWidth,
-      effectiveDeckal,
-      Number(gsmValue)
-    );
-    handleQpChange("kgPerUnit", kgPerPiece.toFixed(4));
-
+    const effectiveDeckal = Number(deckal) || Number(qpFormData.deckalCalculation) || 0
+    if (calcLength && calcWidth && effectiveDeckal && calcPly && calcPaperLength && calcPaperWidth && calcPaperHeight) {
+      const kgPerPiece = calculateKgPerPiece(calcLength, calcWidth, effectiveDeckal, Number(qpFormData.gsm))
+      handleQpChange("kgPerUnit", kgPerPiece.toFixed(4))
+    } else {
+      handleQpChange("kgPerUnit", "")
+    }
+    
     // Total KG
-    const totalKg = calculateTotalKg(Number(noOfPieces), kgPerPiece);
-    handleQpChange("totalKg", totalKg.toFixed(2));
-
+    if (Number(noOfPieces) && qpFormData.kgPerUnit) {
+      const totalKg = calculateTotalKg(Number(noOfPieces), Number(qpFormData.kgPerUnit))
+      handleQpChange("totalKg", totalKg.toFixed(2))
+    } else {
+      handleQpChange("totalKg", "")
+    }
+    
     // Amount
-    const amount = calculateTotalAmount(Number(noOfPieces), Number(ratePerPiece));
-    handleQpChange("amount", amount.toFixed(2));
-
-    const { kantanPerUnit, reel, inch } = calculateKantan(
-      Number(length),
-      Number(width),
-      Number(noOfPieces)
-    );
-
-    handleQpChange("kantanPerUnit", kantanPerUnit.toString());
-    handleQpChange("totalKantan", { reel: reel.toString(), inch: inch.toString() });
+    if (Number(noOfPieces) && Number(ratePerPiece)) {
+      const amount = calculateTotalAmount(Number(noOfPieces), Number(ratePerPiece))
+      handleQpChange("amount", amount.toFixed(2))
+    } else {
+      handleQpChange("amount", "")
+    }
+    
+    // Kantan Calculation
+    if (calcLength && calcWidth && Number(noOfPieces)) {
+      const { kantanPerUnit, reel, inch } = calculateKantan(calcLength, calcWidth, Number(noOfPieces))
+      handleQpChange("kantanPerUnit", kantanPerUnit.toString())
+      handleQpChange("totalKantan", { reel: reel.toString(), inch: inch.toString() })
+    } else {
+      handleQpChange("kantanPerUnit", "")
+      handleQpChange("totalKantan", { reel: "", inch: "" })
+    }
   }, [
     qpFormData.length,
     qpFormData.width,
@@ -940,10 +1007,14 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     qpFormData.noOfPieces,
     qpFormData.ratePerPiece,
     qpFormData.deckal,
+    qpFormData.paperHeight,
+    qpFormData.paperLength,
+    qpFormData.paperWidth,
     isDeckalManual,
-    packagingOptions
+    packagingOptions,
+    paperGSM
   ])
-
+  
   return (
     <CustomDialog open={open} onClose={handleClose} maxWidth="md" title="Place New Order">
       <Box sx={{ p: 2, background: "#fff", borderRadius: 2 }}>
@@ -959,16 +1030,13 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
             onPartyChange={handlePartyChange}
           />
         </Box>
-
         {isSakshiCreation && renderSakshiForm()}
         {isQualityPackaging && renderQpForm()}
-
         {!selectedCompany && (
           <Typography variant="body1" color="textSecondary" textAlign="center" py={4}>
             Please select a company to show the appropriate form
           </Typography>
         )}
-
         <ThemeButton
           onClick={handleSubmit}
           disabled={isSubmitting || accountLoading || productLoading || orderLoading || !selectedCompany}
@@ -1006,5 +1074,4 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     </CustomDialog>
   )
 }
-
 export default AddOrderDialog

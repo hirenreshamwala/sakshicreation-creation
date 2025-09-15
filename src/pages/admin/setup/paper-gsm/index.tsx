@@ -22,9 +22,8 @@ import { PaperGSM } from "@/services/paperGSM.service";
 const columns = [
   { id: "id", label: "ID" },
   { id: "name", label: "Name" },
-  { id: "length", label: "Length" },
-  { id: "width", label: "Width" },
-  { id: "height", label: "Height" },
+  { id: "deckal", label: "Deckal" },
+  { id: "gsm", label: "GSM" },
   { id: "options", label: "Options" },
 ];
 
@@ -39,9 +38,8 @@ const PaperGSMPage = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
-    length: "",
-    width: "",
-    height: "",
+    deckal: "",
+    gsm: "",
   });
   const [file, setFile] = useState<File | null>(null);
 
@@ -59,13 +57,12 @@ const PaperGSMPage = () => {
       setEditId(option._id);
       setForm({
         name: option.name || "",
-        length: option.length || "",
-        width: option.width || "",
-        height: option.height || "",
+        deckal: option.deckal || "",
+        gsm:  option.gsm || "",
       });
     } else {
       setEditId(null);
-      setForm({ name: "", length: "", width: "", height: "" });
+      setForm({ name: "", deckal: "", gsm: "" });
     }
     setDialogOpen(true);
   };
@@ -76,7 +73,7 @@ const PaperGSMPage = () => {
   };
 
   const handleSave = () => {
-    if (!form.length.trim() || !form.width.trim() || !form.height.trim()) {
+    if (!form.deckal.trim() || !form.gsm.trim()) {
       toast.error("All fields are required");
       return;
     }
@@ -140,7 +137,7 @@ const PaperGSMPage = () => {
   };
 
   const handleDownloadSample = () => {
-    const csvContent = "name,length,width,height\nSample paper,3,10,20\n";
+    const csvContent = "name,deckal,gsm\nHAVI,24,100\n";
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -204,9 +201,8 @@ const PaperGSMPage = () => {
           <>
             <TableCell>{idx + 1}</TableCell>
             <TableCell>{row?.name || ""}</TableCell>
-            <TableCell>{row?.length || ""}</TableCell>
-            <TableCell>{row?.width || ""}</TableCell>
-            <TableCell>{row?.height || ""}</TableCell>
+            <TableCell>{row?.deckal || ""}</TableCell>
+            <TableCell>{row?.gsm || ""}</TableCell>
             <TableCell>
               <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                 <Edit />
@@ -243,25 +239,17 @@ const PaperGSMPage = () => {
           {/* Row for Length + Width + Height */}
           <Box display="flex" gap={2}>
             <Input
-              label="LENGTH"
-              name="length"
-              value={form.length}
+              label="Deckal"
+              name="deckal"
+              value={form.deckal}
               onChange={handleFormChange}
               fullWidth
               required
             />
             <Input
-              label="WIDTH"
-              name="width"
-              value={form.width}
-              onChange={handleFormChange}
-              fullWidth
-              required
-            />
-            <Input
-              label="HEIGHT"
-              name="height"
-              value={form.height}
+              label="GSM"
+              name="gsm"
+              value={form.gsm}
               onChange={handleFormChange}
               fullWidth
               required

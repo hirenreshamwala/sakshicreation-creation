@@ -19,6 +19,7 @@ const statusOptions = [
   "Order",
   "In Progress",
   "Canceled",
+  "Completed",
 ]
 
 export const StatusCell = ({ row }: { row: any }) => {

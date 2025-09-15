@@ -263,6 +263,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
                 "Order",
                 "In Progress",
                 "Canceled",
+                "Completed",
               ].map((item) => (
                 <MenuItem key={item} value={item} sx={{ textTransform: "capitalize" }}>
                   {item}

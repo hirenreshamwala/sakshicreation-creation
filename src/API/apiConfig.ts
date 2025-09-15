@@ -184,6 +184,9 @@ const Endpoint = {
   DELETE_PAPER_GSM: `${BaseURL}/api/paperGSM/delete`,
   GET_ALL_PAPER_GSM: `${BaseURL}/api/paperGSM/getall`,
   BULK_UPLOAD_PAPER_GSM: `${BaseURL}/api/paperGSM/bulk`,
+  GET_GSM_BY_DECKAL: `${BaseURL}/api/paperGSM/getbydeckal`,
+
+  
 
   CREATE_MARKET: `${BaseURL}/api/market/create`,
   GET_ALL_MARKETS: `${BaseURL}/api/market/getall`,

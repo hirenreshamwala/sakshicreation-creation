@@ -46,7 +46,7 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
   const [partyOptions, setPartyOptions] = useState<{ label: string; value: string }[]>([])
   const [defaultSet, setDefaultSet] = useState(() => !!value || !!partyName)
 
-  console.log(parties,'parties')
+  // console.log(parties,'parties')
 
 
   // Fetch companies on component mount
