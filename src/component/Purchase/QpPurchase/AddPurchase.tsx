@@ -5,14 +5,14 @@ import 'react-toastify/dist/ReactToastify.css';
 import ThemeInput from '@/component/common_component/themeinput';
 import ThemeSelect from '@/component/common_component/themeselect';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { getAllMaterialsThunk } from '@/store/slices/materialSlice';
-import { getCompaniesThunk, getRolesThunk, getStaffByRoleThunk, createPurchaseThunk, getPurchaseByIdThunk, updatePurchaseThunk } from '@/store/slices/purchaseSlice';
+import { getCompaniesThunk, getRolesThunk, getStaffByRoleThunk } from '@/store/slices/purchaseSlice';
 import { getAllVendorsThunk } from '@/store/slices/vendorSlice';
 import Swal from 'sweetalert2';
 import { useRouter } from 'next/router';
 import { getAllKantansThunk } from '@/store/slices/kantanSlice';
 import { StaticCompanyOptions } from '@/constants';
-import { createQpPurchaseThunk } from '@/store/slices/qpPurchaseSlice';
+import { createQpPurchaseThunk, getQpPurchaseByIdThunk, updateQpPurchaseThunk } from '@/store/slices/qpPurchaseSlice';
+import { getAllPaperGSMThunk } from '@/store/slices/paperGSMSlice';
 
 interface NewPurchaseProps {
   isEditMode?: boolean;
@@ -25,99 +25,149 @@ interface Option {
 }
 
 const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchaseId }) => {
-  const dispatch = useAppDispatch();
   const router = useRouter();
-  const { materials } = useAppSelector(state => state.materials);
-  const { companies, roles, staff, singlePurchase, loading, error } = useAppSelector(state => state.purchase);
+  const dispatch = useAppDispatch();
   const { vendors } = useAppSelector(state => state.vendors);
   const { kantans } = useAppSelector(state => state.kantans);
-
+  const { paperGSM } = useAppSelector(state => state.paperGSMs);
+  const { companies, roles, staff, singlePurchase, error } = useAppSelector(state => state.purchase);
+  
+  // State for individual options
+  const [paperOptions, setPaperOptions] = useState<Option[]>([]);
+  const [deckalOptions, setDeckalOptions] = useState<Option[]>([]);
+  const [gsmOptions, setGsmOptions] = useState<Option[]>([]);
+  const [vendorOptions, setVendorOptions] = useState<Option[]>([]);
+  
   const [formData, setFormData] = useState({
     vendorName: '',
     billNumber: '',
-    material: '',
-    materialName: '',
-    materialGSM: '',
-    materialSize: '',
-    quantity: '',
-    ratePerSheet: '',
-    kg: '',
     companyName: '',
     for: '',
     forCompany: '',
-    type: '', // New field for type selection
-    kantan: '' // New field for kantan selection
+    type: '',
+    kantan: '',
+    paperName: '',
+    deckal: '',
+    gsm: '',
+    category: "",
+    kg: '',
+    reel: '',
   });
 
-  const [vendorOptions, setVendorOptions] = useState<Option[]>([]);
+  useEffect(() => {
+    if (!paperGSM.length) dispatch(getAllPaperGSMThunk());
+  }, [dispatch]);
 
   // Fetch data on component mount
   useEffect(() => {
-    dispatch(getAllMaterialsThunk());
     dispatch(getCompaniesThunk());
     dispatch(getRolesThunk());
     dispatch(getAllVendorsThunk());
-    dispatch(getAllKantansThunk()); // Fetch kantans
+    dispatch(getAllKantansThunk());
 
-    if (isEditMode && purchaseId) {
-      dispatch(getPurchaseByIdThunk(purchaseId));
-    }
+    if (isEditMode && purchaseId) dispatch(getQpPurchaseByIdThunk(purchaseId));
   }, [dispatch, isEditMode, purchaseId]);
 
-  // Type options
   const typeOptions = [
     { value: 'kantan', label: 'Kantan' },
     { value: 'paper', label: 'Paper' },
     { value: 'glue', label: 'Glue' },
-    { value: 'wire', label: 'Wire' }
+    { value: 'wire', label: 'Wire' },
   ];
 
-  // Get Quality Packaging company
   const qualityPackagingCompany = companies.find(company =>
     company.companyName?.toLowerCase().includes('quality packaging')
   );
 
-  // Company options - only show Quality Packaging
-  const companyOptions = qualityPackagingCompany ? [
-    {
-      value: qualityPackagingCompany._id,
-      label: qualityPackagingCompany.companyName
-    }
-  ] : [];
+  const companyOptions = qualityPackagingCompany
+    ? [{ value: qualityPackagingCompany._id, label: qualityPackagingCompany.companyName }]
+    : [];
 
-  // Kantan options
   const kantanOptions = kantans.map(kantan => ({
     value: kantan._id,
-    label: kantan.kantanName
+    label: kantan.kantanName,
   }));
 
-  // Role and staff options
   const allowedRoleNames = ['Factory Manager', 'Godown Manager'];
   const roleOptions = roles
     .filter(role => allowedRoleNames.includes(role.roleName))
     .map(role => ({
       value: role._id,
-      label: role.roleName
+      label: role.roleName,
     }));
 
   const staffOptions = staff.map(staffMember => ({
     value: staffMember._id,
-    label: `${staffMember.firstName} ${staffMember.lastName}`
+    label: `${staffMember.firstName} ${staffMember.lastName}`,
   }));
 
-  console.log(vendors, 'vendors')
-  // Vendor options
   useEffect(() => {
     if (vendors.length > 0) {
-      const options = vendors.filter((item) => item.companyName.companyName === StaticCompanyOptions[1]).map(vendor => ({
-        value: vendor._id,
-        label: vendor.name
-      }));
+      const options = vendors
+        .filter(item => item.companyName.companyName === StaticCompanyOptions[1])
+        .map(vendor => ({
+          value: vendor._id,
+          label: vendor.name,
+        }));
       setVendorOptions(options);
     }
   }, [vendors]);
 
-  // Error handling
+  // Create paper options without blank values
+  useEffect(() => {
+    if (paperGSM.length > 0) {
+      const options = paperGSM
+        .filter(paper => paper.name && paper.name.trim() !== '') // Filter out blank names
+        .map(paper => ({
+          value: paper._id,
+          label: paper.name,
+        }));
+      setPaperOptions(options);
+    }
+  }, [paperGSM]);
+
+  // Create individual deckal options
+ // Deckal options
+useEffect(() => {
+  if (paperGSM.length > 0) {
+    const uniqueDeckals = Array.from(
+      new Map(
+        paperGSM
+          .filter(paper => paper.deckal && paper.deckal.trim() !== '')
+          .map(paper => [paper.deckal, paper]) // keep unique by deckal
+      ).values()
+    );
+
+    const options = uniqueDeckals.map(paper => ({
+      value: paper._id,   // <-- now using paper._id
+      label: paper.deckal,
+    }));
+
+    setDeckalOptions(options);
+  }
+}, [paperGSM]);
+
+// GSM options
+useEffect(() => {
+  if (paperGSM.length > 0) {
+    const uniqueGsms = Array.from(
+      new Map(
+        paperGSM
+          .filter(paper => paper.gsm && paper.gsm.trim() !== '')
+          .map(paper => [paper.gsm, paper]) // keep unique by gsm
+      ).values()
+    );
+
+    const options = uniqueGsms.map(paper => ({
+      value: paper._id,   // <-- now using paper._id
+      label: paper.gsm,
+    }));
+
+    setGsmOptions(options);
+  }
+}, [paperGSM]);
+
+
   useEffect(() => {
     if (error) {
       toast.error(error);
@@ -125,50 +175,41 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     }
   }, [error, dispatch]);
 
-  // Set form data for edit mode
   useEffect(() => {
     if (isEditMode && singlePurchase) {
-      const material = materials.find(m => m._id === singlePurchase.material?._id);
       setFormData({
         vendorName: (typeof singlePurchase.vendorName === 'object' ? singlePurchase.vendorName?._id : singlePurchase.vendorName) || '',
         billNumber: singlePurchase.billNumber || '',
-        material: singlePurchase.material?._id || '',
-        materialName: material?.materialName || '',
-        materialGSM: material?.materialGSM.toString() || '',
-        materialSize: material?.materialSize || '',
-        quantity: singlePurchase.quantity.toString() || '',
-        ratePerSheet: singlePurchase.ratePerSheet.toString() || '',
-        kg: singlePurchase.kg.toString() || '',
         companyName: singlePurchase.companyName?._id || '',
         for: singlePurchase.for?._id || '',
         forCompany: singlePurchase.forCompany?._id || '',
         type: singlePurchase.type || '',
-        kantan: singlePurchase.kantan || ''
+        kantan: singlePurchase.kantan?._id || '',
+        paperName: singlePurchase.paperName?._id || '',
+        deckal: singlePurchase.deckal || '',
+        gsm: singlePurchase.gsm || '',
+        kg: singlePurchase.kg || '',
+        reel: singlePurchase.reel || '',
+        category: singlePurchase.category || ""
       });
 
       if (singlePurchase.for?._id) {
         dispatch(getStaffByRoleThunk(singlePurchase.for._id));
       }
     }
-  }, [isEditMode, singlePurchase, materials, dispatch]);
+  }, [isEditMode, singlePurchase, dispatch]);
 
-  // Fetch staff when role is selected
   useEffect(() => {
-    if (formData.for) {
-      dispatch(getStaffByRoleThunk(formData.for));
-    } else {
-      dispatch({ type: 'purchases/clearStaff' });
-    }
+    if (formData.for) dispatch(getStaffByRoleThunk(formData.for));
+    else dispatch({ type: 'purchases/clearStaff' });
   }, [formData.for, dispatch]);
 
-  // Auto-select Quality Packaging company
   useEffect(() => {
-    if (qualityPackagingCompany && !formData.companyName) {
+    if (qualityPackagingCompany && !formData.companyName)
       setFormData(prev => ({
         ...prev,
-        companyName: qualityPackagingCompany._id
+        companyName: qualityPackagingCompany._id,
       }));
-    }
   }, [qualityPackagingCompany, formData.companyName]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,33 +217,27 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSelectChange = (name: string, value: string | null) => {
+  const handleSelectChange = (name: string, value: string | null) =>
     setFormData(prev => ({
       ...prev,
       [name]: value || '',
-      ...(name === 'type' ? { kantan: '', kg: '' } : {}) // Clear kantan and kg when type changes
+      ...(name === 'type'
+        ? { kantan: '', kg: '', paperName: '', deckal: '', gsm: '', reel: '' }
+        : {}),
     }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      // Validation
-      const requiredFields = [
-        'vendorName',
-        'billNumber',
-        'companyName',
-        'for',
-        'forCompany',
-        'type'
-      ];
+      const requiredFields = ['vendorName', 'billNumber', 'companyName', 'for', 'forCompany', 'type'];
 
-      // Additional validation based on type
       if (formData.type === 'kantan') {
-        requiredFields.push('kantan');
+        requiredFields.push('kantan', 'reel');
       } else if (formData.type === 'glue' || formData.type === 'wire') {
         requiredFields.push('kg');
+      } else if (formData.type === 'paper') {
+        requiredFields.push('paperName', 'deckal', 'gsm', 'kg');
       }
 
       const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
@@ -214,9 +249,8 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
 
       const purchaseData = {
         ...formData,
-        quantity: formData.type === 'kantan' ? 0 : Number(formData.quantity) || 0,
-        ratePerSheet: formData.type === 'kantan' ? 0 : Number(formData.ratePerSheet) || 0,
-        kg: formData.type === 'glue' || formData.type === 'wire' ? Number(formData.kg) : 0
+        kg: (formData.type === 'paper' || formData.type === 'glue' || formData.type === 'wire') ? Number(formData.kg) : 0,
+        reel: formData.type === 'kantan' ? Number(formData.reel) : 0,
       };
 
       const result = await Swal.fire({
@@ -226,12 +260,12 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         showCancelButton: true,
         confirmButtonColor: '#A409F8',
         cancelButtonColor: '#d33',
-        confirmButtonText: isEditMode ? 'Yes, update it!' : 'Yes, create it!'
+        confirmButtonText: isEditMode ? 'Yes, update it!' : 'Yes, create it!',
       });
 
       if (result.isConfirmed) {
         if (isEditMode && purchaseId) {
-          await dispatch(updatePurchaseThunk({ id: purchaseId, data: purchaseData })).unwrap();
+          await dispatch(updateQpPurchaseThunk({ id: purchaseId, data: purchaseData })).unwrap();
           toast.success('Purchase updated successfully!');
           router.push('/admin/purchase');
         } else {
@@ -241,12 +275,9 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         }
       }
     } catch (error: any) {
+      console.log(error)
       toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'create'} purchase`);
     }
-  };
-
-  const handleCancel = () => {
-    router.push('/admin/purchase');
   };
 
   return (
@@ -280,7 +311,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
             onChange={(e, newValue) => handleSelectChange('companyName', newValue?.value)}
             required
             fullWidth
-            disabled={!!qualityPackagingCompany} // Disable if Quality Packaging is auto-selected
+            disabled={!!qualityPackagingCompany}
           />
         </Stack>
 
@@ -294,19 +325,28 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
             fullWidth
           />
 
-          {/* Show kantan selection when type is kantan */}
           {formData.type === 'kantan' && (
-            <ThemeSelect
-              label="KANTAN"
-              options={kantanOptions}
-              value={kantanOptions.find(opt => opt.value === formData.kantan) || null}
-              onChange={(e, newValue) => handleSelectChange('kantan', newValue?.value)}
-              required
-              fullWidth
-            />
+            <>
+              <ThemeSelect
+                label="KANTAN"
+                options={kantanOptions}
+                value={kantanOptions.find(opt => opt.value === formData.kantan) || null}
+                onChange={(e, newValue) => handleSelectChange('kantan', newValue?.value)}
+                required
+                fullWidth
+              />
+              <ThemeInput
+                labelName="REEL"
+                name="reel"
+                type="number"
+                value={formData.reel}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+            </>
           )}
 
-          {/* Show kg field when type is glue or wire */}
           {(formData.type === 'glue' || formData.type === 'wire') && (
             <ThemeInput
               labelName="KG"
@@ -318,14 +358,69 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
               required
             />
           )}
+
+          {formData.type === 'paper' && (
+            <ThemeSelect
+              label="PAPER TYPE"
+              options={paperOptions}
+              value={paperOptions.find(opt => opt.value === formData.paperName) || null}
+              onChange={(e, newValue) => handleSelectChange('paperName', newValue?.value)}
+              required
+              fullWidth
+            />
+          )}
         </Stack>
+
+        {formData.type === 'paper' && (
+          <>
+            <Stack direction="row" spacing={2} mb={2}>
+              <ThemeSelect
+                label="DECKAL"
+                options={deckalOptions}
+                value={deckalOptions.find(opt => opt.value === formData.deckal) || null}
+                onChange={(e, newValue) => handleSelectChange('deckal', newValue?.value)}
+                required
+                fullWidth
+              />
+
+              <ThemeSelect
+                label="GSM"
+                options={gsmOptions}
+                value={gsmOptions.find(opt => opt.value === formData.gsm) || null}
+                onChange={(e, newValue) => handleSelectChange('gsm', newValue?.value)}
+                required
+                fullWidth
+              />
+              
+              <ThemeInput
+                labelName="KG"
+                name="kg"
+                type="number"
+                value={formData.kg}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+            </Stack>
+          </>
+        )}
 
         <Stack direction="row" spacing={2} mb={2}>
           <ThemeSelect
             label="DELIVER TO"
             options={roleOptions}
             value={roleOptions.find(opt => opt.value === formData.for) || null}
-            onChange={(e, newValue) => handleSelectChange('for', newValue?.value)}
+            onChange={(e, newValue) => {
+              const label = newValue?.label?.toLowerCase().trim();
+
+              if (label?.includes("factory")) {
+                setFormData((prev) => ({ ...prev, category: "factory" }));
+              } else if (label?.includes("godown")) {
+                setFormData((prev) => ({ ...prev, category: "godown" }));
+              }
+
+              handleSelectChange("for", newValue?.value);
+            }}
             required
             fullWidth
             disabled={!formData.companyName}
@@ -343,7 +438,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         </Stack>
 
         <Stack direction="row" spacing={2} mt={3} justifyContent="flex-end">
-          <Button variant="outlined" onClick={handleCancel}>
+          <Button variant="outlined" onClick={() => router.push('/admin/purchase')}>
             Cancel
           </Button>
           <Button

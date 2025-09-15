@@ -95,11 +95,9 @@ export const createQpPurchaseThunk = createAsyncThunk(
     async (data: CreatePurchase, { rejectWithValue }) => {
         try {
             const response = await qualityPurchaseService.createPurchase(data);
-            if (response.success) {
-                return response.data;
-            } else {
-                return rejectWithValue(response.message || 'Failed to create purchase');
-            }
+
+            return response;
+
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to create purchase');
         }
@@ -114,11 +112,9 @@ export const updateQpPurchaseThunk = createAsyncThunk(
     ) => {
         try {
             const response = await qualityPurchaseService.updatePurchase(id, data);
-            if (response.success) {
-                return response.data;
-            } else {
-                return rejectWithValue(response.message || 'Failed to update purchase');
-            }
+
+            return response;
+
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to update purchase');
         }
@@ -130,11 +126,9 @@ export const deleteQpPurchaseThunk = createAsyncThunk(
     async (id: string, { rejectWithValue }) => {
         try {
             const response = await qualityPurchaseService.deletePurchase(id);
-            if (response.success) {
-                return id;
-            } else {
-                return rejectWithValue(response.message || 'Failed to delete purchase');
-            }
+
+            return id;
+
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to delete purchase');
         }

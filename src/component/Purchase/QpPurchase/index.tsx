@@ -10,6 +10,7 @@ import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
 import AddNewPurchaseBulkDialog from '@/component/AddNewPurchaseBulkDialog';
 import { deleteQpPurchaseThunk, getAllQpPurchasesThunk } from '@/store/slices/qpPurchaseSlice';
+import QualityPurchaseBulkDialog from '@/component/QualityPurchaseBulkDialog';
 
 const columns = [
     { id: 'vendor', label: 'VENDOR' },
@@ -25,7 +26,7 @@ const QpPurchasePage = () => {
     const { purchases, loading } = useAppSelector((state) => state.qpPurchase);
     const [openBulkUploadDialog, setOpenBulkUploadDialog] = useState(false);
 
-    console.log(purchases,'purchases')
+    console.log(purchases, 'purchases')
 
     useEffect(() => {
         dispatch(getAllQpPurchasesThunk());
@@ -48,12 +49,8 @@ const QpPurchasePage = () => {
         });
 
         if (result.isConfirmed) {
-            try {
-                await dispatch(deleteQpPurchaseThunk(id)).unwrap();
-                toast.success('Purchase deleted successfully');
-            } catch (error: any) {
-                toast.error(error.message || 'Failed to delete purchase');
-            }
+            await dispatch(deleteQpPurchaseThunk(id))
+            toast.success('Purchase deleted successfully');
         }
     };
 
@@ -79,9 +76,9 @@ const QpPurchasePage = () => {
                 <ThemeButton onClick={() => router.push('/admin/purchase/add-purchase?type=1')}>
                     + Add New Purchase
                 </ThemeButton>
-                <ThemeButton sx={{ m: 2 }} onClick={handleBulkUploadClick} startIcon={<CloudUpload />}>
+                {/* <ThemeButton sx={{ m: 2 }} onClick={handleBulkUploadClick} startIcon={<CloudUpload />}>
                     Bulk Upload
-                </ThemeButton>
+                </ThemeButton> */}
             </Box>
 
             <BasicTable
@@ -105,7 +102,7 @@ const QpPurchasePage = () => {
                 )}
             />
 
-            <AddNewPurchaseBulkDialog
+            <QualityPurchaseBulkDialog
                 open={openBulkUploadDialog}
                 onClose={handleBulkUploadClose}
                 refreshData={() => dispatch(getAllQpPurchasesThunk())}

@@ -23,6 +23,7 @@ import { getAllStaffThunk } from "@/store/slices/staffSlice";
 import type { CreateAssignTask, UpdateAssignTask } from "@/services/assignTask.service";
 import Swal from "sweetalert2";
 import CompanySelect from "../reusablecomponents/CompanyWithPartyName";
+import { useRouter } from "next/router";
 
 interface OptionType {
   label: string;
@@ -90,6 +91,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
   partyOptions,
   companyOptions
 }) => {
+  const router = useRouter()
   const dispatch = useAppDispatch();
   const {
     accountMasters = [],
@@ -220,7 +222,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
 
 
   useEffect(() => {
-    if (open) {
+    if (open && router.pathname === "/admin/account-master/view-company/[id]") {
       formik.resetForm({
         values: {
           ...formik.initialValues,
