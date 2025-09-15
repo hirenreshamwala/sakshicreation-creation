@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { paperGSMService, PaperGSM, ApiResponse } from '@/services/paperGSM.service';
+import { paperGSMService, PaperGSM, ApiResponse, GSMOption } from '@/services/paperGSM.service';
 import { authService } from '@/services/auth.service';
 import axios from 'axios';
 import Endpoint from '@/API/apiConfig';
@@ -107,9 +107,22 @@ export const bulkCreatePaperGSMThunk = createAsyncThunk(
   }
 );
 
+export const getGSMByDeckalThunk = createAsyncThunk(
+  "paperGSM/getByDeckal",
+  async (deckal: string, { rejectWithValue }) => {
+    try {
+      const response = await paperGSMService.getGSMByDeckal(deckal);
+      console.log("API RAW RESPONSE:", response)
+      return response.data; // GSMOption[]
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to fetch GSM by Deckal");
+    }
+  }
+);
 
 interface PaperGSMState {
   paperGSM: PaperGSM[];
+  gsmByDeckal: GSMOption[];
   loading: boolean;
   error: string | null;
   operationLoading: boolean; // For create/update/delete operations
@@ -118,6 +131,7 @@ interface PaperGSMState {
 
 const initialState: PaperGSMState = {
   paperGSM: [],
+  gsmByDeckal: [],
   loading: false,
   error: null,
   operationLoading: false,
@@ -218,6 +232,20 @@ const paperGSMSlice = createSlice({
       .addCase(bulkCreatePaperGSMThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(getGSMByDeckalThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.gsmByDeckal = [];
+      })
+      .addCase(getGSMByDeckalThunk.fulfilled, (state, action: PayloadAction<GSMOption[]>) => {
+        state.loading = false;
+        state.gsmByDeckal = action.payload;
+      })
+      .addCase(getGSMByDeckalThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        state.gsmByDeckal = [];
       });
   },
 });

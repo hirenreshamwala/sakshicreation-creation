@@ -294,7 +294,7 @@ const AllOrdersPage = () => {
   };
   const roleName = user?.role?.roleName || "";
   const company = user?.role?.company?.companyName || "";
-  console.log("DEBUG : company:", company);
+  // console.log("DEBUG : company:", company);
 
   const isAdmin = roleName.toLowerCase() === "admin";
   const isSakshi = company === companyOptions[0]; // assuming index 0 is Sakshi Creation
