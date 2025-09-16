@@ -49,7 +49,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [selectedCompany, setSelectedCompany] = useState<string>("")
   const [isDeckalManual, setIsDeckalManual] = useState(false)
-  
+
   // Sakshi Creation form data
   const [sakshiFormData, setSakshiFormData] = useState({
     companyName: "",
@@ -71,7 +71,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     endNumber: "",
     startNumber: ""
   })
-  
+
   // Quality Packaging form data
   const [qpFormData, setQpFormData] = useState({
     companyName: "",
@@ -103,11 +103,11 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     kantanDeckal: "",
     salesRemark: "",
   })
-  
+
   // Determine which form to show based on selected company
   const isQualityPackaging = selectedCompany === companies?.find((item) => item?.companyName?.toLowerCase() === 'quality packaging')?._id
   const isSakshiCreation = selectedCompany === companies?.find((item) => item?.companyName?.toLowerCase() === 'sakshi creation')?._id
-  
+
   // Memoized item options
   const itemOptions = useMemo(() => {
     return productItems.map((item) => ({
@@ -115,25 +115,25 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       value: item._id,
     }))
   }, [productItems])
-  
+
   // Memoized paper dimension options from gsmByDeckal
   const paperDimensionOptions = useMemo(() => {
     if (!gsmByDeckal?.gsmOptions) return { length: [], width: [], height: [] }
-    
+
     // Use the same options for all three dimensions
     const options = gsmByDeckal.gsmOptions.map((opt: any) => ({
       value: opt.value,
       label: opt.label,
       id: opt.id
     }))
-    
+
     return {
       length: options,
       width: options,
       height: options
     }
   }, [gsmByDeckal])
-  
+
   // Clear messages when dialog opens
   useEffect(() => {
     if (open) {
@@ -144,13 +144,13 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       setIsDeckalManual(false)
     }
   }, [open, dispatch])
-  
+
   useEffect(() => {
     if (qpFormData.deckal && isQualityPackaging) {
       dispatch(getGSMByDeckalThunk(qpFormData.deckal))
     }
   }, [qpFormData.deckal, isQualityPackaging, dispatch])
-  
+
   // Handle success message
   useEffect(() => {
     if (successMessage) {
@@ -158,7 +158,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       dispatch(clearOrderSuccessMessage())
     }
   }, [successMessage, dispatch])
-  
+
   // Handle error message
   useEffect(() => {
     if (orderError) {
@@ -166,7 +166,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       dispatch(clearOrderError())
     }
   }, [orderError, dispatch])
-  
+
   // Fetch data when dialog opens
   useEffect(() => {
     if (open) {
@@ -178,7 +178,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       if (!kantans.length) dispatch(getAllKantansThunk())
     }
   }, [open, dispatch])
-  
+
   // Auto-fill form when account master data is loaded
   useEffect(() => {
     if (singleAccountMaster && singleAccountMaster.accountMaster && isSakshiCreation) {
@@ -191,19 +191,19 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       }))
     }
   }, [singleAccountMaster, isSakshiCreation])
-  
+
   const handleSakshiChange = (field: string, value: any) => {
     setSakshiFormData((prev) => ({ ...prev, [field]: value }))
   }
-  
+
   const handleQpChange = (field: string, value: any) => {
     setQpFormData((prev) => ({ ...prev, [field]: value }))
   }
-  
+
   const handleGstCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setGstNotApplicable(event.target.checked)
   }
-  
+
   const handleCompanyChange = (event: any, newValue: any) => {
     const companyId = newValue ? newValue.value : ""
     setSelectedCompany(companyId)
@@ -217,12 +217,12 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     setGstNotApplicable(false)
     setIsDeckalManual(false)
   }
-  
+
   const handlePartyChange = async (event: any, newValue: any) => {
     const partyId = newValue ? newValue.value : ""
     handleSakshiChange("partyName", partyId)
     handleQpChange("partyName", partyId)
-    
+
     if (selectedCompany && partyId) {
       try {
         await dispatch(
@@ -237,16 +237,20 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       }
     }
   }
-  
+
   const handleFilesSelected = (files: File[]) => setSelectedFiles(files)
   const handleUploadError = (error: string) => toast.error(error)
-  
+
   const handleDeckalChange = (e: any) => {
     const value = e.target.value
     handleQpChange("deckal", value)
     setIsDeckalManual(!!value && value !== "")
+
+    handleQpChange("paperLength", "")
+    handleQpChange("paperWidth", "")
+    handleQpChange("paperHeight", "")
   }
-  
+
   const handleSubmit = async () => {
     if (isSakshiCreation) {
       await handleSakshiSubmit()
@@ -256,7 +260,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       toast.error("Please select a valid company")
     }
   }
-  
+
   const handleSakshiSubmit = async () => {
     if (!sakshiFormData.companyName || !sakshiFormData.partyName || !sakshiFormData.itemName || !sakshiFormData.qty) {
       toast.error("Please fill all required fields")
@@ -305,7 +309,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       setIsSubmitting(false)
     }
   }
-  
+
   const handleQpSubmit = async () => {
     if (!qpFormData.companyName || !qpFormData.partyName) {
       toast.error("Please fill all required fields (Company Name and Party Name)")
@@ -321,11 +325,10 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       const findOptionpaperId = (field: string, value: string) => {
         if (!value) return undefined
         const matchingOption = paperGSM.find((option: any) => option[field] === value)
+
         return matchingOption ? matchingOption._id : undefined
       }
 
-      
-      console.log("DEBUG : handleQpSubmit : qpFormData.paperLength:", qpFormData.paperLength);
       const orderData = {
         isQp: true,
         companyName: qpFormData.companyName,
@@ -337,9 +340,10 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         length: findOptionId('length', qpFormData.length),
         width: findOptionId('width', qpFormData.width),
         height: findOptionId('height', qpFormData.height),
-        paperLength: findOptionpaperId('length',qpFormData.paperLength),
-        paperWidth: findOptionpaperId('width',qpFormData.paperWidth),
-        paperHeight: findOptionpaperId('height',qpFormData.paperHeight),
+        paperLength: findOptionpaperId('gsm', qpFormData.paperLength),
+
+        paperWidth: findOptionpaperId('gsm', qpFormData.paperWidth),
+        paperHeight: findOptionpaperId('gsm', qpFormData.paperHeight),
         gsm: qpFormData.gsm || undefined,
         deckal: qpFormData.deckal || undefined,
         deckalCalculation: qpFormData.deckalCalculation || undefined,
@@ -368,7 +372,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       setIsSubmitting(false)
     }
   }
-  
+
   const resetForm = () => {
     setSakshiFormData({
       companyName: "",
@@ -428,16 +432,16 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       fileUploadRef.current.clearSelectedFiles()
     }
   }
-  
+
   const handleClose = () => {
     resetForm()
     onClose()
   }
-  
+
   const getSelectedOption = (value: string, options: OptionType[]) => {
     return options.find((option) => option.value === value) || null
   }
-  
+
   // Helper functions to get unique values for dropdowns with dynamic filtering
   const getUniqueNameOptions = () => {
     const uniqueNames = [...new Set(packagingOptions.map((item: any) => item.name))].sort()
@@ -446,7 +450,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       label: name
     }))
   }
-  
+
   const getUniquePlyOptions = () => {
     const filteredOptions = packagingOptions.filter((item: any) =>
       (!qpFormData.name || item.name === qpFormData.name)
@@ -457,7 +461,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       label: `${ply}`
     }))
   }
-  
+
   const getUniqueLengthOptions = () => {
     const filteredOptions = packagingOptions.filter((item: any) =>
       (!qpFormData.name || item.name === qpFormData.name) &&
@@ -469,7 +473,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       label: length
     }))
   }
-  
+
   const getUniqueWidthOptions = () => {
     const filteredOptions = packagingOptions.filter((item: any) =>
       (!qpFormData.name || item.name === qpFormData.name) &&
@@ -482,7 +486,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       label: width
     }))
   }
-  
+
   const getUniqueHeightOptions = () => {
     const filteredOptions = packagingOptions.filter((item: any) =>
       (!qpFormData.name || item.name === qpFormData.name) &&
@@ -496,7 +500,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       label: height
     }))
   }
- 
+
   const renderSakshiForm = () => (
     <>
       <Stack direction="row" spacing={2} mb={2}>
@@ -698,7 +702,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       </Box>
     </>
   )
-  
+
   const renderQpForm = () => {
     const handleItemNameChange = (_, val: any) => {
       handleQpChange("name", val?.value || "");
@@ -707,27 +711,27 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       handleQpChange("width", "");
       handleQpChange("height", "");
     };
-    
+
     const handlePlyChange = (_, val: any) => {
       handleQpChange("ply", val?.value || "");
       handleQpChange("length", "");
       handleQpChange("width", "");
       handleQpChange("height", "");
     };
-    
+
     // Handle paper dimension changes with independent selection
     const handlePaperLengthChange = (_, val: any) => {
       handleQpChange("paperLength", val?.value || "");
     };
-    
+
     const handlePaperWidthChange = (_, val: any) => {
       handleQpChange("paperWidth", val?.value || "");
     };
-    
+
     const handlePaperHeightChange = (_, val: any) => {
       handleQpChange("paperHeight", val?.value || "");
     };
-    
+
     return (
       <>
         <Stack direction="row" spacing={2} mb={2}>
@@ -907,7 +911,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       </>
     )
   }
-  
+
   // Automatic calculations for Quality Packaging form
   useEffect(() => {
     const { length, width, height, ply, noOfPieces, ratePerPiece, deckal, paperHeight, paperLength, paperWidth, paperName } = qpFormData
@@ -924,12 +928,10 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     // Find the actual paper GSM option based on selected values
     const selectedPaperGSM = paperGSM.find((item: any) =>
       item.length === qpFormData.paperLength &&
-    
-    item.width === qpFormData.paperWidth &&
-    item.height === qpFormData.paperHeight
-  )
-  console.log("DEBUG : selectedPaperGSM:", selectedPaperGSM);
-  console.log("DEBUG : qpFormData.paperLength:", qpFormData.paperLength);
+
+      item.width === qpFormData.paperWidth &&
+      item.height === qpFormData.paperHeight
+    )
 
 
     // Extract numeric values for calculation (prioritize actual option values if found)
@@ -1015,7 +1017,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     packagingOptions,
     paperGSM
   ])
-  
+
   return (
     <CustomDialog open={open} onClose={handleClose} maxWidth="md" title="Place New Order">
       <Box sx={{ p: 2, background: "#fff", borderRadius: 2 }}>

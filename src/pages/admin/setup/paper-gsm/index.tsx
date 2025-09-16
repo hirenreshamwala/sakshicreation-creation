@@ -21,7 +21,7 @@ import { PaperGSM } from "@/services/paperGSM.service";
 
 const columns = [
   { id: "id", label: "ID" },
-  { id: "name", label: "Name" },
+  // { id: "name", label: "Name" },
   { id: "deckal", label: "Deckal" },
   { id: "gsm", label: "GSM" },
   { id: "options", label: "Options" },
@@ -137,7 +137,7 @@ const PaperGSMPage = () => {
   };
 
   const handleDownloadSample = () => {
-    const csvContent = "name,deckal,gsm\nHAVI,24,100\n";
+    const csvContent = "deckal,gsm\n24,100\n";
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -200,7 +200,7 @@ const PaperGSMPage = () => {
         renderRow={(row: PaperGSM, idx: number) => (
           <>
             <TableCell>{idx + 1}</TableCell>
-            <TableCell>{row?.name || ""}</TableCell>
+            {/* <TableCell>{row?.name || ""}</TableCell> */}
             <TableCell>{row?.deckal || ""}</TableCell>
             <TableCell>{row?.gsm || ""}</TableCell>
             <TableCell>
