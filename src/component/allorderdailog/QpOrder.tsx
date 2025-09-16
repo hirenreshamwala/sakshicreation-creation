@@ -98,6 +98,8 @@ type OrderRow = {
   startDate?: string
   dyeNumber?: string
   dyeSize?: string
+  glue?: string
+  wire?: string
   dyeRemark?: string
   godownRemark?: string
   factoryRemark?: string
@@ -120,6 +122,8 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
     deliveryDate: row.deliveryDate || '',
     dyeNumber: row.dyeNumber || "",
     dyeSize: row.dyeSize || "",
+    glue: row.glue || "",
+    wire: row.wire || "",
     dyeRemark: row.dyeRemark || "",
     godownRemark: row.godownRemark || "",
     factoryRemark: row.factoryRemark || "",
@@ -137,6 +141,8 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
       deliveryDate: row.deliveryDate || '',
       dyeNumber: row.dyeNumber || "",
       dyeSize: row.dyeSize || "",
+      glue: row.glue || "",
+      wire: row.wire || "",
       dyeRemark: row.dyeRemark || "",
       godownRemark: row.godownRemark || "",
       factoryRemark: row.factoryRemark || "",
@@ -145,7 +151,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
     setFormData(newFormData)
     setInitialFormData(newFormData)
     console.log("ExpandedRowForm: Initialized formData for row ID:", row._id, newFormData)
-  }, [row._id, row.unitNo, row.startDate, row.deliveryDate, row.dyeNumber, row.dyeSize, row.dyeRemark, row.godownRemark, row.factoryRemark, row.status])
+  }, [row._id, row.unitNo, row.startDate, row.deliveryDate, row.dyeNumber, row.dyeSize, row.glue, row.wire, row.dyeRemark, row.godownRemark, row.factoryRemark, row.status])
 
   const handleFormChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -165,6 +171,8 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
         deliveryDate: formData.deliveryDate,
         dyeNumber: formData.dyeNumber,
         dyeSize: formData.dyeSize,
+        glue: formData.glue,
+        wire: formData.wire,
         dyeRemark: formData.dyeRemark,
         godownRemark: formData.godownRemark,
         factoryRemark: formData.factoryRemark,
@@ -183,6 +191,8 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
   const handleCancel = () => {
     setFormData(initialFormData)
   }
+
+  
 
   return (
     <Box sx={{ p: 2, backgroundColor: '#f9fafb' }}>
@@ -235,6 +245,22 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
               label="Dye Sheet Size"
               value={formData.dyeSize}
               onChange={(e) => handleFormChange("dyeSize", e.target.value)}
+              variant="outlined"
+              size="small"
+              sx={{ minWidth: 150 }}
+            />
+            <TextField
+              label="Glue KG"
+              value={formData.glue}
+              onChange={(e) => handleFormChange("glue", e.target.value)}
+              variant="outlined"
+              size="small"
+              sx={{ minWidth: 150 }}
+            />
+            <TextField
+              label="Wire KG"
+              value={formData.wire}
+              onChange={(e) => handleFormChange("wire", e.target.value)}
               variant="outlined"
               size="small"
               sx={{ minWidth: 150 }}
@@ -347,6 +373,14 @@ const AllOrdersPage = () => {
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own
   const canCreate = user?.role?.permissions?.all_orders?.create
   const canStatus = user?.role?.permissions?.all_orders?.status
+
+  const refreshData = () => {
+    if (canViewGlobal) {
+      dispatch(getAllQPOrdersThunk())
+    } else if (canViewOwn && user?.id) {
+      dispatch(getQPOrdersByStaffIdThunk(user.id))
+    }
+  }
 
   // Get unique values for the selected filter field
   const getUniqueValues = useMemo(() => {
@@ -557,20 +591,17 @@ const AllOrdersPage = () => {
 
   console.log("DEBUG : AllOrdersPage : canViewOwn && user?.id:", canViewOwn && user?.id);
   useEffect(() => {
-    const token = authService.getToken()
-    if (!token) {
-      router.push("/login")
-      return
-    }
+  const token = authService.getToken()
+  if (!token) {
+    router.push("/login")
+    return
+  }
 
-    if (canViewGlobal) {
-      if (!orders.length) dispatch(getAllQPOrdersThunk())
+  if (!orders.length) {
+    refreshData()
+  }
+}, [dispatch, router, canViewGlobal, canViewOwn, user?.id])
 
-    } else if (canViewOwn && user?.id) {
-
-      if (!orders.length) dispatch(getQPOrdersByStaffIdThunk(user.id))
-    }
-  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id])
 
   const getRouteByStatus = (row: OrderRow): string => {
     const { status, designer, printer, binder, bookletBinder } = row
@@ -873,14 +904,29 @@ const AllOrdersPage = () => {
       </Box>
 
       {open && (
-        <>
-          {editData === null ? (
-            <AddOrderDialog open={open} onClose={() => setOpen(false)} />
-          ) : (
-            <EditOrderDialog open={open} onClose={() => setOpen(false)} editData={editData} />
-          )}
-        </>
-      )}
+  <>
+    {editData === null ? (
+      <AddOrderDialog
+        open={open}
+        onClose={() => {
+          setOpen(false)
+          refreshData()
+        }}
+        refreshData={refreshData}
+      />
+    ) : (
+      <EditOrderDialog
+        open={open}
+        onClose={() => {
+          setOpen(false)
+          refreshData()
+        }}
+        editData={editData}
+        refreshData={refreshData}
+      />
+    )}
+  </>
+)}
     </>
   )
 }
