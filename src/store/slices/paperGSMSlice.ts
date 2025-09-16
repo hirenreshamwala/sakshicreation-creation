@@ -82,7 +82,7 @@ export const bulkCreatePaperGSMThunk = createAsyncThunk(
         throw new Error(response.data.message || 'Bulk create failed');
       }
 
-      console.log(response.data.data, ' response.data.data')
+      // console.log(response.data.data, ' response.data.data')
       return response.data.data;
 
     } catch (error: any) {
@@ -99,7 +99,7 @@ export const getGSMByDeckalThunk = createAsyncThunk(
   async (deckal: string, { rejectWithValue }) => {
     try {
       const response = await paperGSMService.getGSMByDeckal(deckal);
-      console.log("API RAW RESPONSE:", response)
+      // console.log("API RAW RESPONSE:", response)
       return response.data; // GSMOption[]
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch GSM by Deckal");

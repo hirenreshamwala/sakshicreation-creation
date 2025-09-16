@@ -455,7 +455,7 @@ const ViewCompanyPage: React.FC = () => {
     },
   }));
 
-  console.log(singleAccountMaster, 'singleAccountMaster')
+  // console.log(singleAccountMaster, 'singleAccountMaster')
 
   // Filter tasks and leads based on party/company ID
   const pendingTasks = transformedTasks.filter(

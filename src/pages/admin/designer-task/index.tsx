@@ -4,6 +4,7 @@ import BasicTable from "@/component/common_component/Table/themetable";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getDesignerOrdersThunk } from "@/store/slices/orderSlice";
 import { useRouter } from "next/router";
+import Loader from "@/component/common_component/loader";
 
 interface Column {
   id: string;
@@ -86,7 +87,7 @@ const DesignerTask : React.FC<DesignerTaskProps> = ({ tasks }) => {
   }, [dispatch]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loader />;
   }
 
   const handleRowClick = (orderId: string) => {

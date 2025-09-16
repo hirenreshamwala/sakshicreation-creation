@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { getBinderOrdersThunk } from "@/store/slices/orderSlice";
 import { useRouter } from "next/router";
 import { authService } from "@/services/auth.service";
+import Loader from "@/component/common_component/loader";
 
 interface Column {
   id: string;
@@ -107,7 +108,7 @@ const BinderTask: React.FC<BinderTaskProps> = ({ tasks }) => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loader />;
   }
 
   // Transform orders data for table

@@ -17,6 +17,7 @@ import EditOrderDialog from "./EditOrderDialog"
 import { toast } from "react-toastify"
 import moment from "moment"
 import { StatusCell } from "./StatusCell"
+import Loader from "../common_component/loader"
 
 const columns = [
   { id: "orderNo", label: "Order No" },
@@ -150,7 +151,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
     }
     setFormData(newFormData)
     setInitialFormData(newFormData)
-    console.log("ExpandedRowForm: Initialized formData for row ID:", row._id, newFormData)
+    // console.log("ExpandedRowForm: Initialized formData for row ID:", row._id, newFormData)
   }, [row._id, row.unitNo, row.startDate, row.deliveryDate, row.dyeNumber, row.dyeSize, row.glue, row.wire, row.dyeRemark, row.godownRemark, row.factoryRemark, row.status])
 
   const handleFormChange = (field: string, value: string) => {
@@ -178,7 +179,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
         factoryRemark: formData.factoryRemark,
         status: formData.status,
       }
-      console.log("ExpandedRowForm: Submitting with ID:", formData._id, "and data:", updateData)
+      // console.log("ExpandedRowForm: Submitting with ID:", formData._id, "and data:", updateData)
       await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap()
       setInitialFormData({ ...formData })
       toast.success("Order updated successfully")
@@ -362,6 +363,8 @@ const AllOrdersPage = () => {
   const dispatch = useAppDispatch()
   const [editData, setEditData] = useState<OrderRow | null>(null)
   const { user } = useAppSelector((state) => state.auth)
+  console.log("DEBUG : AllOrdersPage : user:", user);
+
   const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.qpOrders)
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -589,7 +592,7 @@ const AllOrdersPage = () => {
     })
   }, [orders, startDate, endDate, searchQuery, filters])
 
-  console.log("DEBUG : AllOrdersPage : canViewOwn && user?.id:", canViewOwn && user?.id);
+  // console.log("DEBUG : AllOrdersPage : canViewOwn && user?.id:", canViewOwn && user?.id);
   useEffect(() => {
   const token = authService.getToken()
   if (!token) {
@@ -687,8 +690,14 @@ const AllOrdersPage = () => {
     return <ExpandedRowForm row={row} setEditData={setEditData} setOpen={setOpen} />;
   };
 
-  if (loading) return <Typography>Loading orders...</Typography>
-  if (error) return <Typography color="error">Error: {error}</Typography>
+  useEffect(() => {
+      if (error) {
+        toast.error(error);
+      }
+      
+    }, [error, dispatch]);
+
+  if (loading) return<Loader/>
 
   return (
     <>

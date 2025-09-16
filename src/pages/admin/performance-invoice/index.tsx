@@ -19,6 +19,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { authService } from "@/services/auth.service";
 import Swal from "sweetalert2";
 import Loader from "@/component/common_component/loader";
+import { toast } from "react-toastify";
 
 interface Company {
   name: string;
@@ -72,6 +73,13 @@ const PerformanceInvoicePage: React.FC = () => {
     setEditId(id);
     setOpen(true);
   };
+
+  useEffect(() => {
+      if (error) {
+        toast.error(error);
+      }
+
+    }, [error,  dispatch]);
 
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
@@ -155,8 +163,6 @@ const PerformanceInvoicePage: React.FC = () => {
       </Box>
       {loading ? (
         <Loader />
-      ) : error ? (
-        <Typography color="error">{error}</Typography>
       ) : formattedRows.length === 0 ? (
         <Typography>No performance invoices found.</Typography>
       ) : (

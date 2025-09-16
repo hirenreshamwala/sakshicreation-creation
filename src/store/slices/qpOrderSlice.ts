@@ -168,7 +168,7 @@ export const updateQPOrderThunk = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      console.log(id, data,'id, data')
+      // console.log(id, data,'id, data')
       const response = await orderService.updateOrder(id, data);
 
       if (response.success) {

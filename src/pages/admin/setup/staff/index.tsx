@@ -47,7 +47,13 @@ const StaffPage = () => {
         toast.error(err.message || "Failed to fetch staff")
       })
   }, [dispatch])
+  
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
 
+  }, [error, dispatch]);
   // Handle edit action
   const handleEdit = (id: string) => {
     router.push(`/admin/setup/staff/view?mode=edit&id=${id}`)
@@ -77,7 +83,7 @@ const StaffPage = () => {
       }
     })
   }
- const handlePasswordUpdate = (id: string, name: string) => {
+  const handlePasswordUpdate = (id: string, name: string) => {
     setSelectedStaff({ id, name });
     setPasswordDialogOpen(true);
   };
@@ -204,7 +210,7 @@ const StaffPage = () => {
           variant="contained"
           color="primary"
           onClick={() => setBulkDialogOpen(true)}
-          sx={{ ml:2,borderRadius: 2, fontWeight: 700 }}
+          sx={{ ml: 2, borderRadius: 2, fontWeight: 700 }}
         >
           Bulk Upload Staff
         </Button>
@@ -309,13 +315,13 @@ const StaffPage = () => {
                 <IconButton color="primary" onClick={() => handleEdit(row.id)} size="small">
                   <Edit />
                 </IconButton>
-                <IconButton 
-                  color="primary" 
-                  onClick={() => handlePasswordUpdate(row.id, row.name)} 
+                <IconButton
+                  color="primary"
+                  onClick={() => handlePasswordUpdate(row.id, row.name)}
                   size="small"
                   title="Update Password"
                 >
-                  <Lock/> {/* You'll need to import Lock icon from @mui/icons-material */}
+                  <Lock /> {/* You'll need to import Lock icon from @mui/icons-material */}
                 </IconButton>
                 <IconButton color="error" onClick={() => handleDelete(row.id, row.name)} size="small">
                   <Delete />
@@ -325,7 +331,7 @@ const StaffPage = () => {
           )}
         />
       </Paper>
-      {error && <Box sx={{ color: "error.main", mt: 2, textAlign: "center" }}>{error}</Box>}
+
 
       {/* File Viewer Modal */}
       <FileViewerModal
@@ -339,7 +345,7 @@ const StaffPage = () => {
         open={bulkDialogOpen}
         onClose={() => setBulkDialogOpen(false)}
         refreshData={() => dispatch(getAllStaffThunk())}
-/>
+      />
       <PasswordUpdateDialog
         open={passwordDialogOpen}
         onClose={() => setPasswordDialogOpen(false)}
