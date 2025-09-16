@@ -7,7 +7,9 @@ export const getInventoryByCategoryThunk = createAsyncThunk(
     try {
       const response = await inventoryService.getInventoryByCategory(category);
       if (response.success && Array.isArray(response.data)) {
+        console.log(response.data,'jkcfhuigdfhui')
         return response.data;
+
       } else {
         return rejectWithValue('Invalid response format: data array not found');
       }

@@ -71,7 +71,7 @@ interface AggregatedInventory {
 const QpInventoryPage = () => {
     const dispatch = useAppDispatch();
     const { user } = useAppSelector((state) => state.auth)
-    const { inventory, summary, loading, error } = useAppSelector(state => state.inventory);
+    const { inventory, error } = useAppSelector(state => state.inventory);
     const { materials } = useAppSelector(state => state.materials);
     const { vendors } = useAppSelector(state => state.vendors);
     const [activeMainTab, setActiveMainTab] = useState<InventoryCategory>(InventoryCategory.GODOWN);
@@ -121,106 +121,7 @@ const QpInventoryPage = () => {
     const handleWardTabChange = (_: React.SyntheticEvent, newValue: string | number) => {
         setActiveWardTab(newValue as WardTab);
     };
-    const aggregateInventory = (): AggregatedInventory[] => {
-        const filtered = getPermissionWiseInventory().filter(item => item.type === activeWardTab);
-        const aggregated: Record<string, AggregatedInventory> = {};
-
-        // First pass: aggregate items based on current ward tab
-        filtered.forEach(item => {
-            if (!item.forCompany || !item.material) return;
-
-            const key = `${item.forCompany._id}-${item.material._id}`;
-
-            if (!aggregated[key]) {
-                aggregated[key] = {
-                    printerId: item.forCompany._id,
-                    printerName: `${item.forCompany.firstName} ${item.forCompany.lastName}`,
-                    materialId: item.material._id,
-                    materialName: item.material.materialName,
-                    materialSize: item.material.materialSize,
-                    materialGSM: item.material.materialGSM,
-                    totalQuantity: 0,
-                    lastPurchase: 0,
-                    lastPurchaseDate: null,
-                    usedQty: 0,
-                    balance: 0,
-                    purchases: []
-                };
-            }
-
-            // Add quantity based on type
-            if (item.type === 'inward') {
-                aggregated[key].totalQuantity += item.quantity;
-                aggregated[key].purchases.push(item);
-
-                // Track the most recent inward purchase
-                const itemDate = new Date(item.date);
-                if (!aggregated[key].lastPurchaseDate || itemDate > aggregated[key].lastPurchaseDate) {
-                    aggregated[key].lastPurchaseDate = itemDate;
-                    aggregated[key].lastPurchase = item.quantity;
-                }
-            } else if (item.type === 'outward') {
-                aggregated[key].usedQty += item.quantity;
-                aggregated[key].purchases.push(item);
-            }
-        });
-
-        // Second pass: calculate total inward and outward for balance
-        // Get all items for the category to calculate proper balance
-        const allCategoryItems = getPermissionWiseInventory().filter(item => item.category === activeMainTab);
-
-        Object.keys(aggregated).forEach(key => {
-            const [printerId, materialId] = key.split('-');
-
-            // Calculate total inward for this printer/material
-            const totalInward = allCategoryItems
-                .filter(item =>
-                    item.type === 'inward' &&
-                    item.forCompany?._id === printerId &&
-                    item.material?._id === materialId
-                )
-                .reduce((sum, item) => sum + item.quantity, 0);
-
-            // Calculate total outward for this printer/material
-            const totalOutward = allCategoryItems
-                .filter(item =>
-                    item.type === 'outward' &&
-                    item.forCompany?._id === printerId &&
-                    item.material?._id === materialId
-                )
-                .reduce((sum, item) => sum + item.quantity, 0);
-
-            // Update the aggregated data with proper calculations
-            aggregated[key].totalQuantity = totalInward;
-            aggregated[key].usedQty = totalOutward;
-            aggregated[key].balance = totalInward - totalOutward;
-
-            // For outward tab, we need to show the current outward records
-            if (activeWardTab === 'outward') {
-                // Find the most recent purchase for this material
-                const lastPurchase = allCategoryItems
-                    .filter(item =>
-                        item.type === 'inward' &&
-                        item.forCompany?._id === printerId &&
-                        item.material?._id === materialId
-                    )
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-
-                if (lastPurchase) {
-                    aggregated[key].lastPurchase = lastPurchase.quantity;
-                    aggregated[key].lastPurchaseDate = new Date(lastPurchase.date);
-                }
-            }
-        });
-
-        return Object.values(aggregated);
-    };
-    const aggregatedData = aggregateInventory();
-
-    const handleRowClick = (printerData: AggregatedInventory) => {
-        setSelectedPrinter(printerData);
-        setShowDetails(true);
-    };
+    const aggregatedData = getPermissionWiseInventory();
 
     const handleBackClick = () => {
         setShowDetails(false);
@@ -237,11 +138,6 @@ const QpInventoryPage = () => {
     const materialOptions = materials.map(material => ({
         value: material._id,
         label: `${material.materialName} (${material.materialGSM} GSM, ${material.materialSize})`
-    }));
-
-    const vendorOptions = vendors.map(vendor => ({
-        value: vendor._id,
-        label: vendor.name
     }));
 
     // Create unique printer options
@@ -286,7 +182,7 @@ const QpInventoryPage = () => {
                         rowData={filteredInventory}
                         renderRow={(row) => (
                             <>
-                                <TableCell>{row.category || 'N/A'}</TableCell>
+                                <TableCell>{row.inventoryType || 'N/A'}</TableCell>
                                 <TableCell>{row?.for?.roleName || 'N/A'}</TableCell>
                                 <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
                                 <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
@@ -354,7 +250,7 @@ const QpInventoryPage = () => {
                                 )}
                                 renderRow={(row) => (
                                     <>
-                                        <TableCell>{row.category || 'N/A'}</TableCell>
+                                        <TableCell>{row.inventoryType || 'N/A'}</TableCell>
                                         <TableCell>{row?.for?.roleName || 'N/A'}</TableCell>
                                         <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
                                         <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
