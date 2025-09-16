@@ -122,7 +122,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     
     // Use the same options for all three dimensions
     const options = gsmByDeckal.gsmOptions.map((opt: any) => ({
-      value: opt.id,
+      value: opt.value,
       label: opt.label,
       id: opt.id
     }))
@@ -318,13 +318,12 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         const matchingOption = packagingOptions.find((option: any) => option[field] === value)
         return matchingOption ? matchingOption._id : undefined
       }
-      
-      // Find paper GSM option ID by value
-      const findPaperGsmId = (value: string) => {
+      const findOptionpaperId = (field: string, value: string) => {
         if (!value) return undefined
-        const matchingOption = gsmByDeckal.find((option: any) => option.value === value)
+        const matchingOption = paperGSM.find((option: any) => option[field] === value)
         return matchingOption ? matchingOption._id : undefined
       }
+
       
       console.log("DEBUG : handleQpSubmit : qpFormData.paperLength:", qpFormData.paperLength);
       const orderData = {
@@ -338,10 +337,9 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         length: findOptionId('length', qpFormData.length),
         width: findOptionId('width', qpFormData.width),
         height: findOptionId('height', qpFormData.height),
-        paperLength: qpFormData.paperLength,
-
-        paperWidth: qpFormData.paperWidth,
-        paperHeight: qpFormData.paperHeight,
+        paperLength: findOptionpaperId('length',qpFormData.paperLength),
+        paperWidth: findOptionpaperId('width',qpFormData.paperWidth),
+        paperHeight: findOptionpaperId('height',qpFormData.paperHeight),
         gsm: qpFormData.gsm || undefined,
         deckal: qpFormData.deckal || undefined,
         deckalCalculation: qpFormData.deckalCalculation || undefined,
@@ -912,8 +910,8 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
   
   // Automatic calculations for Quality Packaging form
   useEffect(() => {
-    const { length, width, height, ply, noOfPieces, ratePerPiece, deckal, paperHeight, paperLength, paperWidth } = qpFormData
-    
+    const { length, width, height, ply, noOfPieces, ratePerPiece, deckal, paperHeight, paperLength, paperWidth, paperName } = qpFormData
+
     // Find the actual packaging option based on selected values
     const selectedPackagingOption = packagingOptions.find((item: any) =>
       item.name === qpFormData.name &&
@@ -922,25 +920,27 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
       item.width === qpFormData.width &&
       item.height === qpFormData.height
     )
-    
+
     // Find the actual paper GSM option based on selected values
     const selectedPaperGSM = paperGSM.find((item: any) =>
-      item.value === qpFormData.paperLength &&
-      item.value === qpFormData.paperWidth &&
-      item.value === qpFormData.paperHeight
-    )
+      item.length === qpFormData.paperLength &&
     
+    item.width === qpFormData.paperWidth &&
+    item.height === qpFormData.paperHeight
+  )
+  console.log("DEBUG : selectedPaperGSM:", selectedPaperGSM);
+  console.log("DEBUG : qpFormData.paperLength:", qpFormData.paperLength);
+
+
     // Extract numeric values for calculation (prioritize actual option values if found)
     const calcLength = selectedPackagingOption?.length ? Number(selectedPackagingOption.length) : Number(length) || 0
     const calcWidth = selectedPackagingOption?.width ? Number(selectedPackagingOption.width) : Number(width) || 0
     const calcHeight = selectedPackagingOption?.height ? Number(selectedPackagingOption.height) : Number(height) || 0
     const calcPly = selectedPackagingOption?.ply ? Number(selectedPackagingOption.ply) : Number(ply) || 0
-    
-    // For paper dimensions, use the selected values directly
-    const calcPaperHeight = Number(paperHeight) || 0
-    const calcPaperLength = Number(paperLength) || 0
-    const calcPaperWidth = Number(paperWidth) || 0
-    
+    const calcPaperHeight = selectedPaperGSM?.height ? Number(selectedPaperGSM.height) : Number(paperHeight) || 0
+    const calcPaperLength = selectedPaperGSM?.length ? Number(selectedPaperGSM.length) : Number(paperLength) || 0
+    const calcPaperWidth = selectedPaperGSM?.width ? Number(selectedPaperGSM.width) : Number(paperWidth) || 0
+
     // Deckal Calculation
     if (calcWidth && calcHeight) {
       const deckalValue = calculateDeckal(calcWidth, calcHeight)
@@ -955,7 +955,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
         handleQpChange("deckal", "")
       }
     }
-    
+
     // GSM Calculation
     if (calcPly && calcPaperLength && calcPaperWidth && calcPaperHeight) {
       const gsmValue = calculateGSM(calcPly, calcPaperLength, calcPaperWidth, calcPaperHeight)
@@ -963,7 +963,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     } else {
       handleQpChange("gsm", "")
     }
-    
+
     // KG Per Piece
     const effectiveDeckal = Number(deckal) || Number(qpFormData.deckalCalculation) || 0
     if (calcLength && calcWidth && effectiveDeckal && calcPly && calcPaperLength && calcPaperWidth && calcPaperHeight) {
@@ -972,7 +972,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     } else {
       handleQpChange("kgPerUnit", "")
     }
-    
+
     // Total KG
     if (Number(noOfPieces) && qpFormData.kgPerUnit) {
       const totalKg = calculateTotalKg(Number(noOfPieces), Number(qpFormData.kgPerUnit))
@@ -980,7 +980,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     } else {
       handleQpChange("totalKg", "")
     }
-    
+
     // Amount
     if (Number(noOfPieces) && Number(ratePerPiece)) {
       const amount = calculateTotalAmount(Number(noOfPieces), Number(ratePerPiece))
@@ -988,7 +988,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     } else {
       handleQpChange("amount", "")
     }
-    
+
     // Kantan Calculation
     if (calcLength && calcWidth && Number(noOfPieces)) {
       const { kantanPerUnit, reel, inch } = calculateKantan(calcLength, calcWidth, Number(noOfPieces))
@@ -1010,6 +1010,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     qpFormData.paperHeight,
     qpFormData.paperLength,
     qpFormData.paperWidth,
+    qpFormData.paperName,
     isDeckalManual,
     packagingOptions,
     paperGSM
