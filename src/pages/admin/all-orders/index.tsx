@@ -16,6 +16,8 @@ import { getDisplayStatus } from "@/utills/utills"
 import QpOrdersPage from "@/component/allorderdailog/QpOrder"
 import TabComponent from "@/component/Dialog/TabComponent"
 import { companyOptions } from "@/constants"
+import Loader from "@/component/common_component/loader"
+import { toast } from "react-toastify"
 
 const columns = [
   { id: "company", label: "Company" },
@@ -299,14 +301,19 @@ const AllOrdersPage = () => {
   const isAdmin = roleName.toLowerCase() === "admin";
   const isSakshi = company === companyOptions[0]; // assuming index 0 is Sakshi Creation
   const isQuality = company === companyOptions[1];
-  console.log()
+  // console.log()
 
   if (!isAdmin && isQuality) {
     return <QpOrdersPage />;
   }
+  useEffect(() => {
+      if (error) {
+        toast.error(error);
+      }
+    }, [error,  dispatch]);
 
-  if (loading) return <Typography>Loading orders...</Typography>;
-  if (error) return <Typography color="error">Error: {error}</Typography>;
+  if (loading) return <Typography><Loader/></Typography>;
+
 
   return (
     <>

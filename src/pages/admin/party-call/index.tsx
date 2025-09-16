@@ -33,6 +33,7 @@ import AssignLeadDialog from "@/component/AssignLeadDialog";
 import Swal from "sweetalert2";
 import Loader from "@/component/common_component/loader";
 import { authService } from "@/services/auth.service";
+import { toast } from "react-toastify";
 
 interface Lead {
   _id: string;
@@ -145,6 +146,12 @@ const LeadManagementPage: React.FC = () => {
   const canDelete = user?.role?.permissions?.party_call?.delete;
   const cancreate = user?.role?.permissions?.party_call?.create;
   const canEdit= user?.role?.permissions?.party_call?.edit;
+
+  useEffect(() => {
+      if (error) {
+        toast.error(error);
+      }
+    }, [error, dispatch]);
 
   useEffect(() => {
     const token = authService.getToken();
@@ -692,8 +699,6 @@ const filteredLeads = useMemo(() => {
       >
         {loading ? (
           <Loader />
-        ) : error ? (
-          <Typography color="error">{error}</Typography>
         ) : filteredSortedDates.length === 0 ? (
           <Typography>
             No leads found

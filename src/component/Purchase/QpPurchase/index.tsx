@@ -26,7 +26,7 @@ const QpPurchasePage = () => {
     const { purchases, loading } = useAppSelector((state) => state.qpPurchase);
     const [openBulkUploadDialog, setOpenBulkUploadDialog] = useState(false);
 
-    console.log(purchases, 'purchases')
+    // console.log(purchases, 'purchases')
 
     useEffect(() => {
         dispatch(getAllQpPurchasesThunk());

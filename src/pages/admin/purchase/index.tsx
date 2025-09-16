@@ -7,7 +7,7 @@ const PurchasePage = () => {
 
   const [activeTab, setActiveTab] = useState(1);
 
-  console.log(activeTab, 'jshddhn')
+  // console.log(activeTab, 'jshddhn')
 
   return (
     <>

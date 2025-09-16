@@ -34,6 +34,7 @@ import DateRangePicker from "@/component/daterangepicker";
 import Swal from "sweetalert2";
 import Loader from "@/component/common_component/loader";
 import { FiSearch } from "react-icons/fi";
+import { toast } from "react-toastify";
 
 interface RowData {
   id: string;
@@ -177,6 +178,13 @@ const AssignTaskPage: React.FC = () => {
   const handleClick = (id: string) => {
     router.push(`/admin/assign-task/view-task/${id}`);
   };
+
+  useEffect(() => {
+      if (error) {
+        toast.error(error);
+      }
+
+    }, [error, dispatch]);
 
   useEffect(() => {
     const token = authService.getToken();
@@ -625,8 +633,6 @@ const AssignTaskPage: React.FC = () => {
       >
         {loading ? (
           <Loader />
-        ) : error ? (
-          <Typography color="error">{error}</Typography>
         ) : filteredSortedDates.length === 0 ? (
           <Typography>
             No tasks found

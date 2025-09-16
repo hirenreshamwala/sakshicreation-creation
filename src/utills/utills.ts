@@ -79,7 +79,7 @@ export const decryptData = (ciphertext: any) => {
 
     return originalText;
   } catch (error: any) {
-    console.log("Decryption error:", error.message || error);
+    // console.log("Decryption error:", error.message || error);
     return "Decryption failed";
   }
 };

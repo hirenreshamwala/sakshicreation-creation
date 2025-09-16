@@ -71,7 +71,9 @@ interface AggregatedInventory {
 const QpInventoryPage = () => {
     const dispatch = useAppDispatch();
     const { user } = useAppSelector((state) => state.auth)
-    const { inventory, error } = useAppSelector(state => state.inventory);
+    const { inventory, summary, loading, error } = useAppSelector(state => state.inventory);
+    
+    
     const { materials } = useAppSelector(state => state.materials);
     const { vendors } = useAppSelector(state => state.vendors);
     const [activeMainTab, setActiveMainTab] = useState<InventoryCategory>(InventoryCategory.GODOWN);
@@ -82,7 +84,8 @@ const QpInventoryPage = () => {
     const [selectedVendor, setSelectedVendor] = useState<string>('');
     const [selectedPrinterFilter, setSelectedPrinterFilter] = useState<string>('');
     const permissions = user.role.permissions;
-
+    
+    // console.log("DEBUG : QpInventoryPage : inventory:", inventory);
     const getPermissionWiseInventory = () => {
         if (permissions?.inventory?.view_global) {
             return inventory;

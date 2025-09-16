@@ -82,7 +82,7 @@ export const bulkCreatePackagingOptionThunk = createAsyncThunk(
         throw new Error(response.data.message || 'Bulk create failed');
       }
 
-      console.log(response.data.data, ' response.data.data')
+      // console.log(response.data.data, ' response.data.data')
       return response.data.data;
 
     } catch (error: any) {

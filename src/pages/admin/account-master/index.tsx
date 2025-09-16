@@ -30,6 +30,7 @@ import { FiSearch } from "react-icons/fi";
 import FilterDropdown from "@/component/fillter";
 import AssignLeadDialog from "@/component/AssignLeadDialog";
 import AssignTaskDialog from "@/component/assigntaskdailog";
+import { toast } from "react-toastify";
 
 interface Company {
   _id: string;
@@ -130,6 +131,12 @@ const IndexPage: React.FC = () => {
         return "default";
     }
   };
+  useEffect(() => {
+      if (error) {
+        toast.error(error);
+
+      }
+    }, [error, dispatch]);
 
   const handleAddNew = () => {
     setEditId(null);
@@ -674,8 +681,6 @@ const IndexPage: React.FC = () => {
 
       {loading ? (
         <Loader />
-      ) : error ? (
-        <Typography color="error">{error}</Typography>
       ) : formattedRows.length === 0 ? (
         <Typography>No account masters found for {tabLabelsWithCount[tab]} tab.</Typography>
       ) : (

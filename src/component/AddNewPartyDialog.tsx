@@ -220,7 +220,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   //   }
   // }, [isEditMode, formik.values.reference]);
 
-  console.log(markets, 'markets')
+  // console.log(markets, 'markets')
 
   const handleDownloadSample = () => {
     const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,streetAddress,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,createdBy\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Street 1,Near Park,Area A,400001,Visit,Ref123,FALSE,New,SUSHIL CHHAJER\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Street 2,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer,SUSHIL CHHAJER`;
@@ -244,7 +244,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         await dispatch(getAllStaffThunk());
         if (isEditMode && accountId) {
           const result = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
-          console.log(result, 'partyData')
+          // console.log(result, 'partyData')
           formik.setValues({
             companyName: result.companyName || "",
             partyName: result.partyName || "",
@@ -351,7 +351,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       ).unwrap()
 
       const partyData = response.data?.party || response.accountMaster?.party
-      console.log(partyData, 'partyData')
+      // console.log(partyData, 'partyData')
       if (partyData) {
         formik.setValues({
           ...formik.values,
@@ -1068,7 +1068,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                         formData.append("companyName", formik.values.companyName);
                         formData.append("createdBy", formik.values.createdBy);
                         const res = await dispatch(bulkCreateAccountMastersThunk(formData)).unwrap();
-                        console.log(res, 'jdshbfjkdhbjkn')
+                        // console.log(res, 'jdshbfjkdhbjkn')
                         if (res?.skippedCount > 0) {
                           setRecordSkipped(true)
                           setSkippedRecords(res?.skippedRecords)

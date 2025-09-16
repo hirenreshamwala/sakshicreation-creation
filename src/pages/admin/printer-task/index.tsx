@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { getPrinterOrdersThunk } from "@/store/slices/orderSlice";
 import { useRouter } from "next/router";
 import { authService } from "@/services/auth.service";
+import Loader from "@/component/common_component/loader";
 
 interface Column {
   id: string;
@@ -128,7 +129,7 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loader />;
   }
 
   // Transform orders data for table

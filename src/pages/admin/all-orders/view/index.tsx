@@ -204,9 +204,9 @@
       setOpenFilesDialog(false)
     }
 
-    const handleFilesSelected = (files: File[]) => {
-      console.log("Files selected:", files)
-    }
+    // const handleFilesSelected = (files: File[]) => {
+    //   console.log("Files selected:", files)
+    // }
 
     const handleUploadError = (error: string) => {
       console.error("Upload error:", error)

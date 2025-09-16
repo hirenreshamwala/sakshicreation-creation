@@ -107,6 +107,11 @@ const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
+  useEffect(() => {
+      if (error) {
+        toast.error(error);
+      }
+    }, [error, dispatch]);
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
@@ -166,11 +171,6 @@ const LoginPage: React.FC = () => {
         >
           Login
         </Typography>
-        {error && (
-          <Typography color="error" sx={{ mb: 2, textAlign: 'center' }}>
-            {error}
-          </Typography>
-        )}
         <Box component="form" onSubmit={handleLogin} sx={{ width: '100%' }}>
           <TextField
             type="email"
