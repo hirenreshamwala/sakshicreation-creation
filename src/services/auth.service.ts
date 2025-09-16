@@ -1,6 +1,7 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import Endpoint from '@/API/apiConfig';
 import { Role } from './role.service';
+import Request from './axios';
 
 export interface User {
   id: string;
@@ -33,13 +34,8 @@ export const authService = {
   },
   fetchUser: async (token: string, userId: string): Promise<User> => {
     try {
-      const response: AxiosResponse<{ success: boolean; data: any }> = await axios.get(
-        `${Endpoint.GET_USER_PROFILE}/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<{ success: boolean; data: any }> = await Request.get(
+        `${Endpoint.GET_USER_PROFILE}/${userId}`);
       if (response.data.success) {
         const { data } = response.data;
         return {

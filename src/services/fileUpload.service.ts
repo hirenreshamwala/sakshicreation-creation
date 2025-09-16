@@ -1,6 +1,6 @@
-import axios, { type AxiosResponse } from "axios"
+import { type AxiosResponse } from "axios"
 import Endpoint from "@/API/apiConfig"
-import { authService } from "./auth.service"
+import Request from "./axios"
 
 interface UploadedFile {
   filename: string
@@ -22,28 +22,14 @@ export const fileUploadService = {
   // Upload single file
   async uploadSingleFile(file: File, folder = "general"): Promise<ApiResponse<UploadedFile>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
 
       const formData = new FormData()
       formData.append("folder", folder)
       formData.append("file", file)
 
-
-      const response: AxiosResponse<ApiResponse<UploadedFile>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<UploadedFile>> = await Request.post(
         Endpoint.UPLOAD_SINGLE_FILE,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
-        },
-      )
-
+        formData)
 
       return {
         success: response.data.success,
@@ -59,10 +45,6 @@ export const fileUploadService = {
   // Upload multiple files
   async uploadMultipleFiles(files: File[], folder = "general"): Promise<ApiResponse<UploadedFile[]>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
 
       const formData = new FormData()
       files.forEach((file) => {
@@ -71,18 +53,9 @@ export const fileUploadService = {
       formData.append("folder", folder)
 
 
-      const response: AxiosResponse<ApiResponse<UploadedFile[]>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<UploadedFile[]>> = await Request.post(
         Endpoint.UPLOAD_MULTIPLE_FILES,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
-        },
-      )
-
+        formData)
 
       return {
         success: response.data.success,
@@ -98,23 +71,9 @@ export const fileUploadService = {
   // Delete file
   async deleteFile(folder: string, filename: string): Promise<ApiResponse<null>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
 
-
-      const response: AxiosResponse<ApiResponse<null>> = await axios.delete(
-        `${Endpoint.DELETE_FILE}/${folder}/${filename}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        },
-      )
-
+      const response: AxiosResponse<ApiResponse<null>> = await Request.delete(
+        `${Endpoint.DELETE_FILE}/${folder}/${filename}`)
 
       return {
         success: response.data.success,
@@ -130,23 +89,9 @@ export const fileUploadService = {
   // Get file info
   async getFileInfo(folder: string, filename: string): Promise<ApiResponse<UploadedFile>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
 
-
-      const response: AxiosResponse<ApiResponse<UploadedFile>> = await axios.get(
-        `${Endpoint.GET_FILE_INFO}/${folder}/${filename}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        },
-      )
-
+      const response: AxiosResponse<ApiResponse<UploadedFile>> = await Request.get(
+        `${Endpoint.GET_FILE_INFO}/${folder}/${filename}`)
 
       return {
         success: response.data.success,

@@ -1,8 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { kantanService, Kantan } from "@/services/kantan.service";
-import { authService } from "@/services/auth.service";
-import axios from "axios";
 import Endpoint from "@/API/apiConfig";
+import Request from "@/services/axios";
 
 // ✅ Create Kantan
 export const createKantanThunk = createAsyncThunk(
@@ -77,16 +76,7 @@ export const bulkCreateKantansThunk = createAsyncThunk(
   "kantans/bulkCreate",
   async (formData: FormData, { rejectWithValue }) => {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-      const response = await axios.post(Endpoint.BULK_UPLOAD_KANTANS, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true,
-      });
+      const response = await Request.post(Endpoint.BULK_UPLOAD_KANTANS, formData);
 
       if (response.data.success === false) {
         throw new Error(response.data.message || "Bulk create failed");

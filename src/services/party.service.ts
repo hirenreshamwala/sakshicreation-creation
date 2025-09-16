@@ -1,6 +1,6 @@
-import axios, { type AxiosResponse } from "axios"
+import { type AxiosResponse } from "axios"
 import Endpoint from "@/API/apiConfig"
-import { authService } from "./auth.service"
+import Request from "./axios"
 
 interface Party {
   _id: string
@@ -20,23 +20,8 @@ interface ApiResponse<T> {
 export const partyService = {
   async getPartiesByCompany(companyId: string): Promise<ApiResponse<Party[]>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-
-      const response: AxiosResponse<ApiResponse<Party[]>> = await axios.get(
-        `${Endpoint.GET_PARTIES_BY_COMPANY}/${companyId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        },
-      )
-
+      const response: AxiosResponse<ApiResponse<Party[]>> = await Request.get(
+        `${Endpoint.GET_PARTIES_BY_COMPANY}/${companyId}`)
 
       return {
         success: response.data.success,

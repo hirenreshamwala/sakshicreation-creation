@@ -74,7 +74,7 @@ const QpInventoryPage = () => {
     const { inventory, summary, loading, error } = useAppSelector(state => state.inventory);
     const { materials } = useAppSelector(state => state.materials);
     const { vendors } = useAppSelector(state => state.vendors);
-    const [activeMainTab, setActiveMainTab] = useState<InventoryCategory>(InventoryCategory.PRINTER);
+    const [activeMainTab, setActiveMainTab] = useState<InventoryCategory>(InventoryCategory.GODOWN);
     const [activeWardTab, setActiveWardTab] = useState<WardTab>(WardTab.INWARD);
     const [showDetails, setShowDetails] = useState(false);
     const [selectedPrinter, setSelectedPrinter] = useState<AggregatedInventory | null>(null);
@@ -278,22 +278,16 @@ const QpInventoryPage = () => {
                     </Box>
                     <BasicTable
                         tableHeader={[
-                            { id: 'material', label: 'MATERIAL' },
-                            { id: 'size', label: 'SIZE' },
-                            { id: 'gsm', label: 'GSM' },
-                            { id: 'kg', label: 'KG' },
-                            { id: 'qty', label: 'QTY' },
+                            { id: 'category', label: 'CATEGORY' },
+                            { id: 'for', label: 'for' },
                             { id: 'date', label: 'DATE' },
                             { id: 'vendor', label: 'VENDOR' },
                         ]}
                         rowData={filteredInventory}
                         renderRow={(row) => (
                             <>
-                                <TableCell>{row.material?.materialName || 'N/A'}</TableCell>
-                                <TableCell>{row.material?.materialSize || 'N/A'}</TableCell>
-                                <TableCell>{row.material?.materialGSM || 'N/A'}</TableCell>
-                                <TableCell>{row.kg}</TableCell>
-                                <TableCell>{row.quantity}</TableCell>
+                                <TableCell>{row.category || 'N/A'}</TableCell>
+                                <TableCell>{row?.for?.roleName || 'N/A'}</TableCell>
                                 <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
                                 <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
                             </>
@@ -349,15 +343,10 @@ const QpInventoryPage = () => {
 
                             <BasicTable
                                 tableHeader={[
-                                    { id: 'printer', label: 'PRINTER NAME' },
-                                    { id: 'material', label: 'PAPER' },
-                                    { id: 'gsm', label: 'GSM' },
-                                    { id: 'size', label: 'SIZE' },
-                                    { id: 'quantity', label: 'QUANTITY IN STOCK' },
-                                    { id: 'lastPurchase', label: 'LAST PURCHASE' },
-                                    { id: 'usedQty', label: 'USED QUANTITY' },
-                                    { id: 'balance', label: 'BALANCE' },
-                                    { id: 'action', label: 'ACTIONS' },
+                                    { id: 'category', label: 'CATEGORY' },
+                                    { id: 'for', label: 'for' },
+                                    { id: 'date', label: 'DATE' },
+                                    { id: 'vendor', label: 'VENDOR' },
                                 ]}
                                 rowData={aggregatedData.filter(item =>
                                     (!selectedMaterial || item.materialId === selectedMaterial) &&
@@ -365,22 +354,10 @@ const QpInventoryPage = () => {
                                 )}
                                 renderRow={(row) => (
                                     <>
-                                        <TableCell>{row.printerName}</TableCell>
-                                        <TableCell>{row.materialName}</TableCell>
-                                        <TableCell>{row.materialGSM}</TableCell>
-                                        <TableCell>{row.materialSize}</TableCell>
-                                        <TableCell>{row.totalQuantity}</TableCell>
-                                        <TableCell>{row.lastPurchase}</TableCell>
-                                        <TableCell>{row.usedQty}</TableCell>
-                                        <TableCell>{row.balance}</TableCell>
-                                        <TableCell>
-                                            <Box display="flex" justifyContent="flex-end" alignItems="center">
-                                                <FaChevronRight
-                                                    style={styles.tableActionIcon}
-                                                    onClick={() => handleRowClick(row)}
-                                                />
-                                            </Box>
-                                        </TableCell>
+                                        <TableCell>{row.category || 'N/A'}</TableCell>
+                                        <TableCell>{row?.for?.roleName || 'N/A'}</TableCell>
+                                        <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                                        <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
                                     </>
                                 )}
                                 showDatePicker={false}
@@ -437,7 +414,7 @@ const QpInventoryPage = () => {
                                 showFillter={false}
                                 renderRow={(row) => (
                                     <>
-                                        <TableCell>{row.material?.materialName || 'N/A'}</TableCell>
+                                        <TableCell>{row.category || 'N/A'}</TableCell>
                                         <TableCell>{row.material?.materialGSM || 'N/A'}</TableCell>
                                         <TableCell>{row.material?.materialSize || 'N/A'}</TableCell>
                                         <TableCell>{row.quantity}</TableCell>

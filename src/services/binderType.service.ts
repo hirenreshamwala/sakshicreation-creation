@@ -1,6 +1,6 @@
-import axios, { type AxiosResponse } from "axios";
+import { type AxiosResponse } from "axios";
 import Endpoint from "@/API/apiConfig";
-import { authService } from "./auth.service";
+import Request from "./axios";
 
 interface BinderType {
   _id: string;
@@ -33,21 +33,9 @@ export const binderTypeService = {
     data: CreateBinderTypeData
   ): Promise<ApiResponse<BinderType>> {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-
-      const response: AxiosResponse<ApiResponse<BinderType>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<BinderType>> = await Request.post(
         Endpoint.CREATE_BINDER_TYPE,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+        data);
 
       return {
         success: response.data.success,
@@ -67,25 +55,13 @@ export const binderTypeService = {
     search?: string;
   }): Promise<ApiResponse<BinderType[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-
       const queryParams: any = {};
       if (params?.page) queryParams.page = params.page;
       if (params?.limit) queryParams.limit = params.limit;
       if (params?.search) queryParams.search = params.search;
 
-      const response: AxiosResponse<ApiResponse<BinderType[]>> = await axios.get(
-        Endpoint.GET_ALL_BINDER_TYPE,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          params: queryParams,
-          withCredentials: true,
-        }
+      const response: AxiosResponse<ApiResponse<BinderType[]>> = await Request.get(
+        Endpoint.GET_ALL_BINDER_TYPE, { params: queryParams }
       );
 
       return {
@@ -104,20 +80,8 @@ export const binderTypeService = {
   // Get BinderType By ID
   async getBinderTypeById(id: string): Promise<ApiResponse<BinderType>> {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-
-      const response: AxiosResponse<ApiResponse<BinderType>> = await axios.get(
-        `${Endpoint.GET_BINDER_TYPE_WITH_ID}/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<BinderType>> = await Request.get(
+        `${Endpoint.GET_BINDER_TYPE_WITH_ID}/${id}`);
 
       return {
         success: response.data.success,
@@ -136,21 +100,9 @@ export const binderTypeService = {
     data: Partial<CreateBinderTypeData>
   ): Promise<ApiResponse<BinderType>> {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-
-      const response: AxiosResponse<ApiResponse<BinderType>> = await axios.put(
+      const response: AxiosResponse<ApiResponse<BinderType>> = await Request.put(
         `${Endpoint.UPDATE_BINDER_TYPE}/${id}`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+        data);
 
       return {
         success: response.data.success,
@@ -166,20 +118,8 @@ export const binderTypeService = {
   // Delete BinderType
   async deleteBinderType(id: string): Promise<ApiResponse<null>> {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-
-      const response: AxiosResponse<ApiResponse<null>> = await axios.delete(
-        `${Endpoint.DELETE_BINDER_TYPE}/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<null>> = await Request.delete(
+        `${Endpoint.DELETE_BINDER_TYPE}/${id}`);
 
       return {
         success: response.data.success,
@@ -195,21 +135,9 @@ export const binderTypeService = {
   // Bulk Create BinderTypes
   async bulkCreateBinderTypes(formData: FormData): Promise<ApiResponse<BinderType[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-
-      const response: AxiosResponse<ApiResponse<BinderType[]>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<BinderType[]>> = await Request.post(
         Endpoint.BULK_CREATE_BINDER_TYPES,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
-        }
-      );
+        formData);
 
       return {
         success: response.data.success,

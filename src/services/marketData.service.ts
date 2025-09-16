@@ -1,6 +1,6 @@
-import axios, { AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import Endpoint from "@/API/apiConfig";
-import { authService } from "./auth.service";
+import Request from "./axios";
 
 export interface Market {
   _id: string;
@@ -25,20 +25,9 @@ export const marketService = {
     marketData: Omit<Market, "_id" | "createdAt" | "updatedAt">
   ): Promise<ApiResponse<Market>> {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-      const response: AxiosResponse<ApiResponse<Market>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<Market>> = await Request.post(
         Endpoint.CREATE_MARKET,
-        marketData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+        marketData);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to create market");
@@ -47,16 +36,8 @@ export const marketService = {
 
   async getAllMarkets(): Promise<ApiResponse<Market[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-      const response: AxiosResponse<ApiResponse<Market[]>> = await axios.get(
-        Endpoint.GET_ALL_MARKETS,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Market[]>> = await Request.get(
+        Endpoint.GET_ALL_MARKETS);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch markets");
@@ -68,20 +49,9 @@ export const marketService = {
     updateData: Partial<Market>
   ): Promise<ApiResponse<Market>> {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-      const response: AxiosResponse<ApiResponse<Market>> = await axios.patch(
+      const response: AxiosResponse<ApiResponse<Market>> = await Request.patch(
         `${Endpoint.UPDATE_MARKET}/${id}`,
-        updateData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+        updateData);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to update market");
@@ -90,16 +60,8 @@ export const marketService = {
 
   async deleteMarket(id: string): Promise<ApiResponse<void>> {
     try {
-      const token = authService.getToken();
-      if (!token) throw new Error("No authentication token found");
-
-      const response: AxiosResponse<ApiResponse<void>> = await axios.delete(
-        `${Endpoint.DELETE_MARKET}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<void>> = await Request.delete(
+        `${Endpoint.DELETE_MARKET}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to delete market");

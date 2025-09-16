@@ -1,8 +1,6 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import Endpoint from '@/API/apiConfig';
-import { authService } from './auth.service';
-
-const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
+import Request from './axios';
 
 export interface PaperGSM {
   _id: string;
@@ -29,21 +27,9 @@ export interface ApiResponse<T> {
 export const paperGSMService = {
   async createPaperGSM(paperData: Omit<PaperGSM, '_id' | 'createdAt' | 'updatedAt'>): Promise<PaperGSM> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<PaperGSM>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<PaperGSM>> = await Request.post(
         Endpoint.CREATE_PAPER_GSM,
-        paperData,
-        {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          withCredentials: true,
-        }
-      );
+        paperData);
       return response.data.data;
     } catch (error: any) {
       throw new Error(
@@ -54,17 +40,8 @@ export const paperGSMService = {
 
   async getAllPaperGSM(): Promise<PaperGSM[]> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<PaperGSM[]>> = await axios.get(
-        Endpoint.GET_ALL_PAPER_GSM,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<PaperGSM[]>> = await Request.get(
+        Endpoint.GET_ALL_PAPER_GSM);
       return response.data.data;
     } catch (error: any) {
       throw new Error(
@@ -75,21 +52,9 @@ export const paperGSMService = {
 
   async updatePaperGSM(id: string, updateData: Partial<PaperGSM>): Promise<PaperGSM> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<PaperGSM>> = await axios.patch(
+      const response: AxiosResponse<ApiResponse<PaperGSM>> = await Request.patch(
         `${Endpoint.UPDATE_PAPER_GSM}/${id}`,
-        updateData,
-        {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          withCredentials: true,
-        }
-      );
+        updateData);
       return response.data.data;
     } catch (error: any) {
       throw new Error(
@@ -100,17 +65,8 @@ export const paperGSMService = {
 
   async deletePaperGSM(id: string): Promise<AxiosResponse<ApiResponse<void>>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<void>> = await axios.delete(
-        `${Endpoint.DELETE_PAPER_GSM}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<void>> = await Request.delete(
+        `${Endpoint.DELETE_PAPER_GSM}/${id}`);
       return response;
     } catch (error: any) {
       throw new Error(
@@ -118,24 +74,16 @@ export const paperGSMService = {
       );
     }
   },
-   async getGSMByDeckal(deckal: string): Promise<GSMOption[]> {
-  try {
-    const token = authService.getToken();
-    if (!token) throw new Error("No authentication token found");
+  async getGSMByDeckal(deckal: string): Promise<GSMOption[]> {
+    try {
+      const response: AxiosResponse<ApiResponse<GSMOption[]>> = await Request.get(
+        `${Endpoint.GET_GSM_BY_DECKAL}?deckal=${deckal}`);
 
-    const response: AxiosResponse<ApiResponse<GSMOption[]>> = await axios.get(
-      `${Endpoint.GET_GSM_BY_DECKAL}?deckal=${deckal}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      }
-    );
-
-    return response || [];
-  } catch (error: any) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch GSM by Deckal"
-    );
+      return response || [];
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to fetch GSM by Deckal"
+      );
+    }
   }
-}
 };

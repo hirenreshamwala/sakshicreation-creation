@@ -1,6 +1,6 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import Endpoint from '@/API/apiConfig';
-import { authService } from './auth.service';
+import Request from './axios';
 const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
 export interface CompanyName {
   _id: string;
@@ -89,17 +89,8 @@ export interface ApiResponse<T> {
 export const purchaseService = {
   async getCompanies(): Promise<ApiResponse<CompanyName[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<CompanyName[]>> = await axios.get(
-        Endpoint.COMPANY_NAME_GET_ALL,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<CompanyName[]>> = await Request.get(
+        Endpoint.COMPANY_NAME_GET_ALL);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -110,17 +101,8 @@ export const purchaseService = {
 
   async getRoles(): Promise<ApiResponse<Role[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Role[]>> = await axios.get(
-        Endpoint.GET_ALL_ROLES,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Role[]>> = await Request.get(
+        Endpoint.GET_ALL_ROLES);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -131,17 +113,8 @@ export const purchaseService = {
 
   async getStaffByRole(roleId: string): Promise<ApiResponse<Staff[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Staff[]>> = await axios.get(
-        `${BaseURL}/api/purchase/getstaffbyrole/${roleId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Staff[]>> = await Request.get(
+        `${BaseURL}/api/purchase/getstaffbyrole/${roleId}`);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -152,17 +125,8 @@ export const purchaseService = {
 
   async getPurchases(): Promise<ApiResponse<Purchase[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Purchase[]>> = await axios.get(
-        Endpoint.GET_ALL_PURCHASES,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Purchase[]>> = await Request.get(
+        Endpoint.GET_ALL_PURCHASES);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -173,17 +137,8 @@ export const purchaseService = {
 
   async getPurchaseById(id: string): Promise<ApiResponse<Purchase>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Purchase>> = await axios.get(
-        `${Endpoint.GET_PURCHASE_BY_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Purchase>> = await Request.get(
+        `${Endpoint.GET_PURCHASE_BY_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -194,18 +149,9 @@ export const purchaseService = {
 
   async createPurchase(data: CreatePurchase): Promise<Purchase> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Purchase>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<Purchase>> = await Request.post(
         Endpoint.CREATE_PURCHASE,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data.data!;
     } catch (error: any) {
       throw new Error(
@@ -216,18 +162,9 @@ export const purchaseService = {
 
   async updatePurchase(id: string, data: Partial<UpdatePurchase>): Promise<Purchase> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Purchase>> = await axios.patch(
+      const response: AxiosResponse<ApiResponse<Purchase>> = await Request.patch(
         `${Endpoint.UPDATE_PURCHASE}/${id}`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data.data!;
     } catch (error: any) {
       throw new Error(
@@ -238,14 +175,7 @@ export const purchaseService = {
 
   async deletePurchase(id: string): Promise<void> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      await axios.delete(`${Endpoint.DELETE_PURCHASE}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
+      await Request.delete(`${Endpoint.DELETE_PURCHASE}/${id}`);
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || 'Failed to delete purchase'
@@ -255,17 +185,8 @@ export const purchaseService = {
 
   async getPurchasesByMaterial(materialId: string): Promise<ApiResponse<Purchase[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Purchase[]>> = await axios.get(
-        `${Endpoint.GET_PURCHASES_BY_MATERIAL}/${materialId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Purchase[]>> = await Request.get(
+        `${Endpoint.GET_PURCHASES_BY_MATERIAL}/${materialId}`);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -276,17 +197,8 @@ export const purchaseService = {
 
   async getPurchasesByCompany(companyId: string): Promise<ApiResponse<Purchase[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Purchase[]>> = await axios.get(
-        `${Endpoint.GET_PURCHASES_BY_COMPANY}/${companyId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Purchase[]>> = await Request.get(
+        `${Endpoint.GET_PURCHASES_BY_COMPANY}/${companyId}`);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -297,17 +209,9 @@ export const purchaseService = {
 
   async getPurchasesByDateRange(startDate: string, endDate: string): Promise<ApiResponse<Purchase[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Purchase[]>> = await axios.get(
+      const response: AxiosResponse<ApiResponse<Purchase[]>> = await Request.get(
         Endpoint.GET_PURCHASES_BY_DATE_RANGE,
-        {
-          params: { startDate, endDate },
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
+        { params: { startDate, endDate } }
       );
       return response.data;
     } catch (error: any) {
@@ -319,21 +223,9 @@ export const purchaseService = {
 
   async bulkCreatePurchases(formData: FormData): Promise<ApiResponse<Purchase[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Purchase[]>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<Purchase[]>> = await Request.post(
         Endpoint.BULK_CREATE_PURCHASES,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-          withCredentials: true,
-        }
-      );
+        formData);
       return response.data;
     } catch (error: any) {
       throw new Error(

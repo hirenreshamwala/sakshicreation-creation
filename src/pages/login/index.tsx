@@ -28,7 +28,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [loader, setLoader] = useState<boolean>(true);
-  const [showPassword, setShowPassword] = useState<boolean>(false); 
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const router = useRouter();
   const dispatch = useAppDispatch();
 
@@ -55,7 +55,7 @@ const LoginPage: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, requestType: 'web' }),
         credentials: 'include',
       });
 

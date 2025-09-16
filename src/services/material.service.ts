@@ -1,6 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 import Endpoint from '@/API/apiConfig';
 import { authService } from './auth.service';
+import Request from './axios';
 
 export interface Material {
   _id: string;
@@ -32,17 +33,8 @@ export interface ApiResponse<T> {
 export const materialService = {
   async getMaterials(): Promise<ApiResponse<Material[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Material[]>> = await axios.get(
-        Endpoint.GET_ALL_MATERIALS,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Material[]>> = await Request.get(
+        Endpoint.GET_ALL_MATERIALS);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -53,17 +45,8 @@ export const materialService = {
 
   async getMaterialById(id: string): Promise<ApiResponse<Material>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Material>> = await axios.get(
-        `${Endpoint.GET_MATERIAL_BY_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Material>> = await Request.get(
+        `${Endpoint.GET_MATERIAL_BY_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -74,18 +57,9 @@ export const materialService = {
 
   async createMaterial(data: CreateMaterial): Promise<Material> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Material>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<Material>> = await Request.post(
         Endpoint.CREATE_MATERIAL,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data.data!;
     } catch (error: any) {
       throw new Error(
@@ -96,18 +70,9 @@ export const materialService = {
 
   async updateMaterial(id: string, data: Partial<UpdateMaterial>): Promise<Material> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Material>> = await axios.patch(
+      const response: AxiosResponse<ApiResponse<Material>> = await Request.patch(
         `${Endpoint.UPDATE_MATERIAL}/${id}`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data.data!;
     } catch (error: any) {
       throw new Error(
@@ -118,14 +83,7 @@ export const materialService = {
 
   async deleteMaterial(id: string): Promise<void> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      await axios.delete(`${Endpoint.DELETE_MATERIAL}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
+      await Request.delete(`${Endpoint.DELETE_MATERIAL}/${id}`);
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || 'Failed to delete material'
@@ -135,21 +93,9 @@ export const materialService = {
 
   async bulkCreateMaterials(formData: FormData): Promise<ApiResponse<Material[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Material[]>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<Material[]>> = await Request.post(
         Endpoint.BULK_CREATE_MATERIALS,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-          withCredentials: true,
-        }
-      );
+        formData);
       return response.data;
     } catch (error: any) {
       throw new Error(

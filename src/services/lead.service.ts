@@ -1,7 +1,7 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import Endpoint from '@/API/apiConfig';
-import { authService } from './auth.service';
 import { Lead } from './types';
+import Request from './axios';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -12,51 +12,34 @@ export interface ApiResponse<T> {
 
 export const leadService = {
   async getAllLeads(): Promise<ApiResponse<Lead[]>> {
-  try {
-    const token = authService.getToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    const response: AxiosResponse<ApiResponse<Lead[]>> = await axios.get(
-      Endpoint.GET_ALL_LEADS,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
+    try {
+
+      const response: AxiosResponse<ApiResponse<Lead[]>> = await Request.get(
+        Endpoint.GET_ALL_LEADS);
+
+      // Ensure response.data exists and has the correct structure
+      if (!response.data) {
+        throw new Error('No data received from server');
       }
-    );
-    
-    // Ensure response.data exists and has the correct structure
-    if (!response.data) {
-      throw new Error('No data received from server');
+
+      // Ensure data is always an array, even if empty
+      const data = Array.isArray(response.data.data) ? response.data.data : [];
+
+      return {
+        success: response.data.success,
+        data: data,
+        message: response.data.message,
+        count: response.data.count || data.length,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch leads');
     }
-
-    // Ensure data is always an array, even if empty
-    const data = Array.isArray(response.data.data) ? response.data.data : [];
-
-    return {
-      success: response.data.success,
-      data: data,
-      message: response.data.message,
-      count: response.data.count || data.length,
-    };
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch leads');
-  }
-},
+  },
 
   async getLeadsByStaffId(id: string): Promise<ApiResponse<Lead[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Lead[]>> = await axios.get(
-        `${Endpoint.GET_LEAD_BY_STAFF_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Lead[]>> = await Request.get(
+        `${Endpoint.GET_LEAD_BY_STAFF_ID}/${id}`);
       return {
         success: response.data.success,
         data: response.data.data || [],
@@ -70,23 +53,9 @@ export const leadService = {
 
   async createLead(data: Partial<Lead>): Promise<Lead> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      console.log(data,'fghjkijhgfdsdhjkl;')
-      const response: AxiosResponse<Lead> = await axios.post(
+      const response: AxiosResponse<Lead> = await Request.post(
         Endpoint.CREATE_LEAD,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data.data || response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to create lead');
@@ -95,22 +64,9 @@ export const leadService = {
 
   async bulkCreateLeads(leadsData: Partial<Lead>[]): Promise<ApiResponse<Lead[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<Lead[]>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<Lead[]>> = await Request.post(
         `${Endpoint.CREATE_LEAD}/bulk`,
-        leadsData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          withCredentials: true,
-        }
-      );
+        leadsData);
       if (!response.data) {
         throw new Error('No data received from server');
       }
@@ -128,22 +84,9 @@ export const leadService = {
 
   async updateLead(id: string, data: Partial<Lead>): Promise<Lead> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<Lead> = await axios.patch(
+      const response: AxiosResponse<Lead> = await Request.patch(
         `${Endpoint.UPDATE_LEAD}/${id}`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data.data || response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update lead');
@@ -152,14 +95,7 @@ export const leadService = {
 
   async deleteLead(id: string): Promise<void> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      await axios.delete(`${Endpoint.DELETE_LEAD}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
+      await Request.delete(`${Endpoint.DELETE_LEAD}/${id}`);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to delete lead');
     }

@@ -1,6 +1,6 @@
-import axios, { AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import Endpoint from "@/API/apiConfig";
-import { authService } from "./auth.service";
+import Request from "./axios";
 
 export interface User {
   _id: string;
@@ -117,17 +117,8 @@ export interface PartySuggestion {
 export const accountMasterService = {
   async getAccountMasters(): Promise<ApiResponse<AccountMaster[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await axios.get(
-        Endpoint.GET_ALL_ACCOUNT_MASTERS,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await Request.get(
+        Endpoint.GET_ALL_ACCOUNT_MASTERS);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch account masters");
@@ -136,17 +127,8 @@ export const accountMasterService = {
 
   async getAccountMasterById(id: string): Promise<ApiResponse<AccountMaster>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<AccountMaster>> = await axios.get(
-        `${Endpoint.GET_ACCOUNT_MASTER_BY_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<AccountMaster>> = await Request.get(
+        `${Endpoint.GET_ACCOUNT_MASTER_BY_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch account master");
@@ -154,17 +136,8 @@ export const accountMasterService = {
   },
   async getAccountMasterByStaffId(id: string): Promise<ApiResponse<AccountMaster>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<AccountMaster>> = await axios.get(
-        `${Endpoint.GET_ACCOUNT_MASTER_BY_STAFF_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<AccountMaster>> = await Request.get(
+        `${Endpoint.GET_ACCOUNT_MASTER_BY_STAFF_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch account master");
@@ -173,18 +146,9 @@ export const accountMasterService = {
 
   async createAccountMaster(data: CreateAccountMaster): Promise<ApiResponse<AccountMaster>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<AccountMaster>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<AccountMaster>> = await Request.post(
         Endpoint.CREATE_ACCOUNT_MASTER,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to create account master");
@@ -193,20 +157,9 @@ export const accountMasterService = {
 
   async bulkCreateAccountMasters(formData: FormData): Promise<ApiResponse<AccountMaster[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await Request.post(
         Endpoint.BULK_CREATE_ACCOUNT_MASTERS,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
-        }
+        formData
       );
       return response;
     } catch (error: any) {
@@ -216,18 +169,9 @@ export const accountMasterService = {
 
   async updateAccountMaster(id: string, data: Partial<UpdateAccountMaster>): Promise<ApiResponse<AccountMaster>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<AccountMaster>> = await axios.patch(
+      const response: AxiosResponse<ApiResponse<AccountMaster>> = await Request.patch(
         `${Endpoint.UPDATE_ACCOUNT_MASTER}/${id}`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to update account master");
@@ -236,14 +180,7 @@ export const accountMasterService = {
 
   async deleteAccountMaster(id: string): Promise<void> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      await axios.delete(`${Endpoint.DELETE_ACCOUNT_MASTER}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
+      await Request.delete(`${Endpoint.DELETE_ACCOUNT_MASTER}/${id}`);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to delete account master");
     }
@@ -254,20 +191,9 @@ export const accountMasterService = {
     partyId: string
   ): Promise<ApiResponse<AccountMaster[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await Request.post(
         Endpoint.BY_COMPNAY_PARTY,
-        { companyId, partyId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
+        { companyId, partyId }
       );
       return {
         success: response.data.success,
@@ -281,17 +207,9 @@ export const accountMasterService = {
 
   async approveParty(partyId: string): Promise<ApiResponse<AccountMaster>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<AccountMaster>> = await axios.put(
+      const response: AxiosResponse<ApiResponse<AccountMaster>> = await Request.put(
         `${Endpoint.UPDATE_APPROVED_ACCOUNT_MASTER}/${partyId}/approve`,
         {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
       );
       return response.data;
     } catch (error: any) {
@@ -300,16 +218,8 @@ export const accountMasterService = {
   },
   async searchParties(query: string): Promise<ApiResponse<PartySuggestion[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<PartySuggestion[]>> = await axios.get(
+      const response: AxiosResponse<ApiResponse<PartySuggestion[]>> = await Request.get(
         `${Endpoint.SEARCH_PARTIES}?q=${encodeURIComponent(query)}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
       );
       return response.data;
     } catch (error: any) {

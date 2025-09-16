@@ -2,6 +2,7 @@
 import axios from 'axios';
 import Endpoint from '@/API/apiConfig';
 import { authService } from './auth.service';
+import Request from './axios';
 
 interface Staff {
   id?: string;
@@ -20,20 +21,9 @@ interface Staff {
 }
 
 class StaffService {
-  private static getAuthHeader() {
-    const token = authService.getToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    return { Authorization: `Bearer ${token}` };
-  }
-
   static async getAllStaff() {
     try {
-      const response = await axios.get(Endpoint.GET_ALL_STAFF, {
-        headers: this.getAuthHeader(),
-        withCredentials: true,
-      });
+      const response = await Request.get(Endpoint.GET_ALL_STAFF);
       return response.data.data;
     } catch (error) {
       throw error;
@@ -42,10 +32,7 @@ class StaffService {
 
   static async getStaffById(id: string) {
     try {
-      const response = await axios.get(`${Endpoint.GET_STAFF_BY_ID}/${id}`, {
-        headers: this.getAuthHeader(),
-        withCredentials: true,
-      });
+      const response = await Request.get(`${Endpoint.GET_STAFF_BY_ID}/${id}`);
       return response.data.data;
     } catch (error) {
       throw error;
@@ -54,10 +41,7 @@ class StaffService {
 
   static async createStaff(staffData: Omit<Staff, 'id'>) {
     try {
-      const response = await axios.post(Endpoint.CREATE_STAFF, staffData, {
-        headers: this.getAuthHeader(),
-        withCredentials: true,
-      });
+      const response = await Request.post(Endpoint.CREATE_STAFF, staffData);
       return response.data.data;
     } catch (error) {
       throw error;
@@ -66,10 +50,7 @@ class StaffService {
 
   static async updateStaff(id: string, staffData: Partial<Staff>) {
     try {
-      const response = await axios.patch(`${Endpoint.UPDATE_STAFF}/${id}`, staffData, {
-        headers: this.getAuthHeader(),
-        withCredentials: true,
-      });
+      const response = await Request.patch(`${Endpoint.UPDATE_STAFF}/${id}`, staffData);
       return response.data.data;
     } catch (error) {
       throw error;
@@ -78,14 +59,9 @@ class StaffService {
 
   static async updateStaffStatus(id: string, status: boolean) {
     try {
-      const response = await axios.patch(
+      const response = await Request.patch(
         `${Endpoint.UPDATE_STAFF_STATUS}/${id}`,
-        { status },
-        {
-          headers: this.getAuthHeader(),
-          withCredentials: true,
-        }
-      );
+        { status });
       return response.data.data;
     } catch (error) {
       throw error;
@@ -94,10 +70,7 @@ class StaffService {
 
   static async deleteStaff(id: string) {
     try {
-      const response = await axios.delete(`${Endpoint.DELETE_STAFF}/${id}`, {
-        headers: this.getAuthHeader(),
-        withCredentials: true,
-      });
+      const response = await Request.delete(`${Endpoint.DELETE_STAFF}/${id}`);
       return response.data.data;
     } catch (error) {
       throw error;
@@ -105,14 +78,9 @@ class StaffService {
   }
   static async updateStaffPassword(id: string, passwordData: { currentPassword: string; newPassword: string }) {
     try {
-      const response = await axios.patch(
+      const response = await Request.patch(
         `${Endpoint.UPDATE_STAFF_PASSWORD}/${id}`,
-        passwordData,
-        {
-          headers: this.getAuthHeader(),
-          withCredentials: true,
-        }
-      );
+        passwordData);
       return response.data;
     } catch (error: any) {
       // Extract the error message from the response
@@ -122,14 +90,9 @@ class StaffService {
   }
   static async updateStaffAttachments(id: any, body: boolean) {
     try {
-      const response = await axios.post(
+      const response = await Request.post(
         `${Endpoint.UPDATE_STAFF_ATTACHMENTS}/${id}`,
-        body,
-        {
-          headers: this.getAuthHeader(),
-          withCredentials: true,
-        }
-      );
+        body);
       return response.data.data;
     } catch (error) {
       throw error;

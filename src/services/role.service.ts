@@ -1,6 +1,6 @@
-import axios, { AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import Endpoint from "@/API/apiConfig";
-import { authService } from "./auth.service";
+import Request from "./axios";
 
 export interface Permission {
   [key: string]: {
@@ -37,17 +37,8 @@ export interface ApiResponse<T> {
 export const roleService = {
   async getAllRoles(): Promise<ApiResponse<Role[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<Role[]>> = await axios.get(
-        Endpoint.GET_ALL_ROLES,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Role[]>> = await Request.get(
+        Endpoint.GET_ALL_ROLES);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch roles");
@@ -56,17 +47,9 @@ export const roleService = {
 
   async getRoleById(id: string): Promise<ApiResponse<Role>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<Role>> = await axios.get(
-        `${Endpoint.GET_ROLE_BY_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+
+      const response: AxiosResponse<ApiResponse<Role>> = await Request.get(
+        `${Endpoint.GET_ROLE_BY_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -77,18 +60,9 @@ export const roleService = {
 
   async createRole(data: CreateRole): Promise<Role> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<Role> = await axios.post(
+      const response: AxiosResponse<Role> = await Request.post(
         Endpoint.CREATE_ROLE,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -99,18 +73,9 @@ export const roleService = {
 
   async updateRole(id: string, data: Partial<UpdateRole>): Promise<Role> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<Role> = await axios.put(
+      const response: AxiosResponse<Role> = await Request.put(
         `${Endpoint.UPDATE_ROLE}/${id}`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -121,14 +86,7 @@ export const roleService = {
 
   async deleteRole(id: string): Promise<void> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      await axios.delete(`${Endpoint.DELETE_ROLE}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
+      await Request.delete(`${Endpoint.DELETE_ROLE}/${id}`);
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || "Failed to delete role"

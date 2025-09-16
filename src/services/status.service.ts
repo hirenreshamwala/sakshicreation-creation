@@ -1,6 +1,6 @@
-import axios, { type AxiosResponse } from "axios"
+import { type AxiosResponse } from "axios"
 import Endpoint from "@/API/apiConfig"
-import { authService } from "./auth.service"
+import Request from "./axios"
 
 interface Status {
   _id: string
@@ -46,22 +46,9 @@ export const statusService = {
   // Create Status
   async createStatus(type: string, data: CreateStatusData): Promise<ApiResponse<Status>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-      const response: AxiosResponse<ApiResponse<Status>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<Status>> = await Request.post(
         `${Endpoint.STATUS_BASE}/${type}/create`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        },
-      )
+        data)
 
 
       return {
@@ -86,11 +73,6 @@ export const statusService = {
     },
   ): Promise<ApiResponse<Status[]>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
 
       const queryParams: any = {}
       if (params?.page) queryParams.page = params.page
@@ -98,15 +80,7 @@ export const statusService = {
       if (params?.isActive !== undefined) queryParams.isActive = params.isActive
       if (params?.search) queryParams.search = params.search
 
-      const response: AxiosResponse<ApiResponse<Status[]>> = await axios.get(`${Endpoint.STATUS_BASE}/${type}/all`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        params: queryParams,
-        withCredentials: true,
-      })
-
+      const response: AxiosResponse<ApiResponse<Status[]>> = await Request.get(`${Endpoint.STATUS_BASE}/${type}/all`, { params: queryParams })
 
       return {
         success: response.data.success,
@@ -123,20 +97,8 @@ export const statusService = {
   // Get Status By ID
   async getStatusById(type: string, id: string): Promise<ApiResponse<Status>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
 
-
-      const response: AxiosResponse<ApiResponse<Status>> = await axios.get(`${Endpoint.STATUS_BASE}/${type}/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      })
-
+      const response: AxiosResponse<ApiResponse<Status>> = await Request.get(`${Endpoint.STATUS_BASE}/${type}/${id}`)
 
       return {
         success: response.data.success,
@@ -152,24 +114,10 @@ export const statusService = {
   // Update Status
   async updateStatus(type: string, id: string, data: Partial<CreateStatusData>): Promise<ApiResponse<Status>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
 
-
-      const response: AxiosResponse<ApiResponse<Status>> = await axios.put(
+      const response: AxiosResponse<ApiResponse<Status>> = await Request.put(
         `${Endpoint.STATUS_BASE}/${type}/update/${id}`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        },
-      )
-
+        data)
 
       return {
         success: response.data.success,
@@ -185,23 +133,8 @@ export const statusService = {
   // Delete Status
   async deleteStatus(type: string, id: string): Promise<ApiResponse<null>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-
-      const response: AxiosResponse<ApiResponse<null>> = await axios.delete(
-        `${Endpoint.STATUS_BASE}/${type}/delete/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        },
-      )
-
+      const response: AxiosResponse<ApiResponse<null>> = await Request.delete(
+        `${Endpoint.STATUS_BASE}/${type}/delete/${id}`)
 
       return {
         success: response.data.success,
@@ -217,20 +150,8 @@ export const statusService = {
   // Get Default Status
   async getDefaultStatus(type: string): Promise<ApiResponse<Status>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
 
-
-      const response: AxiosResponse<ApiResponse<Status>> = await axios.get(`${Endpoint.STATUS_BASE}/${type}/default`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      })
-
+      const response: AxiosResponse<ApiResponse<Status>> = await Request.get(`${Endpoint.STATUS_BASE}/${type}/default`)
 
       return {
         success: response.data.success,
@@ -246,24 +167,9 @@ export const statusService = {
   // Reorder Statuses
   async reorderStatuses(type: string, statusIds: string[]): Promise<ApiResponse<Status[]>> {
     try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-
-      const response: AxiosResponse<ApiResponse<Status[]>> = await axios.put(
+      const response: AxiosResponse<ApiResponse<Status[]>> = await Request.put(
         `${Endpoint.STATUS_BASE}/${type}/reorder`,
-        { statusIds },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        },
-      )
-
+        { statusIds })
 
       return {
         success: response.data.success,

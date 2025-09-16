@@ -1,8 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { paperGSMService, PaperGSM, ApiResponse, GSMOption } from '@/services/paperGSM.service';
-import { authService } from '@/services/auth.service';
-import axios from 'axios';
 import Endpoint from '@/API/apiConfig';
+import Request from '@/services/axios';
 
 // Async thunks
 export const createPaperGSMThunk = createAsyncThunk(
@@ -73,22 +72,10 @@ export const bulkCreatePaperGSMThunk = createAsyncThunk(
   'paperGSM/bulkCreate',
   async (formData: FormData, { rejectWithValue }) => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
 
-      const response = await axios.post(
+      const response = await Request.post(
         Endpoint.BULK_UPLOAD_PAPER_GSM,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-          withCredentials: true,
-        }
-      );
+        formData);
 
       // If your API uses `success` flag
       if (response.data.success === false) {

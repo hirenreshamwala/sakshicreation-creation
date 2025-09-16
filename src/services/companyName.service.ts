@@ -1,6 +1,6 @@
-import axios, { AxiosResponse } from "axios";
-import { authService } from "./auth.service";
+import { AxiosResponse } from "axios";
 import Endpoint from "@/API/apiConfig";
+import Request from "./axios";
 
 export interface CompanyName {
   _id: string;
@@ -23,18 +23,9 @@ export interface ApiResponse<T> {
 export const companyNameService = {
   async createCompanyName(data: CreateCompanyNameData): Promise<ApiResponse<CompanyName>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<CompanyName>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<CompanyName>> = await Request.post(
         Endpoint.CREATE_COMPANY_NAME,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to create company name");
@@ -43,18 +34,8 @@ export const companyNameService = {
 
   async getAllCompanyNames(): Promise<ApiResponse<CompanyName[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<CompanyName[]>> = await axios.get(
-        Endpoint.GET_ALL_COMPANY_NAME,
-        
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<CompanyName[]>> = await Request.get(
+        Endpoint.GET_ALL_COMPANY_NAME);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch company names");
@@ -63,17 +44,8 @@ export const companyNameService = {
 
   async getCompanyNameById(id: string): Promise<ApiResponse<CompanyName>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<CompanyName>> = await axios.get(
-        `${Endpoint.GET_COMPANY_NAME_BY_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<CompanyName>> = await Request.get(
+        `${Endpoint.GET_COMPANY_NAME_BY_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch company name");
@@ -82,18 +54,8 @@ export const companyNameService = {
 
   async updateCompanyName(id: string, data: Partial<CreateCompanyNameData>): Promise<ApiResponse<CompanyName>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<CompanyName>> = await axios.patch(
-        `${Endpoint.UPDATE_COMPANY_NAME}/${id}`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<CompanyName>> = await Request.patch(
+        `${Endpoint.UPDATE_COMPANY_NAME}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to update company name");
@@ -102,17 +64,8 @@ export const companyNameService = {
 
   async deleteCompanyName(id: string): Promise<ApiResponse<void>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<void>> = await axios.delete(
-        `${Endpoint.DELETE_COMPANY_NAME}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<void>> = await Request.delete(
+        `${Endpoint.DELETE_COMPANY_NAME}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to delete company name");

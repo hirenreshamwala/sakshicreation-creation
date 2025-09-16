@@ -1,6 +1,6 @@
-import axios, { AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import Endpoint from "@/API/apiConfig";
-import { authService } from "./auth.service";
+import Request from "./axios";
 
 export interface PerformanceInvoice {
   _id: string;
@@ -108,17 +108,8 @@ export interface ApiResponse<T> {
 export const performanceInvoiceService = {
   async getPerformanceInvoices(): Promise<ApiResponse<PerformanceInvoice[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<PerformanceInvoice[]>> = await axios.get(
-        Endpoint.GET_ALL_PERFORMANCE_INVOICES,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<PerformanceInvoice[]>> = await Request.get(
+        Endpoint.GET_ALL_PERFORMANCE_INVOICES);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch performance invoices");
@@ -127,17 +118,8 @@ export const performanceInvoiceService = {
 
   async getPerformanceInvoiceById(id: string): Promise<ApiResponse<PerformanceInvoice>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<PerformanceInvoice>> = await axios.get(
-        `${Endpoint.GET_PERFORMANCE_INVOICE_BY_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<PerformanceInvoice>> = await Request.get(
+        `${Endpoint.GET_PERFORMANCE_INVOICE_BY_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch performance invoice");
@@ -146,18 +128,9 @@ export const performanceInvoiceService = {
 
   async createPerformanceInvoice(data: CreatePerformanceInvoice): Promise<PerformanceInvoice> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<PerformanceInvoice> = await axios.post(
+      const response: AxiosResponse<PerformanceInvoice> = await Request.post(
         Endpoint.CREATE_PERFORMANCE_INVOICE,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to create performance invoice");
@@ -166,18 +139,9 @@ export const performanceInvoiceService = {
 
   async updatePerformanceInvoice(id: string, data: Partial<CreatePerformanceInvoice>): Promise<PerformanceInvoice> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<PerformanceInvoice> = await axios.patch(
+      const response: AxiosResponse<PerformanceInvoice> = await Request.patch(
         `${Endpoint.UPDATE_PERFORMANCE_INVOICE}/${id}`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to update performance invoice");
@@ -186,14 +150,7 @@ export const performanceInvoiceService = {
 
   async deletePerformanceInvoice(id: string): Promise<void> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      await axios.delete(`${Endpoint.DELETE_PERFORMANCE_INVOICE}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
+      await Request.delete(`${Endpoint.DELETE_PERFORMANCE_INVOICE}/${id}`);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to delete performance invoice");
     }
@@ -201,17 +158,8 @@ export const performanceInvoiceService = {
 
   async getAllOrders(): Promise<ApiResponse<Order[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
-        Endpoint.GET_ALL_ORDERS,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.get(
+        Endpoint.GET_ALL_ORDERS);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch orders");
@@ -220,17 +168,9 @@ export const performanceInvoiceService = {
 
   async getOrderByOrderNumber(orderNumber: string): Promise<ApiResponse<Order>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      const response: AxiosResponse<ApiResponse<Order>> = await axios.get(
-        `${Endpoint.GET_ORDER_BY_ORDER_NUMBER}/${orderNumber}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.get(
+        `${Endpoint.GET_ORDER_BY_ORDER_NUMBER}/${orderNumber}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch order");

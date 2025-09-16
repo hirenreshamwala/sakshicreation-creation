@@ -1,8 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 import Endpoint from '@/API/apiConfig';
 import { authService } from './auth.service';
-
-const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
+import Request from './axios';
 
 export interface Inventory {
   _id: string;
@@ -35,13 +34,8 @@ export const inventoryService = {
       if (!token) {
         throw new Error('No authentication token found');
       }
-      const response: AxiosResponse<ApiResponse<Inventory[]>> = await axios.get(
-        `${Endpoint.GET_BY_CATEGORY}/${category}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Inventory[]>> = await Request.get(
+        `${Endpoint.GET_BY_CATEGORY}/${category}`);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -56,13 +50,8 @@ export const inventoryService = {
       if (!token) {
         throw new Error('No authentication token found');
       }
-      const response: AxiosResponse<ApiResponse<{ lastPurchase: number, usedQty: number, balance: number }>> = await axios.get(
-        `${Endpoint.GET_CATEGORY}/${category}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<{ lastPurchase: number, usedQty: number, balance: number }>> = await Request.get(
+        `${Endpoint.GET_CATEGORY}/${category}`);
       return response.data;
     } catch (error: any) {
       throw new Error(

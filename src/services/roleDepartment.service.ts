@@ -1,6 +1,6 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import Endpoint from '@/API/apiConfig';
-import { authService } from './auth.service';
+import Request from './axios';
 
 // Interfaces for Party
 export interface Party {
@@ -66,17 +66,8 @@ export const roleDepartmentService = {
   // CompanyName Services
   async getAllCompanies(): Promise<ApiResponse<CompanyName[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<CompanyName[]>> = await axios.get(
-        Endpoint.COMPANY_NAME_GET_ALL,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<CompanyName[]>> = await Request.get(
+        Endpoint.COMPANY_NAME_GET_ALL);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch companies');
@@ -86,17 +77,8 @@ export const roleDepartmentService = {
   // RoleDepartment Services
   async getAllRoleDepartments(): Promise<ApiResponse<RoleDepartment[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<RoleDepartment[]>> = await axios.get(
-        Endpoint.ROLE_DEPARTMENT_GET_ALL,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<RoleDepartment[]>> = await Request.get(
+        Endpoint.ROLE_DEPARTMENT_GET_ALL);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch role departments');
@@ -105,17 +87,8 @@ export const roleDepartmentService = {
 
   async getRoleDepartmentById(id: string): Promise<ApiResponse<RoleDepartment>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<RoleDepartment>> = await axios.get(
-        `${Endpoint.ROLE_DEPARTMENT_GET_BY_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<RoleDepartment>> = await Request.get(
+        `${Endpoint.ROLE_DEPARTMENT_GET_BY_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch role department');
@@ -124,18 +97,9 @@ export const roleDepartmentService = {
 
   async createRoleDepartment(data: CreateRoleDepartment): Promise<RoleDepartment> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<RoleDepartment>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<RoleDepartment>> = await Request.post(
         Endpoint.ROLE_DEPARTMENT_CREATE,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data.data!;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to create role department');
@@ -144,18 +108,9 @@ export const roleDepartmentService = {
 
   async updateRoleDepartment(id: string, data: Partial<UpdateRoleDepartment>): Promise<RoleDepartment> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<RoleDepartment>> = await axios.patch(
+      const response: AxiosResponse<ApiResponse<RoleDepartment>> = await Request.patch(
         `${Endpoint.ROLE_DEPARTMENT_UPDATE}/${id}`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data.data!;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update role department');
@@ -164,14 +119,7 @@ export const roleDepartmentService = {
 
   async deleteRoleDepartment(id: string): Promise<void> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      await axios.delete(`${Endpoint.ROLE_DEPARTMENT_DELETE}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
+      await Request.delete(`${Endpoint.ROLE_DEPARTMENT_DELETE}/${id}`);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to delete role department');
     }
@@ -180,17 +128,8 @@ export const roleDepartmentService = {
   // RoleDepartmentCompany Services
   async getAllRoleDepartmentCompanies(): Promise<ApiResponse<RoleDepartmentCompany[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<RoleDepartmentCompany[]>> = await axios.get(
-        Endpoint.ROLE_DEPARTMENT_COMPANY_GET_ALL,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<RoleDepartmentCompany[]>> = await Request.get(
+        Endpoint.ROLE_DEPARTMENT_COMPANY_GET_ALL);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch role department companies');
@@ -199,17 +138,8 @@ export const roleDepartmentService = {
 
   async getRoleDepartmentCompanyById(id: string): Promise<ApiResponse<RoleDepartmentCompany>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<RoleDepartmentCompany>> = await axios.get(
-        `${Endpoint.ROLE_DEPARTMENT_COMPANY_GET_BY_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<RoleDepartmentCompany>> = await Request.get(
+        `${Endpoint.ROLE_DEPARTMENT_COMPANY_GET_BY_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch role department company');
@@ -218,18 +148,9 @@ export const roleDepartmentService = {
 
   async createRoleDepartmentCompany(data: CreateRoleDepartmentCompany): Promise<RoleDepartmentCompany> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<RoleDepartmentCompany>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<RoleDepartmentCompany>> = await Request.post(
         Endpoint.ROLE_DEPARTMENT_COMPANY_CREATE,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data.data!;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to create role department company');
@@ -238,18 +159,9 @@ export const roleDepartmentService = {
 
   async updateRoleDepartmentCompany(id: string, data: Partial<UpdateRoleDepartmentCompany>): Promise<RoleDepartmentCompany> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<RoleDepartmentCompany>> = await axios.patch(
+      const response: AxiosResponse<ApiResponse<RoleDepartmentCompany>> = await Request.patch(
         `${Endpoint.ROLE_DEPARTMENT_COMPANY_UPDATE}/${id}`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data.data!;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update role department company');
@@ -258,14 +170,7 @@ export const roleDepartmentService = {
 
   async deleteRoleDepartmentCompany(id: string): Promise<void> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      await axios.delete(`${Endpoint.ROLE_DEPARTMENT_COMPANY_DELETE}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
+      await Request.delete(`${Endpoint.ROLE_DEPARTMENT_COMPANY_DELETE}/${id}`);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to delete role department company');
     }

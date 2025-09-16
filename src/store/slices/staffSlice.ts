@@ -3,6 +3,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import Endpoint from '@/API/apiConfig';
 import { authService } from '@/services/auth.service';
+import Request from '@/services/axios';
 
 interface Staff {
   id: string;
@@ -75,10 +76,7 @@ export const getAllStaffThunk = createAsyncThunk("staff/getAll", async (_, { rej
     if (!token) {
       throw new Error("No authentication token found");
     }
-    const response = await axios.get(Endpoint.GET_ALL_STAFF, {
-      headers: { Authorization: `Bearer ${token}` },
-      withCredentials: true,
-    });
+    const response = await Request.get(Endpoint.GET_ALL_STAFF);
 
     if (response.data.success && Array.isArray(response.data.data)) {
       const staffList = response.data.data.map((staff: any) => ({
@@ -116,18 +114,9 @@ export const getAllStaffThunk = createAsyncThunk("staff/getAll", async (_, { rej
 
 export const getRoleThunk = createAsyncThunk("staff/getRole", async (roleName: string, { rejectWithValue }) => {
   try {
-    const token = authService.getToken()
-    if (!token) {
-      throw new Error("No authentication token found")
-    }
-    const response = await axios.post(
+    const response = await Request.post(
       Endpoint.GET_ROLE,
-      { roleName },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      },
-    )
+      { roleName })
 
     if (response.data.success) {
       return response.data
@@ -231,17 +220,7 @@ export const bulkCreateStaffThunk = createAsyncThunk(
   'staff/bulkCreate',
   async (formData: FormData, { rejectWithValue }) => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response = await axios.post(Endpoint.BULK_CREATE_STAFF, formData, { // Add BULK_CREATE_STAFF to apiConfig
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-        withCredentials: true,
-      });
+      const response = await Request.post(Endpoint.BULK_CREATE_STAFF, formData);
       if (!response.data.success) {
         throw new Error(response.data.message || 'Bulk create failed');
       }
@@ -258,14 +237,9 @@ export const updateStaffPasswordThunk = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const response = await axios.patch(
+      const response = await Request.patch(
         `${Endpoint.UPDATE_STAFF_PASSWORD}/${id}`,
-        { currentPassword, newPassword },
-        {
-          headers: { Authorization: `Bearer ${authService.getToken()}` },
-          withCredentials: true,
-        }
-      );
+        { currentPassword, newPassword });
 
       if (!response.data.success) {
         return rejectWithValue(response.data.message || "Failed to update password");

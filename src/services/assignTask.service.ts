@@ -1,6 +1,6 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import Endpoint from '@/API/apiConfig';
-import { authService } from './auth.service';
+import Request from './axios';
 
 export interface Address {
   unitNo: string;
@@ -103,17 +103,8 @@ export interface ApiResponse<T> {
 export const assignTaskService = {
   async getAllAssignTasks(): Promise<ApiResponse<AssignTask[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<AssignTask[]>> = await axios.get(
-        Endpoint.GET_ALL_ASSIGN_TASKS,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<AssignTask[]>> = await Request.get(
+        Endpoint.GET_ALL_ASSIGN_TASKS);
       return {
         success: response.data.success,
         data: response.data.data || [],
@@ -126,17 +117,8 @@ export const assignTaskService = {
 
   async getAssignTaskById(id: string): Promise<ApiResponse<AssignTask>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<AssignTask>> = await axios.get(
-        `${Endpoint.GET_ASSIGN_TASK_BY_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<AssignTask>> = await Request.get(
+        `${Endpoint.GET_ASSIGN_TASK_BY_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch assigned task');
@@ -144,17 +126,8 @@ export const assignTaskService = {
   },
   async getAssignTaskByStaffId(id: string): Promise<ApiResponse<AssignTask>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<AssignTask>> = await axios.get(
-        `${Endpoint.GET_ASSIGN_TASK_BY_STAFF_ID}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<AssignTask>> = await Request.get(
+        `${Endpoint.GET_ASSIGN_TASK_BY_STAFF_ID}/${id}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch assigned task');
@@ -163,18 +136,9 @@ export const assignTaskService = {
 
   async createAssignTask(data: CreateAssignTask): Promise<AssignTask> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<AssignTask> = await axios.post(
+      const response: AxiosResponse<AssignTask> = await Request.post(
         Endpoint.CREATE_ASSIGN_TASK,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to create assigned task');
@@ -183,18 +147,9 @@ export const assignTaskService = {
 
   async updateAssignTask(id: string, data: Partial<UpdateAssignTask>): Promise<AssignTask> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<AssignTask> = await axios.patch(
+      const response: AxiosResponse<AssignTask> = await Request.patch(
         `${Endpoint.UPDATE_ASSIGN_TASK}/${id}`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+        data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update assigned task');
@@ -203,17 +158,8 @@ export const assignTaskService = {
 
   async deleteAssignTask(id: string): Promise<ApiResponse<void>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response: AxiosResponse<ApiResponse<void>> = await axios.delete(
-        `${Endpoint.DELETE_ASSIGN_TASK}/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<void>> = await Request.delete(
+        `${Endpoint.DELETE_ASSIGN_TASK}/${id}`);
       return {
         success: response.data.success,
         message: response.data.message,

@@ -1,6 +1,6 @@
-import axios, { type AxiosResponse } from "axios";
+import { type AxiosResponse } from "axios";
 import Endpoint from "@/API/apiConfig";
-import { authService } from "./auth.service";
+import Request from "./axios";
 
 
 interface PaperField {
@@ -56,22 +56,10 @@ export const orderService = {
   // Create Order
   async createOrder(data: CreateOrderData): Promise<ApiResponse<Order>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
 
-      const response: AxiosResponse<ApiResponse<Order>> = await axios.post(
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
         Endpoint.CREATE_QP_ORDER,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+        data);
 
       return {
         success: response.data.success,
@@ -96,11 +84,6 @@ export const orderService = {
     search?: string;
   }): Promise<ApiResponse<Order[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
       const queryParams: any = {};
       if (params?.page) queryParams.page = params.page;
       if (params?.limit) queryParams.limit = params.limit;
@@ -109,16 +92,9 @@ export const orderService = {
       if (params?.party) queryParams.party = params.party;
       if (params?.search) queryParams.search = params.search;
 
-      const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.get(
         Endpoint.GET_ALL_QP_ORDER,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          params: queryParams,
-          withCredentials: true,
-        }
+        { params: queryParams }
       );
 
       return {
@@ -137,21 +113,9 @@ export const orderService = {
   // Add this method to your orderService in order.service.ts
   async getOrdersByStaffId(id: string): Promise<ApiResponse<Order[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
 
-      const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
-        `${Endpoint.GET_QP_ORDER_BY_STAFF_ID}/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.get(
+        `${Endpoint.GET_QP_ORDER_BY_STAFF_ID}/${id}`);
 
       return {
         success: response.data.success,
@@ -168,63 +132,50 @@ export const orderService = {
 
 
   // Get Order By ID
-//   async getOrderById(id: string): Promise<ApiResponse<Order>> {
-//     try {
-//       const token = authService.getToken();
-//       if (!token) {
-//         throw new Error("No authentication token found");
-//       }
+  //   async getOrderById(id: string): Promise<ApiResponse<Order>> {
+  //     try {
+  //       const token = authService.getToken();
+  //       if (!token) {
+  //         throw new Error("No authentication token found");
+  //       }
 
-//       const response: AxiosResponse<ApiResponse<Order>> = await axios.get(
-//         `${Endpoint.GET_ORDER_BY_ID}/${id}`,
-//         {
-//           headers: {
-//             Authorization: `Bearer ${token}`,
-//             "Content-Type": "application/json",
-//           },
-//           withCredentials: true,
-//         }
-//       );
+  //       const response: AxiosResponse<ApiResponse<Order>> = await axios.get(
+  //         `${Endpoint.GET_ORDER_BY_ID}/${id}`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //             "Content-Type": "application/json",
+  //           },
+  //           withCredentials: true,
+  //         }
+  //       );
 
-//       return {
-//         success: response.data.success,
-//         data: response.data.data,
-//         message: response.data.message,
-//       };
-//     } catch (error: any) {
-//       console.error("Service: Get order by ID error:", error);
-//       throw new Error(error.response?.data?.message || "Failed to fetch order");
-//     }
-//   },
+  //       return {
+  //         success: response.data.success,
+  //         data: response.data.data,
+  //         message: response.data.message,
+  //       };
+  //     } catch (error: any) {
+  //       console.error("Service: Get order by ID error:", error);
+  //       throw new Error(error.response?.data?.message || "Failed to fetch order");
+  //     }
+  //   },
 
   // Update Order
   async updateOrder(
     id: string,
     data: Partial<CreateOrderData & {
-    printerPapers?: PaperField[];
-    binderPapers?: PaperField[];
-    bookletPapers?: PaperField[];
-  }>
+      printerPapers?: PaperField[];
+      binderPapers?: PaperField[];
+      bookletPapers?: PaperField[];
+    }>
 
   ): Promise<ApiResponse<Order>> {
     try {
-      console.log('update order functoikkniksinnikn jnkm,kjnjahe,lkoakdomomgtwejhbpkpknajkhhslojkkpsksj',id,data)
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
 
-      const response: AxiosResponse<ApiResponse<Order>> = await axios.put(
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.put(
         `${Endpoint.UPDATE_QP_ORDER}/${id}`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+        data);
 
       return {
         success: response.data.success,
@@ -242,21 +193,9 @@ export const orderService = {
   // Delete Order
   async deleteOrder(id: string): Promise<ApiResponse<null>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
 
-      const response: AxiosResponse<ApiResponse<null>> = await axios.delete(
-        `${Endpoint.DELETE_QP_ORDER}/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+      const response: AxiosResponse<ApiResponse<null>> = await Request.delete(
+        `${Endpoint.DELETE_QP_ORDER}/${id}`);
 
       return {
         success: response.data.success,
@@ -272,35 +211,35 @@ export const orderService = {
   },
 
   //GET DESIGNER ORDER
-//   async getGodownOrders(): Promise<ApiResponse<Order[]>> {
-//     try {
-//       const token = authService.getToken();
-//       if (!token) {
-//         throw new Error("No authentication token found");
-//       }
+  //   async getGodownOrders(): Promise<ApiResponse<Order[]>> {
+  //     try {
+  //       const token = authService.getToken();
+  //       if (!token) {
+  //         throw new Error("No authentication token found");
+  //       }
 
-//       const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
-//         `${Endpoint.GET_DESIGNER_ORDERS}`,
-//         {
-//           headers: {
-//             Authorization: `Bearer ${token}`,
-//             "Content-Type": "application/json",
-//           },
-//           withCredentials: true,
-//         }
-//       );
+  //       const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
+  //         `${Endpoint.GET_DESIGNER_ORDERS}`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //             "Content-Type": "application/json",
+  //           },
+  //           withCredentials: true,
+  //         }
+  //       );
 
-//       return {
-//         success: response.data.success,
-//         data: response.data.data || [],
-//         message: response.data.message,
-//       };
-//     } catch (error: any) {
-//       console.error("Service: Get designer orders error:", error);
-//       throw new Error(
-//         error.response?.data?.message || "Failed to fetch designer orders"
-//       );
-//     }
-//   },
+  //       return {
+  //         success: response.data.success,
+  //         data: response.data.data || [],
+  //         message: response.data.message,
+  //       };
+  //     } catch (error: any) {
+  //       console.error("Service: Get designer orders error:", error);
+  //       throw new Error(
+  //         error.response?.data?.message || "Failed to fetch designer orders"
+  //       );
+  //     }
+  //   },
 
 };
