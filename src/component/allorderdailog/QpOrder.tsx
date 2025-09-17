@@ -9,7 +9,7 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { authService } from "@/services/auth.service"
 import FilterDropdown from "@/component/fillter"
 import DateRangePicker from "@/component/daterangepicker"
-import { FiSearch } from "react-icons/fi"
+import { FiSearch, FiDownload } from "react-icons/fi"
 import { InputBase } from "@mui/material"
 import { getDisplayStatus } from "@/utills/utills"
 import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk, updateQPOrderThunk } from "@/store/slices/qpOrderSlice"
@@ -27,6 +27,7 @@ const columns = [
   { id: "name", label: "Item Name" },
   { id: "ply", label: "Ply" },
   { id: "size", label: "Size" },
+  { id: "paperGSM", label: "Paper GSM" },
   { id: "gsm", label: "GSM" },
   { id: "deckalCalculation", label: "Cal Deckal" },
   { id: "deckal", label: "Deckal" },
@@ -115,6 +116,7 @@ interface ExpandedRowFormProps {
 
 const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
   const dispatch = useAppDispatch()
+  const [isInitialUnitSet, setIsInitialUnitSet] = useState(false)
 
   const [formData, setFormData] = useState({
     _id: row._id,
@@ -151,11 +153,20 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
     }
     setFormData(newFormData)
     setInitialFormData(newFormData)
+    setIsInitialUnitSet(!!row.unitNo) 
     // console.log("ExpandedRowForm: Initialized formData for row ID:", row._id, newFormData)
   }, [row._id, row.unitNo, row.startDate, row.deliveryDate, row.dyeNumber, row.dyeSize, row.glue, row.wire, row.dyeRemark, row.godownRemark, row.factoryRemark, row.status])
 
   const handleFormChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    // Special handling for unitNo change
+    if (field === 'unitNo' && value && !isInitialUnitSet && !formData.startDate) {
+      // Set start date to current date when unit is selected for the first time
+      const currentDate = new Date().toISOString().split('T')[0]
+      setFormData(prev => ({ ...prev, unitNo: value, startDate: currentDate }))
+      setIsInitialUnitSet(true)
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -191,6 +202,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
 
   const handleCancel = () => {
     setFormData(initialFormData)
+    setIsInitialUnitSet(!!initialFormData.unitNo)
   }
 
   
@@ -282,10 +294,10 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
                 "Rotery",
                 "Sloting/rs4",
                 "Printing",
+                "Manual pasting",
                 "Pinning",
                 "Kanthan",
                 "Puching",
-                "Manual pasting",
                 "Pending",
                 "Order",
                 "In Progress",
@@ -363,7 +375,7 @@ const AllOrdersPage = () => {
   const dispatch = useAppDispatch()
   const [editData, setEditData] = useState<OrderRow | null>(null)
   const { user } = useAppSelector((state) => state.auth)
-  console.log("DEBUG : AllOrdersPage : user:", user);
+  // console.log("DEBUG : AllOrdersPage : user:", user);
 
   const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.qpOrders)
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
@@ -376,6 +388,45 @@ const AllOrdersPage = () => {
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own
   const canCreate = user?.role?.permissions?.all_orders?.create
   const canStatus = user?.role?.permissions?.all_orders?.status
+
+  // const handleDownloadExcel = async () => {
+  //   try {
+  //     // Replace this with your actual backend API call
+  //     const response = await fetch("/api/export-orders", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${authService.getToken()}`,
+  //       },
+  //       body: JSON.stringify({
+  //         startDate: startDate ? startDate.toISOString() : null,
+  //         endDate: endDate ? endDate.toISOString() : null,
+  //         searchQuery,
+  //         filters,
+  //       }),
+  //     });
+
+  //     if (!response.ok) {
+  //       throw new Error("Failed to download Excel file");
+  //     }
+
+  //     // Handle the file download
+  //     const blob = await response.blob();
+  //     const url = window.URL.createObjectURL(blob);
+  //     const link = document.createElement("a");
+  //     link.href = url;
+  //     link.download = `Orders_${moment().format("YYYY-MM-DD")}.xlsx`;
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //     window.URL.revokeObjectURL(url);
+
+  //     toast.success("Excel file downloaded successfully");
+  //   } catch (err: any) {
+  //     console.error("Error downloading Excel:", err);
+  //     toast.error(err?.message || "Failed to download Excel file");
+  //   }
+  // };
 
   const refreshData = () => {
     if (canViewGlobal) {
@@ -716,6 +767,13 @@ const AllOrdersPage = () => {
             onStartDateChange={(date) => setStartDate(date as any)}
             onEndDateChange={(date) => setEndDate(date as any)}
           />
+          {/* <IconButton
+            onClick={handleDownloadExcel}
+            sx={{ color: "#374151" }}
+            title="Download as Excel"
+          >
+            <FiDownload size={24} />
+          </IconButton> */}
           <ThemeButton
             onClick={() => {
               setStartDate(null)
@@ -837,6 +895,11 @@ const AllOrdersPage = () => {
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
                   {row.length?.length || "N/A"} x {row.width?.width || "N/A"} x {row.height?.height || "N/A"}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.paperLength?.gsm || "N/A"} x {row.paperWidth?.gsm || "N/A"} x {row.paperHeight?.gsm || "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
