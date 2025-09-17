@@ -111,7 +111,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     partySuggestions,
   } = useAppSelector((state) => state.accountMasters);
   const { markets } = useAppSelector((state) => state.markets);
-
+  const [referenceOptions, setReferenceOptions] = useState<PartySuggestion[]>([]);
   const [recordSkipped, setRecordSkipped] = useState(false)
   const [skippedRecords, setSkippedRecords] = useState([])
   const [isLoading, setIsLoading] = useState(false);
@@ -144,6 +144,22 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     }, 300),
     [dispatch]
   );
+  const debouncedReferenceSearch = useCallback(
+    debounce((query: string) => {
+      if (query.length >= 2) {
+        dispatch(searchPartiesThunk(query));
+      } else {
+        dispatch(clearSuggestions());
+      }
+    }, 300),
+    [dispatch]
+  );
+
+  // Update partyOptions effect to also update referenceOptions
+  useEffect(() => {
+    setPartyOptions(partySuggestions);
+    setReferenceOptions(partySuggestions);
+  }, [partySuggestions]);
 
   useEffect(() => {
     setPartyOptions(partySuggestions);
@@ -753,19 +769,31 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
               {/* Reference Input Field - Only shows when "Yes" is selected */}
               {hasReference === "yes" && (
                 <Box sx={{ width: '50%' }}>
-                  <ThemeInput
-                    labelName="Reference Details"
-                    placeholder="Enter Reference"
-                    fullWidth
-                    name="reference"
+                  <Autocomplete
+                    freeSolo
+                    options={referenceOptions.map(option => option.partyName)}
                     value={formik.values.reference}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    error={Boolean(formik.errors.reference)}
-                    helperText={formik.touched.reference && formik.errors.reference}
+                    onChange={(event, newValue) => {
+                      formik.setFieldValue("reference", newValue || "");
+                    }}
+                    onInputChange={(event, newInputValue) => {
+                      formik.setFieldValue("reference", newInputValue);
+                      debouncedReferenceSearch(newInputValue);
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Reference Details"
+                        placeholder="Enter Reference"
+                        fullWidth
+                        error={Boolean(formik.errors.reference)}
+                        helperText={formik.touched.reference && formik.errors.reference}
+                      />
+                    )}
                   />
                 </Box>
               )}
+
             </Box>
 
             <Box>

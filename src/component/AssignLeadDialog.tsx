@@ -24,7 +24,7 @@ interface AssignLeadDialogProps {
     onSuccess?: () => void;
 }
 
-const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead, partyIds, onSuccess }) => {
+const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead, type, partyIds, onSuccess }) => {
     const dispatch = useAppDispatch();
     const { accountMasters, loading: accountLoading, error: accountError } = useAppSelector(
         (state) => state.accountMasters || {}
@@ -66,7 +66,7 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
                     }),
             otherwise: () => Yup.string().nullable(),
         }),
-        callFeedback: lead ? Yup.string().required('Call feedback is required') : Yup.string(),
+        callFeedback: lead && type !== 'add' ? Yup.string().required('Call feedback is required') : Yup.string(),
         ...(partyIds
             ? {}
             : {
@@ -77,8 +77,8 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
 
     const formik = useFormik<Partial<Lead>>({
         initialValues: {
-            companyName: lead?.companyName?._id || '',
-            partyName: lead?.partyName?._id || '',
+            companyName: lead?.companyName?._id || lead?.companyName || '',
+            partyName: lead?.partyName?._id || lead?.partyId || '',
             date: lead?.date ? new Date(lead.date).toISOString().split('T')[0] : '',
             time: lead?.time || '',
             reason: lead?.reason || '',
@@ -177,6 +177,8 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
         },
     });
 
+    console.log(formik.errors, 'bhgjghhuighui')
+
     const staffOptions = useMemo(() => {
         const currentAssignedTo = lead?._id && formik.values.assignedTo
             ? staffList.find((staff) => staff._id === formik.values.assignedTo)
@@ -218,11 +220,13 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
     );
 
     useEffect(() => {
+        if (!accountMasters.length) dispatch(getAllAccountMastersThunk());
+        if (!staffList.length) dispatch(getAllStaffThunk());
+    }, [])
+    useEffect(() => {
         if (open) {
             dispatch(clearSuccessMessage());
             dispatch(clearError());
-            dispatch(getAllAccountMastersThunk());
-            dispatch(getAllStaffThunk());
             if (!lead) {
                 formik.resetForm();
                 setCustomReason('');
@@ -234,10 +238,19 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
                 });
             }
         }
-    }, [open, dispatch, lead]);
+    }, []);
 
     useEffect(() => {
         if (open && lead?._id) {
+            const selectedParty = accountMasters?.find((account) => account.party?._id === formik.values.partyName);
+            setPartyDetails({
+                unitNo: selectedParty?.party?.address?.unitNo || "",
+                marketName: selectedParty?.party?.address || "",
+                area: selectedParty?.party?.address?.area?.area || "",
+                ownerWhatsAppNo: selectedParty?.party?.ownerWhatsAppNo || "",
+            });
+        }
+        if (open && formik.values.partyName) {
             const selectedParty = accountMasters?.find((account) => account.party?._id === formik.values.partyName);
             setPartyDetails({
                 unitNo: selectedParty?.party?.address?.unitNo || "",

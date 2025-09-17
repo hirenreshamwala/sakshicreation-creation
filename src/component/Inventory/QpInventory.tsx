@@ -131,6 +131,13 @@ const QpInventoryPage = () => {
         setSelectedPrinter(null);
     };
 
+    
+function convertToReels(reels = 0, inches = 0) {
+  const totalInches = reels * 7200 + inches; // convert everything to inches
+  const totalReels = totalInches / 7200; // convert back to reels
+  return parseFloat(totalReels.toFixed(3)); // round to 3 decimals (optional)
+}
+
     const filteredInventory = getPermissionWiseInventory().filter(item =>
         item.type === activeWardTab &&
         (!selectedMaterial || item.material?._id === selectedMaterial) &&
@@ -181,6 +188,8 @@ const QpInventoryPage = () => {
                             { id: 'for', label: 'for' },
                             { id: 'date', label: 'DATE' },
                             { id: 'vendor', label: 'VENDOR' },
+                            { id: 'kg', label: 'KG' },
+                            { id: 'reel', label: 'REEL' },
                         ]}
                         rowData={filteredInventory}
                         renderRow={(row) => (
@@ -189,6 +198,8 @@ const QpInventoryPage = () => {
                                 <TableCell>{row?.for?.roleName || 'N/A'}</TableCell>
                                 <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
                                 <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
+                                <TableCell>{row.kg || 'N/A'}</TableCell>
+                                <TableCell>{row.reel || 'N/A'}</TableCell>
                             </>
                         )}
                         showDatePicker={false}

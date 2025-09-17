@@ -25,6 +25,7 @@ import {
 import { getAllLeadsThunk } from '@/store/slices/leadSlice';
 import { getAllStaffThunk } from '@/store/slices/staffSlice';
 import Loader from '@/component/common_component/loader';
+import AssignLeadDialog from '@/component/AssignLeadDialog';
 
 interface Task {
   _id: string;
@@ -381,6 +382,8 @@ const ViewCompanyPage: React.FC = () => {
 
   // Local state
   const [openAssignTaskDialog, setOpenAssignTaskDialog] = useState(false);
+  const [openAssignPartyDialog, setOpenAssignPartyDialog] = useState(false);
+  const [selectedLead, setSelectedLead] = useState(null)
   const [openAddOrderDialog, setOpenAddOrderDialog] = useState(false);
   const [company, setCompany] = useState<OptionType | null>(null);
   const [party, setParty] = useState<OptionType | null>(null);
@@ -566,14 +569,21 @@ const ViewCompanyPage: React.FC = () => {
           </Box>
 
           {/* Right side: Assign button */}
-          <ThemeButton
-            onClick={() => {
-              // router.push("/admin/assign-task");
-              setOpenAssignTaskDialog(true)
-            }}
-          >
-            + Assign New task
-          </ThemeButton>
+          <Box >
+            <ThemeButton
+              onClick={() => setOpenAssignTaskDialog(true)}
+              sx={{ mr: 2 }}
+            >
+              + Assign New task
+            </ThemeButton>
+
+            <ThemeButton onClick={() => {
+              setOpenAssignPartyDialog(true)
+              setSelectedLead(singleAccountMaster)
+            }}>
+              + Assign New Party Call
+            </ThemeButton>
+          </Box>
         </Box>
 
         <Box display="flex" flexWrap="wrap" justifyContent="space-between" mb={4} gap={2}>
@@ -770,6 +780,17 @@ const ViewCompanyPage: React.FC = () => {
         onSave={(reason) => {
           setReasons([...reasons, { label: reason, value: reason }]);
         }}
+      />
+
+      <AssignLeadDialog
+        open={openAssignPartyDialog}
+        onClose={() => {
+          setOpenAssignPartyDialog(false);
+          setSelectedLead(null);
+        }}
+        type='add'
+        lead={selectedLead}
+        onSuccess={() => { }}
       />
     </Box>
   );

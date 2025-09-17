@@ -92,7 +92,7 @@ export const calculateKantan = (
 ) => {
   if (!length || !width || !noOfPieces) return { kantanPerUnit: 0, reel: 0, inch: 0 };
 
-  const kantanPerUnit = length * width + 3 * 2;
+  const kantanPerUnit = (length + width + 3 )* 2;
   const totalKantanInch = noOfPieces * kantanPerUnit;
 
   const reelSizeInInch = 200 * 36; // 7200

@@ -246,16 +246,16 @@ export const downloadVisitingCardPDF = (data: any) => {
 
   // define rows
   const allRows = [
-    [label("OD. No"), getColumn(data.odNo), label("Size"), getColumn(data.size), label("Date"), getColumn(data.date)],
+    [label("OD. No"), getColumn(data.odNo), label("Party Name"), getColumn(data.partyName), label("Date"), getColumn(data.date)],
     [label("Quantity"), getColumn(data.quantity), label("Binding"), getColumn(data.binding), label("Col"), getColumn(data.col)],
   ];
   const rows2 = [[label("Printer"), getColumn(data.printer), label("Remark"), getColumn(data.remark)]];
-  const rows3 = [[label("Rate"), getColumn(data.rate), label("Haste"), getColumn(`${data.createdBy?.firstName} ${data.createdBy?.lastName}`), label("Date"), getColumn(data.date)]];
-  const rows4 = [[label("Party Name"), getColumn(data.partyName)], [label("Add"), getColumn(data.add || "")]];
+  const rows3 = [[label("Rate"), getColumn(`${data.rate} /-`), label("Haste"), getColumn(`${data.createdBy?.firstName} ${data.createdBy?.lastName}`), label("GSTIN"), getColumn(data.gst ? "Yes":"No")]];
+  const rows4 = [[label("Size"), getColumn(data.size)], [label("Add"), getColumn(data.add || "")]];
 
   // column configs
   const col6 = {
-    0: { cellWidth: 15, fontStyle: "bold" },
+    0: { cellWidth: 13, fontStyle: "bold" },
     1: { cellWidth: 20 },
     2: { cellWidth: 15, fontStyle: "bold" },
     3: { cellWidth: 20 },
@@ -263,13 +263,13 @@ export const downloadVisitingCardPDF = (data: any) => {
     5: { cellWidth: 18 },
   };
   const col4 = {
-    0: { cellWidth: 15, fontStyle: "bold" },
+    0: { cellWidth: 13, fontStyle: "bold" },
     1: { cellWidth: 20 },
     2: { cellWidth: 15, fontStyle: "bold" },
     3: { cellWidth: 48 },
   };
   const col2 = {
-    0: { cellWidth: 20, fontStyle: "bold" },
+    0: { cellWidth: 13, fontStyle: "bold" },
     1: { cellWidth: 78 },
   };
 
@@ -486,8 +486,8 @@ export const downloadBookletPDF = (data: any) => {
   renderRow(row5, col2);
   renderRow(row6, col6);
   renderRow(row7, col5);
-  renderRow(row14, col2);
   renderRow(row8, col1);
+  renderRow(row14, col2);
   renderRow(row9, col2);
   renderRow(row15, col1);
   renderRow(row10, col4);
