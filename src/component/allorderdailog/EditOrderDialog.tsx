@@ -449,21 +449,21 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
             name="ply"
           />
           <ThemeSelect
-            label="Sheet Length"
+            label="Item Length"
             options={getUniqueLengthOptions()}
             value={getSelectedOption(qpFormData.length, getUniqueLengthOptions())}
             onChange={(_, val: any) => handleQpChange("length", val?.value || "")}
             name="length"
           />
           <ThemeSelect
-            label="Sheet Width"
+            label="Item Width"
             options={getUniqueWidthOptions()}
             value={getSelectedOption(qpFormData.width, getUniqueWidthOptions())}
             onChange={(_, val: any) => handleQpChange("width", val?.value || "")}
             name="width"
           />
           <ThemeSelect
-            label="Sheet Height"
+            label="Item Height"
             options={getUniqueHeightOptions()}
             value={getSelectedOption(qpFormData.height, getUniqueHeightOptions())}
             onChange={(_, val: any) => handleQpChange("height", val?.value || "")}
@@ -618,7 +618,7 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
 
   // Automatic calculations
   useEffect(() => {
-    const { length, width, height, ply, noOfPieces, ratePerPiece, deckal } = qpFormData
+    const { length, width, height, ply, noOfPieces, ratePerPiece, deckal, paperHeight, paperLength, paperWidth } = qpFormData
 
     if (!length || !width || !height || !ply) return
 
@@ -629,11 +629,19 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
       item.width === qpFormData.width &&
       item.height === qpFormData.height
     )
+    const selectedPaperGSM = paperGSM.find((item: any) =>
+      item.length === qpFormData.paperLength &&
+      item.width === qpFormData.paperWidth &&
+      item.height === qpFormData.paperHeight
+    )
 
-    const calcLength = selectedPackagingOption?.length ? Number(selectedPackagingOption.length) : Number(length)
-    const calcWidth = selectedPackagingOption?.width ? Number(selectedPackagingOption.width) : Number(width)
-    const calcHeight = selectedPackagingOption?.height ? Number(selectedPackagingOption.height) : Number(height)
-    const calcPly = selectedPackagingOption?.ply ? Number(selectedPackagingOption.ply) : Number(ply)
+    const calcLength = selectedPackagingOption?.length ? Number(selectedPackagingOption.length) : Number(length) || 0
+    const calcWidth = selectedPackagingOption?.width ? Number(selectedPackagingOption.width) : Number(width) || 0
+    const calcHeight = selectedPackagingOption?.height ? Number(selectedPackagingOption.height) : Number(height) || 0
+    const calcPly = selectedPackagingOption?.ply ? Number(selectedPackagingOption.ply) : Number(ply) || 0
+    const calcPaperHeight = selectedPaperGSM?.height ? Number(selectedPaperGSM.height) : Number(paperHeight) || 0
+    const calcPaperLength = selectedPaperGSM?.length ? Number(selectedPaperGSM.length) : Number(paperLength) || 0
+    const calcPaperWidth = selectedPaperGSM?.width ? Number(selectedPaperGSM.width) : Number(paperWidth) || 0
 
     const deckalValue = calculateDeckal(calcWidth, calcHeight)
     const formattedDeckalValue = deckalValue.toFixed(2)
@@ -643,7 +651,7 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
       handleQpChange("deckal", formattedDeckalValue)
     }
 
-    const gsmValue = calculateGSM(calcPly, calcLength, calcWidth, calcHeight)
+    const gsmValue = calculateGSM(calcPly, calcPaperLength, calcPaperWidth, calcPaperHeight)
     handleQpChange("gsm", gsmValue.toFixed(2))
 
     const effectiveDeckal = Number(deckal || formattedDeckalValue)
@@ -669,6 +677,9 @@ const EditOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refresh
     qpFormData.name,
     qpFormData.noOfPieces,
     qpFormData.ratePerPiece,
+    qpFormData.paperHeight,
+    qpFormData.paperLength,
+    qpFormData.paperWidth,
     qpFormData.deckal,
     isDeckalManual,
     packagingOptions

@@ -750,21 +750,21 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
             name="ply"
           />
           <ThemeSelect
-            label="Sheet Length"
+            label="Item Length"
             options={getUniqueLengthOptions()}
             value={getSelectedOption(qpFormData.length, getUniqueLengthOptions())}
             onChange={(_, val: any) => handleQpChange("length", val?.value || "")}
             name="length"
           />
           <ThemeSelect
-            label="Sheet Width"
+            label="Item Width"
             options={getUniqueWidthOptions()}
             value={getSelectedOption(qpFormData.width, getUniqueWidthOptions())}
             onChange={(_, val: any) => handleQpChange("width", val?.value || "")}
             name="width"
           />
           <ThemeSelect
-            label="Sheet Height"
+            label="Item Height"
             options={getUniqueHeightOptions()}
             value={getSelectedOption(qpFormData.height, getUniqueHeightOptions())}
             onChange={(_, val: any) => handleQpChange("height", val?.value || "")}
@@ -1012,7 +1012,6 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, refreshD
     qpFormData.paperHeight,
     qpFormData.paperLength,
     qpFormData.paperWidth,
-    qpFormData.paperName,
     isDeckalManual,
     packagingOptions,
     paperGSM

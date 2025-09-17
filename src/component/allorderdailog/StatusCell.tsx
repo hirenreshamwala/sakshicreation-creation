@@ -11,13 +11,11 @@ const statusOptions = [
   "Rotery",
   "Sloting/rs4",
   "Printing",
+  "Manual pasting",
   "Pinning",
   "Kanthan",
   "Puching",
-  "Manual pasting",
   "Pending",
-  "Order",
-  "In Progress",
   "Canceled",
   "Completed",
 ]
@@ -27,6 +25,7 @@ export const StatusCell = ({ row }: { row: any }) => {
   const user = useAppSelector((state) => state.auth.user)
 
   const canStatus = user?.role?.permissions?.all_orders?.status
+  const isStatusFinal = row.status === "Completed" || row.status === "Canceled"
 
   const handleStatusChange = async (newStatus: string) => {
     const result = await Swal.fire({
@@ -64,9 +63,14 @@ export const StatusCell = ({ row }: { row: any }) => {
       value={row.status || "Pending"}
       onChange={(e) => handleStatusChange(e.target.value)}
       sx={{ minWidth: 140 }}
+      disabled={isStatusFinal} // Yahan dropdown ko disable karenge
     >
       {statusOptions.map((status) => (
-        <MenuItem key={status} value={status}>
+        <MenuItem 
+          key={status} 
+          value={status}
+          disabled={status === "Completed" || status === "Canceled"}
+        >
           {status}
         </MenuItem>
       ))}
