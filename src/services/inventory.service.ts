@@ -1,6 +1,5 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import Endpoint from '@/API/apiConfig';
-import { authService } from './auth.service';
 import Request from './axios';
 
 export interface Inventory {
@@ -30,10 +29,6 @@ export interface ApiResponse<T> {
 export const inventoryService = {
   async getInventoryByCategory(category: string): Promise<ApiResponse<Inventory[]>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
       const response: AxiosResponse<ApiResponse<Inventory[]>> = await Request.get(
         `${Endpoint.GET_BY_CATEGORY}/${category}`);
       return response.data;
@@ -46,10 +41,6 @@ export const inventoryService = {
 
   async getInventorySummary(category: string): Promise<ApiResponse<{ lastPurchase: number, usedQty: number, balance: number }>> {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
       const response: AxiosResponse<ApiResponse<{ lastPurchase: number, usedQty: number, balance: number }>> = await Request.get(
         `${Endpoint.GET_CATEGORY}/${category}`);
       return response.data;
@@ -60,5 +51,15 @@ export const inventoryService = {
     }
   },
 
-  
+  async getAllInventory() {
+    try {
+      const response: AxiosResponse<ApiResponse<{ lastPurchase: number, usedQty: number, balance: number }>> = await Request.get(
+        Endpoint.GET_ALL_INVENTORY);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 'Failed to fetch inventory summary'
+      );
+    }
+  },
 };

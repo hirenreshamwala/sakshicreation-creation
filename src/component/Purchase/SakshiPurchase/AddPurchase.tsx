@@ -294,7 +294,7 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
         
         <Stack direction="row" spacing={2} mb={2}>
           <ThemeInput
-            labelName="QUANTITY"
+            labelName="NO. OF SHEET"
             name="quantity"
             type="number"
             value={formData.quantity}

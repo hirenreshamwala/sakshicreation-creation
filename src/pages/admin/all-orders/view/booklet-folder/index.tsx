@@ -36,6 +36,7 @@ import { downloadBookletPDF } from "@/utills/utills"
 import moment from "moment"
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice"
 import ThemeSelect from "@/component/common_component/themeselect"
+import { getAllInventoryThunk } from "@/store/slices/inventorySlice"
 
 type OptionType = {
   label: string
@@ -66,7 +67,7 @@ const BookletFolderBinderForm = () => {
   const [openDesignFilesDialog, setOpenDesignFilesDialog] = useState(false)
   const [openBinderFilesDialog, setOpenBinderFilesDialog] = useState(false)
   const [bookletPapers, setBookletPapers] = useState<PaperField[]>([])
-
+  const { allInventory } = useAppSelector(state => state.inventory);
   const formik = useFormik({
     initialValues: {
       issuedDate: new Date().toISOString().split("T")[0],
@@ -212,6 +213,7 @@ const BookletFolderBinderForm = () => {
 
   useEffect(() => {
     if (!materials.length) dispatch(getAllMaterialsThunk());
+    if (!allInventory.length) dispatch(getAllInventoryThunk())
   }, [])
 
 
@@ -294,7 +296,7 @@ const BookletFolderBinderForm = () => {
       address: "",
     };
 
-    downloadBookletPDF(data);
+    downloadBookletPDF(data, materials, allInventory);
   };
 
   const handleHoldToggle = async () => {

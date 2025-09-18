@@ -7,7 +7,6 @@ export const getInventoryByCategoryThunk = createAsyncThunk(
     try {
       const response = await inventoryService.getInventoryByCategory(category);
       if (response.success && Array.isArray(response.data)) {
-        console.log(response.data,'jkcfhuigdfhui')
         return response.data;
 
       } else {
@@ -35,7 +34,24 @@ export const getInventorySummaryThunk = createAsyncThunk(
   }
 );
 
+export const getAllInventoryThunk = createAsyncThunk(
+  'inventory/getall',
+  async (category: string, { rejectWithValue }) => {
+    try {
+      const response = await inventoryService.getAllInventory();
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        return rejectWithValue('Invalid response format: data not found');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch inventory summary');
+    }
+  }
+);
+
 interface InventoryState {
+  allInventory: any;
   inventory: Inventory[];
   summary: { lastPurchase: number, usedQty: number, balance: number } | null;
   loading: boolean;
@@ -43,6 +59,7 @@ interface InventoryState {
 }
 
 const initialState: InventoryState = {
+  allInventory: [],
   inventory: [],
   summary: null,
   loading: false,
@@ -59,6 +76,22 @@ const inventorySlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(getAllInventoryThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getAllInventoryThunk.fulfilled,
+        (state, action: PayloadAction<Inventory[]>) => {
+          state.loading = false;
+          state.allInventory = action.payload;
+        }
+      )
+      .addCase(getAllInventoryThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        state.allInventory = [];
+      })
       .addCase(getInventoryByCategoryThunk.pending, (state) => {
         state.loading = true;
         state.error = null;

@@ -483,7 +483,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 name="partyName"
                 value={formik.values.partyName}
                 onChange={(e) => {
-                  const value = e.target.value
+                  const value = e.target.value.toUpperCase()
                   formik.setFieldValue("partyName", value)
                   setInputValue(value)
                   debouncedSearch(value)
@@ -491,7 +491,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 error={formik.touched.partyName && Boolean(formik.errors.partyName)}
                 helperText={formik.touched.partyName && formik.errors.partyName}
                 autocomplete
-                options={partyOptions.map((option) => `${option.partyName} - ${option.address.unitNo}, ${option.address.marketName}`)}
+                options={partyOptions.map((option) => `${option.partyName} - ${option.address.unitNo || ""}, ${option.address.marketName?.marketName || ""}`)}
                 onOptionSelect={async (selectedValue) => {
                   const selectedPartyName = selectedValue.split(" - ")[0];
                   formik.setFieldValue("partyName", selectedPartyName)
@@ -512,7 +512,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 fullWidth
                 name="ownerName"
                 value={formik.values.ownerName}
-                onChange={formik.handleChange}
+                onChange={(e) => formik.setFieldValue("ownerName", e.target.value.toUpperCase())}
                 onBlur={formik.handleBlur}
                 error={Boolean(formik.errors.ownerName)}
                 helperText={formik.touched.ownerName && formik.errors.ownerName}
@@ -576,7 +576,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 fullWidth
                 name="contactPerson"
                 value={formik.values.contactPerson}
-                onChange={formik.handleChange}
+                onChange={(e) => formik.setFieldValue("contactPerson", e.target.value.toUpperCase())}
                 onBlur={formik.handleBlur}
                 error={Boolean(formik.errors.contactPerson)}
                 helperText={formik.touched.contactPerson && formik.errors.contactPerson}
@@ -640,7 +640,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 sx={{ mb: 2 }}
                 name="contactForPayment"
                 value={formik.values.contactForPayment}
-                onChange={formik.handleChange}
+                onChange={(e) => formik.setFieldValue("contactForPayment", e.target.value.toUpperCase())}
                 onBlur={formik.handleBlur}
                 error={Boolean(formik.errors.contactForPayment)}
                 helperText={formik.touched.contactForPayment && formik.errors.contactForPayment}
@@ -753,7 +753,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                     name="hasReference"
                     value={hasReference}
                     onChange={(e) => {
-                      const value = e.target.value;
+                      const value = e.target.value.toUpperCase();
                       setHasReference(value);
                       if (value === "no") {
                         formik.setFieldValue("reference", "");
@@ -807,7 +807,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                     sx={{ mt: 3.5 }}
                     name="address.unitNo"
                     value={formik.values.address.unitNo}
-                    onChange={formik.handleChange}
+                    onChange={(e) => formik.setFieldValue("address.unitNo", e.target.value.toUpperCase())}
                     onBlur={formik.handleBlur}
                     error={Boolean(formik.errors.address?.unitNo)}
                     helperText={formik.touched.address?.unitNo && formik.errors.address?.unitNo}

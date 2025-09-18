@@ -250,7 +250,7 @@ export const downloadVisitingCardPDF = (data: any) => {
     [label("Quantity"), getColumn(data.quantity), label("Binding"), getColumn(data.binding), label("Col"), getColumn(data.col)],
   ];
   const rows2 = [[label("Printer"), getColumn(data.printer), label("Remark"), getColumn(data.remark)]];
-  const rows3 = [[label("Rate"), getColumn(`${data.rate} /-`), label("Haste"), getColumn(`${data.createdBy?.firstName} ${data.createdBy?.lastName}`), label("GSTIN"), getColumn(data.gst ? "Yes":"No")]];
+  const rows3 = [[label("Rate"), getColumn(`${data.rate} /-`), label("Haste"), getColumn(`${data.createdBy?.firstName} ${data.createdBy?.lastName}`), label("GSTIN"), getColumn(data.gst ? "Yes" : "No")]];
   const rows4 = [[label("Size"), getColumn(data.size)], [label("Add"), getColumn(data.add || "")]];
 
   // column configs
@@ -312,50 +312,297 @@ export const downloadVisitingCardPDF = (data: any) => {
   doc.save("binder-job-card.pdf");
 };
 
+// export const downloadBookletPDF = (data: any, materials: any, inventory: any) => {
+//   console.log(data, 'data', materials, inventory)
+//   const doc: any = new jsPDF({
+//     orientation: "portrait",
+//     unit: "mm",
+//     format: [105, 148], // A6 size
+//   });
 
-export const downloadBookletPDF = (data: any) => {
+//   const pageWidth = doc.internal.pageSize.getWidth();
+//   const pageHeight = doc.internal.pageSize.getHeight();
+//   const borderRadius = 3;
+//   const borderMargin = 2;
+
+//   // Border
+//   doc.setLineWidth(0.3);
+//   doc.setDrawColor("#343436");
+//   doc.roundedRect(
+//     borderMargin,
+//     borderMargin,
+//     pageWidth - borderMargin * 2,
+//     pageHeight - borderMargin * 2,
+//     borderRadius,
+//     borderRadius,
+//     "S"
+//   );
+
+//   // Title
+//   doc.setFont("helvetica", "bold");
+//   doc.setFontSize(12);
+//   doc.setTextColor(15, 15, 43);
+//   doc.text("BOOKLET & FOLDER BINDER JOB CARD", pageWidth / 2, 10, { align: "center" });
+
+//   doc.setFont("helvetica", "normal");
+//   doc.setFontSize(8);
+
+//   const lineColor = "#2b2b2e";
+//   const textColor = "#3a3737ff";
+
+//   const commonStyle = {
+//     lineColor: lineColor,
+//     lineWidth: {
+//       right: 0,
+//       bottom: 0.1,
+//       top: 0,
+//       left: 0,
+//     },
+//   };
+
+//   const commonStyle2 = {
+//     fontStyle: "bold",
+//     textColor: "#13132e",
+//     font: "helvetica",
+//   };
+
+//   const getColumn = (label: any) => {
+//     return {
+//       content: label,
+//       styles: commonStyle,
+//     };
+//   };
+
+//   const label = (label: any) => {
+//     return {
+//       content: ` ${label.trim()}`,
+//       styles: commonStyle2,
+//     };
+//   };
+
+//   // rows
+//   const row1 = [[label("Ord No."), getColumn(data.odNo), label("Date:"), getColumn(data.date)]];
+//   const row2 = [[label("Party Name"), getColumn(data.partyName)]];
+//   const row3 = [[label("Address"), getColumn(data.address), label("GST"), getColumn(data.isGst ? "Yes" : "No")]];
+//   const row4 = [[label("Item"), getColumn(data.productItem?.itemName), label("Size"), getColumn(data.size), label("Qty"), getColumn(data.qty)]];
+//   const row5 = [[label("Rate"), getColumn(data.rate), label("Printer"), getColumn(data.printer)]];
+//   const row6 = [[label("Lamination"), getColumn(data.lamination), label("Glossy Matt UV")]];
+//   const row7 = [
+//     [label(`${data.isPasting ? "Pasting /" : ""} ${data.isCutting ? "Cutting /" : ""} ${data.isCreasing ? "Creasing /" : ""}`), ""],
+//   ];
+//   const row14 = [
+//     [label("Foil:"), getColumn(data.isFoil ? "Yes" : "No"), label("Punching:"), getColumn(data.isPunching ? "Yes" : "No")],
+//   ];
+//   const row8 = [[label("Binding"), getColumn(data.binding)]];
+//   const row9 = [[label("Vendor"), getColumn(""), label("Paper"), getColumn(data.pType)]];
+//   const row13 = [[label("Remarks"), getColumn("")]];
+
+//   // column style sets
+//   const col4 = {
+//     0: { cellWidth: 8, fontStyle: "bold" },
+//     1: { cellWidth: 17 },
+//     2: { cellWidth: 10, fontStyle: "bold" },
+//     3: { cellWidth: 17 },
+//     4: { cellWidth: 8, fontStyle: "bold" },
+//     5: { cellWidth: 17 },
+//     6: { cellWidth: 7, fontStyle: "bold" },
+//     7: { cellWidth: 14 },
+//   };
+
+//   const col3 = {
+//     0: { cellWidth: 15, fontStyle: "bold" },
+//     1: { cellWidth: 20 },
+//     2: { cellWidth: 15, fontStyle: "bold" },
+//     3: { cellWidth: 20 },
+//     4: { cellWidth: 10, fontStyle: "bold" },
+//     5: { cellWidth: 18 },
+//   };
+
+//   const col2 = {
+//     0: { cellWidth: 16, fontStyle: "bold" },
+//     1: { cellWidth: 34 },
+//     2: { cellWidth: 16, fontStyle: "bold" },
+//     3: { cellWidth: 32 },
+//   };
+
+//   const col1 = {
+//     0: { cellWidth: 18, fontStyle: "bold" },
+//     1: { cellWidth: 80 },
+//   };
+
+//   const col5 = {
+//     0: { cellWidth: 50, fontStyle: "bold" },
+//     1: { cellWidth: 48 },
+//   };
+
+//   const col6 = {
+//     0: { cellWidth: 25, fontStyle: "bold" },
+//     1: { cellWidth: 25 },
+//     2: { cellWidth: 48, fontStyle: "bold" },
+//   };
+
+//   const tableOptions = (startY: any, rows: any, col: any) => ({
+//     startY,
+//     margin: { left: 3, right: 3 },
+//     theme: "plain",
+//     styles: {
+//       fontSize: 8,
+//       cellPadding: 1,
+//       valign: "middle",
+//       halign: "left",
+//       lineWidth: 0,
+//       lineColor: [255, 255, 255],
+//     },
+//     head: [],
+//     body: rows,
+//     columnStyles: col,
+//     didParseCell: (dataCell: any) => {
+//       if (dataCell.section === "body") {
+//         dataCell.cell.styles.cellPadding = {
+//           ...dataCell.cell.styles.cellPadding,
+//           top: 4,
+//         };
+//       }
+//     },
+//   });
+
+//   // sequentially render all rows
+//   let currentY = 10;
+//   const renderRow = (rows: any, col: any) => {
+//     autoTable(doc, tableOptions(currentY, rows, col) as any);
+//     currentY = doc.lastAutoTable.finalY; // update Y for next row
+//   };
+
+//   // Fixed part
+//   renderRow(row1, col2);
+//   renderRow(row2, col1);
+//   renderRow(row3, col2);
+//   renderRow(row4, col3);
+//   renderRow(row5, col2);
+//   renderRow(row6, col6);
+//   renderRow(row7, col5);
+//   renderRow(row14, col2);
+//   renderRow(row8, col1);
+//   // renderRow(row9, col2);
+
+//   // Dynamic part: all printer papers
+//   // Dynamic part: all printer papers
+//   if (data.printerPapers && data.printerPapers.length > 0) {
+//     data.printerPapers.forEach((paper: any, idx: number) => {
+//       // Find matching inventory record for this paper
+//       const paperInventory = inventory.find(
+//         (inv: any) =>
+//           inv.material._id === paper?.paperType &&
+//           inv.companyName?._id === data?.companyName?._id
+//       );
+
+//       console.log(paperInventory, 'paperInventory')
+
+//       // Section title
+//       const purchaseRow = [[label(`Paper ${idx + 1}`)]];
+//       renderRow(purchaseRow, col1);
+
+//       // Vendor + Paper name row
+//       const vendorRow = [
+//         [
+//           label("Vendor"),
+//           getColumn(paperInventory?.vendor?.name || ""), // if vendor is populated
+//           label("Paper"),
+//           getColumn(materials?.find((item) => item?._id === paper?.paperType)?.materialName || ""),
+//         ],
+//       ];
+//       renderRow(vendorRow, col2);
+
+//       // Date + GSM + Size + Qty row
+//       const detailRow = [
+//         [
+//           label("Date"),
+//           getColumn(paperInventory?.date ? new Date(paperInventory.date).toLocaleDateString() : ""),
+//           label("GSM"),
+//           getColumn(
+//             materials?.find((item) => item._id === paper.gsm)?.materialGSM || ""
+//           ),
+//           label("Size"),
+//           getColumn(
+//             materials?.find((item) => item._id === paper.sheetSize)?.materialSize || ""
+//           ),
+//           label("Qty"),
+//           getColumn(paper?.numberOfSheetsUsed || ""),
+//         ],
+//       ];
+//       renderRow(detailRow, col4);
+//     });
+//   }
+
+
+//   // Remarks row at the end
+//   renderRow(row13, col1);
+
+//   doc.save("binder-job-card.pdf");
+// };
+
+
+export const downloadBookletPDF = (data: any, materials: any, inventory: any) => {
   const doc: any = new jsPDF({
     orientation: "portrait",
     unit: "mm",
-    format: [105, 148],
+    format: [105, 148], // A6 size
   });
+
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const borderRadius = 3;
   const borderMargin = 2;
+  const drawBorderAndHeader = () => {
+    // Border
+    doc.setLineWidth(0.3);
+    doc.setDrawColor("#343436");
+    doc.roundedRect(
+      borderMargin,
+      borderMargin,
+      pageWidth - borderMargin * 2,
+      pageHeight - borderMargin * 2,
+      borderRadius,
+      borderRadius,
+      "S"
+    );
 
-  doc.setLineWidth(0.3);
-  doc.setDrawColor("#343436");
-  doc.roundedRect(
-    borderMargin,
-    borderMargin,
-    pageWidth - borderMargin * 2,
-    pageHeight - borderMargin * 2,
-    borderRadius,
-    borderRadius,
-    "S"
-  );
+    // Title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(15, 15, 43);
+    doc.text("BOOKLET & FOLDER BINDER JOB CARD", pageWidth / 2, 8, { align: "center" });
+  };
 
-  // Title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(15, 15, 43);
-  doc.text("BOOKLET & FOLDER BINDER JOB CARD", pageWidth / 2, 10, { align: "center" });
+  drawBorderAndHeader();
+  // Border
+  // doc.setLineWidth(0.3);
+  // doc.setDrawColor("#343436");
+  // doc.roundedRect(
+  //   borderMargin,
+  //   borderMargin,
+  //   pageWidth - borderMargin * 2,
+  //   pageHeight - borderMargin * 2,
+  //   borderRadius,
+  //   borderRadius,
+  //   "S"
+  // );
+
+  // // Title
+  // doc.setFont("helvetica", "bold");
+  // doc.setFontSize(11); // shrink a bit
+  // doc.setTextColor(15, 15, 43);
+  // doc.text("BOOKLET & FOLDER BINDER JOB CARD", pageWidth / 2, 8, { align: "center" });
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(7.5); // smaller font for more fit
 
   const lineColor = "#2b2b2e";
-  const textColor = "#3a3737ff"
+
   const commonStyle = {
     lineColor: lineColor,
-    lineWidth: {
-      right: 0,
-      bottom: 0.1,
-      top: 0,
-      left: 0,
-    },
+    lineWidth: { right: 0, bottom: 0.1, top: 0, left: 0 },
   };
 
   const commonStyle2 = {
@@ -363,46 +610,26 @@ export const downloadBookletPDF = (data: any) => {
     textColor: "#13132e",
     font: "helvetica",
   };
-  const getColumn = (label: any) => {
-    return {
-      content: label,
-      styles: commonStyle,
-    };
+
+  const getColumn = (label: any) => ({ content: label || "", styles: commonStyle });
+  const label = (label: any) => ({ content: ` ${label.trim()}`, styles: commonStyle2 });
+
+  // table column styles
+  const col1 = { 0: { cellWidth: 18, fontStyle: "bold" }, 1: { cellWidth: 80 } };
+  const col2 = {
+    0: { cellWidth: 16, fontStyle: "bold" },
+    1: { cellWidth: 34 },
+    2: { cellWidth: 16, fontStyle: "bold" },
+    3: { cellWidth: 32 },
   };
-
-  const label = (label: any) => {
-    return {
-      content: ` ${label.trim()}`,
-      styles: commonStyle2,
-    };
-  }
-
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-
-  // rows
-  const row1 = [[label("Ord No."), getColumn(data.odNo), label("Date:"), getColumn(data.date)]];
-  const row2 = [[label("Party Name"), getColumn(data.partyName)]];
-  const row3 = [[label("Address"), getColumn(data.address), label("GST"), getColumn(data.isGst ? "Yes" : "No")]];
-  const row4 = [[label("Item"), getColumn(data.productItem?.itemName), label("Size"), getColumn(data.size), label("Qty"), getColumn(data.qty)]];
-  const row5 = [[label("Rate"), getColumn(data.rate), label("Printer"), getColumn(data.printer)]];
-  const row6 = [[label("Lamination"), getColumn(data.lamination), label("Glossy Matt UV")]];
-  const row7 = [
-    [label(`${data.isPasting ? "Pasting /" : ""} ${data.isCutting ? "Cutting /" : ""} ${data.isCreasing ? "Creasing /" : ""}`), ""],
-  ];
-  const row14 = [
-    [label("Foil:"), getColumn(data.isFoil ? "Yes" : "No"), label("Punching:"), getColumn(data.isPunching ? "Yes" : "No")],
-  ];
-  const row8 = [[label("Binding"), getColumn(data.binding)]];
-  const row9 = [[label("Vendor"), getColumn(""), label("Paper"), getColumn(data.pType)]];
-  const row15 = [[label("Purchase 1")]];
-  const row16 = [[label("Purchase 2")]];
-  const row10 = [[label("Date"), getColumn(""), label("GSM"), getColumn(""), label("Size"), getColumn(""), label("Qty"), getColumn("")]];
-  const row11 = [[label("Vendor"), getColumn(""), label("Paper"), getColumn("")]];
-  const row12 = [[label("Date"), getColumn(""), label("GSM"), getColumn(""), label("Size"), getColumn(""), label("Qty"), getColumn("")]];
-  const row13 = [[label("Remarks"), getColumn("")]];
-
-  // column style sets
+  const col3 = {
+    0: { cellWidth: 15, fontStyle: "bold" },
+    1: { cellWidth: 20 },
+    2: { cellWidth: 15, fontStyle: "bold" },
+    3: { cellWidth: 20 },
+    4: { cellWidth: 10, fontStyle: "bold" },
+    5: { cellWidth: 18 },
+  };
   const col4 = {
     0: { cellWidth: 8, fontStyle: "bold" },
     1: { cellWidth: 17 },
@@ -414,91 +641,133 @@ export const downloadBookletPDF = (data: any) => {
     7: { cellWidth: 14 },
   };
 
-  const col3 = {
-    0: { cellWidth: 15, fontStyle: "bold" },
-    1: { cellWidth: 20 },
-    2: { cellWidth: 15, fontStyle: "bold" },
-    3: { cellWidth: 20 },
-    4: { cellWidth: 10, fontStyle: "bold" },
-    5: { cellWidth: 18 },
-  };
-
-  const col2 = {
-    0: { cellWidth: 16, fontStyle: "bold" },
-    1: { cellWidth: 34 },
-    2: { cellWidth: 16, fontStyle: "bold" },
-    3: { cellWidth: 32 },
-  };
-
-  const col1 = {
-    0: { cellWidth: 18, fontStyle: "bold" },
-    1: { cellWidth: 80 },
-  };
-
-  const col5 = {
-    0: { cellWidth: 50, fontStyle: "bold" },
-    1: { cellWidth: 48 },
-  };
-  const col6 = {
-    0: { cellWidth: 25, fontStyle: "bold" },
-    1: { cellWidth: 25 },
-    2: { cellWidth: 48, fontStyle: "bold" },
-  };
-
-
   const tableOptions = (startY: any, rows: any, col: any) => ({
     startY,
     margin: { left: 3, right: 3 },
     theme: "plain",
     styles: {
-      fontSize: 8,
-      cellPadding: 1,
+      fontSize: 7.5,
+      cellPadding: { top: 2, bottom: 1, left: 1, right: 1 },
       valign: "middle",
       halign: "left",
       lineWidth: 0,
-      lineColor: [255, 255, 255],
     },
     head: [],
     body: rows,
     columnStyles: col,
-    didParseCell: (dataCell: any) => {
-      // Add top margin only for body cells
-      if (dataCell.section === "body") {
-        dataCell.cell.styles.cellPadding = {
-          ...dataCell.cell.styles.cellPadding,
-          top: 4, // adjust top margin here
-        };
-      }
+    didDrawPage: () => {
+      drawBorderAndHeader(); // ✅ redraw on every page
     },
   });
 
-  // sequentially render all rows
   let currentY = 10;
   const renderRow = (rows: any, col: any) => {
     autoTable(doc, tableOptions(currentY, rows, col) as any);
-    currentY = doc.lastAutoTable.finalY; // update Y for next row
+    currentY = doc.lastAutoTable.finalY;
   };
 
-  renderRow(row1, col2);
-  renderRow(row2, col1);
-  renderRow(row3, col2);
-  renderRow(row4, col3);
-  renderRow(row5, col2);
-  renderRow(row6, col6);
-  renderRow(row7, col5);
-  renderRow(row8, col1);
-  renderRow(row14, col2);
-  renderRow(row9, col2);
-  renderRow(row15, col1);
-  renderRow(row10, col4);
-  renderRow(row11, col2);
-  renderRow(row16, col1);
-  renderRow(row12, col4);
-  renderRow(row13, col1);
+  // Fixed part
+  renderRow([[label("Ord No."), getColumn(data.odNo), label("Date:"), getColumn(data.date)]], col2);
+  renderRow([[label("Party Name"), getColumn(data.partyName)]], col1);
+  renderRow([[label("Address"), getColumn(data.address), label("GST"), getColumn(data.isGst ? "Yes" : "No")]], col2);
+  renderRow([[label("Item"), getColumn(data.productItem?.itemName), label("Size"), getColumn(data.size), label("Qty"), getColumn(data.qty)]], col3);
+  renderRow([[label("Rate"), getColumn(data.rate), label("Printer"), getColumn(data.printer)]], col2);
+
+  // Printer Papers
+  if (data.printerPapers?.length) {
+    data.printerPapers.forEach((paper: any, idx: number) => {
+      const paperInventory = inventory.find(
+        (inv: any) =>
+          inv.material._id === paper?.paperType && inv.category === "printer" &&
+          inv.companyName?._id === data?.companyName?._id
+      );
+
+      renderRow([[label(`Printer Paper ${idx + 1}`)]], col1);
+
+      renderRow(
+        [
+          [
+            label("Vendor"),
+            getColumn(paperInventory?.vendor?.name || ""),
+            label("Paper"),
+            getColumn(materials?.find((m) => m._id === paper?.paperType)?.materialName || ""),
+          ],
+        ],
+        col2
+      );
+
+      renderRow(
+        [
+          [
+            label("Date"),
+            getColumn(paperInventory?.date ? new Date(paperInventory.date).toLocaleDateString() : ""),
+            label("GSM"),
+            getColumn(materials?.find((m) => m._id === paper.gsm)?.materialGSM || ""),
+            label("Size"),
+            getColumn(materials?.find((m) => m._id === paper.sheetSize)?.materialSize || ""),
+            label("Qty"),
+            getColumn(paper?.numberOfSheetsUsed || ""),
+          ],
+        ],
+        col4
+      );
+    });
+  }
+
+  // Lamination / Glossy
+  renderRow([[label("Lamination"), getColumn(data.lamination), label("Glossy Matt UV")]], col2);
+  renderRow([[label(`${data.isPasting ? "Pasting /" : ""} ${data.isCutting ? "Cutting /" : ""} ${data.isCreasing ? "Creasing /" : ""}`), ""]], col1);
+  renderRow([[label("Foil:"), getColumn(data.isFoil ? "Yes" : "No"), label("Punching:"), getColumn(data.isPunching ? "Yes" : "No")]], col2);
+
+  // Binding
+  renderRow([[label("Binding"), getColumn(data.binding)]], col1);
+
+  // Binder Papers
+  if (data.binderPapers?.length) {
+    data.binderPapers.forEach((paper: any, idx: number) => {
+      const binderInventory = inventory.find(
+        (inv: any) =>
+          inv.material._id === paper?.paperType && inv.category === "binder" &&
+          inv.companyName?._id === data?.companyName?._id
+      );
+
+      renderRow([[label(`Binder Paper ${idx + 1}`)]], col1);
+
+      renderRow(
+        [
+          [
+            label("Vendor"),
+            getColumn(binderInventory?.vendor?.name || ""),
+            label("Paper"),
+            getColumn(materials?.find((m) => m._id === paper?.paperType)?.materialName || ""),
+          ],
+        ],
+        col2
+      );
+
+      renderRow(
+        [
+          [
+            label("Date"),
+            getColumn(binderInventory?.date ? new Date(binderInventory.date).toLocaleDateString() : ""),
+            label("GSM"),
+            getColumn(materials?.find((m) => m._id === paper.gsm)?.materialGSM || ""),
+            label("Size"),
+            getColumn(materials?.find((m) => m._id === paper.sheetSize)?.materialSize || ""),
+            label("Qty"),
+            getColumn(paper?.numberOfSheetsUsed || ""),
+          ],
+        ],
+        col4
+      );
+    });
+  }
+
+  // Remarks
+  renderRow([[label("Remarks"), getColumn("")]], col1);
 
   doc.save("binder-job-card.pdf");
 };
-
 
 export function downloadSkippedRecordsAsCSV(skippedRecords) {
   if (!skippedRecords || skippedRecords.length === 0) return;
@@ -535,6 +804,3 @@ export function downloadSkippedRecordsAsCSV(skippedRecords) {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
-
-// Usage example
-// downloadSkippedRecordsAsCSV(skippedRecords);

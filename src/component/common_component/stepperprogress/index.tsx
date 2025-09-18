@@ -85,55 +85,83 @@ const StepperProgress: React.FC<StepperProgressProps> = ({
 
   // Determine if a step is clickable based on workflow progression
 const isStepClickable = (index: number) => {
-  // Always allow clicking on the current step
-  if (index === activeStep) return true;
-  
-  // Allow clicking on completed steps
-  if (index < activeStep) return true;
-  
-  // Special cases based on order status
-  switch(index) {
+  let result = false;
+
+  switch (index) {
+    case 0: // Order Received
+      result = index === activeStep || index < activeStep;
+      break;
+
     case 1: // Designer step
-      return orderStatus === 'Designer' || 
-             orderStatus === 'Order Received' || 
-             orderStatus === 'Printer' || 
-             orderStatus === 'Binder' || 
-             orderStatus === 'Booklet & Folder Binder' ||
-             orderStatus === 'Delivery';
-             
+      result =
+        orderStatus === 'Designer' ||
+        orderStatus === 'Order Received' ||
+        orderStatus === 'Printer' ||
+        orderStatus === 'Binder' ||
+        orderStatus === 'Booklet & Folder Binder' ||
+        orderStatus === 'Delivery';
+      break;
+
     case 2: // Printer step
-      return orderStatus === 'Printer' || 
-             (designerStatus === 'Approved' && orderStatus !== 'Hold') || 
-             orderStatus === 'Binder' || 
-             orderStatus === 'Booklet & Folder Binder' ||
-             orderStatus === 'Delivery';
-             
+      result =
+        orderStatus === 'Printer' ||
+        (designerStatus === 'Approved' && orderStatus !== 'Hold') ||
+        orderStatus === 'Binder' ||
+        orderStatus === 'Booklet & Folder Binder' ||
+        orderStatus === 'Delivery';
+      break;
+
     case 3: // Binder step
-      return orderStatus === 'Binder' || 
-             (printerStatus === 'Done' && orderStatus !== 'Hold') || 
-             orderStatus === 'Booklet & Folder Binder' ||
-             orderStatus === 'Delivery';
-             
+      result =
+        orderStatus === 'Binder' ||
+        (printerStatus === 'Done' && orderStatus !== 'Hold') ||
+        orderStatus === 'Booklet & Folder Binder' ||
+        orderStatus === 'Delivery';
+      break;
+
     case 4: // Booklet & Folder Binder step
-      return orderStatus === 'Booklet & Folder Binder' || 
-             (orderStatus === 'Binder' && orderStatus !== 'Hold') ||
-             orderStatus === 'Delivery';
-             
+      result =
+        orderStatus === 'Booklet & Folder Binder' ||
+        (orderStatus === 'Binder' && orderStatus !== 'Hold') ||
+        orderStatus === 'Delivery';
+      break;
+
     case 5: // Delivery step
-      return orderStatus === 'Delivery' || 
-             (orderStatus === 'Booklet & Folder Binder' && orderStatus !== 'Hold');
-             
+      result =
+        orderStatus === 'Delivery' ||
+        (orderStatus === 'Booklet & Folder Binder' && orderStatus !== 'Hold');
+      break;
+
     default:
-      return index < activeStep;
+      result = index < activeStep;
+  }
+
+  // Always allow current and completed steps
+  if (index === activeStep || index < activeStep) {
+    result = true;
+  }
+
+  // console.log("Step:", steps[index].label, "| orderStatus:", orderStatus, "| designerStatus:", designerStatus, "| printerStatus:", printerStatus, "| clickable:", result);
+
+  return result;
+};
+
+
+  const handleStepClick = (index: number) => {
+  if (isStepClickable(index)) {
+    const path = steps[index].path;
+    router.push({
+      pathname: `/admin/all-orders/view/${path}`,
+      query: { 
+        id,
+        orderStatus,
+        designerStatus,
+        printerStatus
+      }
+    });
   }
 };
 
-  const handleStepClick = (index: number) => {
-    if (isStepClickable(index)) {
-      const path = steps[index].path;
-      router.push(`/admin/all-orders/view/${path}/?id=${id}`);
-    }
-  };
 
   return (
     <Stepper
@@ -169,3 +197,4 @@ const isStepClickable = (index: number) => {
 };
 
 export default StepperProgress;
+ 

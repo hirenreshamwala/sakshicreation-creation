@@ -530,7 +530,7 @@ const PrinterForm = () => {
           </Stack>
 
           {/* Paper Fields Section */}
-          {paperFields.map((paper, index) => (
+          {paperFields?.map((paper, index) => (
             <Box key={index} mb={3} p={2} border={1} borderRadius={2} borderColor="#ddd">
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography fontWeight={600}>
@@ -578,12 +578,17 @@ const PrinterForm = () => {
                 {/* </Stack> */}
                 <ThemeInput
                   labelName="Paper No. Of Sheet Used"
-                  name="rowPaperUser"
-                  value={formik.values.rowPaperUser}
-                  onChange={formik.handleChange}
+                  name="numberOfSheetsUsed"
+                  type="number"
+                  value={paper.numberOfSheetsUsed || ""}
+                  onChange={(e) =>
+                    setPaperFields((prev) =>
+                      prev.map((p, i) =>
+                        i === index ? { ...p, numberOfSheetsUsed: e.target.value } : p
+                      )
+                    )
+                  }
                   fullWidth
-                  error={formik.touched.rowPaperUser && Boolean(formik.errors.rowPaperUser)}
-                  helperText={formik.touched.rowPaperUser && formik.errors.rowPaperUser}
                   InputProps={{ readOnly: areFieldsReadOnly }}
                 />
 

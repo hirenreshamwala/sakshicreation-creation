@@ -747,6 +747,8 @@ const ViewCompanyPage: React.FC = () => {
           {
             label: singleAccountMaster?.partyName || '',
             value: singleAccountMaster?.partyId || '',
+            address: singleAccountMaster.address || "",
+            ownerWhatsAppNo: singleAccountMaster.ownerWhatsAppNo || ""
           },
         ]}
         date={date}

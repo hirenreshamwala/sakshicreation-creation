@@ -17,7 +17,7 @@ import {
   DialogActions,
   Chip,
 } from "@mui/material"
-import { MdEmail, MdRemoveRedEye, MdArrowBack, MdClose, MdEdit, MdDelete } from "react-icons/md"
+import { MdEmail, MdRemoveRedEye, MdArrowBack, MdClose, MdEdit, MdDelete, MdDownload } from "react-icons/md"
 import { AiOutlineEye } from "react-icons/ai"
 import { FaWhatsapp } from "react-icons/fa6"
 import { useRouter } from "next/router"
@@ -33,7 +33,34 @@ import RoleStaffSelect from "@/component/reusablecomponents/RoleStaffSelect"
 import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog"
 import FileUpload from "@/component/reusablecomponents/FileUpload"
 import AddNewPerformanceInvoiceDialog from "@/component/PerformanceInvoice/AddNewPerformanceInvoiceDialog"
-import { performanceInvoiceService } from "@/services/performanceInvoice.service" // Import service to check for existing invoice
+import { performanceInvoiceService } from "@/services/performanceInvoice.service"
+import Request from "@/services/axios"
+import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
+
+// Helper function to upload files to server
+
+const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]> => {
+  const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
+  const formData = new FormData();
+
+  files.forEach((file) => {
+    formData.append("files", file);
+  });
+
+  // If you want to send folder info to backend too
+  formData.append("folder", folder);
+
+  try {
+    const response = await Request.post(`${BaseURL}/api/fileUpload/multiple`, formData);
+
+    console.log(response, 'sdgnnsdgsdg')
+    return response.data.data || []; // Assuming API returns { files: [...] }
+  } catch (error) {
+    console.error("Error uploading files:", error);
+    throw error;
+  }
+};
+
 
 const DesignFile: React.FC<{
   file: any
@@ -47,19 +74,14 @@ const DesignFile: React.FC<{
     try {
       const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
 
-      // Handle different file path formats
       if (file.path.startsWith("http")) {
-        // Direct URL - open as is
         window.open(file.path, "_blank")
       } else if (file.path.startsWith("/uploads")) {
-        // Relative path - construct URL
         window.open(`${BaseURL}${file.path}`, "_blank")
       } else {
-        // For files in the 'design' folder
         if (file.path.startsWith("design/")) {
           window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
         } else {
-          // Fallback to download endpoint
           window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
         }
       }
@@ -143,19 +165,14 @@ const ReworkEntry: React.FC<{ entry: any }> = ({ entry }) => (
         try {
           const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
 
-          // Handle different file path formats for design files
           if (file.path.startsWith("http")) {
-            // Direct URL - open as is
             window.open(file.path, "_blank")
           } else if (file.path.startsWith("/uploads")) {
-            // Relative path - construct URL
             window.open(`${BaseURL}${file.path}`, "_blank")
           } else {
-            // For files in the 'design' folder or other paths
             if (file.path.startsWith("design/")) {
               window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
             } else {
-              // Fallback to download endpoint with view=true parameter
               window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
             }
           }
@@ -252,11 +269,11 @@ const ReworkDialog = ({
               multiple={true}
               accept="*/*"
               variant="dropzone"
-              onFilesSelected={() => {}}
+              onFilesSelected={() => { }}
               onUploadError={(error) => toast.error(error)}
               showPreview={false}
-              showUploadButton={false}
-              autoUpload={false}
+              showUploadButton={true} // Changed to true
+              autoUpload={true} // Changed to true
               label="Attach Order Files"
               helperText="Select order documents, images, or any related files "
             />
@@ -433,11 +450,11 @@ const RedesignDialog = ({
               multiple={false}
               accept="*/*"
               variant="dropzone"
-              onFilesSelected={() => {}}
+              onFilesSelected={() => { }}
               onUploadError={(error) => toast.error(error)}
               showPreview={true}
-              showUploadButton={false}
-              autoUpload={false}
+              showUploadButton={true} // Changed to true
+              autoUpload={true} // Changed to true
               label="Drop redesigned file here"
               helperText="Upload the redesigned version of this file"
             />
@@ -584,6 +601,7 @@ const ViewOrderDesigner = () => {
 
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false)
   const [newSelectedDesigner, setNewSelectedDesigner] = useState<any>(null)
+  const isEditingDisabled = singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0;
 
   useEffect(() => {
     const fetchOrderData = async () => {
@@ -711,23 +729,28 @@ const ViewOrderDesigner = () => {
     if (!orderId || typeof orderId !== "string") return
     setLoading(true)
     try {
-      // Simulate file upload - replace with actual upload logic
-      const uploadedFile: any = {
-        path: `design/${file.name}`, // This path would come from the actual upload response
+      // Upload the file to server
+      const uploadedFiles = await uploadFilesToServer([file], "design")
+
+      if (uploadedFiles.length === 0) {
+        throw new Error("File upload failed")
+      }
+
+      const uploadedFile = uploadedFiles[0]
+
+      const updatedDesignFiles = [...(singleOrder.designFiles || [])]
+      updatedDesignFiles[currentRedesignIndex] = {
+        path: uploadedFile.path,
         remark: remark || designFileRemarks[currentRedesignIndex] || "",
         uploadedAt: new Date().toISOString(),
       }
 
-      // Update the design files array
-      const updatedDesignFiles = [...(singleOrder.designFiles || [])]
-      updatedDesignFiles[currentRedesignIndex] = uploadedFile
       const updateData = {
         designFiles: updatedDesignFiles,
       }
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
       toast.success("Design file updated successfully")
       setRedesignOpen(false)
-      // Refresh order data
       await dispatch(getOrderByIdThunk(orderId)).unwrap()
     } catch (error: any) {
       toast.error(error || "Failed to update design file")
@@ -736,19 +759,16 @@ const ViewOrderDesigner = () => {
     }
   }
 
-  // Handle files selected from FileUpload component (for original order files)
   const handleFilesSelected = (selectedFiles: File[]) => {
-    // Add new files to the files array with temporary paths and empty remarks
     const newFileList = selectedFiles.map((file) => ({
-      path: file.name, // Use file name as temporary path
+      path: file.name,
       remark: "",
       _id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      file: file, // Store the actual file object for later upload
-      isNew: true, // Mark as new file for delete functionality
+      file: file,
+      isNew: true,
       isDeleted: false,
     }))
     setFiles([...files, ...newFileList])
-    // Initialize remarks for new files
     const remarks: { [key: string]: string } = {}
     selectedFiles.forEach((file) => {
       remarks[file.name] = ""
@@ -756,41 +776,33 @@ const ViewOrderDesigner = () => {
     setNewFileRemarks((prev) => ({ ...prev, ...remarks }))
   }
 
-  // Handle file deletion for original order files
   const handleDeleteFile = async (index: number) => {
     const fileToDelete = files[index]
     if (fileToDelete.isNew) {
-      // For new files, just remove from local state
       const updatedFiles = files.filter((_, i) => i !== index)
       setFiles(updatedFiles)
-      // Remove from newFileRemarks if it exists
       if (newFileRemarks[fileToDelete.path]) {
         const updatedRemarks = { ...newFileRemarks }
         delete updatedRemarks[fileToDelete.path]
         setNewFileRemarks(updatedRemarks)
       }
-      // Also remove from FileUpload component
       if (fileUploadRef.current && fileToDelete.file) {
         fileUploadRef.current.removeFile(fileToDelete.file)
       }
       toast.success("File removed successfully")
     } else if (fileToDelete.isExisting) {
-      // For existing files, call delete API and mark as deleted
       try {
         setLoading(true)
-        // Extract folder and filename from path
         const pathParts = fileToDelete.path.split("/")
         const filename = pathParts.pop() || ""
-        const folder = pathParts.join("/") || "orders" // Default to 'orders' if no folder in path
+        const folder = pathParts.join("/") || "orders"
         await dispatch(deleteFileThunk({ folder, filename })).unwrap()
-        // Mark file as deleted instead of removing it
         const updatedFiles = [...files]
         updatedFiles[index] = {
           ...fileToDelete,
           isDeleted: true,
         }
         setFiles(updatedFiles)
-        // Add to deleted files list
         setDeletedFiles((prev) => [...prev, fileToDelete.path])
         toast.success("File deleted successfully")
       } catch (error: any) {
@@ -802,11 +814,9 @@ const ViewOrderDesigner = () => {
     }
   }
 
-  // Handle file removal from FileUpload component (sync with attached files)
   const handleFileUploadRemove = (removedFile: File) => {
     const updatedFiles = files.filter((file) => !(file.isNew && file.file && file.file.name === removedFile.name))
     setFiles(updatedFiles)
-    // Remove from newFileRemarks
     const updatedRemarks = { ...newFileRemarks }
     delete updatedRemarks[removedFile.name]
     setNewFileRemarks(updatedRemarks)
@@ -817,7 +827,6 @@ const ViewOrderDesigner = () => {
     toast.error(error)
   }
 
-  // Handle designer assignment
   const handleAssignClick = async () => {
     if (!selectedStaff) {
       toast.error("Please select a designer first")
@@ -830,28 +839,27 @@ const ViewOrderDesigner = () => {
     setLoading(true)
     try {
       let newFilePaths: any[] = []
-      // Upload files if any are selected
+
+      // Get selected files from FileUpload component
       if (fileUploadRef.current) {
         const selectedFiles = fileUploadRef.current.getSelectedFiles()
         if (selectedFiles.length > 0) {
-          // Simulate file upload - replace with actual upload logic
-          const uploadedFileResults = selectedFiles.map((file: File) => ({
-            folder: "orders",
-            filename: file.name,
-          }))
-          newFilePaths = uploadedFileResults.map((file: any, index: number) => ({
-            path: `${file.folder}/${file.filename}`,
+          // Upload files to server
+          const uploadedFiles = await uploadFilesToServer(selectedFiles, "orders")
+
+          // Create file path objects with remarks
+          newFilePaths = uploadedFiles.map((fileInfo: any, index: number) => ({
+            path: fileInfo.path,
             remark: newFileRemarks[selectedFiles[index].name] || "",
             uploadedAt: new Date().toISOString(),
           }))
         }
       }
 
-      // Get existing files that are not deleted
+      // Get existing files (excluding deleted ones)
       const existingFilePaths = (singleOrder?.filePaths || [])
         .filter((file: any) => !deletedFiles.includes(file.path))
         .map((file: any) => {
-          // Find the file in our local state to get updated remark
           const localFile = files.find((f) => f.path === file.path && f.isExisting && !f.isDeleted)
           return {
             ...file,
@@ -859,18 +867,18 @@ const ViewOrderDesigner = () => {
           }
         })
 
+      // Combine existing and new files
       const allFilePaths = [...existingFilePaths, ...newFilePaths]
 
       const updateData = {
-        designer: selectedStaff.value, // Send designer ID
-        designerStatus: "Pending", // Set to Pending when assigned, as per user request
+        designer: selectedStaff.value,
+        designerStatus: "Pending",
         status: "Designer",
         remarks: remarks,
-        filePaths: allFilePaths,
+        filePaths: allFilePaths, // This now includes both existing and newly uploaded files
       }
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
       toast.success("Order assigned to designer successfully")
-      // Refresh order data
       await dispatch(getOrderByIdThunk(orderId)).unwrap()
     } catch (err) {
       toast.error("Failed to assign designer")
@@ -894,7 +902,7 @@ const ViewOrderDesigner = () => {
     try {
       const updateData = {
         designer: newSelectedDesigner.value,
-        designerStatus: "Pending", // Reset to Pending when reassigned
+        designerStatus: "Pending",
         designerRemarks: `Reassigned from ${singleOrder?.designer?.name || "previous designer"} to ${newSelectedDesigner.label}`,
         reassignHistory: [
           ...(singleOrder?.reassignHistory || []),
@@ -913,8 +921,6 @@ const ViewOrderDesigner = () => {
       toast.success("Designer reassigned successfully")
       setReassignDialogOpen(false)
       setNewSelectedDesigner(null)
-
-      // Refresh order data
       await dispatch(getOrderByIdThunk(orderId)).unwrap()
     } catch (err) {
       toast.error("Failed to reassign designer")
@@ -924,7 +930,46 @@ const ViewOrderDesigner = () => {
     }
   }
 
-  // Handle email click
+  const handleDownloadInvoice = () => {
+    try {
+      const fullAddress = [
+        singleOrder?.party?.address?.unitNo || "",
+        singleOrder?.party?.address?.streetAddress || "",
+        singleOrder?.party?.address?.marketName || "",
+        singleOrder?.party?.address?.landMark || "",
+        singleOrder?.party?.address?.area || "",
+        singleOrder?.party?.address?.pincode || "",
+      ]
+        .filter((part) => part.trim() !== "")
+        .join(", ");
+
+      const formData = {
+        orderNumber: singleOrder?.orderNumber || "N/A",
+        companyName: singleOrder?.companyName?.companyName || "N/A",
+        remarks: singleOrder?.remarks || "",
+        ownerMobileNo: singleOrder?.party?.ownerMobileNo || "",
+        partyName: singleOrder?.party?.partyName || "N/A",
+        addressName: fullAddress || "N/A",
+        GSTNo: singleOrder?.party?.GSTNo || "N/A",
+        servicePerformance: singleOrder?.productItem?.itemName || "N/A",
+        quantity: singleOrder?.qty || 0,
+        unitPrice: singleOrder?.unitPrice || 0,
+        total: singleOrder?.total || 0,
+        finalAmount: singleOrder?.finalAmount || 0,
+        applyGST: singleOrder?.applyGST || false,
+        gstPercentage: singleOrder?.gstPercentage || 18,
+        daysAfterConfirmation: singleOrder?.daysAfterConfirmation || 0,
+      };
+
+      generateInvoicePDF(formData);
+      toast.success("Invoice downloaded successfully");
+    } catch (error) {
+      console.error("Error downloading invoice:", error);
+      toast.error("Failed to download invoice");
+    }
+  };
+
+
   const handleEmailClick = () => {
     const subject = `Order ${singleOrder?.orderNumber} - Design Review`
     const body = `Dear ${singleOrder?.party?.contactPerson},\n\nPlease review the design for order ${singleOrder?.orderNumber}.\n\nBest regards`
@@ -932,7 +977,6 @@ const ViewOrderDesigner = () => {
     window.open(mailtoUrl, "_blank")
   }
 
-  // Handle WhatsApp click
   const handleWhatsAppClick = () => {
     const phoneNumber = singleOrder?.party?.ownerWhatsAppNo
     if (phoneNumber) {
@@ -944,22 +988,23 @@ const ViewOrderDesigner = () => {
     }
   }
 
-  // Handle rework submission
   const handleReworkSubmit = async (remark: string, files: File[]) => {
     if (!orderId || typeof orderId !== "string") return
     setLoading(true)
     try {
       let reworkFiles: any[] = []
       if (files.length > 0) {
-        // Simulate file upload for rework files
-        reworkFiles = files.map((file) => ({
-          path: `/uploads/rework/${file.name}`, // Simulated path
+        // Upload files to server
+        const uploadedFiles = await uploadFilesToServer(files, "rework")
+        reworkFiles = uploadedFiles.map((fileInfo: any) => ({
+          path: fileInfo.path,
           remark: remark,
           uploadedAt: new Date().toISOString(),
         }))
       }
+
       const updateData = {
-        designerStatus: "Rework", // This will change status to Rework
+        designerStatus: "Rework",
         designerRemarks: remark,
         reworkHistory: [
           ...(singleOrder?.reworkHistory || []),
@@ -973,7 +1018,6 @@ const ViewOrderDesigner = () => {
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
       toast.success("Order sent for rework successfully")
       setReworkOpen(false)
-      // Refresh order data
       await dispatch(getOrderByIdThunk(orderId)).unwrap()
     } catch (error: any) {
       toast.error(error || "Failed to send order for rework")
@@ -982,23 +1026,24 @@ const ViewOrderDesigner = () => {
     }
   }
 
-  // Handle approve with validation proof
   const handleApprovalSubmit = async (files: File[], remark: string) => {
     if (!orderId || typeof orderId !== "string") return
     setLoading(true)
     try {
-      // Upload validation proof files (simulated)
       let validproofFiles: any[] = []
       if (files.length > 0) {
-        validproofFiles = files.map((file) => ({
-          path: `/uploads/validproof/${file.name}`, // Simulated path
+        // Upload files to server
+        const uploadedFiles = await uploadFilesToServer(files, "validproof")
+        validproofFiles = uploadedFiles.map((fileInfo: any) => ({
+          path: fileInfo.path,
           remark: remark,
           uploadedAt: new Date().toISOString(),
         }))
       }
+
       const updateData = {
         designerStatus: "Approved",
-        status: "Designer", // Keep main status as Designer until next stage
+        status: "Designer",
         validproof: validproofFiles,
         designFiles: singleOrder?.designFiles?.map((file: any, index: number) => ({
           ...file,
@@ -1008,7 +1053,6 @@ const ViewOrderDesigner = () => {
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
       toast.success("Order approved successfully")
       setApprovalOpen(false)
-      // Refresh order data
       await dispatch(getOrderByIdThunk(orderId)).unwrap()
     } catch (error: any) {
       toast.error(error || "Failed to approve order")
@@ -1017,28 +1061,27 @@ const ViewOrderDesigner = () => {
     }
   }
 
-  // Handle invoice validation proof submission
   const handleInvoiceValidProofSubmit = async (files: File[], remark: string) => {
     if (!orderId || typeof orderId !== "string") return
     setLoading(true)
     try {
       let invoiceProofFiles: any[] = []
       if (files.length > 0) {
-        // Simulate file upload for invoice proof files
-        invoiceProofFiles = files.map((file) => ({
-          path: `/uploads/invoicevalidproof/${file.name}`, // Simulated path
+        // Upload files to server
+        const uploadedFiles = await uploadFilesToServer(files, "invoicevalidproof")
+        invoiceProofFiles = uploadedFiles.map((fileInfo: any) => ({
+          path: fileInfo.path,
           remark: remark,
           uploadedAt: new Date().toISOString(),
         }))
       }
+
       const updateData = {
         invoiceValidProof: invoiceProofFiles,
-        // DO NOT change status here. Status change happens on "Next" button click.
       }
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
       toast.success("Invoice validation proof submitted successfully")
       setInvoiceValidProofOpen(false)
-      // Refresh order data to show the newly uploaded files
       await dispatch(getOrderByIdThunk(orderId)).unwrap()
     } catch (error: any) {
       toast.error(error || "Failed to submit invoice validation proof")
@@ -1047,15 +1090,12 @@ const ViewOrderDesigner = () => {
     }
   }
 
-  // Helper function to extract filename from path
   const getFileNameFromPath = (path: string) => {
     return path.split("/").pop() || "File"
   }
 
-  // Determine if designer can be assigned (only if status is Pending and no designer is assigned)
   const canAssignToDesigner = singleOrder?.designerStatus === "Pending" && !singleOrder?.designer
 
-  // Determine if design is complete (In Progress, Done, Rework, or Approved, and has design files)
   const isDesignComplete =
     (singleOrder?.designerStatus === "In Progress" ||
       singleOrder?.designerStatus === "Done" ||
@@ -1063,10 +1103,8 @@ const ViewOrderDesigner = () => {
       singleOrder?.designerStatus === "Approved") &&
     singleOrder?.designFiles?.length > 0
 
-  // Determine if design is approved
   const isApproved = singleOrder?.designerStatus === "Approved"
 
-  // Filter out deleted files for display
   const visibleFiles = files.filter((file) => !file.isDeleted)
 
   const handleStaffChange = (event: any, newValue: any) => {
@@ -1074,125 +1112,107 @@ const ViewOrderDesigner = () => {
   }
 
   const renderDesignFileWithDesigner = (file: any, index: number) => {
-  const handleViewDesignFile = () => {
-    try {
-      const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
+    const handleViewDesignFile = () => {
+      try {
+        const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
 
-      // Handle different file path formats for design files
-      if (file.path.startsWith("http")) {
-        // Direct URL - open as is
-        window.open(file.path, "_blank")
-      } else if (file.path.startsWith("/uploads")) {
-        // Relative path - construct URL
-        window.open(`${BaseURL}${file.path}`, "_blank")
-      } else {
-        // For files in the 'design' folder or other paths
-        if (file.path.startsWith("design/")) {
-          window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
+        if (file.path.startsWith("http")) {
+          window.open(file.path, "_blank")
+        } else if (file.path.startsWith("/uploads")) {
+          window.open(`${BaseURL}${file.path}`, "_blank")
         } else {
-          // Fallback to download endpoint with view=true parameter
-          window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
+          if (file.path.startsWith("design/")) {
+            window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
+          } else {
+            window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
+          }
         }
+      } catch (error) {
+        console.error("Error opening design file:", error)
+        toast.error("Failed to open design file")
       }
-    } catch (error) {
-      console.error("Error opening design file:", error)
-      toast.error("Failed to open design file")
     }
+
+    return (
+      <Box key={index} sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0", borderRadius: 2 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+          <Typography fontWeight={600} fontSize={14}>
+            Design File {index + 1}
+          </Typography>
+          {file.designerName && (
+            <Chip
+              label={`By: ${file.designerName}`}
+              size="small"
+              sx={{
+                backgroundColor: "#E3F2FD",
+                color: "#1976D2",
+                fontWeight: 500,
+              }}
+            />
+          )}
+        </Box>
+
+        <Box display="flex" gap={2} alignItems="center" mb={2}>
+          <Button
+            variant="outlined"
+            startIcon={<MdRemoveRedEye />}
+            onClick={handleViewDesignFile}
+            sx={{
+              fontWeight: 600,
+              color: "#344054",
+              borderColor: "#D0D5DD",
+              textTransform: "none",
+              background: "#fff",
+              "&:hover": { background: "#f6fef9" },
+            }}
+          >
+            {getFileNameFromPath(file.path)}
+          </Button>
+
+          {file.uploadedAt && (
+            <Typography fontSize={12} color="#666">
+              Uploaded: {new Date(file.uploadedAt).toLocaleString()}
+            </Typography>
+          )}
+        </Box>
+
+        <ThemeInput
+          placeholder="Design file remarks..."
+          value={designFileRemarks[index] || file.remark || ""}
+          onChange={(e) => handleDesignRemarkChange(index, e.target.value)}
+          InputProps={{ readOnly: isApproved }}
+          fullWidth
+          multiline
+          rows={2}
+        />
+
+        {!isApproved && (
+          <Box display="flex" gap={1} mt={2}>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={() => handleDeleteDesignFile(index)}
+              startIcon={<MdDelete />}
+            >
+              Delete
+            </Button>
+          </Box>
+        )}
+      </Box>
+    )
   }
 
-  return (
-    <Box key={index} sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0", borderRadius: 2 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-        <Typography fontWeight={600} fontSize={14}>
-          Design File {index + 1}
-        </Typography>
-        {file.designerName && (
-          <Chip
-            label={`By: ${file.designerName}`}
-            size="small"
-            sx={{
-              backgroundColor: "#E3F2FD",
-              color: "#1976D2",
-              fontWeight: 500,
-            }}
-          />
-        )}
-      </Box>
-
-      <Box display="flex" gap={2} alignItems="center" mb={2}>
-        <Button
-          variant="outlined"
-          startIcon={<MdRemoveRedEye />}
-          onClick={handleViewDesignFile}
-          sx={{
-            fontWeight: 600,
-            color: "#344054",
-            borderColor: "#D0D5DD",
-            textTransform: "none",
-            background: "#fff",
-            "&:hover": { background: "#f6fef9" },
-          }}
-        >
-          {getFileNameFromPath(file.path)}
-        </Button>
-
-        {file.uploadedAt && (
-          <Typography fontSize={12} color="#666">
-            Uploaded: {new Date(file.uploadedAt).toLocaleString()}
-          </Typography>
-        )}
-      </Box>
-
-      <ThemeInput
-        placeholder="Design file remarks..."
-        value={designFileRemarks[index] || file.remark || ""}
-        onChange={(e) => handleDesignRemarkChange(index, e.target.value)}
-        InputProps={{ readOnly: isApproved }}
-        fullWidth
-        multiline
-        rows={2}
-      />
-
-      {!isApproved && (
-        <Box display="flex" gap={1} mt={2}>
-          {/* <Button
-            size="small"
-            variant="outlined"
-            color="primary"
-            onClick={() => handleRedesignFile(index)}
-            startIcon={<MdEdit />}
-          >
-            Redesign
-          </Button> */}
-          <Button
-            size="small"
-            variant="outlined"
-            color="error"
-            onClick={() => handleDeleteDesignFile(index)}
-            startIcon={<MdDelete />}
-          >
-            Delete
-          </Button>
-        </Box>
-      )}
-    </Box>
-  )
-}
-
-  // Conditional rendering flags calculated directly
   const shouldShowApprovalSection =
     singleOrder?.designerStatus === "In Progress" ||
     singleOrder?.designerStatus === "Done" ||
     singleOrder?.designerStatus === "Approved" ||
     singleOrder?.designerStatus === "Rework"
 
-  // This controls the visibility of the "Generate Performa Invoice" button
   const shouldShowGenerateInvoiceButton = singleOrder?.designerStatus === "Approved"
 
-  // This controls the visibility of the "Invoice Validation Proof Files" section
   const shouldShowInvoiceProofSection = singleOrder?.designerStatus === "Approved" && isPerformaInvoiceSaved
 
-  // Loading state
   if (pageLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -1201,7 +1221,6 @@ const ViewOrderDesigner = () => {
     )
   }
 
-  // No data state
   if (!singleOrder) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -1346,7 +1365,6 @@ const ViewOrderDesigner = () => {
             </Box>
           )}
 
-          {/* Company and Party Info */}
           <Box display="flex" gap={2} mb={2} flexWrap="wrap" alignItems="center">
             <Box flex={1} minWidth={240}>
               <ThemeInput
@@ -1369,7 +1387,6 @@ const ViewOrderDesigner = () => {
                 InputProps={{ readOnly: true }}
               />
             </Box>
-            {/* {canAssignToDesigner && ( */}
             <Box flex={1} minWidth={240}>
               <RoleStaffSelect
                 label="Select Designers"
@@ -1381,7 +1398,6 @@ const ViewOrderDesigner = () => {
                 showStaff={true}
               />
             </Box>
-            {/* )} */}
           </Box>
           {canAssignToDesigner && (
             <Box mb={2}>
@@ -1395,10 +1411,10 @@ const ViewOrderDesigner = () => {
                 onFileRemoved={handleFileUploadRemove}
                 onUploadError={handleUploadError}
                 showPreview={false}
-                showUploadButton={false}
-                autoUpload={false}
+                showUploadButton={false} // Changed to false to prevent auto-upload
+                autoUpload={false} // Changed to false to handle upload manually
                 label="Click to select files or drag and drop"
-                helperText="Select order documents, images, or any related files "
+                helperText="Select order documents, images, or any related files"
               />
             </Box>
           )}
@@ -1413,7 +1429,6 @@ const ViewOrderDesigner = () => {
               InputProps={{ readOnly: !canAssignToDesigner }}
             />
           </Box>
-          {/* Attached Files */}
           <Typography fontWeight={600} mb={1}>
             Attached Files
           </Typography>
@@ -1435,18 +1450,14 @@ const ViewOrderDesigner = () => {
                     }}
                     onClick={() => {
                       if (file.isExisting) {
-                        // For existing files, construct the direct URL
                         const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
                         let viewUrl
 
-                        // Handle both full paths and relative paths
                         if (file.path.startsWith("http")) {
                           viewUrl = file.path
                         } else if (file.path.startsWith("/uploads")) {
-                          // Direct access to static files
                           viewUrl = `${BaseURL}${file.path}`
                         } else {
-                          // Fallback to download endpoint
                           viewUrl = `${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`
                         }
 
@@ -1502,7 +1513,6 @@ const ViewOrderDesigner = () => {
           >
             View All Files ({visibleFiles.length})
           </Button>
-          {/* Designer Assignment Button */}
           {canAssignToDesigner && (
             <Box
               sx={{
@@ -1563,7 +1573,6 @@ const ViewOrderDesigner = () => {
                     View All Design Files ({singleOrder?.designFiles?.length || 0})
                   </Button>
 
-                  {/* Rework History */}
                   {singleOrder?.reworkHistory && singleOrder.reworkHistory.length > 0 && (
                     <Box
                       sx={{
@@ -1581,7 +1590,6 @@ const ViewOrderDesigner = () => {
                   )}
                   {!isApproved && (
                     <>
-                      {/* Communication Options */}
                       <Typography fontWeight={600} mb={2}>
                         Send for Approval via
                       </Typography>
@@ -1632,7 +1640,6 @@ const ViewOrderDesigner = () => {
                           </Typography>
                         </Box>
                       </Stack>
-                      {/* Action Buttons */}
                       <Stack direction="row" spacing={2}>
                         <ThemeButton
                           sx={{
@@ -1672,13 +1679,11 @@ const ViewOrderDesigner = () => {
               )}
             </Box>
           </Collapse>
-          {/* Performa Section */}
           <Collapse in={shouldShowGenerateInvoiceButton} timeout="auto" unmountOnExit>
             <Box mt={4}>
               <Typography fontWeight={600} mb={2} color="#12B76A">
                 ✅ Design Approved
               </Typography>
-              {/* Show validation proof if available */}
               {singleOrder?.validproof && singleOrder.validproof.length > 0 && (
                 <Box mb={3}>
                   <Typography fontWeight={500} mb={1}>
@@ -1689,19 +1694,14 @@ const ViewOrderDesigner = () => {
                       try {
                         const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
 
-                        // Handle different file path formats for design files
                         if (file.path.startsWith("http")) {
-                          // Direct URL - open as is
                           window.open(file.path, "_blank")
                         } else if (file.path.startsWith("/uploads")) {
-                          // Relative path - construct URL
                           window.open(`${BaseURL}${file.path}`, "_blank")
                         } else {
-                          // For files in the 'design' folder or other paths
                           if (file.path.startsWith("design/")) {
                             window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
                           } else {
-                            // Fallback to download endpoint with view=true parameter
                             window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
                           }
                         }
@@ -1733,95 +1733,109 @@ const ViewOrderDesigner = () => {
                   })}
                 </Box>
               )}
-              <Button
-                fullWidth
-                sx={{
-                  background: "#B100FF",
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  borderRadius: 2,
-                  py: 1.2,
-                  mb: 2,
-                  "&:hover": { background: "#8B00CC" },
-                }}
-                onClick={() => setPInvoiceModal(true)}
-              >
-                Generate Proforma Invoice
-              </Button>
+              <Box display="flex" gap={2} mb={2}>
+                <ThemeButton
+                  fullWidth
+                  sx={{
+                    background: isEditingDisabled ? "#ccc" : "#B100FF",
+                    color: "#fff",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    borderRadius: 2,
+                    py: 1.2,
+                    "&:hover": { background: isEditingDisabled ? "#ccc" : "#8B00CC" },
+                  }}
+                  onClick={() => setPInvoiceModal(true)}
+                  disabled={isEditingDisabled}
+                >
+                  {isEditingDisabled ? "Invoice Already Generated" : "Generate Proforma Invoice"}
+                </ThemeButton>
+                {isEditingDisabled && (
+                  <ThemeButton
+                    fullWidth
+                    sx={{
+                      background: "#2196F3",
+                      color: "#fff",
+                      fontWeight: 600,
+                      fontSize: 16,
+                      borderRadius: 2,
+                      py: 1.2,
+                      "&:hover": { background: "#1976D2" },
+                    }}
+                    onClick={handleDownloadInvoice}
+                  >
+                    <MdDownload style={{ marginRight: "8px" }} />
+                    Download Invoice
+                  </ThemeButton>
+                )}
+              </Box>
 
-              {/* Invoice Validation Proof Section - Conditional Rendering */}
               <Collapse in={shouldShowInvoiceProofSection} timeout="auto" unmountOnExit>
                 <Box mb={3}>
                   <Typography fontWeight={500} mb={1}>
-                      Invoice Validation Proof Files
-                    </Typography>
-                    {singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0
-                      ? singleOrder.invoiceValidProof.map((file: any, index: number) => {
-                          const handleViewInvoiceProof = () => {
-                            try {
-                              const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
+                    Invoice Validation Proof Files
+                  </Typography>
+                  {singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0
+                    ? singleOrder.invoiceValidProof.map((file: any, index: number) => {
+                      const handleViewInvoiceProof = () => {
+                        try {
+                          const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
 
-                              // Handle different file path formats for design files
-                              if (file.path.startsWith("http")) {
-                                // Direct URL - open as is
-                                window.open(file.path, "_blank")
-                              } else if (file.path.startsWith("/uploads")) {
-                                // Relative path - construct URL
-                                window.open(`${BaseURL}${file.path}`, "_blank")
-                              } else {
-                                // For files in the 'design' folder or other paths
-                                if (file.path.startsWith("design/")) {
-                                  window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
-                                } else {
-                                  // Fallback to download endpoint with view=true parameter
-                                  window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
-                                }
-                              }
-                            } catch (error) {
-                              console.error("Error opening design file:", error)
-                              toast.error("Failed to open design file")
+                          if (file.path.startsWith("http")) {
+                            window.open(file.path, "_blank")
+                          } else if (file.path.startsWith("/uploads")) {
+                            window.open(`${BaseURL}${file.path}`, "_blank")
+                          } else {
+                            if (file.path.startsWith("design/")) {
+                              window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
+                            } else {
+                              window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
                             }
-                          };
+                          }
+                        } catch (error) {
+                          console.error("Error opening design file:", error)
+                          toast.error("Failed to open design file")
+                        }
+                      };
 
-                          return (
-                            <Button
-                              key={index}
-                              variant="outlined"
-                              startIcon={<AiOutlineEye />}
-                              onClick={handleViewInvoiceProof}
-                              sx={{
-                                mr: 1,
-                                mb: 1,
-                                textTransform: "none",
-                                fontWeight: 500,
-                                backgroundColor: "#fff",
-                                borderColor: "#6366F1",
-                                color: "#6366F1",
-                              }}
-                            >
-                              {file.path?.split("/").pop() || `Invoice Proof ${index + 1}`}
-                            </Button>
-                          );
-                        })
-                      : isPerformaInvoiceSaved && (
-                          <ThemeButton
-                            fullWidth
-                            sx={{
-                              background: "#6366F1",
-                              color: "#fff",
-                              fontWeight: 600,
-                              fontSize: 16,
-                              borderRadius: 2,
-                              py: 1.2,
-                              "&:hover": { background: "#4F46E5" },
-                            }}
-                            onClick={() => setInvoiceValidProofOpen(true)}
-                            disabled={loading}
-                          >
-                            Add Invoice Approve Proof
-                          </ThemeButton>
-                        )}
+                      return (
+                        <Button
+                          key={index}
+                          variant="outlined"
+                          startIcon={<AiOutlineEye />}
+                          onClick={handleViewInvoiceProof}
+                          sx={{
+                            mr: 1,
+                            mb: 1,
+                            textTransform: "none",
+                            fontWeight: 500,
+                            backgroundColor: "#fff",
+                            borderColor: "#6366F1",
+                            color: "#6366F1",
+                          }}
+                        >
+                          {file.path?.split("/").pop() || `Invoice Proof ${index + 1}`}
+                        </Button>
+                      );
+                    })
+                    : isPerformaInvoiceSaved && (
+                      <ThemeButton
+                        fullWidth
+                        sx={{
+                          background: "#6366F1",
+                          color: "#fff",
+                          fontWeight: 600,
+                          fontSize: 16,
+                          borderRadius: 2,
+                          py: 1.2,
+                          "&:hover": { background: "#4F46E5" },
+                        }}
+                        onClick={() => setInvoiceValidProofOpen(true)}
+                        disabled={loading}
+                      >
+                        Add Invoice Approve Proof
+                      </ThemeButton>
+                    )}
                 </Box>
                 <Typography fontWeight={600} mb={2}>
                   Send Invoice for Approval via
@@ -1876,7 +1890,6 @@ const ViewOrderDesigner = () => {
                 <Button
                   fullWidth
                   onClick={() => router.push(`/admin/all-orders/view/printers/?id=${orderId}`)}
-                  // Disable "Next" button if invoiceValidProof is not yet uploaded
                   disabled={!(singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0)}
                   sx={{
                     background: "#12B76A",
@@ -1947,7 +1960,6 @@ const ViewOrderDesigner = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Dialogs */}
         <ReworkDialog
           open={reworkOpen}
           onClose={() => setReworkOpen(false)}
@@ -1983,7 +1995,6 @@ const ViewOrderDesigner = () => {
           showDownload={true}
           showView={true}
         />
-        {/* New InvoiceValidProofDialog */}
         <InvoiceValidProofDialog
           open={invoiceValidProofOpen}
           onClose={() => setInvoiceValidProofOpen(false)}
@@ -1997,7 +2008,7 @@ const ViewOrderDesigner = () => {
         invoiceId={undefined}
         data={singleOrder}
         orderId={orderId as string}
-        onInvoiceSaved={() => setIsPerformaInvoiceSaved(true)} // Callback to update state
+        onInvoiceSaved={() => setIsPerformaInvoiceSaved(true)}
       />
     </>
   )

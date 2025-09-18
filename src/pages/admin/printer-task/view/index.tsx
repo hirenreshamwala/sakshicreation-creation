@@ -187,7 +187,7 @@ const PrinterTaskView = () => {
     
     // Validate printer papers
     for (const paper of printerPapers) {
-      if (!paper.rowPaperUser || !paper.sheetSize || !paper.paperType || !paper.gsm || !paper.ratePerUnit) {
+      if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm || !paper.ratePerUnit) {
         toast.error("All paper fields must be filled")
         return
       }
@@ -554,8 +554,8 @@ const PrinterTaskView = () => {
                 />
                 <ThemeInput
                   labelName="Number of Sheets Used"
-                  value={paper.rowPaperUser}
-                  onChange={(e) => handlePrinterPaperChange(index, 'rowPaperUser', e.target.value)}
+                  value={paper.numberOfSheetsUsed}
+                  onChange={(e) => handlePrinterPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />

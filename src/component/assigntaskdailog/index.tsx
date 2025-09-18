@@ -324,6 +324,18 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
   }, [open, isEditMode, taskId, isBulkMode, dispatch]);
 
   useEffect(() => {
+    if (open && formik.values.partyName) {
+      const selectedParty = accountMasters?.find((account) => account.party?._id === formik.values.partyName);
+      setPartyDetails({
+        unitNo: selectedParty?.party?.address?.unitNo || "",
+        marketName: selectedParty?.party?.address?.marketName || "",
+        area: selectedParty?.party?.address?.area || "",
+        ownerWhatsAppNo: selectedParty?.party?.ownerWhatsAppNo || "",
+      });
+    }
+  }, [open, formik.values.partyName, accountMasters]);
+
+  useEffect(() => {
     if (isEditMode && singleAssignTask && taskId === singleAssignTask._id) {
       const assignToId =
         typeof singleAssignTask.assignTo === "string"

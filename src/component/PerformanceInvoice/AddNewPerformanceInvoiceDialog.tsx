@@ -20,6 +20,7 @@ import { orderService } from "@/services/order.service"
 import { performanceInvoiceService } from "@/services/performanceInvoice.service"
 import InvoicePDFGenerator from "../InvoicePDFGenerator"
 import { assignTaskService } from "@/services/assignTask.service";
+import { getAllMarketsThunk } from "@/store/slices/marketDataSlice";
 
 interface FormData {
   orderNumber: string;
@@ -38,7 +39,7 @@ interface FormData {
   total?: number;
   applyGST: number;
   finalAmount?: number;
-  assignedTo?: string; 
+  assignedTo?: string;
   daysAfterConfirmation?: number;
 }
 
@@ -129,6 +130,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
 }) => {
   const dispatch = useAppDispatch();
   const { loading: invoiceLoading, error: invoiceError } = useAppSelector((state) => state.performanceInvoices);
+  const { markets } = useAppSelector((state) => state.markets);
   const [isLoading, setIsLoading] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isEditMode, setIsEditMode] = useState(!!invoiceId);
@@ -136,6 +138,10 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
   const [isSaved, setIsSaved] = useState(false);
   const [isUnitPriceValid, setIsUnitPriceValid] = useState(false);
   const [staffList, setStaffList] = useState<Staff[]>([]);
+
+  useEffect(() => {
+    if (!markets.length) dispatch(getAllMarketsThunk())
+  }, [])
 
   useEffect(() => {
     if (!open) return;
@@ -366,11 +372,11 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     }
     const fullAddress = [
       selectedOrder.party.address?.unitNo || "",
-      selectedOrder.party.address?.streetAddress || "",
-      selectedOrder.party.address?.marketName || "",
-      selectedOrder.party.address?.landMark || "",
-      selectedOrder.party.address?.area || "",
-      selectedOrder.party.address?.pincode || "",
+      markets.find((item) => item._id === selectedOrder.party.address?.streetAddress)?.streetAddress || "",
+      markets.find((item) => item._id === selectedOrder.party.address?.marketName)?.marketName || "",
+      markets.find((item) => item._id === selectedOrder.party.address?.landMark)?.landMark || "",
+      markets.find((item) => item._id === selectedOrder.party.address?.area)?.area || "",
+      markets.find((item) => item._id === selectedOrder.party.address?.pincode)?.pincode || "",
     ]
       .filter((part) => part.trim() !== "")
       .join(", ");
@@ -682,7 +688,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           </Box>
           <TextField
             label="Address Name"
-            value={formik.values.addressName}
+            value={formik.values.addressName.split(",").map(s => s.trim())}
             onChange={formik.handleChange("addressName")}
             disabled
             fullWidth

@@ -656,39 +656,6 @@ const AllOrdersPage = () => {
   }
 }, [dispatch, router, canViewGlobal, canViewOwn, user?.id])
 
-
-  const getRouteByStatus = (row: OrderRow): string => {
-    const { status, designer, printer, binder, bookletBinder } = row
-    switch (status) {
-      case "Received":
-        return `/admin/all-orders/view?id=${row._id}`
-      case "Designer":
-        return `/admin/all-orders/view/designer?id=${row._id}`
-      case "Printer":
-        return `/admin/all-orders/view/printers?id=${row._id}`
-      case "Binder":
-        return `/admin/all-orders/view/binder?id=${row._id}`
-      case "Booklet & Folder Binder":
-        return `/admin/all-orders/view/booklet-folder?id=${row._id}`
-      case "Delivery":
-        return `/admin/all-orders/view/dilevery?id=${row._id}`
-      case "Hold":
-        if (bookletBinder) {
-          return `/admin/all-orders/view/booklet-folder?id=${row._id}`
-        } else if (binder) {
-          return `/admin/all-orders/view/binder?id=${row._id}`
-        } else if (printer) {
-          return `/admin/all-orders/view/printers?id=${row._id}`
-        } else if (designer) {
-          return `/admin/all-orders/view/designer?id=${row._id}`
-        } else {
-          return `/admin/all-orders/view?id=${row._id}`
-        }
-      default:
-        return `/admin/all-orders/view?id=${row._id}`
-    }
-  }
-
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString)
@@ -696,11 +663,6 @@ const AllOrdersPage = () => {
     } catch {
       return dateString
     }
-  }
-
-  const handleRowClick = (row: OrderRow) => {
-    const route = getRouteByStatus(row)
-    router.push(route)
   }
 
   const StatusBadge = ({ row }: { row: OrderRow }) => {

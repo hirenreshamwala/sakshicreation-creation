@@ -1,6 +1,7 @@
-import { type AxiosResponse } from "axios"
+import axios, { type AxiosResponse } from "axios"
 import Endpoint from "@/API/apiConfig"
 import Request from "./axios"
+import { authService } from "./auth.service"
 
 interface UploadedFile {
   filename: string
@@ -22,14 +23,26 @@ export const fileUploadService = {
   // Upload single file
   async uploadSingleFile(file: File, folder = "general"): Promise<ApiResponse<UploadedFile>> {
     try {
+      const token = authService.getToken()
+      if (!token) {
+        throw new Error("No authentication token found")
+      }
 
       const formData = new FormData()
       formData.append("folder", folder)
       formData.append("file", file)
 
-      const response: AxiosResponse<ApiResponse<UploadedFile>> = await Request.post(
+      const response: AxiosResponse<ApiResponse<UploadedFile>> = await axios.post(
         Endpoint.UPLOAD_SINGLE_FILE,
-        formData)
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+          withCredentials: true,
+        },
+      )
 
       return {
         success: response.data.success,
@@ -45,6 +58,10 @@ export const fileUploadService = {
   // Upload multiple files
   async uploadMultipleFiles(files: File[], folder = "general"): Promise<ApiResponse<UploadedFile[]>> {
     try {
+      const token = authService.getToken()
+      if (!token) {
+        throw new Error("No authentication token found")
+      }
 
       const formData = new FormData()
       files.forEach((file) => {
@@ -52,10 +69,19 @@ export const fileUploadService = {
       })
       formData.append("folder", folder)
 
+      console.log("Uploading multiple files:", files.length, "files to folder:", folder)
 
-      const response: AxiosResponse<ApiResponse<UploadedFile[]>> = await Request.post(
+      const response: AxiosResponse<ApiResponse<UploadedFile[]>> = await axios.post(
         Endpoint.UPLOAD_MULTIPLE_FILES,
-        formData)
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+          withCredentials: true,
+        },
+      )
 
       return {
         success: response.data.success,

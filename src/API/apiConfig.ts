@@ -56,6 +56,7 @@ const Endpoint = {
 
   GET_BY_CATEGORY: `${BaseURL}/api/inventory/bycategory`,
   GET_CATEGORY: `${BaseURL}/api/inventory/summary`,
+  GET_ALL_INVENTORY: `${BaseURL}/api/inventory/getall`,
   GET_BY_COMPANY: `${BaseURL}/api/purchase/getbycompany`,
 
   //staff
