@@ -46,42 +46,42 @@ const columns = [
 
 
 type OrderRow = {
-  _id: string
-  orderNo: string
+  _id: string;
+  orderNo: string;
   companyName: {
-    companyName: string
-    avatar?: string
-  }
+    companyName: string;
+    avatar?: string;
+  };
   party: {
-    partyName: string
-  }
-  orderFrom: string
-  date: string
+    partyName: string;
+  };
+  orderFrom: string;
+  date: string;
   size?: {
-    size: string
-  }
+    size: string;
+  };
   ply?: {
-    ply: string
-  }
-  deckalCalculation?: string
-  deckal?: string
-  gsm?: string
-  noOfPieces?: number
-  ratePerPiece?: number
-  amount?: string
-  kgPerUnit?: string
-  totalKg?: string
+    ply: string;
+  };
+  deckalCalculation?: string;
+  deckal?: string;
+  gsm?: string;
+  noOfPieces?: number;
+  ratePerPiece?: number;
+  amount?: string;
+  kgPerUnit?: string;
+  totalKg?: string;
   kantan?: {
-    kantanName: string
-  }
-  kantanPerUnit?: string
+    kantanName: string;
+  };
+  kantanPerUnit?: string;
   totalKantan?: {
-    reel: string
-    inch: string
-  }
-  kantanDeckal?: string
-  salesRemark?: string
-  createdAt: string
+    reel: string;
+    inch: string;
+  };
+  kantanDeckal?: string;
+  salesRemark?: string;
+  createdAt: string;
   createdBy: {
     firstName: string
     lastName: string
@@ -131,11 +131,9 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
     godownRemark: row.godownRemark || "",
     factoryRemark: row.factoryRemark || "",
     status: row.status || "Pending",
-  })
+  });
+  const [initialFormData, setInitialFormData] = useState(formData);
 
-  const [initialFormData, setInitialFormData] = useState(formData)
-
-  // Initialize formData when row changes
   useEffect(() => {
     const newFormData = {
       _id: row._id,
@@ -158,16 +156,20 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
   }, [row._id, row.unitNo, row.startDate, row.deliveryDate, row.dyeNumber, row.dyeSize, row.glue, row.wire, row.dyeRemark, row.godownRemark, row.factoryRemark, row.status])
 
   const handleFormChange = (field: string, value: string) => {
-    // Special handling for unitNo change
-    if (field === 'unitNo' && value && !isInitialUnitSet && !formData.startDate) {
+    if (field === "status" && value === "Completed") {
+      // Set deliveryDate to current date when status is changed to "Completed"
+      const currentDate = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
+      setFormData((prev) => ({ ...prev, status: value, deliveryDate: currentDate }));
+    } else if (field === "unitNo" && value && !isInitialUnitSet && !formData.startDate) {
       // Set start date to current date when unit is selected for the first time
-      const currentDate = new Date().toISOString().split('T')[0]
-      setFormData(prev => ({ ...prev, unitNo: value, startDate: currentDate }))
-      setIsInitialUnitSet(true)
+      const currentDate = new Date().toISOString().split("T")[0];
+      setFormData((prev) => ({ ...prev, unitNo: value, startDate: currentDate }));
+      setIsInitialUnitSet(true);
     } else {
-      setFormData(prev => ({ ...prev, [field]: value }))
+      setFormData((prev) => ({ ...prev, [field]: value }));
     }
-  }
+  };
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -384,49 +386,10 @@ const AllOrdersPage = () => {
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({})
 
-  const canViewGlobal = user?.role?.permissions?.all_orders?.view_global
-  const canViewOwn = user?.role?.permissions?.all_orders?.view_own
-  const canCreate = user?.role?.permissions?.all_orders?.create
-  const canStatus = user?.role?.permissions?.all_orders?.status
-
-  // const handleDownloadExcel = async () => {
-  //   try {
-  //     // Replace this with your actual backend API call
-  //     const response = await fetch("/api/export-orders", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${authService.getToken()}`,
-  //       },
-  //       body: JSON.stringify({
-  //         startDate: startDate ? startDate.toISOString() : null,
-  //         endDate: endDate ? endDate.toISOString() : null,
-  //         searchQuery,
-  //         filters,
-  //       }),
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error("Failed to download Excel file");
-  //     }
-
-  //     // Handle the file download
-  //     const blob = await response.blob();
-  //     const url = window.URL.createObjectURL(blob);
-  //     const link = document.createElement("a");
-  //     link.href = url;
-  //     link.download = `Orders_${moment().format("YYYY-MM-DD")}.xlsx`;
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     document.body.removeChild(link);
-  //     window.URL.revokeObjectURL(url);
-
-  //     toast.success("Excel file downloaded successfully");
-  //   } catch (err: any) {
-  //     console.error("Error downloading Excel:", err);
-  //     toast.error(err?.message || "Failed to download Excel file");
-  //   }
-  // };
+  const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
+  const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
+  const canCreate = user?.role?.permissions?.all_orders?.create;
+  const canStatus = user?.role?.permissions?.all_orders?.status;
 
   const refreshData = () => {
     if (canViewGlobal) {
@@ -434,97 +397,26 @@ const AllOrdersPage = () => {
     } else if (canViewOwn && user?.id) {
       dispatch(getQPOrdersByStaffIdThunk(user.id))
     }
-  }
+  };
 
-  // Get unique values for the selected filter field
-  const getUniqueValues = useMemo(() => {
-    if (!selectedFilterField) return []
-    const columnId = columns.find(col => col.label === selectedFilterField)?.id
-    if (!columnId) return []
+  // Prepare Excel headers
+  const excelHeaders = useMemo(() => {
+    const tableHeaders = columns.map((col) => col.label);
+    const expandedHeaders = [
+      "Unit No",
+      "Start Date",
+      "Delivery Date",
+      "Dye Number",
+      "Dye Sheet Size",
+      "Glue KG",
+      "Wire KG",
+      "Dye Remark",
+      "Godown Remark",
+      "Factory Remark",
+    ];
+    return [...tableHeaders, ...expandedHeaders];
+  }, []);
 
-    const values = orders.map((order: any) => {
-      let value: string | number | undefined
-      switch (columnId) {
-        case "orderNo":
-          value = order.orderNo
-          break
-        case "companyName":
-          value = order.companyName?.companyName
-          break
-        case "party":
-          value = order.party?.partyName
-          break
-        case "date":
-          value = order.date
-          break
-        case "ply":
-          value = order.ply?.ply
-          break
-        case "name":
-          value = order.name?.name
-          break
-        case "length":
-          value = order.length?.length
-          break
-        case "height":
-          value = order.height?.height
-          break
-        case "width":
-          value = order.width?.width
-          break
-        case "gsm":
-          value = order.gsm
-          break
-        // case "size":
-        //   value = order.size?.size
-        //   break
-        case "deckalCalculation":
-          value = order.deckalCalculation
-          break
-        case "deckal":
-          value = order.deckal
-          break
-        case "noOfPieces":
-          value = order.noOfPieces
-          break
-        case "ratePerPiece":
-          value = order.ratePerPiece
-          break
-        case "amount":
-          value = order.amount
-          break
-        case "kgPerUnit":
-          value = order.kgPerUnit
-          break
-        case "totalKg":
-          value = order.totalKg
-          break
-        case "kantan":
-          value = order.kantan?.kantanName
-          break
-        case "kantanPerUnit":
-          value = order.kantanPerUnit
-          break
-        case "totalKantan":
-          value = order.totalKantan ? `${order.totalKantan.reel} reel ${order.totalKantan.inch} inch` : "N/A"
-          break
-        case "kantanDeckal":
-          value = order.kantanDeckal
-          break
-        case "salesRemark":
-          value = order.salesRemark
-          break
-        case "status":
-          value = order.status
-          break
-      }
-      return value?.toString() || "N/A"
-    })
-
-    return Array.from(new Set(values)).filter((v) => v !== "N/A").sort()
-  }, [selectedFilterField, orders])
-
-  // Filter orders based on search query, date range, and selected filters
   const filteredOrders = useMemo(() => {
     return orders.filter((order: any) => {
       const matchesDateRange =
@@ -643,6 +535,133 @@ const AllOrdersPage = () => {
     })
   }, [orders, startDate, endDate, searchQuery, filters])
 
+  // Prepare Excel data
+  const excelData = useMemo(() => {
+    return filteredOrders.map((order: OrderRow) => ({
+      "Order No": `QP-${order.orderNo || "N/A"}`,
+      "Company Name": order.companyName?.companyName || "N/A",
+      "Party Name": order.party?.partyName || "N/A",
+      "Order Date": formatDate(order.createdAt) || "N/A",
+      "Item Name": order.name?.name || "N/A",
+      Ply: order.ply?.ply || "N/A",
+      Size: order.size?.size || `${order.length?.length || "N/A"} x ${order.width?.width || "N/A"} x ${order.height?.height || "N/A"}`,
+      "Paper GSM": `${order.paperLength?.gsm || "N/A"} x ${order.paperWidth?.gsm || "N/A"} x ${order.paperHeight?.gsm || "N/A"}`,
+      GSM: order.gsm || "N/A",
+      "Cal Deckal": order.deckalCalculation || "N/A",
+      Deckal: order.deckal || "N/A",
+      "Piece No": order.noOfPieces?.toString() || "N/A",
+      "Rate/Piece": order.ratePerPiece?.toString() || "N/A",
+      Amount: order.amount || "N/A",
+      "KG Per Unit": order.kgPerUnit || "N/A",
+      "Total KG": order.totalKg || "N/A",
+      Kantan: order.kantan?.kantanName || "N/A",
+      "Kantan/Piece": order.kantanPerUnit || "N/A",
+      "Total Kantan": order.totalKantan ? `${order.totalKantan.reel} reel ${order.totalKantan.inch} inch` : "N/A",
+      "Kantan Dec": order.kantanDeckal || "N/A",
+      "Sales Remarks": order.salesRemark || "N/A",
+      Status: getDisplayStatus(order).text || "N/A",
+      "Unit No": order.unitNo || "N/A",
+      "Start Date": order.startDate ? formatDate(order.startDate) : "N/A",
+      "Delivery Date": order.deliveryDate ? formatDate(order.deliveryDate) : "N/A",
+      "Dye Number": order.dyeNumber || "N/A",
+      "Dye Sheet Size": order.dyeSize || "N/A",
+      "Glue KG": order.glue || "N/A",
+      "Wire KG": order.wire || "N/A",
+      "Dye Remark": order.dyeRemark || "N/A",
+      "Godown Remark": order.godownRemark || "N/A",
+      "Factory Remark": order.factoryRemark || "N/A",
+    }));
+  }, [filteredOrders]);
+
+  const getUniqueValues = useMemo(() => {
+    if (!selectedFilterField) return []
+    const columnId = columns.find(col => col.label === selectedFilterField)?.id
+    if (!columnId) return []
+
+    const values = orders.map((order: any) => {
+      let value: string | number | undefined
+      switch (columnId) {
+        case "orderNo":
+          value = order.orderNo
+          break
+        case "companyName":
+          value = order.companyName?.companyName
+          break
+        case "party":
+          value = order.party?.partyName
+          break
+        case "date":
+          value = order.date
+          break
+        case "ply":
+          value = order.ply?.ply
+          break
+        case "name":
+          value = order.name?.name
+          break
+        case "length":
+          value = order.length?.length
+          break
+        case "height":
+          value = order.height?.height
+          break
+        case "width":
+          value = order.width?.width
+          break
+        case "gsm":
+          value = order.gsm
+          break
+        // case "size":
+        //   value = order.size?.size
+        //   break
+        case "deckalCalculation":
+          value = order.deckalCalculation
+          break
+        case "deckal":
+          value = order.deckal
+          break
+        case "noOfPieces":
+          value = order.noOfPieces
+          break
+        case "ratePerPiece":
+          value = order.ratePerPiece
+          break
+        case "amount":
+          value = order.amount
+          break
+        case "kgPerUnit":
+          value = order.kgPerUnit
+          break
+        case "totalKg":
+          value = order.totalKg
+          break
+        case "kantan":
+          value = order.kantan?.kantanName
+          break
+        case "kantanPerUnit":
+          value = order.kantanPerUnit
+          break
+        case "totalKantan":
+          value = order.totalKantan ? `${order.totalKantan.reel} reel ${order.totalKantan.inch} inch` : "N/A"
+          break
+        case "kantanDeckal":
+          value = order.kantanDeckal
+          break
+        case "salesRemark":
+          value = order.salesRemark
+          break
+        case "status":
+          value = order.status
+          break
+      }
+      return value?.toString() || "N/A"
+    })
+
+    return Array.from(new Set(values)).filter((v) => v !== "N/A").sort()
+  }, [selectedFilterField, orders])
+
+  
+
   // console.log("DEBUG : AllOrdersPage : canViewOwn && user?.id:", canViewOwn && user?.id);
   useEffect(() => {
   const token = authService.getToken()
@@ -729,13 +748,6 @@ const AllOrdersPage = () => {
             onStartDateChange={(date) => setStartDate(date as any)}
             onEndDateChange={(date) => setEndDate(date as any)}
           />
-          {/* <IconButton
-            onClick={handleDownloadExcel}
-            sx={{ color: "#374151" }}
-            title="Download as Excel"
-          >
-            <FiDownload size={24} />
-          </IconButton> */}
           <ThemeButton
             onClick={() => {
               setStartDate(null)
@@ -809,12 +821,14 @@ const AllOrdersPage = () => {
           tableHeader={columns}
           showFillter={false}
           showSearch={false}
+          title="QP-ORDERS"
+          showExcelDownload={true} // Enable Excel download button
+          excelHeaders={excelHeaders}
+          excelData={excelData}
           rowData={filteredOrders as any}
           totalCount={totalCount}
           pagination={pagination}
-          renderExpandedRow={
-            canViewGlobal && !canStatus ? renderExpandedRow : undefined
-          }
+          renderExpandedRow={canViewGlobal && !canStatus ? renderExpandedRow : undefined}
           renderRow={(row: any) => (
             <>
               <TableCell>
@@ -897,7 +911,7 @@ const AllOrdersPage = () => {
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
                   {row.kgPerUnit || "N/A"}
-                </Typography>
+                  </Typography>
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
@@ -911,12 +925,12 @@ const AllOrdersPage = () => {
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.kantanPerUnit || "N/A"} {/* Added */}
+                  {row.kantanPerUnit || "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.totalKantan ? `${row.totalKantan.reel} reel ${row.totalKantan.inch} inch` : "N/A"} {/* Added */}
+                  {row.totalKantan ? `${row.totalKantan.reel} reel ${row.totalKantan.inch} inch` : "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -938,31 +952,31 @@ const AllOrdersPage = () => {
       </Box>
 
       {open && (
-  <>
-    {editData === null ? (
-      <AddOrderDialog
-        open={open}
-        onClose={() => {
-          setOpen(false)
-          refreshData()
-        }}
-        refreshData={refreshData}
-      />
-    ) : (
-      <EditOrderDialog
-        open={open}
-        onClose={() => {
-          setOpen(false)
-          refreshData()
-        }}
-        editData={editData}
-        refreshData={refreshData}
-      />
-    )}
-  </>
-)}
+        <>
+          {editData === null ? (
+            <AddOrderDialog
+              open={open}
+              onClose={() => {
+                setOpen(false);
+                refreshData();
+              }}
+              refreshData={refreshData}
+            />
+          ) : (
+            <EditOrderDialog
+              open={open}
+              onClose={() => {
+                setOpen(false);
+                refreshData();
+              }}
+              editData={editData}
+              refreshData={refreshData}
+            />
+          )}
+        </>
+      )}
     </>
-  )
-}
+  );
+};
 
-export default AllOrdersPage
+export default AllOrdersPage;

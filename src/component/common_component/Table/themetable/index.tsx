@@ -17,10 +17,11 @@ import {
   Collapse,
 } from "@mui/material";
 import Button from "@/component/common_component/themebutton";
-import { FiSearch } from "react-icons/fi";
+import { FiSearch, FiDownload } from "react-icons/fi";
 import FilterDropdown from "@/component/fillter";
 import DateRangePicker from "@/component/daterangepicker";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa6";
+import * as XLSX from "xlsx";
 
 interface Column {
   id: string;
@@ -36,6 +37,9 @@ interface BasicTableProps<T> {
   showDatePicker?: boolean;
   showSearch?: boolean;
   showFillter?: boolean;
+  showExcelDownload?: boolean;
+  excelHeaders?: string[]; // New prop for custom Excel headers
+  excelData?: { [key: string]: any }[]; // New prop for custom Excel data
   onSelectAll?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSelectRow?: (id: string) => void;
   selectedRows?: string[];
@@ -74,6 +78,9 @@ const BasicTable = <T extends { id: string }>({
   showDatePicker = true,
   showSearch = true,
   showFillter = true,
+  showExcelDownload = false,
+  excelHeaders,
+  excelData,
   onSelectAll,
   onSelectRow,
   selectedRows = [],
@@ -242,10 +249,45 @@ const BasicTable = <T extends { id: string }>({
   const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newRowsPerPage = parseInt(event.target.value);
     setRowsPerPage(newRowsPerPage);
-    setPage(0); // Reset to first page when rows per page changes
+    setPage(0);
   };
 
-  // Pagination logic with ellipsis
+  // Excel download function
+  const handleExcelDownload = useCallback(() => {
+    // Use custom excelHeaders and excelData if provided, otherwise fall back to table data
+    const headers = excelHeaders
+      ? excelHeaders
+      : tableHeader
+          .filter((col) => col.id !== "checkbox" && col.id !== "action")
+          .map((col) => col.label);
+
+    const data = excelData
+      ? excelData
+      : filteredRows.map((row) => {
+          const rowData: { [key: string]: any } = {};
+          tableHeader
+            .filter((col) => col.id !== "checkbox" && col.id !== "action")
+            .forEach((col) => {
+              const key = filterFieldToKey[col.label];
+              let value = row[key];
+              if (key === "company") {
+                value = (row[key] as any)?.name || "N/A";
+              } else {
+                value = value ?? "N/A";
+              }
+              rowData[col.label] = value;
+            });
+          return rowData;
+        });
+
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "TableData");
+    XLSX.writeFile(workbook, `${title || "Table"}.xlsx`);
+  }, [excelHeaders, excelData, filteredRows, tableHeader, filterFieldToKey, title]);
+
   const getPaginationItems = () => {
     const maxVisiblePages = 5;
     const items: React.ReactNode[] = [];
@@ -426,6 +468,21 @@ const BasicTable = <T extends { id: string }>({
                   onFieldSelect={setSelectedFilterField}
                 />
               </Box>
+            )}
+
+            {showExcelDownload && (
+              <IconButton
+                onClick={handleExcelDownload}
+                sx={{
+                  border: "1px solid #D0D5DD",
+                  borderRadius: 2,
+                  p: 1,
+                  color: "#667085",
+                }}
+                title="Download as Excel"
+              >
+                <FiDownload size={18} /><Typography size={12} ml={2}>Download excle</Typography>
+              </IconButton>
             )}
           </Box>
         </Box>
