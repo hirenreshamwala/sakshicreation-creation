@@ -1,10 +1,15 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
   IconButton,
   TableCell,
-  Grid,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import { Add, Edit, Delete, CloudUpload } from "@mui/icons-material";
 import { useSelector } from "react-redux";
@@ -22,15 +27,20 @@ import {
   deletePackagingOptionThunk,
   bulkCreatePackagingOptionThunk,
 } from "@/store/slices/packagingOptionSlice";
-import { PackagingOption } from "@/services/packagingOption.service";
+import { getQualityPackingPartiesThunk } from "@/store/slices/partySlice";
+import { downloadSkippedRecordsAsCSV } from "@/utills/utills";
 
 const columns = [
   { id: "id", label: "ID" },
-  { id: "name", label: "Name" },
+  { id: "party", label: "Party" },
   { id: "ply", label: "Ply" },
   { id: "length", label: "Length" },
   { id: "width", label: "Width" },
   { id: "height", label: "Height" },
+  { id: "deckal", label: "Deckal" },
+  { id: "paper1GSM", label: "Paper 1 GSM" },
+  { id: "paper2GSM", label: "Paper 2 GSM" },
+  { id: "paper3GSM", label: "Paper 3 GSM" },
   { id: "options", label: "Options" },
 ];
 
@@ -39,22 +49,31 @@ const PackagingOptionsPage = () => {
   const { packagingOptions, loading, operationLoading, error, operationError } = useSelector(
     (state: RootState) => state.packagingOptions
   );
+  const { qpParties } = useSelector((state: RootState) => state.party);
+  console.log("DEBUG : PackagingOptionsPage : qpParties:", qpParties);
+
+  useEffect(() => {
+    dispatch(getQualityPackingPartiesThunk());
+    if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
+  }, [dispatch]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
-    name: "",
+    party: "",
     ply: "",
     length: "",
     width: "",
     height: "",
+    deckal: "",
+    paper1GSM: "",
+    paper2GSM: "",
+    paper3GSM: "",
   });
   const [file, setFile] = useState<File | null>(null);
-
-  useEffect(() => {
-    if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
-  }, []);
+  const [skippedRecords, setSkippedRecords] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (error) toast.error(error);
@@ -65,26 +84,50 @@ const PackagingOptionsPage = () => {
     if (option) {
       setEditId(option._id);
       setForm({
-        name: option.name || "",
+        party: option.party?._id || "",
         ply: option.ply || "",
         length: option.length || "",
         width: option.width || "",
         height: option.height || "",
+        deckal: option.deckal || "",
+        paper1GSM: option.paper1GSM || "",
+        paper2GSM: option.paper2GSM || "",
+        paper3GSM: option.paper3GSM || "",
       });
     } else {
       setEditId(null);
-      setForm({ name: "", ply: "", length: "", width: "", height: "" });
+      setForm({
+        party: "",
+        ply: "",
+        length: "",
+        width: "",
+        height: "",
+        deckal: "",
+        paper1GSM: "",
+        paper2GSM: "",
+        paper3GSM: "",
+      });
     }
     setDialogOpen(true);
   };
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name as string]: value }));
   };
 
   const handleSave = () => {
-    if (!form.ply.trim() || !form.length.trim() || !form.width.trim() || !form.height.trim()) {
+    if (
+      !form.party ||
+      !form.ply.trim() ||
+      !form.length.trim() ||
+      !form.width.trim() ||
+      !form.height.trim() ||
+      !form.deckal.trim() ||
+      !form.paper1GSM.trim() ||
+      !form.paper2GSM.trim() ||
+      !form.paper3GSM.trim()
+    ) {
       toast.error("All fields are required");
       return;
     }
@@ -136,19 +179,37 @@ const PackagingOptionsPage = () => {
     const formData = new FormData();
     formData.append("file", file);
 
+    setIsLoading(true);
     try {
-      await dispatch(bulkCreatePackagingOptionThunk(formData)).unwrap();
-      toast.success("Bulk upload successful");
+      const res = await dispatch(bulkCreatePackagingOptionThunk(formData)).unwrap();
+      console.log("DEBUG : handleFileUpload : res:", res);
+
+      if (res.skippedCount > 0) {
+        setSkippedRecords(res.skippedRecords);
+        setFile(null);
+        const input = document.getElementById("fileInput") as HTMLInputElement;
+        if (input) input.value = "";
+        toast.success("Bulk upload completed with some skipped records");
+        dispatch(getAllPackagingOptionsThunk());
+        return; // Keep dialog open to show skipped records
+      }
+      toast.success("Bulk upload completed successfully");
       setBulkDialogOpen(false);
       setFile(null);
+      setSkippedRecords([]);
       dispatch(getAllPackagingOptionsThunk());
     } catch (error: any) {
       toast.error(error?.message || "Bulk upload failed");
+      setSkippedRecords([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDownloadSample = () => {
-    const csvContent = "name,ply,length,width,height\nSample Packaging,3,10,20,30\n";
+    const csvContent =
+      "party,ply,length,width,height,deckal,paper1GSM,paper2GSM,paper3GSM\n" +
+      `${qpParties[0]?._id || "68cbd2df0973310763a2c45b"},5,22,22,27,46,150,120,150\n`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -160,11 +221,13 @@ const PackagingOptionsPage = () => {
 
   const openBulkDialog = () => {
     setFile(null);
+    setSkippedRecords([]);
     setBulkDialogOpen(true);
   };
 
   const closeBulkDialog = () => {
     setFile(null);
+    setSkippedRecords([]);
     setBulkDialogOpen(false);
   };
 
@@ -208,14 +271,18 @@ const PackagingOptionsPage = () => {
         tableHeader={columns}
         rowData={packagingOptions as any}
         showDatePicker={false}
-        renderRow={(row: PackagingOption, idx: number) => (
+        renderRow={(row: any, idx: number) => (
           <>
             <TableCell>{idx + 1}</TableCell>
-            <TableCell>{row.name || ""}</TableCell>
+            <TableCell>{row.party?.partyName || ""}</TableCell>
             <TableCell>{row.ply || ""}</TableCell>
             <TableCell>{row.length || ""}</TableCell>
             <TableCell>{row.width || ""}</TableCell>
             <TableCell>{row.height || ""}</TableCell>
+            <TableCell>{row.deckal || ""}</TableCell>
+            <TableCell>{row.paper1GSM || ""}</TableCell>
+            <TableCell>{row.paper2GSM || ""}</TableCell>
+            <TableCell>{row.paper3GSM || ""}</TableCell>
             <TableCell>
               <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                 <Edit />
@@ -229,7 +296,6 @@ const PackagingOptionsPage = () => {
       />
 
       {/* Add/Edit Dialog */}
-      {/* Add/Edit Dialog */}
       <CustomDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
@@ -238,16 +304,23 @@ const PackagingOptionsPage = () => {
         fullWidth
       >
         <Box display="flex" flexDirection="column" gap={2}>
-          {/* Row for Name + Ply */}
+          {/* Row for Party + Ply */}
           <Box display="flex" gap={2}>
-            <Input
-              label="NAME"
-              name="name"
-              value={form.name}
-              onChange={handleFormChange}
-              fullWidth
-              required
-            />
+            <FormControl fullWidth required>
+              <InputLabel>PARTY</InputLabel>
+              <Select
+                name="party"
+                value={form.party}
+                onChange={handleFormChange}
+                label="PARTY"
+              >
+                {qpParties.map((party) => (
+                  <MenuItem key={party._id} value={party._id}>
+                    {party.partyName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Input
               label="PLY"
               name="ply"
@@ -284,6 +357,42 @@ const PackagingOptionsPage = () => {
               fullWidth
               required
             />
+            <Input
+              label="DECKAL"
+              name="deckal"
+              value={form.deckal}
+              onChange={handleFormChange}
+              fullWidth
+              required
+            />
+          </Box>
+
+          {/* Row for Paper GSM */}
+          <Box display="flex" gap={2}>
+            <Input
+              label="PAPER 1 GSM"
+              name="paper1GSM"
+              value={form.paper1GSM}
+              onChange={handleFormChange}
+              fullWidth
+              required
+            />
+            <Input
+              label="PAPER 2 GSM"
+              name="paper2GSM"
+              value={form.paper2GSM}
+              onChange={handleFormChange}
+              fullWidth
+              required
+            />
+            <Input
+              label="PAPER 3 GSM"
+              name="paper3GSM"
+              value={form.paper3GSM}
+              onChange={handleFormChange}
+              fullWidth
+              required
+            />
           </Box>
         </Box>
 
@@ -297,8 +406,6 @@ const PackagingOptionsPage = () => {
           </Button>
         </Box>
       </CustomDialog>
-
-
 
       {/* Bulk Upload Dialog */}
       <CustomDialog
@@ -326,11 +433,39 @@ const PackagingOptionsPage = () => {
               cursor: "pointer",
               background: "#FAF5FF",
               "&:hover": { background: "#F3E8FF" },
+              ...(file && {
+                borderColor: "#4caf50",
+                backgroundColor: "#f1f8e9",
+              }),
             }}
             onClick={() => document.getElementById("fileInput")?.click()}
           >
             <Typography variant="body1" color="textSecondary">
-              Drag & Drop CSV file here or click to select
+              {file ? (
+                <>
+                  <Typography variant="h6" color="success.main" sx={{ mb: 1 }}>
+                    ✅ File Selected
+                  </Typography>
+                  <Typography variant="body2" color="textPrimary" fontWeight={500}>
+                    {file.name}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
+                    Size: {(file.size / 1024).toFixed(2)} KB
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
+                    📁 Choose File to Upload
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Drag & Drop CSV file here or click to select
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
+                    Supported formats: .csv
+                  </Typography>
+                </>
+              )}
             </Typography>
             <input
               type="file"
@@ -341,10 +476,31 @@ const PackagingOptionsPage = () => {
             />
           </Box>
 
-          {file && (
-            <Typography variant="body2" color="primary">
-              Selected File: {file.name}
-            </Typography>
+          {skippedRecords.length > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                pt: 2,
+                textAlign: "center",
+              }}
+            >
+              <Typography color="error" mb={1}>
+                Note: Some records were not uploaded. Click the button below to download skipped records.
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  downloadSkippedRecordsAsCSV(skippedRecords);
+                  setSkippedRecords([]);
+                  closeBulkDialog();
+                }}
+              >
+                Download Skipped Records
+              </Button>
+            </Box>
           )}
 
           <Button
@@ -365,11 +521,23 @@ const PackagingOptionsPage = () => {
           <Button
             variant="contained"
             onClick={handleFileUpload}
-            disabled={!file}
+            disabled={!file || isLoading}
             sx={{ background: "primary", "&:hover": { background: "primary" } }}
           >
-            Upload
+            {isLoading ? "Uploading..." : "Upload"}
           </Button>
+          {file && (
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setFile(null);
+                const input = document.getElementById("fileInput") as HTMLInputElement;
+                if (input) input.value = "";
+              }}
+            >
+              Clear File
+            </Button>
+          )}
         </Box>
       </CustomDialog>
     </Box>

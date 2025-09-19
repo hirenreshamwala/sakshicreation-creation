@@ -4,7 +4,6 @@ import BasicTable from "@/component/common_component/Table/themetable"
 import { FaChevronRight } from "react-icons/fa6"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
-import AddOrderDialog from "@/component/allorderdailog"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { authService } from "@/services/auth.service"
 import FilterDropdown from "@/component/fillter"
@@ -13,11 +12,13 @@ import { FiSearch, FiDownload } from "react-icons/fi"
 import { InputBase } from "@mui/material"
 import { getDisplayStatus } from "@/utills/utills"
 import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk, updateQPOrderThunk } from "@/store/slices/qpOrderSlice"
-import EditOrderDialog from "./EditOrderDialog"
 import { toast } from "react-toastify"
 import moment from "moment"
 import { StatusCell } from "./StatusCell"
 import Loader from "../common_component/loader"
+import AddQPOrderDialog from "./QpOrderDialog"
+import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
+import { StaticCompanyOptions } from "@/constants"
 
 const columns = [
   { id: "orderNo", label: "Order No" },
@@ -118,6 +119,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
   const dispatch = useAppDispatch()
   const [isInitialUnitSet, setIsInitialUnitSet] = useState(false)
 
+
   const [formData, setFormData] = useState({
     _id: row._id,
     unitNo: row.unitNo || '',
@@ -151,7 +153,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
     }
     setFormData(newFormData)
     setInitialFormData(newFormData)
-    setIsInitialUnitSet(!!row.unitNo) 
+    setIsInitialUnitSet(!!row.unitNo)
     // console.log("ExpandedRowForm: Initialized formData for row ID:", row._id, newFormData)
   }, [row._id, row.unitNo, row.startDate, row.deliveryDate, row.dyeNumber, row.dyeSize, row.glue, row.wire, row.dyeRemark, row.godownRemark, row.factoryRemark, row.status])
 
@@ -169,7 +171,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
       setFormData((prev) => ({ ...prev, [field]: value }));
     }
   };
-  
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -207,7 +209,7 @@ const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) =>
     setIsInitialUnitSet(!!initialFormData.unitNo)
   }
 
-  
+
 
   return (
     <Box sx={{ p: 2, backgroundColor: '#f9fafb' }}>
@@ -378,7 +380,7 @@ const AllOrdersPage = () => {
   const [editData, setEditData] = useState<OrderRow | null>(null)
   const { user } = useAppSelector((state) => state.auth)
   // console.log("DEBUG : AllOrdersPage : user:", user);
-
+  const { companies } = useAppSelector((state) => state.company)
   const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.qpOrders)
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -398,6 +400,15 @@ const AllOrdersPage = () => {
       dispatch(getQPOrdersByStaffIdThunk(user.id))
     }
   };
+
+   const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString)
+      return moment(date).format('DD/MM/YY')
+    } catch {
+      return dateString
+    }
+  }
 
   // Prepare Excel headers
   const excelHeaders = useMemo(() => {
@@ -660,30 +671,25 @@ const AllOrdersPage = () => {
     return Array.from(new Set(values)).filter((v) => v !== "N/A").sort()
   }, [selectedFilterField, orders])
 
-  
+
+  useEffect(() => {
+    if (!companies.length) dispatch(getAllCompaniesThunk(true))
+  }, [])
 
   // console.log("DEBUG : AllOrdersPage : canViewOwn && user?.id:", canViewOwn && user?.id);
   useEffect(() => {
-  const token = authService.getToken()
-  if (!token) {
-    router.push("/login")
-    return
-  }
-
-  if (!orders.length) {
-    refreshData()
-  }
-}, [dispatch, router, canViewGlobal, canViewOwn, user?.id])
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString)
-      return moment(date).format('DD/MM/YY')
-    } catch {
-      return dateString
+    const token = authService.getToken()
+    if (!token) {
+      router.push("/login")
+      return
     }
-  }
 
+    if (!orders.length) {
+      refreshData()
+    }
+  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id])
+
+ 
   const StatusBadge = ({ row }: { row: OrderRow }) => {
     const { text, isHold } = getDisplayStatus(row)
     if (isHold) {
@@ -723,13 +729,13 @@ const AllOrdersPage = () => {
   };
 
   useEffect(() => {
-      if (error) {
-        toast.error(error);
-      }
-      
-    }, [error, dispatch]);
+    if (error) {
+      toast.error(error);
+    }
 
-  if (loading) return<Loader/>
+  }, [error, dispatch]);
+
+  if (loading) return <Loader />
 
   return (
     <>
@@ -911,7 +917,7 @@ const AllOrdersPage = () => {
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
                   {row.kgPerUnit || "N/A"}
-                  </Typography>
+                </Typography>
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
@@ -954,7 +960,8 @@ const AllOrdersPage = () => {
       {open && (
         <>
           {editData === null ? (
-            <AddOrderDialog
+            <AddQPOrderDialog
+              company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
               open={open}
               onClose={() => {
                 setOpen(false);
@@ -963,7 +970,8 @@ const AllOrdersPage = () => {
               refreshData={refreshData}
             />
           ) : (
-            <EditOrderDialog
+            <AddQPOrderDialog
+             company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
               open={open}
               onClose={() => {
                 setOpen(false);

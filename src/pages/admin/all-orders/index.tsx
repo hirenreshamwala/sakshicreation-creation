@@ -4,7 +4,7 @@ import BasicTable from "@/component/common_component/Table/themetable"
 import { FaChevronRight } from "react-icons/fa6"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
-import AddOrderDialog from "@/component/allorderdailog"
+
 import { useAppDispatch, useAppSelector } from "@/store"
 import { getAllOrdersThunk, getOrdersByStaffIdThunk } from "@/store/slices/orderSlice"
 import { authService } from "@/services/auth.service"
@@ -15,9 +15,11 @@ import { InputBase } from "@mui/material"
 import { getDisplayStatus } from "@/utills/utills"
 import QpOrdersPage from "@/component/allorderdailog/QpOrder"
 import TabComponent from "@/component/Dialog/TabComponent"
-import { companyOptions } from "@/constants"
+import { companyOptions, StaticCompanyOptions } from "@/constants"
 import Loader from "@/component/common_component/loader"
 import { toast } from "react-toastify"
+import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
+import AddSakhiOrderDialog from "@/component/allorderdailog"
 
 const columns = [
   { id: "company", label: "Company" },
@@ -69,7 +71,7 @@ const AllOrdersPage = () => {
   const dispatch = useAppDispatch()
   const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.orders)
 
-
+  const { companies } = useAppSelector((state) => state.company)
   const { user } = useAppSelector((state) => state.auth)
 
   // Filter state
@@ -203,12 +205,18 @@ const AllOrdersPage = () => {
       return;
     }
 
-    if (canViewGlobal ) {
+    if (canViewGlobal) {
       dispatch(getAllOrdersThunk({ limit: 100 })); // Increase limit to fetch more orders
-    } else if (canViewOwn && user?.id ) {
+    } else if (canViewOwn && user?.id) {
       dispatch(getOrdersByStaffIdThunk(user.id));
-    } 
+    }
   }, [dispatch, router, canViewGlobal, canViewOwn, user?.id]);
+
+  useEffect(() => {
+    if (!companies.length) dispatch(getAllCompaniesThunk(true))
+  }, [])
+
+  console.log(companies, 'companies')
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -307,12 +315,12 @@ const AllOrdersPage = () => {
     return <QpOrdersPage />;
   }
   useEffect(() => {
-      if (error) {
-        toast.error(error);
-      }
-    }, [error,  dispatch]);
+    if (error) {
+      toast.error(error);
+    }
+  }, [error, dispatch]);
 
-  if (loading) return <Typography><Loader/></Typography>;
+  if (loading) return <Typography><Loader /></Typography>;
 
 
   return (
@@ -320,192 +328,192 @@ const AllOrdersPage = () => {
 
       {isAdmin && <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />}
       {activeTab === 0 ? <>
-      {isSakshi || isAdmin ? <>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <DateRangePicker
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={(date) => setStartDate(date)}
-              onEndDateChange={(date) => setEndDate(date)}
-            />
-            <ThemeButton
-              onClick={() => {
-                setStartDate(null);
-                setEndDate(null);
-              }}
-            >
-              Clear Date Range
-            </ThemeButton>
-          </Box>
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #D0D5DD",
-                borderRadius: 2,
-                px: 1.5,
-                width: 200,
-                height: 35,
-              }}
-            >
-              <IconButton size="small" sx={{ color: "#98A2B3" }}>
-                <FiSearch size={18} />
-              </IconButton>
-              <InputBase
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{ ml: 1, fontSize: 14 }}
+        {isSakshi || isAdmin ? <>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 2,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={(date) => setStartDate(date)}
+                onEndDateChange={(date) => setEndDate(date)}
               />
+              <ThemeButton
+                onClick={() => {
+                  setStartDate(null);
+                  setEndDate(null);
+                }}
+              >
+                Clear Date Range
+              </ThemeButton>
             </Box>
-            <FilterDropdown
-              filterOptions={columns
-                .filter((col) => col.id !== "action")
-                .map((col) => col.label)}
-              uniqueValues={selectedFilterField ?
-                getUniqueValues :
-                []}
-              onFiltersChange={(newFilters) => {
-                // Convert label-based filters to id-based filters
-                const idBasedFilters: { [key: string]: string[] } = {};
 
-                Object.entries(newFilters).forEach(([label, values]) => {
-                  const columnId = columns.find(col => col.label === label)?.id;
-                  if (columnId) {
-                    idBasedFilters[columnId] = values;
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  border: "1px solid #D0D5DD",
+                  borderRadius: 2,
+                  px: 1.5,
+                  width: 200,
+                  height: 35,
+                }}
+              >
+                <IconButton size="small" sx={{ color: "#98A2B3" }}>
+                  <FiSearch size={18} />
+                </IconButton>
+                <InputBase
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  sx={{ ml: 1, fontSize: 14 }}
+                />
+              </Box>
+              <FilterDropdown
+                filterOptions={columns
+                  .filter((col) => col.id !== "action")
+                  .map((col) => col.label)}
+                uniqueValues={selectedFilterField ?
+                  getUniqueValues :
+                  []}
+                onFiltersChange={(newFilters) => {
+                  // Convert label-based filters to id-based filters
+                  const idBasedFilters: { [key: string]: string[] } = {};
+
+                  Object.entries(newFilters).forEach(([label, values]) => {
+                    const columnId = columns.find(col => col.label === label)?.id;
+                    if (columnId) {
+                      idBasedFilters[columnId] = values;
+                    }
+                  });
+
+                  setFilters(idBasedFilters);
+                }}
+                filters={Object.keys(filters).reduce((acc, columnId) => {
+                  const columnLabel = columns.find(col => col.id === columnId)?.label;
+                  if (columnLabel) {
+                    acc[columnLabel] = filters[columnId];
                   }
-                });
-
-                setFilters(idBasedFilters);
-              }}
-              filters={Object.keys(filters).reduce((acc, columnId) => {
-                const columnLabel = columns.find(col => col.id === columnId)?.label;
-                if (columnLabel) {
-                  acc[columnLabel] = filters[columnId];
-                }
-                return acc;
-              }, {} as { [key: string]: string[] })}
-              selectedField={selectedFilterField}
-              onFieldSelect={setSelectedFilterField}
-            />
-            <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
+                  return acc;
+                }, {} as { [key: string]: string[] })}
+                selectedField={selectedFilterField}
+                onFieldSelect={setSelectedFilterField}
+              />
+              <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
+            </Box>
           </Box>
-        </Box>
-        <Box px={2} py={2}>
-          <BasicTable
-            showDatePicker={false}
-            tableHeader={columns}
-            showFillter={false}
-            showSearch={false}
-            rowData={filteredOrders}
-            totalCount={totalCount} // Pass totalCount from Redux
-            pagination={pagination} // Pass pagination from Redux
-            renderRow={(row: OrderRow) => (
-              <>
-                <TableCell>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Avatar
-                      src={getAvatarUrl(row)}
-                      sx={{ width: 32, height: 32 }}
-                      alt={row.companyName?.companyName || "Company"}
-                    />
-                    <Typography
-                      fontWeight={600}
-                      fontSize="14px"
-                      color="#111827"
+          <Box px={2} py={2}>
+            <BasicTable
+              showDatePicker={false}
+              tableHeader={columns}
+              showFillter={false}
+              showSearch={false}
+              rowData={filteredOrders}
+              totalCount={totalCount} // Pass totalCount from Redux
+              pagination={pagination} // Pass pagination from Redux
+              renderRow={(row: OrderRow) => (
+                <>
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Avatar
+                        src={getAvatarUrl(row)}
+                        sx={{ width: 32, height: 32 }}
+                        alt={row.companyName?.companyName || "Company"}
+                      />
+                      <Typography
+                        fontWeight={600}
+                        fontSize="14px"
+                        color="#111827"
+                        sx={{ cursor: canViewGlobal ? "pointer" : "default" }}
+                        onClick={canViewGlobal ? () => handleRowClick(row) : undefined}
+                      >
+                        {row.companyName?.companyName || "N/A"}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+
+                  {/* Party */}
+                  <TableCell>
+                    <Typography fontSize="14px" color="#6B7280">
+                      {row.party?.partyName || "N/A"}
+                    </Typography>
+                  </TableCell>
+
+                  {/* Order Number */}
+                  <TableCell>
+                    <Typography fontSize="14px" color="#6B7280">
+                      {row.orderNumber || "N/A"}
+                    </Typography>
+                  </TableCell>
+
+                  {/* Date */}
+                  <TableCell>
+                    <Typography fontSize="14px" color="#6B7280">
+                      {formatDate(row.createdAt)}
+                    </Typography>
+                  </TableCell>
+
+                  {/* Item Name */}
+                  <TableCell>
+                    <Typography fontSize="14px" color="#6B7280">
+                      {row.productItem?.itemName || "N/A"}
+                    </Typography>
+                  </TableCell>
+
+                  {/* Size */}
+                  <TableCell>
+                    <Typography fontSize="14px" color="#6B7280">
+                      {row.size?.size || "N/A"}
+                    </Typography>
+                  </TableCell>
+
+                  {/* Remarks */}
+                  <TableCell>
+                    <Typography sx={{ fontSize: 14, color: "text.secondary" }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
+                      ? `${row.remarks.substring(0, 13)}...`
+                      : row.remarks}</Typography>
+                  </TableCell>
+
+                  {/* Ordered By */}
+                  <TableCell>
+                    <Typography fontSize="14px" color="#6B7280">
+                      {row.createdBy?.firstName || "N/A"} {row.createdBy?.lastName || "N/A"}
+                    </Typography>
+                  </TableCell>
+
+                  {/* Order Status */}
+                  <TableCell>
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="space-between"
                       sx={{ cursor: canViewGlobal ? "pointer" : "default" }}
                       onClick={canViewGlobal ? () => handleRowClick(row) : undefined}
                     >
-                      {row.companyName?.companyName || "N/A"}
-                    </Typography>
-                  </Box>
-                </TableCell>
+                      <StatusBadge row={row} />
+                      <FaChevronRight
+                        style={{
+                          fontSize: 14,
+                          color: "#9CA3AF",
+                          marginLeft: 8,
+                        }}
+                      />
+                    </Box>
+                  </TableCell>
+                </>
+              )}
+            />
+          </Box>
 
-                {/* Party */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {row.party?.partyName || "N/A"}
-                  </Typography>
-                </TableCell>
-
-                {/* Order Number */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {row.orderNumber || "N/A"}
-                  </Typography>
-                </TableCell>
-
-                {/* Date */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {formatDate(row.createdAt)}
-                  </Typography>
-                </TableCell>
-
-                {/* Item Name */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {row.productItem?.itemName || "N/A"}
-                  </Typography>
-                </TableCell>
-
-                {/* Size */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {row.size?.size || "N/A"}
-                  </Typography>
-                </TableCell>
-
-                {/* Remarks */}
-                <TableCell>
-                  <Typography sx={{ fontSize: 14, color: "text.secondary" }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
-                    ? `${row.remarks.substring(0, 13)}...`
-                    : row.remarks}</Typography>
-                </TableCell>
-
-                {/* Ordered By */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {row.createdBy?.firstName || "N/A"} {row.createdBy?.lastName || "N/A"}
-                  </Typography>
-                </TableCell>
-
-                {/* Order Status */}
-                <TableCell>
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="space-between"
-                    sx={{ cursor: canViewGlobal ? "pointer" : "default" }}
-                    onClick={canViewGlobal ? () => handleRowClick(row) : undefined}
-                  >
-                    <StatusBadge row={row} />
-                    <FaChevronRight
-                      style={{
-                        fontSize: 14,
-                        color: "#9CA3AF",
-                        marginLeft: 8,
-                      }}
-                    />
-                  </Box>
-                </TableCell>
-              </>
-            )}
-          />
-        </Box>
-
-        <AddOrderDialog open={open} onClose={() => setOpen(false)} />
-          </>:null}
+          <AddSakhiOrderDialog company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id} open={open} onClose={() => setOpen(false)} />
+        </> : null}
       </> : <>{isAdmin && <QpOrdersPage />}</>}
     </>
   )
