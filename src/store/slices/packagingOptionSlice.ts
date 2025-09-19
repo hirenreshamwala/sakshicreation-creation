@@ -83,7 +83,7 @@ export const bulkCreatePackagingOptionThunk = createAsyncThunk(
       }
 
       // console.log(response.data.data, ' response.data.data')
-      return response.data.data;
+      return response.data;
 
     } catch (error: any) {
       // Check if Axios response contains server error message
@@ -203,7 +203,7 @@ const packagingOptionsSlice = createSlice({
       })
       .addCase(bulkCreatePackagingOptionThunk.fulfilled, (state, action: any) => {
         state.loading = false;
-        state.packagingOptions = [...state.packagingOptions, ...action.payload];
+        state.packagingOptions = [...state.packagingOptions, ...action.payload.data];
       })
       .addCase(bulkCreatePackagingOptionThunk.rejected, (state, action) => {
         state.loading = false;

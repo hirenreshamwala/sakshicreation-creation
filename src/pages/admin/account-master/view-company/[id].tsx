@@ -9,7 +9,7 @@ import ThemeButton from '@/component/common_component/themebutton';
 import { MdTurnLeft } from 'react-icons/md';
 import CustomDialog from '@/component/customdialog';
 import AssignTaskDialog from '@/component/assigntaskdailog';
-import AddOrderDialog from '@/component/allorderdailog';
+// import AddOrderDialog from '@/component/allorderdailog';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 import moment from 'moment'
@@ -770,11 +770,11 @@ const ViewCompanyPage: React.FC = () => {
         handleAssign={handleAssign}
       />
 
-      <AddOrderDialog
+      {/* <AddOrderDialog
         open={openAddOrderDialog}
         onClose={() => setOpenAddOrderDialog(false)}
         companyId={id as string}
-      />
+      /> */}
 
       <InputReasonDialog
         open={inputReasonOpen}

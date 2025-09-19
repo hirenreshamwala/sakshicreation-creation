@@ -5,9 +5,9 @@ import Request from "./axios"
 interface Party {
   _id: string
   partyName: string
-  companyId: string
-  unitNo: string; // Added
-  marketName: string;
+  companyId?: string; // Optional since not returned by getQualityPackingParties
+  unitNo?: string; // Optional since not returned
+  marketName?: string;
   // Add other party fields as needed
 }
 
@@ -31,6 +31,22 @@ export const partyService = {
     } catch (error: any) {
       console.error("Party service error:", error)
       throw new Error(error.response?.data?.message || "Failed to fetch parties")
+    }
+  },
+  async getQualityPackingParties(): Promise<ApiResponse<Party[]>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Party[]>> = await Request.get(
+        `${Endpoint.GET_QP_PARTIES}` // Ensure this endpoint is defined in apiConfig
+      );
+
+      return {
+        success: true,
+        data: response.data.data || [],
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Quality Packaging parties service error:", error);
+      throw new Error(error.response?.data?.message || "Failed to fetch Quality Packaging parties");
     }
   },
 }

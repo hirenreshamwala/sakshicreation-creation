@@ -34,11 +34,13 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
   required = false,
   hasParties = false,
   showPartyName = false,
+  disableCompanySelect=false,
   partyName = "",
   onPartyChange,
   partyError = false,
   partyHelperText = "",
 }) => {
+
   const dispatch = useAppDispatch()
   const { companies, loading, error: companyError } = useAppSelector((state) => state.company)
   const { parties, loading: partyLoading } = useAppSelector((state) => state.party)
@@ -197,6 +199,7 @@ useEffect(() => {
           error={error}
           helperText={helperText}
           required={required}
+          disabled={disableCompanySelect}
         />
       </Box>
 

@@ -3,7 +3,6 @@ import { Avatar, Box, IconButton, MenuItem, TableCell, TextField, Typography, St
 import BasicTable from "@/component/common_component/Table/themetable"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
-import AddOrderDialog from "@/component/allorderdailog"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { authService } from "@/services/auth.service"
 import FilterDropdown from "@/component/fillter"
@@ -12,12 +11,14 @@ import { FiSearch, FiDownload } from "react-icons/fi"
 import { InputBase } from "@mui/material"
 import { getDisplayStatus } from "@/utills/utills"
 import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk, updateQPOrderThunk } from "@/store/slices/qpOrderSlice"
-import EditOrderDialog from "./EditOrderDialog"
 import { toast } from "react-toastify"
 import moment from "moment"
 import { StatusCell } from "./StatusCell"
 import Loader from "../common_component/loader"
 import { ExpandedRowForm } from "./expandableRows/QpOrderRows"
+import AddQPOrderDialog from "./QpOrderDialog"
+import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
+import { StaticCompanyOptions } from "@/constants"
 
 const columns = [
   { id: "orderNo", label: "Order No" },
@@ -107,19 +108,14 @@ type OrderRow = {
   factoryRemark?: string
 }
 
-// ExpandedRowForm component
-interface ExpandedRowFormProps {
-  row: OrderRow
-  setEditData: React.Dispatch<React.SetStateAction<OrderRow | null>>
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>
-}
-
 const AllOrdersPage = () => {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
   const dispatch = useAppDispatch()
   const [editData, setEditData] = useState<OrderRow | null>(null)
   const { user } = useAppSelector((state) => state.auth)
+
+  const { companies } = useAppSelector((state) => state.company)
   const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.qpOrders)
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -139,6 +135,15 @@ const AllOrdersPage = () => {
       dispatch(getQPOrdersByStaffIdThunk(user.id))
     }
   };
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString)
+      return moment(date).format('DD/MM/YY')
+    } catch {
+      return dateString
+    }
+  }
 
   // Prepare Excel headers
   const excelHeaders = useMemo(() => {
@@ -401,29 +406,22 @@ const AllOrdersPage = () => {
     return Array.from(new Set(values)).filter((v) => v !== "N/A").sort()
   }, [selectedFilterField, orders])
 
-  
+
+  useEffect(() => {
+    if (!companies.length) dispatch(getAllCompaniesThunk(true))
+  }, [])
 
   // console.log("DEBUG : AllOrdersPage : canViewOwn && user?.id:", canViewOwn && user?.id);
   useEffect(() => {
-  const token = authService.getToken()
-  if (!token) {
-    router.push("/login")
-    return
-  }
-
-  if (!orders.length) {
-    refreshData()
-  }
-}, [dispatch, router, canViewGlobal, canViewOwn, user?.id])
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString)
-      return moment(date).format('DD/MM/YY')
-    } catch {
-      return dateString
+    const token = authService.getToken()
+    if (!token) {
+      router.push("/login")
+      return
     }
-  }
+    if (!orders.length) {
+      refreshData()
+    }
+  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id])
 
   const renderExpandedRow = (row: OrderRow) => {
     if (!canViewGlobal) return null;
@@ -431,13 +429,13 @@ const AllOrdersPage = () => {
   };
 
   useEffect(() => {
-      if (error) {
-        toast.error(error);
-      }
-      
-    }, [error, dispatch]);
+    if (error) {
+      toast.error(error);
+    }
 
-  if (loading) return<Loader/>
+  }, [error, dispatch]);
+
+  if (loading) return <Loader />
 
   return (
     <>
@@ -619,7 +617,7 @@ const AllOrdersPage = () => {
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
                   {row.kgPerUnit || "N/A"}
-                  </Typography>
+                </Typography>
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
@@ -662,7 +660,8 @@ const AllOrdersPage = () => {
       {open && (
         <>
           {editData === null ? (
-            <AddOrderDialog
+            <AddQPOrderDialog
+              company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
               open={open}
               onClose={() => {
                 setOpen(false);
@@ -671,7 +670,8 @@ const AllOrdersPage = () => {
               refreshData={refreshData}
             />
           ) : (
-            <EditOrderDialog
+            <AddQPOrderDialog
+              company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
               open={open}
               onClose={() => {
                 setOpen(false);
