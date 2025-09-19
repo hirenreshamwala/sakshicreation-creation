@@ -312,13 +312,13 @@ const CompanyNamePage = () => {
               <IconButton color="primary" onClick={() => handleOpenDialog(row)} disabled={loading}>
                 <Edit />
               </IconButton>
-              <IconButton 
+             {/* <IconButton 
                 color="error" 
                 onClick={() => handleDelete(row._id)} 
                 disabled={loading || (row.default && companyNames.length > 1)}
               >
                 <Delete />
-              </IconButton>
+              </IconButton> */}
             </TableCell>
           </>
         )}

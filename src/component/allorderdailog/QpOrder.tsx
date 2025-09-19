@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react"
 import { Avatar, Box, IconButton, MenuItem, TableCell, TextField, Typography, Stack } from "@mui/material"
 import BasicTable from "@/component/common_component/Table/themetable"
-import { FaChevronRight } from "react-icons/fa6"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
 import AddOrderDialog from "@/component/allorderdailog"
@@ -18,6 +17,7 @@ import { toast } from "react-toastify"
 import moment from "moment"
 import { StatusCell } from "./StatusCell"
 import Loader from "../common_component/loader"
+import { ExpandedRowForm } from "./expandableRows/QpOrderRows"
 
 const columns = [
   { id: "orderNo", label: "Order No" },
@@ -114,271 +114,12 @@ interface ExpandedRowFormProps {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>
 }
 
-const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
-  const dispatch = useAppDispatch()
-  const [isInitialUnitSet, setIsInitialUnitSet] = useState(false)
-
-  const [formData, setFormData] = useState({
-    _id: row._id,
-    unitNo: row.unitNo || '',
-    startDate: row.startDate || '',
-    deliveryDate: row.deliveryDate || '',
-    dyeNumber: row.dyeNumber || "",
-    dyeSize: row.dyeSize || "",
-    glue: row.glue || "",
-    wire: row.wire || "",
-    dyeRemark: row.dyeRemark || "",
-    godownRemark: row.godownRemark || "",
-    factoryRemark: row.factoryRemark || "",
-    status: row.status || "Pending",
-  });
-  const [initialFormData, setInitialFormData] = useState(formData);
-
-  useEffect(() => {
-    const newFormData = {
-      _id: row._id,
-      unitNo: row.unitNo || '',
-      startDate: row.startDate || '',
-      deliveryDate: row.deliveryDate || '',
-      dyeNumber: row.dyeNumber || "",
-      dyeSize: row.dyeSize || "",
-      glue: row.glue || "",
-      wire: row.wire || "",
-      dyeRemark: row.dyeRemark || "",
-      godownRemark: row.godownRemark || "",
-      factoryRemark: row.factoryRemark || "",
-      status: row.status || "Pending",
-    }
-    setFormData(newFormData)
-    setInitialFormData(newFormData)
-    setIsInitialUnitSet(!!row.unitNo) 
-    // console.log("ExpandedRowForm: Initialized formData for row ID:", row._id, newFormData)
-  }, [row._id, row.unitNo, row.startDate, row.deliveryDate, row.dyeNumber, row.dyeSize, row.glue, row.wire, row.dyeRemark, row.godownRemark, row.factoryRemark, row.status])
-
-  const handleFormChange = (field: string, value: string) => {
-    if (field === "status" && value === "Completed") {
-      // Set deliveryDate to current date when status is changed to "Completed"
-      const currentDate = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
-      setFormData((prev) => ({ ...prev, status: value, deliveryDate: currentDate }));
-    } else if (field === "unitNo" && value && !isInitialUnitSet && !formData.startDate) {
-      // Set start date to current date when unit is selected for the first time
-      const currentDate = new Date().toISOString().split("T")[0];
-      setFormData((prev) => ({ ...prev, unitNo: value, startDate: currentDate }));
-      setIsInitialUnitSet(true);
-    } else {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    }
-  };
-  
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData._id) {
-      console.error("Error: formData._id is empty")
-      toast.error("Cannot submit: Invalid order ID")
-      return
-    }
-    try {
-      const updateData = {
-        unitNo: formData.unitNo,
-        startDate: formData.startDate,
-        deliveryDate: formData.deliveryDate,
-        dyeNumber: formData.dyeNumber,
-        dyeSize: formData.dyeSize,
-        glue: formData.glue,
-        wire: formData.wire,
-        dyeRemark: formData.dyeRemark,
-        godownRemark: formData.godownRemark,
-        factoryRemark: formData.factoryRemark,
-        status: formData.status,
-      }
-      // console.log("ExpandedRowForm: Submitting with ID:", formData._id, "and data:", updateData)
-      await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap()
-      setInitialFormData({ ...formData })
-      toast.success("Order updated successfully")
-    } catch (err: any) {
-      console.error("ExpandedRowForm: Update failed:", err)
-      toast.error(err?.message || "Failed to update order")
-    }
-  }
-
-  const handleCancel = () => {
-    setFormData(initialFormData)
-    setIsInitialUnitSet(!!initialFormData.unitNo)
-  }
-
-  
-
-  return (
-    <Box sx={{ p: 2, backgroundColor: '#f9fafb' }}>
-      <form onSubmit={handleSubmit}>
-        <Stack spacing={2}>
-          {/* Dye Number, Dye Size, and Status in one row */}
-          <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
-            <TextField
-              select
-              label="Unit No"
-              value={formData.unitNo || ''}
-              onChange={(e) => handleFormChange('unitNo', e.target.value)}
-              variant="outlined"
-              size="small"
-              sx={{ minWidth: 120 }}
-            >
-              <MenuItem value="Unit1">Unit1</MenuItem>
-              <MenuItem value="Unit2">Unit2</MenuItem>
-            </TextField>
-
-            <TextField
-              label="Start Date"
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => handleFormChange('startDate', e.target.value)}
-              variant="outlined"
-              size="small"
-              sx={{ minWidth: 150 }}
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="Delivery Date"
-              type="date"
-              value={formData.deliveryDate}
-              onChange={(e) => handleFormChange('deliveryDate', e.target.value)}
-              variant="outlined"
-              size="small"
-              sx={{ minWidth: 150 }}
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="Dye Number"
-              value={formData.dyeNumber}
-              onChange={(e) => handleFormChange("dyeNumber", e.target.value)}
-              variant="outlined"
-              size="small"
-              sx={{ minWidth: 150 }}
-            />
-            <TextField
-              label="Dye Sheet Size"
-              value={formData.dyeSize}
-              onChange={(e) => handleFormChange("dyeSize", e.target.value)}
-              variant="outlined"
-              size="small"
-              sx={{ minWidth: 150 }}
-            />
-            <TextField
-              label="Glue KG"
-              value={formData.glue}
-              onChange={(e) => handleFormChange("glue", e.target.value)}
-              variant="outlined"
-              size="small"
-              sx={{ minWidth: 150 }}
-            />
-            <TextField
-              label="Wire KG"
-              value={formData.wire}
-              onChange={(e) => handleFormChange("wire", e.target.value)}
-              variant="outlined"
-              size="small"
-              sx={{ minWidth: 150 }}
-            />
-            <TextField
-              select
-              label="Status"
-              value={formData.status}
-              onChange={(e) => handleFormChange("status", e.target.value)}
-              variant="outlined"
-              size="small"
-              sx={{ minWidth: 150 }}
-            >
-              {[
-                "Paper cutting",
-                "Corogation",
-                "Pasting",
-                "Rotery",
-                "Sloting/rs4",
-                "Printing",
-                "Manual pasting",
-                "Pinning",
-                "Kanthan",
-                "Puching",
-                "Pending",
-                "Order",
-                "In Progress",
-                "Canceled",
-                "Completed",
-              ].map((item) => (
-                <MenuItem key={item} value={item} sx={{ textTransform: "capitalize" }}>
-                  {item}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Stack>
-
-          {/* Remarks in one row, multiline */}
-          <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
-            <TextField
-              label="Dye Remark"
-              value={formData.dyeRemark}
-              onChange={(e) => handleFormChange("dyeRemark", e.target.value)}
-              variant="outlined"
-              size="small"
-              multiline
-              rows={2}
-              sx={{ flex: 1, minWidth: 220 }}
-            />
-            <TextField
-              label="Godown Remark"
-              value={formData.godownRemark}
-              onChange={(e) => handleFormChange("godownRemark", e.target.value)}
-              variant="outlined"
-              size="small"
-              multiline
-              rows={2}
-              sx={{ flex: 1, minWidth: 220 }}
-            />
-            <TextField
-              label="Factory Remark"
-              value={formData.factoryRemark}
-              onChange={(e) => handleFormChange("factoryRemark", e.target.value)}
-              variant="outlined"
-              size="small"
-              multiline
-              rows={2}
-              sx={{ flex: 1, minWidth: 220 }}
-            />
-          </Stack>
-
-          {/* Action Buttons */}
-          <Stack direction="row" spacing={2}>
-            <ThemeButton type="submit">
-              Submit
-            </ThemeButton>
-            <ThemeButton type="button" onClick={handleCancel} variant="outlined">
-              Cancel
-            </ThemeButton>
-            <ThemeButton
-              type="button"
-              onClick={() => {
-                setEditData(row)
-                setOpen(true)
-              }}
-            >
-              Edit
-            </ThemeButton>
-          </Stack>
-        </Stack>
-      </form>
-    </Box>
-  )
-}
-
 const AllOrdersPage = () => {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
   const dispatch = useAppDispatch()
   const [editData, setEditData] = useState<OrderRow | null>(null)
   const { user } = useAppSelector((state) => state.auth)
-  // console.log("DEBUG : AllOrdersPage : user:", user);
-
   const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.qpOrders)
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -682,39 +423,6 @@ const AllOrdersPage = () => {
     } catch {
       return dateString
     }
-  }
-
-  const StatusBadge = ({ row }: { row: OrderRow }) => {
-    const { text, isHold } = getDisplayStatus(row)
-    if (isHold) {
-      return (
-        <Box display="flex" alignItems="center" gap={1}>
-          <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-            {text}
-          </Typography>
-          <Box
-            sx={{
-              backgroundColor: "#DC2626",
-              color: "#FFFFFF",
-              fontSize: "10px",
-              fontWeight: 600,
-              borderRadius: "4px",
-              px: 1,
-              py: 0.25,
-              textTransform: "uppercase",
-            }}
-          >
-            HOLD
-          </Box>
-        </Box>
-      )
-    }
-
-    return (
-      <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-        {text}
-      </Typography>
-    )
   }
 
   const renderExpandedRow = (row: OrderRow) => {
