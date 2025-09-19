@@ -589,7 +589,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             .map((item: any) => ({ value: item._id, label: item.kantanName }))
                             .find((item) => item.value === qpFormData.kantan) || null}
                         onChange={(_, val) => handleQpChange("kantan", val?.value || null)}
-                        renderInput={(params) => <TextField {...params} label="Kantan" />}
+                        renderInput={(params) => <TextField {...params} label="Kantan" sx={{ width: 200, mt: 2 }} />}
                         sx={{ flex: 1 }}
                     />
                     <ThemeInput
