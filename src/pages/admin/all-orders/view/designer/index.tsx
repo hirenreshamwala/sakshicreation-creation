@@ -631,11 +631,11 @@ const ViewOrderDesigner = () => {
     fetchOrderData()
   }, [dispatch, orderId, singleOrder?.orderNumber])
 
-  useEffect(() => {
-    if (singleOrder?.status === "Printer" && orderId) {
-      router.push(`/admin/all-orders/view/printers?id=${orderId}`)
-    }
-  }, [singleOrder, orderId])
+  // useEffect(() => {
+  //   if (singleOrder?.status === "Printer" && orderId) {
+  //     router.push(`/admin/all-orders/view/printers?id=${orderId}`)
+  //   }
+  // }, [singleOrder, orderId])
 
   useEffect(() => {
     if (singleOrder) {
