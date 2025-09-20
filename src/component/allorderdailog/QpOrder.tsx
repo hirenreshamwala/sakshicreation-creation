@@ -25,7 +25,6 @@ const columns = [
   { id: "companyName", label: "Company Name" },
   { id: "party", label: "Party Name" },
   { id: "date", label: "Order Date" },
-  { id: "name", label: "Item Name" },
   { id: "ply", label: "Ply" },
   { id: "size", label: "Size" },
   { id: "paperGSM", label: "Paper GSM" },
@@ -174,15 +173,17 @@ const AllOrdersPage = () => {
         order.companyName?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.party?.partyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.date?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.ply?.ply?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.name?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.length?.length?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.height?.height?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.width?.width?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.orderdata?.ply?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.orderdata?.length?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.orderdata?.height?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.orderdata?.width?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.orderdata?.paper1GSM?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.orderdata?.paper2GSM?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.orderdata?.paper3GSM?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.gsm?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         // order.size?.size?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.deckalCalculation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.deckal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.orderdata?.deckal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.noOfPieces?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.ratePerPiece?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.amount?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -214,19 +215,16 @@ const AllOrdersPage = () => {
             value = order.date
             break
           case "ply":
-            value = order.ply?.ply
-            break
-          case "name":
-            value = order.name?.name
+            value = order.orderdata?.ply
             break
           case "length":
-            value = order.length?.length
+            value = order.orderdata?.length
             break
           case "height":
-            value = order.height?.height
+            value = order.orderdata?.height
             break
           case "width":
-            value = order.width?.width
+            value = order.orderdata?.width
             break
           case "gsm":
             value = order.gsm
@@ -238,7 +236,7 @@ const AllOrdersPage = () => {
             value = order.deckalCalculation
             break
           case "deckal":
-            value = order.deckal
+            value = order.orderdata?.deckal
             break
           case "noOfPieces":
             value = order.noOfPieces
@@ -288,13 +286,12 @@ const AllOrdersPage = () => {
       "Company Name": order.companyName?.companyName || "N/A",
       "Party Name": order.party?.partyName || "N/A",
       "Order Date": formatDate(order.createdAt) || "N/A",
-      "Item Name": order.name?.name || "N/A",
-      Ply: order.ply?.ply || "N/A",
-      Size: order.size?.size || `${order.length?.length || "N/A"} x ${order.width?.width || "N/A"} x ${order.height?.height || "N/A"}`,
-      "Paper GSM": `${order.paperLength?.gsm || "N/A"} x ${order.paperWidth?.gsm || "N/A"} x ${order.paperHeight?.gsm || "N/A"}`,
+      Ply: order.orderdata?.ply || "N/A",
+      Size: order.size?.size || `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`,
+      "Paper GSM": `${order.orderdata?.paper1GSM || "N/A"} x ${order.orderdata?.paper2GSM || "N/A"} x ${order.orderdata?.paper3GSM || "N/A"}`,
       GSM: order.gsm || "N/A",
       "Cal Deckal": order.deckalCalculation || "N/A",
-      Deckal: order.deckal || "N/A",
+      Deckal: order.orderdata?.deckal || "N/A",
       "Piece No": order.noOfPieces?.toString() || "N/A",
       "Rate/Piece": order.ratePerPiece?.toString() || "N/A",
       Amount: order.amount || "N/A",
@@ -340,19 +337,16 @@ const AllOrdersPage = () => {
           value = order.date
           break
         case "ply":
-          value = order.ply?.ply
-          break
-        case "name":
-          value = order.name?.name
+          value = order.orderdata?.ply
           break
         case "length":
-          value = order.length?.length
+          value = order.orderdata?.length
           break
         case "height":
-          value = order.height?.height
+          value = order.orderdata?.height
           break
         case "width":
-          value = order.width?.width
+          value = order.orderdata?.width
           break
         case "gsm":
           value = order.gsm
@@ -364,7 +358,7 @@ const AllOrdersPage = () => {
           value = order.deckalCalculation
           break
         case "deckal":
-          value = order.deckal
+          value = order.orderdata.deckal
           break
         case "noOfPieces":
           value = order.noOfPieces
@@ -535,8 +529,8 @@ const AllOrdersPage = () => {
           totalCount={totalCount}
           pagination={pagination}
           renderExpandedRow={canViewGlobal && !canStatus ? renderExpandedRow : undefined}
-          renderRow={(row: any) => (
-            <>
+          renderRow={(row: any) => {
+    return (<>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
                   QP-{row.orderNo || "N/A"}
@@ -544,11 +538,7 @@ const AllOrdersPage = () => {
               </TableCell>
               <TableCell>
                 <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar
-                    src={row.companyName?.avatar}
-                    sx={{ width: 32, height: 32 }}
-                    alt={row.companyName?.companyName || "Company"}
-                  />
+                  <Avatar src={row.companyName?.avatar} sx={{ width: 32, height: 32 }} alt={row.companyName?.companyName || "Company"}/>
                   <Typography fontWeight={600} fontSize="14px" color="#111827">
                     {row.companyName?.companyName || "N/A"}
                   </Typography>
@@ -566,22 +556,17 @@ const AllOrdersPage = () => {
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.name?.name || "N/A"}
+                  {row.orderdata?.ply || "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.ply?.ply || "N/A"}
+                  {row.orderdata?.length || "N/A"} x {row.orderdata?.width || "N/A"} x {row.orderdata?.height || "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.length?.length || "N/A"} x {row.width?.width || "N/A"} x {row.height?.height || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.paperLength?.gsm || "N/A"} x {row.paperWidth?.gsm || "N/A"} x {row.paperHeight?.gsm || "N/A"}
+                  {row.orderdata?.paper1GSM || "N/A"} x {row.orderdata?.paper2GSM || "N/A"} x {row.orderdata?.paper3GSM || "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -596,7 +581,7 @@ const AllOrdersPage = () => {
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.deckal || "N/A"}
+                  {row.orderdata?.deckal || "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -650,10 +635,10 @@ const AllOrdersPage = () => {
                 </Typography>
               </TableCell>
               <TableCell>
-                <StatusCell row={row} />
+                <StatusCell row={row}/>
               </TableCell>
-            </>
-          )}
+            </>);
+}}
         />
       </Box>
 

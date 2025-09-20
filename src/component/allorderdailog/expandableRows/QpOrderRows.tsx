@@ -25,6 +25,7 @@ import {
     TimelineContent,
     TimelineDot,
 } from "@mui/lab";
+import { calculateKantan, calculatePaperKg } from "@/utills/qpCalculations";
 
 type Remark = {
     type: string;
@@ -40,6 +41,8 @@ interface ExpandedRowFormProps {
 }
 
 export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
+    console.log("DEBUG : ExpandedRowForm : row:", row);
+
     const dispatch = useAppDispatch();
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
 
@@ -61,6 +64,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         dyeSize: row.dyeSize || "",
         glue: row.glue || "",
         wire: row.wire || "",
+        actualNoOfPieces: row.actualNoOfPieces || "",
         dyeRemark: row.dyeRemark || "",
         godownRemark: row.godownRemark || "",
         factoryRemark: row.factoryRemark || "",
@@ -80,6 +84,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             dyeSize: row.dyeSize || "",
             glue: row.glue || "",
             wire: row.wire || "",
+            actualNoOfPieces: row.actualNoOfPieces || "",
             dyeRemark: row.dyeRemark || "",
             godownRemark: row.godownRemark || "",
             factoryRemark: row.factoryRemark || "",
@@ -207,25 +212,68 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             return;
         }
         try {
-            const updateData = {
-                unitNo: formData.unitNo,
-                startDate: formData.startDate,
-                deliveryDate: formData.deliveryDate,
-                dyeNumber: formData.dyeNumber,
-                dyeSize: formData.dyeSize,
-                glue: formData.glue,
-                wire: formData.wire,
-                dyeRemark: formData.dyeRemark,
-                godownRemark: formData.godownRemark,
-                factoryRemark: formData.factoryRemark,
-                status: formData.status,
-                // send remarks array to backend
-                remarks: formData.remarks,
-            };
-            await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
-            setInitialFormData({ ...formData });
-            toast.success("Order updated successfully");
-        } catch (err: any) {
+        // Calculate actualTotalKantan
+        const { kantanPerUnit, reel, inch } = calculateKantan(
+            parseFloat(row.orderdata.length),
+            parseFloat(row.orderdata.width),
+            parseFloat(formData.actualNoOfPieces || row.noOfPieces)
+        );
+
+        // Calculate actualPaperKG and actualTotalKg
+        const { p1Kg, p2Kg, p3Kg, totalKg } = calculatePaperKg(
+            parseFloat(row.orderdata.length),
+            parseFloat(row.orderdata.width),
+            parseFloat(row.orderdata.height),
+            parseFloat(row.orderdata.deckal),
+            parseInt(row.orderdata.ply),
+            parseFloat(row.orderdata.paper1GSM),
+            parseFloat(row.orderdata.paper2GSM),
+            parseFloat(row.orderdata.paper3GSM),
+            parseFloat(formData.actualNoOfPieces || row.noOfPieces)
+        );
+
+        const updateData = {
+            unitNo: formData.unitNo,
+            startDate: formData.startDate,
+            deliveryDate: formData.deliveryDate,
+            dyeNumber: formData.dyeNumber,
+            dyeSize: formData.dyeSize,
+            glue: formData.glue,
+            wire: formData.wire,
+            actualNoOfPieces: formData.actualNoOfPieces,
+            dyeRemark: formData.dyeRemark,
+            godownRemark: formData.godownRemark,
+            factoryRemark: formData.factoryRemark,
+            status: formData.status,
+            remarks: formData.remarks,
+            // Add calculated fields
+            actualTotalKantan: {
+                reel: reel.toString(),
+                inch: inch.toString(),
+            },
+            actualPaperKG: {
+                paper1: {
+                    deckal : row.orderdata.deckal,
+                    gsm: row.orderdata.paper1GSM,
+                    totalKg: p1Kg.toFixed(3).toString(),
+                },
+                paper2: {
+                    deckal : row.orderdata.deckal,
+                    gsm: row.orderdata.paper2GSM,
+                    totalKg: p2Kg.toFixed(3).toString(),
+                },
+                paper3: {
+                    deckal: row.orderdata.deckal,
+                    gsm: row.orderdata.paper3GSM,
+                    totalKg: p3Kg.toFixed(3).toString(),
+                },
+            },
+            actualTotalKg: totalKg.toFixed(3).toString(),
+        };
+        await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
+        setInitialFormData({ ...formData });
+        toast.success("Order updated successfully");
+    } catch (err: any) {
             console.error("ExpandedRowForm: Update failed:", err);
             toast.error(err?.message || "Failed to update order");
         }
@@ -311,6 +359,14 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             label="Wire KG"
                             value={formData.wire}
                             onChange={(e) => handleFormChange("wire", e.target.value)}
+                            variant="outlined"
+                            size="small"
+                            sx={{ minWidth: 150 }}
+                        />
+                        <TextField
+                            label="Actual No. of Pieces"
+                            value={formData.actualNoOfPieces}
+                            onChange={(e) => handleFormChange("actualNoOfPieces", e.target.value)}
                             variant="outlined"
                             size="small"
                             sx={{ minWidth: 150 }}

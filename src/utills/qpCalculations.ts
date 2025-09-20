@@ -101,3 +101,56 @@ export const calculateKantan = (
 
   return { kantanPerUnit, reel, inch };
 };
+
+// Calculate KG Paper based on ply and multiple paper GSMs
+export const calculatePaperKg = (
+  length: number,
+  width: number,
+  height: number,
+  deckal: number,
+  ply: number,
+  paper1Gsm: number,
+  paper2Gsm: number,
+  paper3Gsm: number,
+  noofpieces: number
+) => {
+  if (!length || !width || !height || !deckal || !ply) {
+    return { p1Kg: 0, p2Kg: 0, p3Kg: 0, totalKg: 0 };
+  }
+  const abc = (length + width + 2) * 2;
+
+  // Ply ke pattern ke hisaab se repetition nikalna
+  let lengthCount = 0;
+  let widthCount = 0;
+  let heightCount = 0;
+
+  const widthPlusHalf = width + width / 2;
+
+  const paper2 = paper2Gsm + paper2Gsm / 2;
+
+  for (let i = 1; i < ply; i++) {
+    if (i % 2 !== 0) {
+      // odd -> length
+      lengthCount++;
+    } else {
+      // even -> width
+      widthCount++;
+    }
+  }
+  // last always height
+  heightCount++;
+
+  // Ab har paper ka kg nikalna
+  const p1Kg =
+    ((paper1Gsm * lengthCount * deckal * abc) / 1550 / 1000 )*noofpieces;
+
+  const p2Kg =
+    ((paper2 * widthCount * deckal * abc) / 1550 / 1000)*noofpieces;
+
+  const p3Kg =
+    ((paper3Gsm * heightCount * deckal * abc) / 1550 / 1000)*noofpieces;
+
+  const totalKg = p1Kg + p2Kg + p3Kg;
+
+  return { p1Kg, p2Kg, p3Kg, totalKg };
+};

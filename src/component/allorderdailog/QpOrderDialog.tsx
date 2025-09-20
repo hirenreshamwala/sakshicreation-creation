@@ -11,11 +11,10 @@ import { getAccountMasterByCompanyAndPartyThunk } from "@/store/slices/accountMa
 import { getAllProductItemsThunk } from "@/store/slices/productItemSlice";
 import { clearOrderError, clearOrderSuccessMessage } from "@/store/slices/orderSlice";
 import { toast } from "react-toastify";
-import { createQpOrderThunk } from "@/store/slices/qpOrderSlice";
+import { createQpOrderThunk, updateQPOrderThunk } from "@/store/slices/qpOrderSlice";
 import { getAllPackagingOptionsThunk } from "@/store/slices/packagingOptionSlice";
 import { getAllKantansThunk } from "@/store/slices/kantanSlice";
-import { calculateDeckal, calculateGSM, calculateKgPerPiece, calculateTotalKg, calculateTotalAmount, calculateKantan } from "@/utills/qpCalculations";
-import { Console } from "console";
+import { calculateDeckal, calculateGSM, calculateKgPerPiece, calculateTotalKg, calculateTotalAmount, calculateKantan, calculatePaperKg } from "@/utills/qpCalculations";
 
 interface OptionType {
     label: string;
@@ -28,6 +27,7 @@ interface AddOrderDialogProps {
     open: boolean;
     onClose: () => void;
     refreshData?: () => void;
+    editData?: any; // Adjust this type based on your OrderRow type if possible
 }
 
 const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData }) => {
@@ -91,7 +91,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 kgPerUnit: editData.kgPerUnit?.toString() || "",
                 totalKg: editData.totalKg || "",
                 kantan: editData.kantan?._id || null,
-
                 kantanPerUnit: editData.kantanPerUnit?.toString() || "",
                 totalKantan: {
                     reel: editData.totalKantan?.reel?.toString() || "",
@@ -100,13 +99,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 kantanDeckal: editData.kantanDeckal || "",
                 salesRemark: editData.salesRemark || "",
             });
-            setQpFormData((prev) => ({
-                ...prev,
-                totalKg: editData.totalKg || "",
-            }));
         }
     }, [open, editData, company]);
-    console.log("DEBUG : AddQPOrderDialog : editData:", editData);
 
     // Clear messages when dialog opens
     useEffect(() => {
@@ -145,8 +139,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
     const handlePartyChange = async (event: any, newValue: any) => {
         const partyId = newValue ? newValue.value : "";
-
-
         handleQpChange("partyName", partyId);
 
         if (company && partyId) {
@@ -157,10 +149,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         partyId: partyId,
                     })
                 ).unwrap();
-                // Auto-select last packaging option for this party
                 const partyOptions = packagingOptions.filter((opt: any) => opt.party._id === partyId);
-
-
                 if (partyOptions.length > 0) {
                     const lastOption = partyOptions[partyOptions.length - 1];
                     setQpFormData((prev) => ({
@@ -224,13 +213,22 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 salesRemark: qpFormData.salesRemark || undefined,
             };
 
-            await dispatch(createQpOrderThunk(orderData)).unwrap();
+            if (editData?._id) {
+                // Update existing order
+                await dispatch(updateQPOrderThunk({ id: editData._id, data:orderData })).unwrap();
+                toast.success("Order updated successfully");
+            } else {
+                // Create new order
+                await dispatch(createQpOrderThunk(orderData)).unwrap();
+                toast.success("Order created successfully");
+            }
+
             if (refreshData) refreshData();
             resetForm();
             onClose();
         } catch (error: any) {
-            console.error("QP Order creation error:", error);
-            toast.error(error?.message || "Failed to create QP order");
+            console.error("QP Order error:", error);
+            toast.error(error?.message || `Failed to ${editData?._id ? "update" : "create"} QP order`);
         } finally {
             setIsSubmitting(false);
         }
@@ -277,18 +275,12 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         return options.find((option) => option.value === value) || null;
     };
 
-    // // Filter packaging options by selected party
     const filteredPackagingOptions = useMemo(() => {
-
-
         return qpFormData.partyName
             ? packagingOptions.filter((option: any) => option.party._id === qpFormData.partyName)
             : packagingOptions;
     }, [qpFormData.partyName, packagingOptions]);
 
-
-
-    // Helper functions to get unique values for dropdowns
     const getUniquePlyOptions = () => {
         const uniquePlies = [...new Set(filteredPackagingOptions.map((item: any) => item.ply))].sort();
         return uniquePlies.map((ply) => ({
@@ -365,33 +357,25 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             "paper3GSM",
         ];
 
-        // Find matching option from filteredPackagingOptions
         const matchedOption = filteredPackagingOptions.find(
             (opt) => String(opt[label]).trim().toLowerCase() === String(value).trim().toLowerCase()
         );
 
-        console.log("DEBUG : setAllData : matchedOption:", matchedOption);
-
         if (matchedOption) {
             setQpFormData((prev) => {
                 const updated = { ...prev };
-
-                // Update all fields at once
                 fields.forEach((field) => {
                     updated[field] = matchedOption[field];
                 });
-
                 return updated;
             });
         } else {
-            // If no match found, just update that single field
             setQpFormData((prev) => ({
                 ...prev,
                 [label]: value,
             }));
         }
     };
-
 
     const renderQpForm = () => {
         return (
@@ -632,11 +616,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         );
     };
 
-    // Automatic calculations
     useEffect(() => {
-        const { length, width, height, ply, noOfPieces, ratePerPiece, paper1GSM, paper2GSM, paper3GSM } = qpFormData;
+        const { length, width, height, ply, deckal, noOfPieces, ratePerPiece, paper1GSM, paper2GSM, paper3GSM } = qpFormData;
 
-        // 1. Deckal Calculation
         let deckalValue: number | null = null;
         if (width && height) {
             deckalValue = calculateDeckal(Number(width), Number(height));
@@ -645,7 +627,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             handleQpChange("deckalCalculation", "");
         }
 
-        // 2. GSM Calculation
         let gsmValue: number | null = null;
         if (ply && paper1GSM && paper2GSM && paper3GSM) {
             gsmValue = calculateGSM(Number(ply), Number(paper1GSM), Number(paper2GSM), Number(paper3GSM));
@@ -654,15 +635,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             handleQpChange("gsm", "");
         }
 
-        // 3. KG Per Piece
         if (length && width && deckalValue && gsmValue) {
-            const kgPerPiece = calculateKgPerPiece(Number(length), Number(width), Number(deckalValue), Number(gsmValue));
+            const kgPerPiece = calculateKgPerPiece(Number(length), Number(width), Number(deckal), Number(gsmValue));
             handleQpChange("kgPerUnit", kgPerPiece.toFixed(4));
         } else {
             handleQpChange("kgPerUnit", "");
         }
 
-        // 4. Total KG
         if (Number(noOfPieces) && qpFormData.kgPerUnit) {
             const totalKg = calculateTotalKg(Number(noOfPieces), Number(qpFormData.kgPerUnit));
             handleQpChange("totalKg", totalKg.toFixed(2));
@@ -670,7 +649,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             handleQpChange("totalKg", "");
         }
 
-        // 5. Amount
         if (Number(noOfPieces) && Number(ratePerPiece)) {
             const amount = calculateTotalAmount(Number(noOfPieces), Number(ratePerPiece));
             handleQpChange("amount", amount.toFixed(2));
@@ -678,7 +656,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             handleQpChange("amount", "");
         }
 
-        // 6. Kantan Calculation
         if (length && width && Number(noOfPieces)) {
             const { kantanPerUnit, reel, inch } = calculateKantan(Number(length), Number(width), Number(noOfPieces));
             handleQpChange("kantanPerUnit", kantanPerUnit.toString());
@@ -686,6 +663,20 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         } else {
             handleQpChange("kantanPerUnit", "");
             handleQpChange("totalKantan", { reel: "", inch: "" });
+        }
+
+        if (ply && paper1GSM && paper2GSM && paper3GSM && length && width && deckal) {
+            const { p1Kg, p2Kg, p3Kg, totalKg } = calculatePaperKg(
+                Number(length),
+                Number(width),
+                Number(height),
+                Number(deckal),
+                Number(ply),
+                Number(paper1GSM),
+                Number(paper2GSM),
+                Number(paper3GSM),
+                Number(noOfPieces)
+            );
         }
     }, [
         qpFormData.length,
@@ -702,7 +693,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     ]);
 
     return (
-        <CustomDialog open={open} onClose={handleClose} maxWidth="md" title="Place New Order">
+        <CustomDialog open={open} onClose={handleClose} maxWidth="md" title={editData?._id ? "Update Order" : "Place New Order"}>
             <Box sx={{ p: 2, background: "#fff", borderRadius: 2 }}>
                 <Box mb={2}>
                     <CompanySelect
@@ -740,7 +731,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     {isSubmitting || orderLoading ? (
                         <Box display="flex" alignItems="center" gap={1}>
                             <CircularProgress size={20} color="inherit" />
-                            Creating Order...
+                            {editData?._id ? "Updating Order..." : "Creating Order..."}
                         </Box>
                     ) : accountLoading ? (
                         <Box display="flex" alignItems="center" gap={1}>
@@ -748,7 +739,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             Loading Party Details...
                         </Box>
                     ) : (
-                        "Place New Order"
+                        editData?._id ? "Update Order" : "Place New Order"
                     )}
                 </ThemeButton>
             </Box>
