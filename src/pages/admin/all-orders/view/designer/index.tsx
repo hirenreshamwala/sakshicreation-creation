@@ -361,7 +361,7 @@ const ApprovalDialog = ({
               multiple={true}
               accept="*/*"
               variant="dropzone"
-              onFilesSelected={() => {}}
+              onFilesSelected={() => { }}
               onUploadError={(error) => toast.error(error)}
               showPreview={false}
               showUploadButton={false}
@@ -537,7 +537,7 @@ const InvoiceValidProofDialog = ({
               multiple={true}
               accept="*/*"
               variant="dropzone"
-              onFilesSelected={() => {}}
+              onFilesSelected={() => { }}
               onUploadError={(error) => toast.error(error)}
               showPreview={false}
               showUploadButton={false}
@@ -953,7 +953,7 @@ const ViewOrderDesigner = () => {
         GSTNo: singleOrder?.party?.GSTNo || "N/A",
         servicePerformance: singleOrder?.productItem?.itemName || "N/A",
         quantity: singleOrder?.qty || 0,
-        unitPrice: singleOrder?.unitPrice || 0,
+        unitPrice: singleOrder?.quotation[singleOrder?.quotation?.length - 1]?.unitPrice || 0,
         total: singleOrder?.total || 0,
         finalAmount: singleOrder?.finalAmount || 0,
         applyGST: singleOrder?.applyGST || false,

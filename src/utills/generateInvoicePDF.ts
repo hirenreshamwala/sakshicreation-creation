@@ -1,8 +1,8 @@
 // utils/generateInvoicePDF.ts
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoImage1 from "../../public/images/Sakshi Creation Logo (1).png"; // Adjust path
-import logoImage2 from "../../public/images/Sakshi Creation Mini Logo (1).png"; // Adjust path
+import logoImage1 from "../../public/images/logo2.png"; // Adjust path
+import logoImage2 from "../../public/images/logo1.png"; // Adjust path
 
 interface InvoiceFormData {
   orderNumber: string;
@@ -32,11 +32,11 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
   const PAGE_WIDTH = 210; // A4 page width in mm
   const LOGO_Y = 10; // Y position for logos
   const LOGO_X_LEFT = 10; // X position for first logo (left)
-  const LOGO_WIDTH = 40; // Width of logos
+  const LOGO_WIDTH = 30; // Width of logos
   const LOGO_HEIGHT = 30; // Height of logos
-  const LOGO_WIDTH1 = 40; // Width of second logo
-  const LOGO_HEIGHT1 = 40; // Height of second logo
-  const HEADER_Y = LOGO_Y + LOGO_HEIGHT + 18; // Y position for "PERFORMA INVOICE"
+  const LOGO_WIDTH1 = 60; // Width of second logo
+  const LOGO_HEIGHT1 = 25; // Height of second logo
+  const HEADER_Y = LOGO_Y + LOGO_HEIGHT  + 10; // Y position for "PERFORMA INVOICE"
   const LINE_HEIGHT = 6; // Height of each line of text
   const INVOICE_DETAILS_Y = HEADER_Y + 12; // Y position for invoice details
   const ADDRESS_Y = INVOICE_DETAILS_Y + 6; // Y position for address
@@ -136,12 +136,12 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
   // Add Logos to PDF
   try {
     // First logo (left side)
-    doc.addImage(logoImage1.src, "JPEG", LOGO_X_LEFT, LOGO_Y, LOGO_WIDTH, LOGO_HEIGHT,undefined,
-          "FAST");
+    doc.addImage(logoImage1.src, "JPEG", LOGO_X_LEFT, LOGO_Y , LOGO_WIDTH, LOGO_HEIGHT, undefined,
+      "FAST");
     // Second logo (centered)
-    const LOGO_X_CENTER = (PAGE_WIDTH - LOGO_WIDTH) / 2;
-    doc.addImage(logoImage2.src, "JPEG", LOGO_X_CENTER, LOGO_Y, LOGO_WIDTH1, LOGO_HEIGHT1,undefined,
-          "FAST");
+    const LOGO_X_CENTER = (PAGE_WIDTH - LOGO_WIDTH - 35) / 2;
+    doc.addImage(logoImage2.src, "JPEG", LOGO_X_CENTER, LOGO_Y, LOGO_WIDTH1, LOGO_HEIGHT1, undefined,
+      "FAST");
   } catch (error) {
     console.error("Error loading logos:", error);
   }
@@ -149,7 +149,7 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
   // Header Section
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text("PERFORMA INVOICE", PAGE_WIDTH / 2, HEADER_Y, { align: "center" });
+  doc.text(`${formData.quotation ? "QUOTATION" : "PERFORMA INVOICE"}`, PAGE_WIDTH / 2, HEADER_Y, { align: "center" });
   doc.setLineWidth(0.5);
   doc.line(10, HEADER_Y + 2, 200, HEADER_Y + 2);
 
@@ -176,7 +176,7 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
   // Invoice Details (Left)
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`Proforma Invoice No: ${formData.orderNumber || "N/A"}`, 20, INVOICE_DETAILS_Y);
+  doc.text(`${formData.quotation ? "Quotation" : "Proforma Invoice"} No: ${formData.orderNumber || "N/A"}`, 20, INVOICE_DETAILS_Y);
   doc.text(`Invoice Date: ${new Date().toLocaleDateString("en-GB")}`, 20, INVOICE_DETAILS_Y + LINE_HEIGHT);
   doc.text(`Party Name: ${formData.partyName || "N/A"}`, 120, INVOICE_DETAILS_Y);
 
@@ -216,7 +216,7 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
       formData.servicePerformance || "N/A",
       formData.remarks || "N/A",
       formData.quantity || 0,
-      formData.unitPrice ? formData.unitPrice.toFixed(2) : "0.00",
+      formData.unitPrice ? Number(formData.unitPrice).toFixed(2) : "0.00",
       formData.total ? formData.total.toFixed(2) : "0.00",
     ],
   ];
@@ -289,4 +289,3 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
     `Proforma_Invoice_${formData.orderNumber || "N/A"}_${new Date().toISOString().split("T")[0]}.pdf`
   );
 };
- 

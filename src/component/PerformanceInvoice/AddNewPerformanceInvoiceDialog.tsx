@@ -99,9 +99,9 @@ const validationSchema = Yup.object({
     .required("Party Name ID is required")
     .matches(/^[0-9a-fA-F]{24}$/, "Invalid Party Name ID"),
   quantity: Yup.number().required("Quantity is required").min(1, "Quantity must be at least 1"),
-  unitPrice: Yup.number()
-    .required("Unit Price is required")
-    .min(0, "Unit Price cannot be negative"),
+  // unitPrice: Yup.number()
+  //   .required("Unit Price is required")
+  //   .min(0, "Unit Price cannot be negative"),
   applyGST: Yup.boolean(), // Added applyGST to validation
   gstPercentage: Yup.number() // Make conditional in validation
     .min(0, "GST Percentage cannot be negative")
@@ -201,7 +201,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       ownerMobileNo: "",
       addressName: "",
       servicePerformance: "",
-      unitPrice: 0,
+      unitPrice: data?.quotation[data?.quotation?.length -1 ]?.unitPrice || 0,
       total: 0,
       applyGST: false, // Initialize applyGST as false
       gstPercentage: 0,
@@ -421,7 +421,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ownerMobileNo: existingInvoice.ownerMobileNo || "",
             addressName: invoiceAddress || fullAddress,
             servicePerformance: existingInvoice.servicePerformance || "",
-            unitPrice: existingInvoice.unitPrice || 0,
+            unitPrice: data?.quotation[data?.quotation?.length -1 ]?.unitPrice|| 0,
             total: existingInvoice.total || 0,
             applyGST: existingInvoice.applyGST || 0, // Changed from applyGST
             finalAmount: existingInvoice.finalAmount || 0,
@@ -735,7 +735,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               onChange={formik.handleChange}
               error={formik.touched.unitPrice && Boolean(formik.errors.unitPrice)}
               helperText={formik.touched.unitPrice && formik.errors.unitPrice}
-              required
+              disabled
               fullWidth
             />
           </Box>

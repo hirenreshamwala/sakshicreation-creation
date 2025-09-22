@@ -180,11 +180,11 @@ const AssignTaskPage: React.FC = () => {
   };
 
   useEffect(() => {
-      if (error) {
-        toast.error(error);
-      }
+    if (error) {
+      toast.error(error);
+    }
 
-    }, [error, dispatch]);
+  }, [error, dispatch]);
 
   useEffect(() => {
     const token = authService.getToken();
@@ -215,6 +215,7 @@ const AssignTaskPage: React.FC = () => {
       date: new Date(task.isRescheduledTask && task.originalTaskId?.createdAt
         ? task.originalTaskId.createdAt
         : task.createdAt).toLocaleDateString("en-GB"),
+      reason: task.reasonForVisit || "N/A",
       party: task.partyName?.partyName || "Unknown",
       address: task.partyName?.address?.unitNo || "N/A",
       market: task.partyName?.address?.marketName?.marketName || "N/A",
@@ -222,12 +223,11 @@ const AssignTaskPage: React.FC = () => {
       mobile: task.partyName?.ownerWhatsAppNo || "N/A",
       remarks: task.remarks || "N/A",
       assignBy: task.createdBy
-      ? `${task.createdBy.firstName} ${task.createdBy.lastName}`
-      : "Unknown",
+        ? `${task.createdBy.firstName} ${task.createdBy.lastName}`
+        : "Unknown",
       assignTo: task.assignTo
-      ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
-      : "Unassigned",
-      reason: task.reasonForVisit || "N/A",
+        ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
+        : "Unassigned",
       status: task.status || "Pending",
       statusType: mapStatusToType(task.status),
       isRescheduledTask: task.isRescheduledTask || false,
@@ -244,13 +244,13 @@ const AssignTaskPage: React.FC = () => {
     Company: "company",
     Date: "date",
     Party: "party",
-    "Reason to Visit": "reason",
     "Unit No": "address",
     "Market Name": "market",
     Area: "area",
     "Mobile No.": "mobile",
     "Assign By": "assignBy",
     "Assign To": "assignTo",
+    "Reason to Visit": "reason",
     Status: "status",
   };
 
@@ -396,7 +396,7 @@ const AssignTaskPage: React.FC = () => {
       >
         {row.party}
       </TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
+    
       <TableCell sx={{ fontSize: 14 }}>
         <Typography
           sx={{
@@ -417,6 +417,7 @@ const AssignTaskPage: React.FC = () => {
         : row.remarks}</Typography></TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.assignBy}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
+        <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip
           label={row.status}

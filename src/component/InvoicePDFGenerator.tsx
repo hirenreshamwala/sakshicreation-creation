@@ -35,7 +35,7 @@ const InvoicePDFGenerator: React.FC<InvoicePDFGeneratorProps> = ({
   onClose,
 }) => {
   const handleGenerate = () => {
-    generateInvoicePDF(formData); // Use the utility function
+    generateInvoicePDF(formData);
     onClose();
   };
  
