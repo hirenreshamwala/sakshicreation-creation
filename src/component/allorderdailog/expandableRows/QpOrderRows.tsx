@@ -46,6 +46,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     const dispatch = useAppDispatch();
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
+    const [isCompleted, setIsCompleted] = useState(row.status === "Completed"); // Track backend status
 
     // remark modal (add reason)
     const [remarkModalOpen, setRemarkModalOpen] = useState(false);
@@ -95,6 +96,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setFormData(newFormData);
         setInitialFormData(newFormData);
         setIsInitialUnitSet(!!row.unitNo);
+        setIsCompleted(row.status === "Completed"); // Initialize based on row.status
 
         // reset states
         setRemarkModalOpen(false);
@@ -105,7 +107,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [row]);
 
     const handleFormChange = (field: string, value: string) => {
-        // Changing start date after it's already set -> ask reason
         if (field === "startDate") {
             if (formData.startDate) {
                 setTempStartDate(value);
@@ -113,13 +114,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 setRemarkModalOpen(true);
                 return;
             } else {
-                // direct set (was empty)
                 setFormData((prev) => ({ ...prev, startDate: value }));
                 return;
             }
         }
 
-        // status changes that require remark or special handling
         if (field === "status") {
             if (value === "Completed") {
                 if (!formData.actualNoOfPieces || parseInt(formData.actualNoOfPieces) === 0) {
@@ -142,7 +141,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }
         }
 
-        // unitNo initial selection -> set startDate if not set before
         if (field === "unitNo" && value && !isInitialUnitSet && !formData.startDate) {
             const currentDate = new Date().toISOString().split("T")[0];
             setFormData((prev) => ({ ...prev, unitNo: value, startDate: currentDate }));
@@ -150,7 +148,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             return;
         }
 
-        // generic field update
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
@@ -162,7 +159,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             setFormData((prev) => ({
                 ...prev,
                 startDate: tempStartDate,
-                status: "On Hold", // force on hold for start date changes
+                status: "On Hold",
                 remarks: [
                     ...prev.remarks,
                     {
@@ -203,7 +200,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }));
         }
 
-        // reset modal state
         setRemarkText("");
         setTempStartDate("");
         setRemarkType(null);
@@ -223,68 +219,69 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }
         }
         try {
-        // Calculate actualTotalKantan
-        const { kantanPerUnit, reel, inch } = calculateKantan(
-            parseFloat(row.orderdata.length),
-            parseFloat(row.orderdata.width),
-            parseFloat(formData.actualNoOfPieces || row.noOfPieces)
-        );
+            const { kantanPerUnit, reel, inch } = calculateKantan(
+                parseFloat(row.orderdata.length),
+                parseFloat(row.orderdata.width),
+                parseFloat(formData.actualNoOfPieces || row.noOfPieces)
+            );
 
-        // Calculate actualPaperKG and actualTotalKg
-        const { p1Kg, p2Kg, p3Kg, totalKg } = calculatePaperKg(
-            parseFloat(row.orderdata.length),
-            parseFloat(row.orderdata.width),
-            parseFloat(row.orderdata.height),
-            parseFloat(row.orderdata.deckal),
-            parseInt(row.orderdata.ply),
-            parseFloat(row.orderdata.paper1GSM),
-            parseFloat(row.orderdata.paper2GSM),
-            parseFloat(row.orderdata.paper3GSM),
-            parseFloat(formData.actualNoOfPieces || row.noOfPieces)
-        );
+            const { p1Kg, p2Kg, p3Kg, totalKg } = calculatePaperKg(
+                parseFloat(row.orderdata.length),
+                parseFloat(row.orderdata.width),
+                parseFloat(row.orderdata.height),
+                parseFloat(row.orderdata.deckal),
+                parseInt(row.orderdata.ply),
+                parseFloat(row.orderdata.paper1GSM),
+                parseFloat(row.orderdata.paper2GSM),
+                parseFloat(row.orderdata.paper3GSM),
+                parseFloat(formData.actualNoOfPieces || row.noOfPieces)
+            );
 
-        const updateData = {
-            unitNo: formData.unitNo,
-            startDate: formData.startDate,
-            deliveryDate: formData.deliveryDate,
-            dyeNumber: formData.dyeNumber,
-            dyeSize: formData.dyeSize,
-            glue: formData.glue,
-            wire: formData.wire,
-            actualNoOfPieces: formData.actualNoOfPieces,
-            dyeRemark: formData.dyeRemark,
-            godownRemark: formData.godownRemark,
-            factoryRemark: formData.factoryRemark,
-            status: formData.status,
-            remarks: formData.remarks,
-            // Add calculated fields
-            actualTotalKantan: {
-                reel: reel.toString(),
-                inch: inch.toString(),
-            },
-            actualPaperKG: {
-                paper1: {
-                    deckal : row.orderdata.deckal,
-                    gsm: row.orderdata.paper1GSM,
-                    totalKg: p1Kg.toFixed(3).toString(),
+            const updateData = {
+                unitNo: formData.unitNo,
+                startDate: formData.startDate,
+                deliveryDate: formData.deliveryDate,
+                dyeNumber: formData.dyeNumber,
+                dyeSize: formData.dyeSize,
+                glue: formData.glue,
+                wire: formData.wire,
+                actualNoOfPieces: formData.actualNoOfPieces,
+                dyeRemark: formData.dyeRemark,
+                godownRemark: formData.godownRemark,
+                factoryRemark: formData.factoryRemark,
+                status: formData.status,
+                remarks: formData.remarks,
+                actualTotalKantan: {
+                    reel: reel.toString(),
+                    inch: inch.toString(),
                 },
-                paper2: {
-                    deckal : row.orderdata.deckal,
-                    gsm: row.orderdata.paper2GSM,
-                    totalKg: p2Kg.toFixed(3).toString(),
+                actualPaperKG: {
+                    paper1: {
+                        deckal: row.orderdata.deckal,
+                        gsm: row.orderdata.paper1GSM,
+                        totalKg: p1Kg.toFixed(3).toString(),
+                    },
+                    paper2: {
+                        deckal: row.orderdata.deckal,
+                        gsm: row.orderdata.paper2GSM,
+                        totalKg: p2Kg.toFixed(3).toString(),
+                    },
+                    paper3: {
+                        deckal: row.orderdata.deckal,
+                        gsm: row.orderdata.paper3GSM,
+                        totalKg: p3Kg.toFixed(3).toString(),
+                    },
                 },
-                paper3: {
-                    deckal: row.orderdata.deckal,
-                    gsm: row.orderdata.paper3GSM,
-                    totalKg: p3Kg.toFixed(3).toString(),
-                },
-            },
-            actualTotalKg: totalKg.toFixed(3).toString(),
-        };
-        await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
-        setInitialFormData({ ...formData });
-        toast.success("Order updated successfully");
-    } catch (err: any) {
+                actualTotalKg: totalKg.toFixed(3).toString(),
+            };
+
+            await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
+            setInitialFormData({ ...formData });
+            if (formData.status === "Completed") {
+                setIsCompleted(true); // Disable form only after successful API update
+            }
+            toast.success("Order updated successfully");
+        } catch (err: any) {
             console.error("ExpandedRowForm: Update failed:", err);
             toast.error(err?.message || "Failed to update order");
         }
@@ -294,8 +291,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setFormData(initialFormData);
         setIsInitialUnitSet(!!initialFormData.unitNo);
     };
-
-    const isCompleted = formData.status === "Completed";
 
     return (
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
@@ -308,11 +303,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             value={formData.unitNo || ""}
                             onChange={(e) => {
                                 handleFormChange("unitNo", e.target.value);
-                                // set start date when selecting unit if not set
                                 if (!formData.startDate) {
                                     handleFormChange("startDate", moment().format("YYYY-MM-DD"));
                                 }
-                                if (formData.status === 'Pending') {
+                                if (formData.status === "Pending") {
                                     handleFormChange("status", "In Progress");
                                 }
                             }}
@@ -532,7 +526,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                                         <Typography variant="body1" sx={{ mt: 0.5 }}>
                                             {remark.text}
                                         </Typography>
-                                       {index !== formData.remarks.length -1 && <Divider sx={{ mt: 1, mb: 1 }} />}
+                                        {index !== formData.remarks.length - 1 && <Divider sx={{ mt: 1, mb: 1 }} />}
                                     </TimelineContent>
                                 </TimelineItem>
                             ))}

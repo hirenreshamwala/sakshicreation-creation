@@ -109,16 +109,16 @@ const IndexPage: React.FC = () => {
 
   // Calculate counts for Approved and Pending tabs
   const approvedCount = accountMasters.filter(
-    (account) => account.party?.statusApproval === "Approved"
+    (account) => account.party?.statusApproval === "APPROVED"
   ).length;
   const pendingCount = accountMasters.filter(
-    (account) => account.party?.statusApproval === "Pending"
+    (account) => account.party?.statusApproval === "PENDING"
   ).length;
 
   // Update tabLabels to include counts
   const tabLabelsWithCount = [
-    `Approved (${approvedCount})`,
-    `Pending (${pendingCount})`,
+    `APPROVED (${approvedCount})`,
+    `PENDING (${pendingCount})`,
   ];
 
   const excelHeaders = useMemo(() => [
