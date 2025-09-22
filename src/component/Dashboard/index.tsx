@@ -43,6 +43,7 @@ const permissionMapping: { [key: string]: string } = {
   "Assign Task": "assign_task",
   "Party call": "party_call",
   "All Orders": "all_orders",
+  "All Complains": "all_complains",
   "Quality Packaging": "quality_packaging",
   "Performance invoice": "proforma_invoice",
   Reports: "reports",
@@ -76,12 +77,13 @@ const menuItems = [
   { label: "Party call", icon: <MdGroup size={18} />, path: "/admin/party-call" },
   { label: "Order To Factory", icon: <MdAssignment size={18} />, path: "/admin/factory-orders" },
   { label: "All Orders", icon: <MdAssignment size={18} />, path: "/admin/all-orders" },
+  { label: "All Complains", icon: <MdAssignment size={18} />, path: "/admin/all-complains" },
   { label: "Quality Packaging", icon: <MdSettings size={18} />, path: "/admin/quality-packageing" },
   { label: "Performance invoice", icon: <MdSettings size={18} />, path: "/admin/performance-invoice" },
   {
     label: "Reports",
     icon: <MdLibraryBooks size={18} />,
-    path: "/admin/reports",
+    path: "/admin/reports", 
     children: [
       { label: "Designer", path: "/admin/reports/designer", icon: <MdPeople size={18} /> },
       { label: "Printers", path: "/admin/reports/printers", icon: <MdPeople size={18} /> },
