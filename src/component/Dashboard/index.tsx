@@ -286,7 +286,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       category: "sakshi"
     },
     {
-      label: "Cartoon",
+      label: "Packaging Options",
       path: "/admin/setup/packaging-options",
       icon: <MdGroup size={18} />,
       category: "quality"
@@ -303,12 +303,12 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       icon: <MdGroup size={18} />,
       category: "quality"
     },
-    {
-      label: "Paper GSM",
-      path: "/admin/setup/paper-gsm",
-      icon: <MdGroup size={18} />,
-      category: "quality"
-    },
+    // {
+    //   label: "Paper GSM",
+    //   path: "/admin/setup/paper-gsm",
+    //   icon: <MdGroup size={18} />,
+    //   category: "quality"
+    // },
     {
       label: "Company Name",
       path: "/admin/setup/company-name",

@@ -26,6 +26,7 @@ import {
     TimelineDot,
 } from "@mui/lab";
 import { calculateKantan, calculatePaperKg } from "@/utills/qpCalculations";
+import { ORDER_STATUSES } from "@/constants";
 
 type Remark = {
     type: string;
@@ -121,6 +122,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         // status changes that require remark or special handling
         if (field === "status") {
             if (value === "Completed") {
+                if (!formData.actualNoOfPieces || parseInt(formData.actualNoOfPieces) === 0) {
+                    toast.error("You need to fill the actual number of pieces before marking as completed");
+                    return;
+                }
                 const currentDate = new Date().toISOString().split("T")[0];
                 setFormData((prev) => ({ ...prev, status: value, deliveryDate: currentDate }));
                 return;
@@ -211,6 +216,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             toast.error("Cannot submit: Invalid order ID");
             return;
         }
+        if (formData.status === "Completed") {
+            if (!formData.actualNoOfPieces || parseInt(formData.actualNoOfPieces) === 0) {
+                toast.error("You need to fill the actual number of pieces before marking as completed");
+                return;
+            }
+        }
         try {
         // Calculate actualTotalKantan
         const { kantanPerUnit, reel, inch } = calculateKantan(
@@ -284,6 +295,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setIsInitialUnitSet(!!initialFormData.unitNo);
     };
 
+    const isCompleted = formData.status === "Completed";
+
     return (
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
             <form onSubmit={handleSubmit}>
@@ -306,6 +319,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             variant="outlined"
                             size="small"
                             sx={{ minWidth: 120 }}
+                            disabled={isCompleted}
                         >
                             <MenuItem value="Unit1">Unit1</MenuItem>
                             <MenuItem value="Unit2">Unit2</MenuItem>
@@ -320,6 +334,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             size="small"
                             sx={{ minWidth: 150 }}
                             InputLabelProps={{ shrink: true }}
+                            disabled={isCompleted}
                         />
                         <TextField
                             label="Delivery Date"
@@ -330,6 +345,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             size="small"
                             sx={{ minWidth: 150 }}
                             InputLabelProps={{ shrink: true }}
+                            disabled={isCompleted}
                         />
                         <TextField
                             label="Dye Number"
@@ -338,6 +354,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             variant="outlined"
                             size="small"
                             sx={{ minWidth: 150 }}
+                            disabled={isCompleted}
                         />
                         <TextField
                             label="Dye Sheet Size"
@@ -346,6 +363,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             variant="outlined"
                             size="small"
                             sx={{ minWidth: 150 }}
+                            disabled={isCompleted}
                         />
                         <TextField
                             label="Glue KG"
@@ -354,6 +372,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             variant="outlined"
                             size="small"
                             sx={{ minWidth: 150 }}
+                            disabled={isCompleted}
                         />
                         <TextField
                             label="Wire KG"
@@ -362,6 +381,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             variant="outlined"
                             size="small"
                             sx={{ minWidth: 150 }}
+                            disabled={isCompleted}
                         />
                         <TextField
                             label="Actual No. of Pieces"
@@ -370,6 +390,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             variant="outlined"
                             size="small"
                             sx={{ minWidth: 150 }}
+                            disabled={isCompleted}
                         />
                         <TextField
                             select
@@ -379,25 +400,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             variant="outlined"
                             size="small"
                             sx={{ minWidth: 150 }}
+                            disabled={isCompleted}
                         >
-                            {[
-                                "Paper cutting",
-                                "Corogation",
-                                "Pasting",
-                                "Rotery",
-                                "Sloting/rs4",
-                                "Printing",
-                                "Manual pasting",
-                                "Pinning",
-                                "Kanthan",
-                                "Puching",
-                                "Pending",
-                                "Order",
-                                "In Progress",
-                                "On Hold",
-                                "Canceled",
-                                "Completed",
-                            ].map((item) => (
+                            {ORDER_STATUSES.map((item) => (
                                 <MenuItem key={item} value={item}>
                                     {item}
                                 </MenuItem>
@@ -415,6 +420,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             multiline
                             rows={2}
                             sx={{ flex: 1, minWidth: 220 }}
+                            disabled={isCompleted}
                         />
                         <TextField
                             label="Godown Remark"
@@ -425,6 +431,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             multiline
                             rows={2}
                             sx={{ flex: 1, minWidth: 220 }}
+                            disabled={isCompleted}
                         />
                         <TextField
                             label="Factory Remark"
@@ -435,16 +442,18 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             multiline
                             rows={2}
                             sx={{ flex: 1, minWidth: 220 }}
+                            disabled={isCompleted}
                         />
                     </Stack>
 
                     <Stack direction="row" spacing={2}>
-                        <ThemeButton type="submit">Submit</ThemeButton>
-                        <ThemeButton type="button" onClick={handleCancel} variant="outlined">
+                        <ThemeButton type="submit" disabled={isCompleted}>Submit</ThemeButton>
+                        <ThemeButton type="button" disabled={isCompleted} onClick={handleCancel} variant="outlined">
                             Cancel
                         </ThemeButton>
                         <ThemeButton
                             type="button"
+                            disabled={isCompleted}
                             onClick={() => {
                                 setEditData(row);
                                 setOpen(true);
