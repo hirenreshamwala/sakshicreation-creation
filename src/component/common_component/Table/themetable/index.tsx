@@ -162,6 +162,9 @@ const BasicTable = <T extends { id: string }>({
         case "Address":
           key = "address" as keyof T;
           break;
+        case "OrderNo": // Add mapping for OrderNo
+          key = "orderid" as keyof T;
+          break;  
         default:
           key = col.id as keyof T;
       }
@@ -179,6 +182,10 @@ const BasicTable = <T extends { id: string }>({
     const values = rowData.map((row) => {
       if (key === "company") {
         return (row[key] as any)?.name || "N/A";
+      }
+      if (key === "orderid") {
+        // Handle orderid specifically to ensure correct value extraction
+        return String(row[key] || "N/A");
       }
       return String(row[key] || "N/A");
     });
@@ -224,8 +231,10 @@ const BasicTable = <T extends { id: string }>({
           const key = filterFieldToKey[field];
           if (!key) return true;
           
-          const value = key === "company" 
+         const value = key === "company" 
             ? (row[key] as any)?.name 
+            : key === "orderid" 
+            ? String(row[key] || "N/A")
             : row[key];
           
           return values.includes(String(value || "N/A"));

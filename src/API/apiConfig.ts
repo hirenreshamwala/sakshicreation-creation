@@ -51,6 +51,13 @@ const Endpoint = {
   DELETE_QP_PURCHASE: `${BaseURL}/api/qppurchase/delete`,
   GET_QP_PURCHASE_BY_ID: `${BaseURL}/api/qppurchase/getbyid`,
   BULK_CREATE_QP_PURCHASES: `${BaseURL}/api/qppurchase/bulk`,
+  
+  UPDATE_COMPLAIN: `${BaseURL}/api/complain/update`,
+  DELETE_COMPLAIN: `${BaseURL}/api/complain/delete`,
+  CREATE_COMPLAIN: `${BaseURL}/api/complain/create`,
+  GET_COMPLAINS: `${BaseURL}/api/complain/getall`,
+  GET_COMPLAIN_BY_ID: `${BaseURL}/api/complain/getbyid`,
+  GET_COMPLAINS_STAFF: `${BaseURL}/api/complain/getbystaff`,
 
   //Inventory
 
