@@ -412,8 +412,8 @@ const IndexPage: React.FC = () => {
 
 
   const filteredAccountMasters = accountMasters.filter((account) => {
-    const statusApproval = account.party?.statusApproval || "Pending";
-    const statusMatch = tab === 0 ? statusApproval === "Approved" : statusApproval === "Pending";
+    const statusApproval = account.party?.statusApproval || "PENDING";
+    const statusMatch = tab === 0 ? statusApproval === "APPROVED" : statusApproval === "PENDING";
 
     // Date range filtering
     const accountDate = new Date(account.createdAt);
@@ -753,8 +753,8 @@ const IndexPage: React.FC = () => {
           showSearch={false}
           title="Account-master"
           showExcelDownload={true}
-          excelHeaders={excelHeaders} 
-          excelData={excelData} 
+          excelHeaders={excelHeaders}
+          excelData={excelData}
           rowData={formattedRows}
           renderRow={(row: RowData, index: number) => (
             <>
@@ -794,8 +794,8 @@ const IndexPage: React.FC = () => {
               <TableCell sx={{ fontSize: 14 }}>{row.market?.marketName}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.area?.area}</TableCell>
               <TableCell sx={{ fontSize: 14 }}><Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
-                      ? `${row.remarks.substring(0, 10)}...`
-                      : row.remarks}</Typography></TableCell>
+                ? `${row.remarks.substring(0, 10)}...`
+                : row.remarks}</Typography></TableCell>
               <TableCell sx={{ fontSize: 14 }}>
                 <ThemeChip
                   label={row.status}
@@ -835,7 +835,7 @@ const IndexPage: React.FC = () => {
                   </IconButton>
                 )}
                 {row.statusApproval === 'Pending' && canViewGlobal && (
-                  <IconButton  onClick={() => handleApprove(row.partyId)}>
+                  <IconButton onClick={() => handleApprove(row.partyId)}>
                     <CheckCircleIcon color="success" />
                   </IconButton>
                 )}

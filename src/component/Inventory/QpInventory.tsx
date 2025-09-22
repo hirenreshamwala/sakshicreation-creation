@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Select, MenuItem, Typography, Button, TableCell, SxProps, Theme } from '@mui/material';
-import { FaArrowDown, FaArrowUp, FaChevronRight } from 'react-icons/fa6';
+import { Box, TableCell } from '@mui/material';
+import { FaArrowDown, FaArrowUp } from 'react-icons/fa6';
 import { MdPeople } from 'react-icons/md';
 import BasicTable from '@/component/common_component/Table/themetable';
 import ThemeTabs, { TabItem } from '@/component/common_component/themetabs';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { getInventoryByCategoryThunk, getInventorySummaryThunk } from '@/store/slices/inventorySlice';
-import { getAllMaterialsThunk } from '@/store/slices/materialSlice';
-import { getAllVendorsThunk } from '@/store/slices/vendorSlice';
+import { getAllInventoryThunk } from '@/store/slices/inventorySlice';
 import { toast } from 'react-toastify';
 
 enum InventoryCategory {
-    PRINTER = 'printer',
-    BINDER = 'binder',
-    BOOKLET = 'booklet',
     FACTORY = 'factory',
     GODOWN = 'godown',
 }
@@ -33,26 +28,6 @@ const wardTabs: TabItem[] = [
     { label: 'Outward', value: WardTab.OUTWARD, icon: <FaArrowUp size={14} /> },
 ];
 
-const styles = {
-    filterContainer: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        rowGap: 2,
-        columnGap: 4,
-        mb: 2,
-        alignItems: 'center',
-    },
-    backButton: {
-        mt: 2,
-    },
-    tableActionIcon: {
-        fontSize: 16,
-        color: '#6b7280',
-        marginLeft: 8,
-        cursor: 'pointer',
-    },
-} satisfies Record<string, SxProps<Theme>>;
-
 interface AggregatedInventory {
     printerId: string;
     printerName: string;
@@ -71,21 +46,11 @@ interface AggregatedInventory {
 const QpInventoryPage = () => {
     const dispatch = useAppDispatch();
     const { user } = useAppSelector((state) => state.auth)
-    const { inventory, summary, loading, error } = useAppSelector(state => state.inventory);
-    
-    
-    const { materials } = useAppSelector(state => state.materials);
-    const { vendors } = useAppSelector(state => state.vendors);
+    const { allInventory: inventory, error } = useAppSelector(state => state.inventory);
+    const [activeMaterialTab, setActiveMaterialTab] = useState<MaterialCategory>(MaterialCategory.PAPER);
     const [activeMainTab, setActiveMainTab] = useState<InventoryCategory>(InventoryCategory.GODOWN);
     const [activeWardTab, setActiveWardTab] = useState<WardTab>(WardTab.INWARD);
-    const [showDetails, setShowDetails] = useState(false);
-    const [selectedPrinter, setSelectedPrinter] = useState<AggregatedInventory | null>(null);
-    const [selectedMaterial, setSelectedMaterial] = useState<string>('');
-    const [selectedVendor, setSelectedVendor] = useState<string>('');
-    const [selectedPrinterFilter, setSelectedPrinterFilter] = useState<string>('');
     const permissions = user.role.permissions;
-    
-    // console.log("DEBUG : QpInventoryPage : inventory:", inventory);
     const getPermissionWiseInventory = () => {
         if (permissions?.inventory?.view_global) {
             return inventory;
@@ -99,11 +64,8 @@ const QpInventoryPage = () => {
     };
 
     useEffect(() => {
-        dispatch(getAllMaterialsThunk());
-        dispatch(getAllVendorsThunk());
-        dispatch(getInventoryByCategoryThunk(activeMainTab));
-        dispatch(getInventorySummaryThunk(activeMainTab));
-    }, [dispatch, activeMainTab]);
+        dispatch(getAllInventoryThunk());
+    }, []);
 
     useEffect(() => {
         if (error) {
@@ -114,54 +76,109 @@ const QpInventoryPage = () => {
 
     const handleMainTabChange = (_: React.SyntheticEvent, newValue: string | number) => {
         setActiveMainTab(newValue as InventoryCategory);
-        setShowDetails(false);
-        setSelectedPrinter(null);
-        setSelectedMaterial('');
-        setSelectedVendor('');
-        setSelectedPrinterFilter('');
     };
 
     const handleWardTabChange = (_: React.SyntheticEvent, newValue: string | number) => {
         setActiveWardTab(newValue as WardTab);
     };
-    const aggregatedData = getPermissionWiseInventory();
 
-    const handleBackClick = () => {
-        setShowDetails(false);
-        setSelectedPrinter(null);
+    enum MaterialCategory {
+        KANTAN = "kantan",
+        BOX = "box",
+        WIRE = "wire",
+        GLUE = "glue",
+        PAPER = "paper",
+    }
+
+    const materialTabs: TabItem[] = [
+        { label: "Kantan", value: MaterialCategory.KANTAN },
+        { label: "Box", value: MaterialCategory.BOX },
+        { label: "Wire", value: MaterialCategory.WIRE },
+        { label: "Glue", value: MaterialCategory.GLUE },
+        { label: "Paper", value: MaterialCategory.PAPER },
+    ];
+
+    const handleMaterialTabChange = (_: React.SyntheticEvent, newValue: string | number) => setActiveMaterialTab(newValue as MaterialCategory);
+
+    const tableConfigs: Record<MaterialCategory, { header: any[]; render: (row: any) => JSX.Element }> = {
+        kantan: {
+            header: [
+                { id: "kantanName", label: "KANTAN NAME" },
+                { id: "reel", label: "REEL" },
+                { id: "date", label: "DATE" },
+            ],
+            render: (row) => (
+                <>
+                    <TableCell>{row.kantan?.kantanName || "N/A"}</TableCell>
+                    <TableCell>{row.reel || "N/A"}</TableCell>
+                    <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                </>
+            ),
+        },
+        box: {
+            header: [
+                { id: "boxType", label: "TYPE" },
+                { id: "lwh", label: "SIZE" },
+                { id: "qty", label: "GSM" },
+                { id: "date", label: "DATE" },
+            ],
+            render: (row) => (
+                <>
+                    <TableCell>{row.boxType || "Box"}</TableCell>
+                    <TableCell>{row.boxLength} x {row.boxWidth} x {row.boxHeight}</TableCell>
+                    <TableCell>{row.p1gsm?.gsm} - {row.p2gsm?.gsm} - {row.p3gsm?.gsm}</TableCell>
+                    <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                </>
+            ),
+        },
+        wire: {
+            header: [
+                { id: "type", label: "TYPE" },
+                { id: "kg", label: "KG" },
+                { id: "date", label: "DATE" },
+            ],
+            render: (row) => (
+                <>
+                    <TableCell>{row.wireType || "Wire"}</TableCell>
+                    <TableCell>{row.kg || "N/A"}</TableCell>
+                    <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                </>
+            ),
+        },
+        glue: {
+            header: [
+                { id: "type", label: "TYPE" },
+                { id: "kg", label: "KG" },
+                { id: "date", label: "DATE" },
+            ],
+            render: (row) => (
+                <>
+                    <TableCell>{row.glueType || "Glue"}</TableCell>
+                    <TableCell>{row.kg || "N/A"}</TableCell>
+                    <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                </>
+            ),
+        },
+        paper: {
+            header: [
+                { id: "paper", label: "PAPER" },
+                { id: "gsm", label: "DECKAL" },
+                { id: "size", label: "GSM" },
+                { id: "qty", label: "KG" },
+                { id: "date", label: "DATE" },
+            ],
+            render: (row) => (
+                <>
+                    <TableCell>{"Paper"}</TableCell>
+                    <TableCell>{row?.p2gsm?.deckal || "N/A"}</TableCell>
+                    <TableCell>{row.p2gsm?.gsm || "N/A"}</TableCell>
+                    <TableCell>{row.quantity || "N/A"}</TableCell>
+                    <TableCell>{row.kg || "N/A"}</TableCell>
+                    <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                </>
+            ),
+        },
     };
-
-    
-function convertToReels(reels = 0, inches = 0) {
-  const totalInches = reels * 7200 + inches; // convert everything to inches
-  const totalReels = totalInches / 7200; // convert back to reels
-  return parseFloat(totalReels.toFixed(3)); // round to 3 decimals (optional)
-}
-
-    const filteredInventory = getPermissionWiseInventory().filter(item =>
-        item.type === activeWardTab &&
-        (!selectedMaterial || item.material?._id === selectedMaterial) &&
-        (!selectedVendor || item.vendor?._id === selectedVendor) &&
-        (!selectedPrinterFilter || item.forCompany?._id === selectedPrinterFilter)
-    );
-
-    const materialOptions = materials.map(material => ({
-        value: material._id,
-        label: `${material.materialName} (${material.materialGSM} GSM, ${material.materialSize})`
-    }));
-
-    // Create unique printer options
-    const printerOptions = Array.from(new Set(
-        getPermissionWiseInventory()
-            .filter(item => item.forCompany)
-            .map(item => item.forCompany._id)
-    )).map(printerId => {
-        const printer = getPermissionWiseInventory().find(item => item.forCompany?._id === printerId)?.forCompany;
-        return {
-            value: printerId,
-            label: printer ? `${printer.firstName} ${printer.lastName}` : 'Unknown'
-        };
-    });
 
     return (
         <>
@@ -172,186 +189,32 @@ function convertToReels(reels = 0, inches = 0) {
                     tabs={mainTabs}
                 />
             </Box>
+            <Box mb={3}>
+                <ThemeTabs
+                    value={activeWardTab}
+                    onChange={handleWardTabChange}
+                    tabs={wardTabs}
+                />
+            </Box>
 
-            {activeMainTab === InventoryCategory.FACTORY ? (
-                <>
-                    <Box py={2}>
-                        <ThemeTabs
-                            value={activeWardTab}
-                            onChange={handleWardTabChange}
-                            tabs={wardTabs}
-                        />
-                    </Box>
-                    <BasicTable
-                        tableHeader={[
-                            { id: 'category', label: 'CATEGORY' },
-                            { id: 'for', label: 'for' },
-                            { id: 'date', label: 'DATE' },
-                            { id: 'vendor', label: 'VENDOR' },
-                            { id: 'kg', label: 'KG' },
-                            { id: 'reel', label: 'REEL' },
-                        ]}
-                        rowData={filteredInventory}
-                        renderRow={(row) => (
-                            <>
-                                <TableCell>{row.inventoryType || 'N/A'}</TableCell>
-                                <TableCell>{row?.for?.roleName || 'N/A'}</TableCell>
-                                <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
-                                <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
-                                <TableCell>{row.kg || 'N/A'}</TableCell>
-                                <TableCell>{row.reel || 'N/A'}</TableCell>
-                            </>
-                        )}
-                        showDatePicker={false}
-                        showSearch={false}
-                        showFillter={false}
-                    />
-                </>
-            ) : (
-                <>
-                    <Box py={2}>
-                        <ThemeTabs
-                            value={activeWardTab}
-                            onChange={handleWardTabChange}
-                            tabs={wardTabs}
-                        />
-                    </Box>
+            <Box py={2}>
+                <ThemeTabs
+                    value={activeMaterialTab}
+                    onChange={handleMaterialTabChange}
+                    tabs={materialTabs}
+                />
+            </Box>
 
-                    {!showDetails ? (
-                        <>
-                            <Box sx={styles.filterContainer}>
-                                <Select
-                                    size="small"
-                                    value={selectedMaterial}
-                                    onChange={(e) => setSelectedMaterial(e.target.value)}
-                                    sx={{ minWidth: 120 }}
-                                    displayEmpty
-                                >
-                                    <MenuItem value="">All Materials</MenuItem>
-                                    {materialOptions.map((option) => (
-                                        <MenuItem key={option.value} value={option.value}>
-                                            {option.label}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
+            <BasicTable
+                tableHeader={tableConfigs[activeMaterialTab].header}
+                rowData={getPermissionWiseInventory().filter((item) =>
+                    item.category?.trim().toLowerCase() === activeMainTab.trim().toLowerCase() &&
+                    item.type?.trim().toLowerCase() === activeWardTab.trim().toLowerCase() &&
+                    item.inventoryType?.trim().toLowerCase() === activeMaterialTab.trim().toLowerCase()
+                )}
+                renderRow={tableConfigs[activeMaterialTab].render}
+            />
 
-                                <Select
-                                    size="small"
-                                    value={selectedPrinterFilter}
-                                    onChange={(e) => setSelectedPrinterFilter(e.target.value)}
-                                    sx={{ minWidth: 120 }}
-                                    displayEmpty
-                                >
-                                    <MenuItem value="">All Printers</MenuItem>
-                                    {printerOptions.map((option) => (
-                                        <MenuItem key={option.value} value={option.value}>
-                                            {option.label}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </Box>
-
-                            <BasicTable
-                                tableHeader={[
-                                    { id: 'category', label: 'CATEGORY' },
-                                    { id: 'for', label: 'for' },
-                                    { id: 'date', label: 'DATE' },
-                                    { id: 'vendor', label: 'VENDOR' },
-                                ]}
-                                rowData={aggregatedData.filter(item =>
-                                    (!selectedMaterial || item.materialId === selectedMaterial) &&
-                                    (!selectedPrinterFilter || item.printerId === selectedPrinterFilter)
-                                )}
-                                renderRow={(row) => (
-                                    <>
-                                        <TableCell>{row.inventoryType || 'N/A'}</TableCell>
-                                        <TableCell>{row?.for?.roleName || 'N/A'}</TableCell>
-                                        <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
-                                        <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
-                                    </>
-                                )}
-                                showDatePicker={false}
-                                showSearch={false}
-                                showFillter={false}
-                            />
-                        </>
-                    ) : (
-                        <>
-                            <Box sx={styles.filterContainer}>
-                                {activeWardTab === WardTab.OUTWARD && (
-                                    <>
-                                        <Typography variant="body2" fontWeight={700}>
-                                            USED QUANTITY - {selectedPrinter?.usedQty || 0}
-                                        </Typography>
-                                        <Typography variant="body2" fontWeight={700}>
-                                            BALANCE - {selectedPrinter?.balance || 0}
-                                        </Typography>
-                                    </>
-                                )}
-                                {activeWardTab === WardTab.INWARD && (
-                                    <Typography variant="body2" fontWeight={700}>
-                                        LAST PURCHASE - {selectedPrinter?.lastPurchase || 0}
-                                    </Typography>
-                                )}
-                            </Box>
-
-                            <BasicTable
-                                tableHeader={
-                                    activeWardTab === WardTab.INWARD
-                                        ? [
-                                            { id: 'paper', label: 'PAPER' },
-                                            { id: 'gsm', label: 'GSM' },
-                                            { id: 'size', label: 'SIZE' },
-                                            { id: 'qty', label: 'QTY' },
-                                            { id: 'date', label: 'DATE IN WARD' },
-                                            { id: 'vendor', label: 'VENDOR' },
-                                        ]
-                                        : [
-                                            { id: 'paper', label: 'PAPER' },
-                                            { id: 'gsm', label: 'GSM' },
-                                            { id: 'size', label: 'SIZE' },
-                                            { id: 'qty', label: 'QTY' },
-                                            { id: 'date', label: 'DATE' },
-                                            { id: 'order', label: 'ORDER ID' },
-                                        ]
-                                }
-                                rowData={filteredInventory.filter(item =>
-                                    item.forCompany?._id === selectedPrinter?.printerId &&
-                                    item.material?._id === selectedPrinter?.materialId
-                                )}
-                                showDatePicker={false}
-                                showSearch={false}
-                                showFillter={false}
-                                renderRow={(row) => (
-                                    <>
-                                        <TableCell>{row.category || 'N/A'}</TableCell>
-                                        <TableCell>{row.material?.materialGSM || 'N/A'}</TableCell>
-                                        <TableCell>{row.material?.materialSize || 'N/A'}</TableCell>
-                                        <TableCell>{row.quantity}</TableCell>
-                                        <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
-                                        <TableCell>
-                                            {activeWardTab === WardTab.INWARD ? (
-                                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                    <span>{row.vendor?.name || 'N/A'}</span>
-                                                    <FaChevronRight style={styles.tableActionIcon} />
-                                                </Box>
-                                            ) : (
-                                                row.orderId || 'N/A'
-                                            )}
-                                        </TableCell>
-                                    </>
-                                )}
-                            />
-
-                            <Box sx={styles.backButton}>
-                                <Button variant="outlined" onClick={handleBackClick} sx={{ textTransform: 'none' }}>
-                                    Back to Inventory
-                                </Button>
-                            </Box>
-                        </>
-                    )}
-                </>
-            )}
         </>
     );
 };
