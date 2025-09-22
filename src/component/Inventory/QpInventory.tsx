@@ -119,7 +119,8 @@ const QpInventoryPage = () => {
             header: [
                 { id: "boxType", label: "TYPE" },
                 { id: "lwh", label: "SIZE" },
-                { id: "qty", label: "GSM" },
+                { id: "gsm", label: "GSM" },
+                { id: "qty", label: "QUANTITY" },
                 { id: "date", label: "DATE" },
             ],
             render: (row) => (
@@ -127,6 +128,7 @@ const QpInventoryPage = () => {
                     <TableCell>{row.boxType || "Box"}</TableCell>
                     <TableCell>{row.boxLength} x {row.boxWidth} x {row.boxHeight}</TableCell>
                     <TableCell>{row.p1gsm?.gsm} - {row.p2gsm?.gsm} - {row.p3gsm?.gsm}</TableCell>
+                    <TableCell>{row?.quantity}</TableCell>
                     <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
                 </>
             ),
