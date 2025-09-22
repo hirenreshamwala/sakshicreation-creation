@@ -324,6 +324,39 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
           required
         />
       </Stack>
+      <Stack direction="row" mb={2} spacing={2}>
+        <FormControl sx={{ flex: 1, minWidth: 120 }}>
+          <InputLabel id="color-label">Color</InputLabel>
+          <Select
+            labelId="color-label"
+            name="color"
+            value={sakshiFormData.color}
+            onChange={(e) => handleSakshiChange("color", e.target.value)}
+            label="Color"
+          >
+            <MenuItem value="">Select</MenuItem>
+            {[1, 2, 4, 6].map((num) => (
+              <MenuItem key={num} value={num.toString()}>
+                color - {num}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ flex: 1, minWidth: 120 }}>
+          <InputLabel id="number-label">Number</InputLabel>
+          <Select
+            labelId="number-label"
+            name="number"
+            value={sakshiFormData.number}
+            onChange={(e) => handleSakshiChange("number", e.target.value)}
+            label="Number"
+          >
+            <MenuItem value="">Select</MenuItem>
+            <MenuItem value="Yes">Yes</MenuItem>
+            <MenuItem value="No">No</MenuItem>
+          </Select>
+        </FormControl>
+      </Stack>
       <Stack direction="row" spacing={2} mb={2}>
         <Box sx={{ width: "100%" }}>
           <ThemeInput
@@ -364,39 +397,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
           />
         </Box>
       </Stack>
-      <Stack direction="row" spacing={2}>
-        <FormControl sx={{ flex: 1, minWidth: 120 }}>
-          <InputLabel id="color-label">Color</InputLabel>
-          <Select
-            labelId="color-label"
-            name="color"
-            value={sakshiFormData.color}
-            onChange={(e) => handleSakshiChange("color", e.target.value)}
-            label="Color"
-          >
-            <MenuItem value="">Select</MenuItem>
-            {[1, 2, 4, 6].map((num) => (
-              <MenuItem key={num} value={num.toString()}>
-                color - {num}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl sx={{ flex: 1, minWidth: 120 }}>
-          <InputLabel id="number-label">Number</InputLabel>
-          <Select
-            labelId="number-label"
-            name="number"
-            value={sakshiFormData.number}
-            onChange={(e) => handleSakshiChange("number", e.target.value)}
-            label="Number"
-          >
-            <MenuItem value="">Select</MenuItem>
-            <MenuItem value="Yes">Yes</MenuItem>
-            <MenuItem value="No">No</MenuItem>
-          </Select>
-        </FormControl>
-      </Stack>
+      
       {sakshiFormData.number === 'Yes' ? (
         <Stack direction="row" spacing={2}>
           <ThemeInput

@@ -60,7 +60,6 @@ const columns = [
   { id: "company", label: "Company" },
   { id: "date", label: "Created Date" },
   { id: "party", label: "Party" },
-  { id: "reason", label: "Reason to Visit" },
   { id: "address", label: "Unit No" },
   { id: "market", label: "Market Name" },
   { id: "area", label: "Area" },
@@ -68,6 +67,7 @@ const columns = [
   { id: "remarks", label: "Remarks" },
   { id: "assignBy", label: "Assign By" },
   { id: "assignTo", label: "Assign To" },
+  { id: "reason", label: "Reason to Visit" },
   { id: "status", label: "Status" },
   { id: "action", label: "Action" },
 ];
@@ -216,18 +216,18 @@ const AssignTaskPage: React.FC = () => {
         ? task.originalTaskId.createdAt
         : task.createdAt).toLocaleDateString("en-GB"),
       party: task.partyName?.partyName || "Unknown",
-      reason: task.reasonForVisit || "N/A",
       address: task.partyName?.address?.unitNo || "N/A",
       market: task.partyName?.address?.marketName?.marketName || "N/A",
       area: task.partyName?.address?.area?.area || "N/A",
       mobile: task.partyName?.ownerWhatsAppNo || "N/A",
       remarks: task.remarks || "N/A",
       assignBy: task.createdBy
-        ? `${task.createdBy.firstName} ${task.createdBy.lastName}`
-        : "Unknown",
+      ? `${task.createdBy.firstName} ${task.createdBy.lastName}`
+      : "Unknown",
       assignTo: task.assignTo
-        ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
-        : "Unassigned",
+      ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
+      : "Unassigned",
+      reason: task.reasonForVisit || "N/A",
       status: task.status || "Pending",
       statusType: mapStatusToType(task.status),
       isRescheduledTask: task.isRescheduledTask || false,

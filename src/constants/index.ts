@@ -213,3 +213,21 @@ export const printerTypeOption = [
   { label: "Offset", value: 'Offset' },
   { label: "Screen Printing", value: "Screen Printing" },
   { label: "Other", value: "Other" }]
+
+export const ORDER_STATUSES = [
+    "Paper cutting",
+    "Corogation",
+    "Pasting",
+    "Rotery",
+    "Sloting/rs4",
+    "Printing",
+    "Manual pasting",
+    "Pinning",
+    "Kanthan",
+    "Puching",
+    "Pending",
+    "In Progress",
+    "On Hold",
+    "Canceled",
+    "Completed",
+];

@@ -313,6 +313,7 @@ const AllOrdersPage = () => {
       "Dye Remark": order.dyeRemark || "N/A",
       "Godown Remark": order.godownRemark || "N/A",
       "Factory Remark": order.factoryRemark || "N/A",
+      "Actual no of piece": order.actualNoOfPieces || "N/A",
     }));
   }, [filteredOrders]);
 

@@ -3,29 +3,16 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { updateQPOrderThunk } from "@/store/slices/qpOrderSlice"
 import { toast } from "react-toastify"
 import Swal from "sweetalert2"
+import { ORDER_STATUSES } from "@/constants"
 
-const statusOptions = [
-  "Paper cutting",
-  "Corogation",
-  "Pasting",
-  "Rotery",
-  "Sloting/rs4",
-  "Printing",
-  "Manual pasting",
-  "Pinning",
-  "Kanthan",
-  "Puching",
-  "Pending",
-  "Canceled",
-  "Completed",
-]
+const statusOptions = ORDER_STATUSES
 
 export const StatusCell = ({ row }: { row: any }) => {
   const dispatch = useAppDispatch()
   const user = useAppSelector((state) => state.auth.user)
 
   const canStatus = user?.role?.permissions?.all_orders?.status
-  const isStatusFinal = row.status === "Completed" || row.status === "Canceled"
+  const isStatusFinal = row.status === "Completed" || row.status === "Canceled" || row.status === "On Hold" || row.status === "In Progress"
 
   const handleStatusChange = async (newStatus: string) => {
     const result = await Swal.fire({
@@ -69,7 +56,7 @@ export const StatusCell = ({ row }: { row: any }) => {
         <MenuItem 
           key={status} 
           value={status}
-          disabled={status === "Completed" || status === "Canceled"}
+          disabled={status === "Completed" || status === "Canceled" || status === "On Hold" || status === "In Progress" || status === "Pending"} // Yahan specific options ko disable karenge
         >
           {status}
         </MenuItem>
