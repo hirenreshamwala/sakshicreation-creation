@@ -216,8 +216,6 @@ const AllOrdersPage = () => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true))
   }, [])
 
-  console.log(companies, 'companies')
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
