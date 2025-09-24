@@ -46,14 +46,18 @@ const columns = [
 
 const PackagingOptionsPage = () => {
   const dispatch = useAppDispatch();
+  const { user } = useSelector((state: RootState)=> state.auth)
   const { packagingOptions, loading, operationLoading, error, operationError } = useSelector(
     (state: RootState) => state.packagingOptions
   );
+  const companyId = user?.company?._id
+  console.log("DEBUG : PackagingOptionsPage : companyId:", companyId);
+
   const { qpParties } = useSelector((state: RootState) => state.party);
   console.log("DEBUG : PackagingOptionsPage : qpParties:", qpParties);
 
   useEffect(() => {
-    dispatch(getQualityPackingPartiesThunk());
+    dispatch(getQualityPackingPartiesThunk(companyId));
     if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
   }, [dispatch]);
 

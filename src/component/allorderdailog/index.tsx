@@ -38,11 +38,11 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [gstNotApplicable, setGstNotApplicable] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [selectedCompany, setSelectedCompany] = useState<string>("")
+  const [selectedCompany, setSelectedCompany] = useState<string>(company)
 
   // Sakshi Creation form data
   const [sakshiFormData, setSakshiFormData] = useState({
-    companyName: "",
+    companyName: company,
     partyName: "",
     personName: "",
     whatsapp: "",
@@ -449,7 +449,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         <Box mb={2}>
           <CompanySelect
             name="companyName"
-            value={selectedCompany}
+            value={company}
             onChange={handleCompanyChange}
             hasParties={true}
             required

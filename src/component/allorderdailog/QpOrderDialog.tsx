@@ -629,7 +629,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
         let gsmValue: number | null = null;
         if (ply && paper1GSM && paper2GSM && paper3GSM) {
-            gsmValue = calculateGSM(Number(ply), Number(paper1GSM), Number(paper2GSM), Number(paper3GSM));
+            gsmValue = calculateGSM(Number(ply),  Number(paper2GSM), Number(paper3GSM) ,Number(paper1GSM),);
             handleQpChange("gsm", gsmValue.toFixed(2));
         } else {
             handleQpChange("gsm", "");
@@ -672,9 +672,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 Number(height),
                 Number(deckal),
                 Number(ply),
-                Number(paper1GSM),
                 Number(paper2GSM),
                 Number(paper3GSM),
+                Number(paper1GSM),
                 Number(noOfPieces)
             );
         }

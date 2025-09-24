@@ -307,6 +307,7 @@ const AllOrdersPage = () => {
   // console.log("DEBUG : company:", company);
 
   const isAdmin = roleName.toLowerCase() === "admin";
+  console.log("DEBUG : companies:", companies);
   const isSakshi = company === companyOptions[0]; // assuming index 0 is Sakshi Creation
   const isQuality = company === companyOptions[1];
   // console.log()
@@ -513,6 +514,7 @@ const AllOrdersPage = () => {
           </Box>
 
           <AddSakhiOrderDialog company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id} open={open} onClose={() => setOpen(false)} />
+
         </> : null}
       </> : <>{isAdmin && <QpOrdersPage />}</>}
     </>

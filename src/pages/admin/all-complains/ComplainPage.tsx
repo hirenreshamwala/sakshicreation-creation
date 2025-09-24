@@ -63,8 +63,11 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
     const { user } = useAppSelector((state) => state.auth)
     const { complains } = useAppSelector((state) => state.complains)
 
-    const canViewGlobal = user?.role?.permissions?.all_orders?.view_global
-    const canViewOwn = user?.role?.permissions?.all_orders?.view_own
+    const canViewGlobal = user?.role?.permissions?.all_complains?.view_global
+    const canViewOwn = user?.role?.permissions?.all_complains?.view_own
+    const canCreate = user?.role?.permissions?.all_complains?.create
+    const canEdit = user?.role?.permissions?.all_complains?.edit
+    const canDelete = user?.role?.permissions?.all_complains?.delete
 
     const refreshData = () => {
         if (canViewGlobal) {
@@ -168,9 +171,11 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
                     gap: 2,
                 }}
             >
+            {canCreate && (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <ThemeButton onClick={handleAddNewOrder}>+ Add New Complain</ThemeButton>
                 </Box>
+            )}
             </Box>
             <BasicTable
                 tableHeader={columns}
@@ -186,12 +191,16 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
                             <IconButton onClick={() => handleView(row.id)} color="info">
                                 <Visibility />
                             </IconButton>
+                            {canEdit && (
                             <IconButton onClick={() => handleEdit(row.id)} color="primary">
                                 <Edit />
                             </IconButton>
+                            )}
+                            {canDelete && (
                             <IconButton onClick={() => handleDelete(row.id)} color="error">
                                 <Delete />
                             </IconButton>
+                            )}
                         </TableCell>
                     </>
                 )}

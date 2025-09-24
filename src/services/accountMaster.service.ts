@@ -117,7 +117,7 @@ export interface PartySuggestion {
 export const accountMasterService = {
   async getAccountMasters(): Promise<ApiResponse<AccountMaster[]>> {
     try {
-      const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await Request.get(
+      const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await Request.post(
         Endpoint.GET_ALL_ACCOUNT_MASTERS);
       return response.data;
     } catch (error: any) {

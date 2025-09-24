@@ -14,7 +14,7 @@ export const leadService = {
   async getAllLeads(): Promise<ApiResponse<Lead[]>> {
     try {
 
-      const response: AxiosResponse<ApiResponse<Lead[]>> = await Request.get(
+      const response: AxiosResponse<ApiResponse<Lead[]>> = await Request.post(
         Endpoint.GET_ALL_LEADS);
 
       // Ensure response.data exists and has the correct structure
