@@ -73,7 +73,8 @@ const LoginPage: React.FC = () => {
 
       if (data.success && data.data) {
         const { token, id, firstName, lastName, email, role, company } = data.data;
-
+        const sakshiCompany = company?.find(item => item?.companyName.trim().toLowerCase() === companyOptions[0].trim().toLowerCase());
+        const qpCompany = company?.find(item => item?.companyName.trim().toLowerCase() === companyOptions[1].trim().toLowerCase());
         const companyNames = company?.map(item => item?.companyName) || [];
         const isProduction = process.env.NODE_ENV === 'production';
         const user: UserData = {
@@ -82,6 +83,8 @@ const LoginPage: React.FC = () => {
           lastName,
           email,
           role,
+          sakshiCompanyId: sakshiCompany?._id || null,
+          qpCompanyId: qpCompany?._id || null,
           sakshi: companyNames.includes(companyOptions[0]),
           qp: companyNames.includes(companyOptions[1])
         };

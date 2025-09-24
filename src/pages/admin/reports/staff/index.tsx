@@ -5,6 +5,8 @@ import { useRouter } from 'next/router';
 import { companyOptions } from '@/constants';
 import Request from '@/services/axios';
 import Loader from '@/component/common_component/loader';
+import { useAppSelector } from '@/store';
+import TabComponent from '@/component/Dialog/TabComponent';
 
 const columns = [
   { id: 'name', label: 'Staff Name' },
@@ -67,7 +69,7 @@ const DateRangePickerWithPresets = ({ onDateRangeChange }: { onDateRangeChange: 
   const [selectedPreset, setSelectedPreset] = useState<string>('lastWeek');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
-  
+
   const presets = [
     { label: 'Today', value: 'today' },
     { label: 'Yesterday', value: 'yesterday' },
@@ -113,9 +115,9 @@ const DateRangePickerWithPresets = ({ onDateRangeChange }: { onDateRangeChange: 
 
   return (
     <div>
-      <Button 
-        aria-describedby={id} 
-        variant="outlined" 
+      <Button
+        aria-describedby={id}
+        variant="outlined"
         onClick={handleClick}
         sx={{ minWidth: 200, justifyContent: 'flex-start' }}
       >
@@ -134,9 +136,9 @@ const DateRangePickerWithPresets = ({ onDateRangeChange }: { onDateRangeChange: 
         <Box sx={{ p: 2, width: 300 }}>
           <List>
             {presets.map((preset) => (
-              <ListItem 
-                button 
-                key={preset.value} 
+              <ListItem
+                button
+                key={preset.value}
                 onClick={() => handlePresetSelect(preset.value)}
                 selected={selectedPreset === preset.value}
               >
@@ -163,8 +165,8 @@ const DateRangePickerWithPresets = ({ onDateRangeChange }: { onDateRangeChange: 
               fullWidth
               sx={{ mb: 1 }}
             />
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={handleCustomDateChange}
               disabled={!customStartDate || !customEndDate}
               fullWidth
@@ -186,16 +188,34 @@ const StaffPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
+  const { user } = useAppSelector((state) => state.auth)
+  console.log(user, 'user')
 
-  const tabLabels = companyOptions;
-  const selectedCompanyName = tabLabels[tab];
+  // Determine if user has both permissions
+  const hasBothPermissions = user?.sakshi && user?.qp;
+  const hasSakshiOnly = user?.sakshi && !user?.qp;
+  const hasQpOnly = !user?.sakshi && user?.qp;
+
+  // Determine which company to show based on permissions
+  const getSelectedCompanyName = () => {
+    if (hasBothPermissions) {
+      return companyOptions[tab];
+    } else if (hasSakshiOnly) {
+      return companyOptions[0]; // Replace with actual company name from companyOptions
+    } else if (hasQpOnly) {
+      return companyOptions[1]; // Replace with actual company name from companyOptions
+    }
+    return ''; // No permissions case
+  };
+
+  const selectedCompanyName = getSelectedCompanyName();
 
   // Excel के लिए headers और data prepare करें
   const excelHeaders = useMemo(() => [
     'Staff Name',
     'Company',
     'Task Done',
-    'Party Call Done', 
+    'Party Call Done',
     'Orders Punched',
     'New to Customer Convert',
     'New Customer Added'
@@ -212,24 +232,38 @@ const StaffPage = () => {
       'New Customer Added': row.newcustomeradded
     }));
   }, [reportData]);
+  console.log(reportData, "zdgsdgsg")
 
   const fetchStaffReport = async () => {
     if (!startDate || !endDate) return;
-    
+
     setLoading(true);
     setError(null);
     try {
       const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
       const url = `${BaseURL}/api/report/get`;
-      
-      const response = await Request.post(url, {
+
+      // Prepare request body based on permissions
+      const requestBody: any = {
         startDate,
         endDate,
-      });
+      };
+
+      // Add company ID based on permissions if user doesn't have both
+      if (!hasBothPermissions) {
+        if (hasSakshiOnly) {
+          requestBody.companyId = user?.sakshiCompanyId; // Replace with actual company ID
+        } else if (hasQpOnly) {
+          requestBody.companyId = user?.qpCompanyId; // Replace with actual company ID
+        }
+      }
+      // If user has both permissions, don't send companyId - let the backend handle all companies
+
+      const response = await Request.post(url, requestBody);
 
       if (response.data.success) {
         const apiData = response.data.data;
-        
+
         const mappedTableData = apiData.map((staff) => {
           const companyData = staff.companyBreakdown.find(
             (c) => c.companyName === selectedCompanyName
@@ -240,7 +274,7 @@ const StaffPage = () => {
           return {
             staffId: staff.staffId,
             name: staff.staffName,
-            department: companyData.companyName,
+            department: companyData._id,
             task: companyData.completedTasks + companyData.cancelledTasks,
             lead: companyData.completedLeads + companyData.cancelledLeads,
             orders: companyData.ordersGiven,
@@ -264,7 +298,7 @@ const StaffPage = () => {
   };
 
   useEffect(() => {
-    fetchStaffReport();
+    if (user) fetchStaffReport();
   }, [tab, startDate, endDate, selectedCompanyName]);
 
   useEffect(() => {
@@ -275,75 +309,23 @@ const StaffPage = () => {
 
   return (
     <Box sx={{ p: 2 }}>
-      {/* Tabs */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-        <Box
-          sx={{
-            position: 'relative',
-            display: 'inline-flex',
-            borderRadius: '12px',
-            border: '2px solid #7F56D9',
-            backgroundColor: '#fff',
-            p: '2px',
-            overflow: 'hidden',
-          }}
-        >
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 2,
-              left: `calc(${tab} * (100% / ${tabLabels.length}))`,
-              width: `calc(100% / ${tabLabels.length})`,
-              height: 'calc(100% - 4px)',
-              backgroundColor: '#7F56D9',
-              borderRadius: '10px',
-              zIndex: 0,
-              transition: 'left 0.3s ease',
-            }}
-          />
-          <Tabs
-            value={tab}
-            onChange={(_, v) => setTab(v)}
-            TabIndicatorProps={{ style: { display: 'none' } }}
-            sx={{
-              minHeight: 0,
-              zIndex: 1,
-              '& .MuiTabs-flexContainer': {
-                gap: 0,
-              },
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                minHeight: 0,
-                px: 1.8,
-                py: 0.8,
-                fontWeight: 700,
-                fontSize: 14,
-                borderRadius: '10px',
-                color: '#7F56D9',
-                transition: 'color 0.3s ease',
-                zIndex: 1,
-              },
-              '& .MuiTab-root.Mui-selected': {
-                color: '#fff',
-                backgroundColor: 'transparent',
-                zIndex: 2,
-              },
-            }}
-          >
-            {tabLabels.map((label) => (
-              <Tab key={label} label={label} disableRipple />
-            ))}
-          </Tabs>
+      {/* Conditionally render tabs based on permissions */}
+      {hasBothPermissions && <TabComponent activeTab={tab} setActiveTab={setTab} />}
+
+      {/* Show current company name when user has only one permission */}
+      {!hasBothPermissions && selectedCompanyName && (
+        <Box sx={{ mb: 2, p: 2, backgroundColor: 'primary.light', color: 'primary.contrastText', borderRadius: 1 }}>
+          Showing data for: {selectedCompanyName}
         </Box>
-      </Box>
+      )}
 
       {/* Date Range Picker */}
       <Box sx={{ mb: 3 }}>
-        <DateRangePickerWithPresets 
+        <DateRangePickerWithPresets
           onDateRangeChange={(start, end) => {
             setStartDate(start);
             setEndDate(end);
-          }} 
+          }}
         />
       </Box>
 
@@ -368,9 +350,7 @@ const StaffPage = () => {
           rowData={reportData}
           renderRow={(row) => (
             <>
-              <TableCell
-                sx={{ fontWeight: 500, cursor: 'pointer' }}
-              >
+              <TableCell sx={{ fontWeight: 500, cursor: 'pointer' }}>
                 {row.name}
               </TableCell>
               <TableCell>{row.department}</TableCell>
