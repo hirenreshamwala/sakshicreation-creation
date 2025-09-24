@@ -75,7 +75,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
             return;
         }
         if (canViewGlobal) {
-            dispatch(getAllOrdersThunk({ limit: 100 }));
+            dispatch(getAllOrdersThunk());
             dispatch(getAllQPOrdersThunk({ limit: 100 }));
         } else if (canViewOwn && user?.id) {
             dispatch(getOrdersByStaffIdThunk(user.id));

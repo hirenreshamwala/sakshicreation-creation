@@ -158,7 +158,7 @@ export const performanceInvoiceService = {
 
   async getAllOrders(): Promise<ApiResponse<Order[]>> {
     try {
-      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.get(
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
         Endpoint.GET_ALL_ORDERS);
       return response.data;
     } catch (error: any) {

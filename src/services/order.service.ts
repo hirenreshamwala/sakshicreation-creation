@@ -75,33 +75,16 @@ export const orderService = {
   },
 
   // Get All Orders
-  async getAllOrders(params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    companyName?: string;
-    party?: string;
-    search?: string;
-  }): Promise<ApiResponse<Order[]>> {
+  async getAllOrders(): Promise<ApiResponse<Order[]>> {
     try {
-
-      const queryParams: any = {};
-      if (params?.page) queryParams.page = params.page;
-      if (params?.limit) queryParams.limit = params.limit;
-      if (params?.status) queryParams.status = params.status;
-      if (params?.companyName) queryParams.companyName = params.companyName;
-      if (params?.party) queryParams.party = params.party;
-      if (params?.search) queryParams.search = params.search;
-
-      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.get(
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
         Endpoint.GET_ALL_ORDERS,
-        { params: queryParams }
       );
 
       return {
         success: response.data.success,
         data: response.data.data || [],
-        message: response.data.message,
+        count: response.data.count,
         pagination: response.data.pagination,
       };
     } catch (error: any) {
