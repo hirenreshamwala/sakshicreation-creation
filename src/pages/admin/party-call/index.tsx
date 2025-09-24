@@ -568,7 +568,7 @@ const LeadManagementPage: React.FC = () => {
       {hasBothCompanies && (
         <TabComponent activeTab={comapanyTab} setActiveTab={setCompanyTab} />
       )}
-      
+
       <Box
         sx={{
           display: "flex",
@@ -640,66 +640,7 @@ const LeadManagementPage: React.FC = () => {
         </Box>
       </Box>
 
-      <Box sx={{ display: "flex" }}>
-        <Box
-          sx={{
-            position: "relative",
-            display: "inline-flex",
-            borderRadius: "12px",
-            border: "2px solid #7F56D9",
-            backgroundColor: "#fff",
-            p: "2px",
-            overflow: "hidden",
-          }}
-        >
-          <Box
-            sx={{
-              position: "absolute",
-              top: 2,
-              left: tab === 0 ? 2 : "50%",
-              width: "50%",
-              height: "calc(100% - 4px)",
-              backgroundColor: "#7F56D9",
-              borderRadius: "10px",
-              zIndex: 0,
-              transition: "left 0.3s ease",
-            }}
-          />
-          <Tabs
-            value={tab}
-            onChange={(_, v) => setTab(v)}
-            TabIndicatorProps={{ style: { display: "none" } }}
-            sx={{
-              minHeight: 0,
-              zIndex: 1,
-              "& .MuiTabs-flexContainer": {
-                gap: 0,
-              },
-              "& .MuiTab-root": {
-                textTransform: "none",
-                minHeight: 0,
-                px: 1.8,
-                py: 0.8,
-                fontWeight: 700,
-                fontSize: 14,
-                borderRadius: "10px",
-                color: "#7F56D9",
-                zIndex: 1,
-              },
-              "& .MuiTab-root.Mui-selected": {
-                color: "#fff",
-                backgroundColor: "transparent",
-                zIndex: 2,
-              },
-            }}
-          >
-            {tabLabels.map((label) => (
-              <Tab key={label} label={label} disableRipple />
-            ))}
-          </Tabs>
-        </Box>
-      </Box>
-
+      <TabComponent activeTab={tab} setActiveTab={setTab} tabList={tabLabels} align="left" />
       <Box
         sx={{
           maxHeight: "70vh",

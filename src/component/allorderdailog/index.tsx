@@ -153,7 +153,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
   const handleUploadError = (error: string) => toast.error(error)
 
   const handleSakshiSubmit = async () => {
-    if (!sakshiFormData.companyName || !sakshiFormData.partyName || !sakshiFormData.itemName || !sakshiFormData.qty) {
+    if ( !sakshiFormData.partyName || !sakshiFormData.itemName || !sakshiFormData.qty) {
       toast.error("Please fill all required fields")
       return
     }

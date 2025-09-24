@@ -560,6 +560,8 @@ const BasicTable = <T extends { id: string }>({
                       padding: "10px 10px",
                       minWidth: "80px",
                       maxWidth: "150px",
+                      overflow: "hidden",          // 👈 required
+                      textOverflow: "ellipsis",
                     }}
                   >
                     {col.id === "checkbox" ? (

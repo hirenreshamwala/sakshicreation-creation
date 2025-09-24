@@ -600,65 +600,7 @@ const AssignTaskPage: React.FC = () => {
       </Box>
 
       {/* Status Tabs */}
-      <Box sx={{ display: "flex", mb: 3 }}>
-        <Box
-          sx={{
-            position: "relative",
-            display: "inline-flex",
-            borderRadius: "12px",
-            border: "2px solid #7F56D9",
-            backgroundColor: "#fff",
-            p: "2px",
-            overflow: "hidden",
-          }}
-        >
-          <Box
-            sx={{
-              position: "absolute",
-              top: 2,
-              left: statusTab === 0 ? 2 : "50%",
-              width: "50%",
-              height: "calc(100% - 4px)",
-              backgroundColor: "#7F56D9",
-              borderRadius: "10px",
-              zIndex: 0,
-              transition: "left 0.3s ease",
-            }}
-          />
-          <Tabs
-            value={statusTab}
-            onChange={(_, v) => setStatusTab(v)}
-            TabIndicatorProps={{ style: { display: "none" } }}
-            sx={{
-              minHeight: 0,
-              zIndex: 1,
-              "& .MuiTabs-flexContainer": {
-                gap: 0,
-              },
-              "& .MuiTab-root": {
-                textTransform: "none",
-                minHeight: 0,
-                px: 1.8,
-                py: 0.8,
-                fontWeight: 700,
-                fontSize: 14,
-                borderRadius: "10px",
-                color: "#7F56D9",
-                zIndex: 1,
-              },
-              "& .MuiTab-root.Mui-selected": {
-                color: "#fff",
-                backgroundColor: "transparent",
-                zIndex: 2,
-              },
-            }}
-          >
-            {tabLabels.map((label) => (
-              <Tab key={label} label={label} disableRipple />
-            ))}
-          </Tabs>
-        </Box>
-      </Box>
+      <TabComponent activeTab={statusTab} setActiveTab={setStatusTab} tabList={tabLabels} align="left"/>
 
       <Box
         sx={{

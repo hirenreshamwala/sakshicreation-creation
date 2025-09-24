@@ -37,7 +37,8 @@ interface FormData {
   servicePerformance: string;
   unitPrice?: number;
   total?: number;
-  applyGST: number;
+  applyGST: boolean;
+  gstPercentage?: number;
   finalAmount?: number;
   assignedTo?: string;
   daysAfterConfirmation?: number;
@@ -85,11 +86,13 @@ interface AddNewPerformanceInvoiceDialogProps {
   orderId: string;
   onInvoiceSaved?: () => void;
 }
+
 interface Staff {
   _id: string;
   firstName: string;
   lastName: string;
 }
+
 const validationSchema = Yup.object({
   orderNumber: Yup.string().required("Order Number is required"),
   companyName: Yup.string()
@@ -99,11 +102,8 @@ const validationSchema = Yup.object({
     .required("Party Name ID is required")
     .matches(/^[0-9a-fA-F]{24}$/, "Invalid Party Name ID"),
   quantity: Yup.number().required("Quantity is required").min(1, "Quantity must be at least 1"),
-  // unitPrice: Yup.number()
-  //   .required("Unit Price is required")
-  //   .min(0, "Unit Price cannot be negative"),
-  applyGST: Yup.boolean(), // Added applyGST to validation
-  gstPercentage: Yup.number() // Make conditional in validation
+  applyGST: Yup.boolean(),
+  gstPercentage: Yup.number()
     .min(0, "GST Percentage cannot be negative")
     .max(100, "GST Percentage cannot exceed 100%")
     .when('applyGST', {
@@ -136,7 +136,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
   const [isEditMode, setIsEditMode] = useState(!!invoiceId);
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | undefined>(invoiceId);
   const [isSaved, setIsSaved] = useState(false);
-  const [isUnitPriceValid, setIsUnitPriceValid] = useState(false);
   const [staffList, setStaffList] = useState<Staff[]>([]);
 
   useEffect(() => {
@@ -152,7 +151,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       try {
         const response = await assignTaskService.getAllAssignTasks();
         if (response.success && response.data) {
-          // Extract unique staff members from assign tasks
           const uniqueStaff = new Map<string, Staff>();
           response.data.forEach(task => {
             if (task.assignTo && typeof task.assignTo === 'object') {
@@ -168,9 +166,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
         toast.error(err.message || "Failed to fetch staff list");
       }
     };
-    
-    fetchStaffList();
 
+    fetchStaffList();
 
     const fetchOrders = async () => {
       try {
@@ -187,6 +184,14 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     fetchOrders();
   }, [open, dispatch]);
 
+  // Get last quotation data
+  const getLastQuotation = () => {
+    if (!data?.quotation || data.quotation.length === 0) {
+      return { qty: 0, unitPrice: 0, gst: 0 };
+    }
+    return data.quotation[data.quotation.length - 1];
+  };
+
   const formik = useFormik<FormData>({
     initialValues: {
       orderNumber: "",
@@ -201,9 +206,9 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       ownerMobileNo: "",
       addressName: "",
       servicePerformance: "",
-      unitPrice: data?.quotation[data?.quotation?.length -1 ]?.unitPrice || 0,
+      unitPrice: 0,
       total: 0,
-      applyGST: false, // Initialize applyGST as false
+      applyGST: false,
       gstPercentage: 0,
       finalAmount: 0,
       assignedTo: "",
@@ -251,10 +256,11 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           servicePerformance: values.servicePerformance,
           unitPrice: values.unitPrice || 0,
           total: values.total || 0,
-          applyGST: values.applyGST, // Changed from applyGST
+          applyGST: values.applyGST,
+          gstPercentage: values.gstPercentage || 0,
           assignedTo: values.assignedTo,
           finalAmount: values.finalAmount || 0,
-          daysAfterConfirmation: values.daysAfterConfirmation, // Include new field
+          daysAfterConfirmation: values.daysAfterConfirmation,
         };
         let response;
         if (isEditMode && currentInvoiceId) {
@@ -276,17 +282,11 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       }
     },
   });
+
   const staffOptions = staffList.map((staff) => ({
     label: `${staff.firstName} ${staff.lastName}`,
     value: staff._id,
-  }))
-  useEffect(() => {
-    setIsUnitPriceValid(
-      formik.values.unitPrice !== undefined &&
-      formik.values.unitPrice > 0 &&
-      !formik.errors.unitPrice
-    );
-  }, [formik.values.unitPrice, formik.errors.unitPrice]);
+  }));
 
   useEffect(() => {
     if (!open || !invoiceId || !isEditMode) return;
@@ -305,15 +305,19 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           ]
             .filter((part) => part.trim() !== "")
             .join(", ");
-            const assignedToValue = result.assignedTo?._id 
-        ? result.assignedTo._id.toString() 
-        : result.assignedTo || "";
-      
+          
+          const assignedToValue = result.assignedTo?._id
+            ? result.assignedTo._id.toString()
+            : result.assignedTo || "";
+
+          // Get last quotation data
+          const lastQuotation = getLastQuotation();
+          
           formik.setValues({
             orderNumber: result.orderNumber || "",
             companyName: result.companyName?._id?.toString() || result.companyName || "",
             partyName: result.party?._id?.toString() || result.partyName || "",
-            quantity: result.quantity || 0,
+            quantity: lastQuotation.qty,
             color: result.color || "",
             pType: result.pType || "",
             size: result.size || "",
@@ -322,12 +326,13 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ownerMobileNo: result.ownerMobileNo || "",
             addressName: fullAddress || "",
             servicePerformance: result.servicePerformance || "",
-            unitPrice: result.unitPrice || 0,
+            unitPrice: lastQuotation.unitPrice,
             total: result.total || 0,
-            applyGST: result.applyGST || 0, // Changed from applyGST
+            applyGST: lastQuotation.gst > 0,
+            gstPercentage: lastQuotation.gst,
             finalAmount: result.finalAmount || 0,
             assignedTo: assignedToValue,
-            daysAfterConfirmation: result.daysAfterConfirmation, // Set new field
+            daysAfterConfirmation: result.daysAfterConfirmation,
           });
           setIsSaved(true);
         }
@@ -339,15 +344,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       }
     };
     fetchData();
-  }, [open, isEditMode, invoiceId, dispatch]);
-
-   useEffect(() => {
-    const total = (formik.values.quantity || 0) * (formik.values.unitPrice || 0);
-    const gstAmount = formik.values.applyGST ? total * (formik.values.gstPercentage / 100) : 0;
-    const finalAmount = total + gstAmount;
-    formik.setFieldValue("total", total);
-    formik.setFieldValue("finalAmount", finalAmount);
-  }, [formik.values.quantity, formik.values.unitPrice, formik.values.gstPercentage, formik.values.applyGST]);
+  }, [open, isEditMode, invoiceId, dispatch, data]);
 
   useEffect(() => {
     if (!open || orders.length === 0) {
@@ -359,10 +356,10 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       }
       return;
     }
+    
     const orderNumber = data?.orderNumber || "";
-    if (!orderNumber) {
-      return;
-    }
+    if (!orderNumber) return;
+    
     formik.setFieldValue("orderNumber", orderNumber);
 
     const selectedOrder = orders.find((order) => order.orderNumber === orderNumber);
@@ -370,6 +367,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       toast.error("Selected order not found");
       return;
     }
+    
     const fullAddress = [
       selectedOrder.party.address?.unitNo || "",
       markets.find((item) => item._id === selectedOrder.party.address?.streetAddress)?.streetAddress || "",
@@ -381,9 +379,10 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       .filter((part) => part.trim() !== "")
       .join(", ");
 
-    const unitPrice = formik.values.unitPrice || 0;
-    const total = selectedOrder.qty * unitPrice;
-    const gstAmount = total * (formik.values.applyGST / 100);
+    // Get last quotation data
+    const lastQuotation = getLastQuotation();
+    const total = lastQuotation.qty * lastQuotation.unitPrice;
+    const gstAmount = total * (lastQuotation.gst / 100);
     const finalAmount = total + gstAmount;
 
     const checkInvoice = async () => {
@@ -405,14 +404,15 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             .filter((part) => part.trim() !== "")
             .join(", ");
 
-             const assignedToValue = existingInvoice.assignedTo?._id 
-        ? existingInvoice.assignedTo._id.toString() 
-        : existingInvoice.assignedTo || "";
+          const assignedToValue = existingInvoice.assignedTo?._id
+            ? existingInvoice.assignedTo._id.toString()
+            : existingInvoice.assignedTo || "";
+            
           formik.setValues({
             orderNumber: existingInvoice.orderNumber || "",
             companyName: existingInvoice.companyName?._id?.toString() || existingInvoice.companyName || "",
             partyName: existingInvoice.party?._id?.toString() || existingInvoice.partyName || "",
-            quantity: existingInvoice.quantity || 0,
+            quantity: lastQuotation.qty,
             color: existingInvoice.color || "",
             pType: existingInvoice.pType || "",
             size: existingInvoice.size || "",
@@ -421,9 +421,10 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ownerMobileNo: existingInvoice.ownerMobileNo || "",
             addressName: invoiceAddress || fullAddress,
             servicePerformance: existingInvoice.servicePerformance || "",
-            unitPrice: data?.quotation[data?.quotation?.length -1 ]?.unitPrice|| 0,
+            unitPrice: lastQuotation.unitPrice,
             total: existingInvoice.total || 0,
-            applyGST: existingInvoice.applyGST || 0, // Changed from applyGST
+            applyGST: lastQuotation.gst > 0,
+            gstPercentage: lastQuotation.gst,
             finalAmount: existingInvoice.finalAmount || 0,
             assignedTo: assignedToValue,
             daysAfterConfirmation: existingInvoice.daysAfterConfirmation,
@@ -436,7 +437,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             orderNumber,
             companyName: selectedOrder.companyName._id || "",
             partyName: selectedOrder.party._id || "",
-            quantity: selectedOrder.qty || 0,
+            quantity: lastQuotation.qty,
             color: selectedOrder.color || "",
             pType: selectedOrder.pType || "",
             size: selectedOrder.size || "",
@@ -445,9 +446,10 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ownerMobileNo: selectedOrder.party.ownerMobileNo || "",
             addressName: fullAddress || "",
             servicePerformance: selectedOrder.productItem.itemName || "",
-            unitPrice: formik.values.unitPrice || 0,
+            unitPrice: lastQuotation.unitPrice,
             total,
-            applyGST: formik.values.applyGST || 0, // Changed from applyGST
+            applyGST: lastQuotation.gst > 0,
+            gstPercentage: lastQuotation.gst,
             finalAmount,
             daysAfterConfirmation: undefined,
           });
@@ -458,114 +460,16 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       }
     };
     checkInvoice();
-  }, [open, data?.orderNumber, orders, invoiceId, dispatch]);
+  }, [open, data?.orderNumber, orders, invoiceId, dispatch, markets, data]);
 
-  const handleOrderChange = async (event: any, newValue: any) => {
-    const orderNumber = newValue ? newValue.value : "";
-    formik.setFieldValue("orderNumber", orderNumber);
-    if (!orderNumber) {
-      setIsEditMode(!!invoiceId);
-      setCurrentInvoiceId(invoiceId);
-      setIsSaved(false);
-      formik.resetForm();
-      return;
-    }
-    try {
-      const selectedOrder = orders.find((order) => order.orderNumber === orderNumber);
-      if (!selectedOrder) {
-        toast.error("Order not found in local data");
-        return;
-      }
-      const fullAddress = [
-        selectedOrder.party.address?.unitNo || "",
-        selectedOrder.party.address?.streetAddress || "",
-        selectedOrder.party.address?.marketName || "",
-        selectedOrder.party.address?.landMark || "",
-        selectedOrder.party.address?.area || "",
-        selectedOrder.party.address?.pincode || "",
-      ]
-        .filter((part) => part.trim() !== "")
-        .join(", ");
-      const total = selectedOrder.qty * (formik.values.unitPrice || 0);
-      const gstAmount = total * (formik.values.applyGST / 100);
-      const finalAmount = total + gstAmount;
-
-      const response = await performanceInvoiceService.getPerformanceInvoices();
-      const existingInvoice = response.data?.find((invoice) => invoice.orderNumber === orderNumber);
-      if (existingInvoice && !invoiceId) {
-        setIsEditMode(true);
-        setCurrentInvoiceId(existingInvoice._id);
-        setIsSaved(true);
-        const invoiceAddress = [
-          existingInvoice.partyAddress?.unitNo || "",
-          existingInvoice.partyAddress?.streetAddress || "",
-          existingInvoice.partyAddress?.marketName || "",
-          existingInvoice.partyAddress?.landMark || "",
-          existingInvoice.partyAddress?.area || "",
-          existingInvoice.partyAddress?.pincode || "",
-        ]
-          .filter((part) => part.trim() !== "")
-          .join(", ");
-        const assignedToValue = existingInvoice.assignedTo?._id 
-          ? existingInvoice.assignedTo._id.toString() 
-          : existingInvoice.assignedTo || "";
-        formik.setValues({
-          orderNumber: existingInvoice.orderNumber || "",
-          companyName: existingInvoice.companyName?._id?.toString() || existingInvoice.companyName || "",
-          partyName: existingInvoice.party?._id?.toString() || existingInvoice.partyName || "",
-          quantity: existingInvoice.quantity || 0,
-          color: existingInvoice.color || "",
-          pType: existingInvoice.pType || "",
-          size: existingInvoice.size || "",
-          GSTNo: existingInvoice.GSTNo || "",
-          remarks: existingInvoice.remarks || "",
-          ownerMobileNo: existingInvoice.ownerMobileNo || "",
-          addressName: invoiceAddress || fullAddress,
-          servicePerformance: existingInvoice.servicePerformance || "",
-          unitPrice: existingInvoice.unitPrice || 0,
-          total: existingInvoice.total || 0,
-          applyGST: existingInvoice.applyGST || 0, // Changed from applyGST
-          finalAmount: existingInvoice.finalAmount || 0,
-          assignedTo: assignedToValue,
-          daysAfterConfirmation: existingInvoice.daysAfterConfirmation,
-        });
-      } else {
-        setIsEditMode(!!invoiceId);
-        setCurrentInvoiceId(invoiceId);
-        setIsSaved(false);
-        formik.setValues({
-          orderNumber,
-          companyName: selectedOrder.companyName._id || "",
-          partyName: selectedOrder.party._id || "",
-          quantity: selectedOrder.qty || 0,
-          color: selectedOrder.color || "",
-          pType: selectedOrder.pType || "",
-          size: selectedOrder.size || "",
-          GSTNo: selectedOrder.party.GSTNo || "",
-          remarks: selectedOrder.remarks || "",
-          ownerMobileNo: selectedOrder.party.ownerMobileNo || "",
-          addressName: fullAddress || "",
-          servicePerformance: selectedOrder.productItem.itemName || "",
-          unitPrice: formik.values.unitPrice || 0,
-          total,
-          applyGST: formik.values.applyGST || 0, // Changed from applyGST
-          finalAmount,
-          daysAfterConfirmation: undefined, // Initialize new field
-        });
-      }
-    } catch (err: any) {
-      console.error("Error handling order change:", err);
-      toast.error(err.message || "Failed to fetch order details");
-    }
-  };
-
+  // Calculate total and final amount when values change
   useEffect(() => {
     const total = (formik.values.quantity || 0) * (formik.values.unitPrice || 0);
-    const gstAmount = total * (formik.values.applyGST / 100);
+    const gstAmount = formik.values.applyGST ? total * (formik.values.gstPercentage / 100) : 0;
     const finalAmount = total + gstAmount;
     formik.setFieldValue("total", total);
     formik.setFieldValue("finalAmount", finalAmount);
-  }, [formik.values.quantity, formik.values.unitPrice, formik.values.applyGST]);
+  }, [formik.values.quantity, formik.values.unitPrice, formik.values.gstPercentage, formik.values.applyGST]);
 
   const selectedOrder = orders.find((o) => o.orderNumber === formik.values.orderNumber);
   const displayCompanyName = selectedOrder?.companyName?.companyName || formik.values.companyName || "N/A";
@@ -582,15 +486,14 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     value: order.orderNumber,
   }));
 
-  // Define label style for disabled fields
   const disabledLabelStyle = {
     "& .MuiInputLabel-root": {
       fontWeight: "bold",
       borderRadius: "4px",
-      color: "#333", // Darker text for readability
+      color: "#333",
     },
     "& .MuiInputLabel-root.Mui-disabled": {
-      color: "#333", // Ensure readability when disabled
+      color: "#333",
     },
   };
 
@@ -619,7 +522,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           <Autocomplete
             options={orderOptions}
             getOptionLabel={(option) => option.label}
-            onChange={handleOrderChange}
+            onChange={() => {}} // No-op since field is disabled
             value={orderOptions.find((opt) => opt.value === formik.values.orderNumber) || null}
             renderInput={(params) => (
               <TextField
@@ -648,7 +551,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               fullWidth
               sx={disabledLabelStyle}
             />
-           
           </Box>
           <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
             <TextField
@@ -657,7 +559,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               onChange={formik.handleChange("GSTNo")}
               disabled
               fullWidth
-              // sx={disabledLabelStyle}
             />
             <TextField
               label="Color"
@@ -688,41 +589,37 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           </Box>
           <TextField
             label="Address Name"
-            value={formik.values.addressName.split(",").map(s => s.trim())}
+            value={formik.values.addressName}
             onChange={formik.handleChange("addressName")}
             disabled
             fullWidth
             sx={disabledLabelStyle}
           />
-           <Autocomplete
-  options={staffOptions}
-  getOptionLabel={(option) => option.label}
-  onChange={(event, newValue) => {
-    formik.setFieldValue("assignedTo", newValue?.value || "");
-  }}
-  value={
-    staffOptions.find(option => 
-      option.value === formik.values.assignedTo
-    ) || null
-  }
-  renderInput={(params) => (
-    <TextField
-      {...params}
-      label="Sales Credit"
-      fullWidth
-      margin="normal"
-    />
-  )}
-/>
+          <Autocomplete
+            options={staffOptions}
+            getOptionLabel={(option) => option.label}
+            onChange={(event, newValue) => {
+              formik.setFieldValue("assignedTo", newValue?.value || "");
+            }}
+            value={
+              staffOptions.find(option =>
+                option.value === formik.values.assignedTo
+              ) || null
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Sales Credit"
+                fullWidth
+                margin="normal"
+              />
+            )}
+          />
           <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
             <TextField
               label="Quantity"
               type="number"
               value={formik.values.quantity}
-              onChange={formik.handleChange("quantity")}
-              error={formik.touched.quantity && Boolean(formik.errors.quantity)}
-              helperText={formik.touched.quantity && formik.errors.quantity}
-              required
               disabled
               fullWidth
               sx={disabledLabelStyle}
@@ -732,17 +629,14 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               name="unitPrice"
               type="number"
               value={formik.values.unitPrice}
-              onChange={formik.handleChange}
-              error={formik.touched.unitPrice && Boolean(formik.errors.unitPrice)}
-              helperText={formik.touched.unitPrice && formik.errors.unitPrice}
               disabled
               fullWidth
             />
           </Box>
           <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
             <TextField
-              label="Delivery Date" 
-              placeholder="Enter number of days"  
+              label="Delivery Date"
+              placeholder="Enter number of days"
               name="daysAfterConfirmation"
               type="number"
               value={formik.values.daysAfterConfirmation || ""}
@@ -751,67 +645,34 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               helperText={formik.touched.daysAfterConfirmation && formik.errors.daysAfterConfirmation}
               fullWidth
             />
-               <Box display="flex" flexDirection="row">
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formik.values.applyGST}
-                  onChange={(e) => {
-                    formik.setFieldValue("applyGST", e.target.checked);
-                    // Reset GST percentage when unchecked
-                    if (!e.target.checked) {
-                      formik.setFieldValue("gstPercentage", 0);
-                    }
-                  }}
-                  name="applyGST"
-                  color="primary"
-                />
-              }
-              label="Apply GST"
-            />
-            
-            {formik.values.applyGST ? (
-              <TextField
-                label="GST Percentage"
-                name="gstPercentage"
-                value={formik.values.gstPercentage}
-                 onChange={(e) => {
-    let { value } = e.target;
-
-    // Remove non-numeric characters
-    value = value.replace(/\D/g, "");
-
-    // Remove leading zeros (except for single zero)
-    if (value.length > 1) {
-      value = value.replace(/^0+/, "");
-    }
-
-    // If empty, default back to "0"
-    if (value === "") {
-      value = "0";
-    }
-
-    formik.setFieldValue("gstPercentage", value);
-  }}
-                error={formik.touched.gstPercentage && Boolean(formik.errors.gstPercentage)}
-                helperText={formik.touched.gstPercentage && formik.errors.gstPercentage}
-                required={formik.values.applyGST}
-                fullWidth
+            <Box display="flex" flexDirection="row">
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={formik.values.applyGST}
+                    onChange={(e) => {
+                      formik.setFieldValue("applyGST", e.target.checked);
+                      if (!e.target.checked) {
+                        formik.setFieldValue("gstPercentage", 0);
+                      }
+                    }}
+                    name="applyGST"
+                    color="primary"
+                  />
+                }
+                label="Apply GST"
               />
-            ):null}
-          </Box>
-            {/* <TextField
-              label="GST Percentage"
-              name="applyGST"
-              type="number"
-              value={formik.values.applyGST}
-              onChange={formik.handleChange}
-              error={formik.touched.applyGST && Boolean(formik.errors.applyGST)}
-              helperText={formik.touched.applyGST && formik.errors.applyGST}
-              required
-              fullWidth
-            /> */}
-            
+
+              {formik.values.applyGST ? (
+                <TextField
+                  label="GST Percentage"
+                  name="gstPercentage"
+                  value={formik.values.gstPercentage}
+                  disabled
+                  fullWidth
+                />
+              ) : null}
+            </Box>
           </Box>
           <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
             <TextField
@@ -836,7 +697,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           <ThemeButton
             type="submit"
             sx={{ minWidth: 120, height: 40, mt: 2 }}
-            disabled={isLoading || invoiceLoading || formik.isSubmitting || !isUnitPriceValid ||
+            disabled={isLoading || invoiceLoading || formik.isSubmitting ||
               !formik.values.orderNumber ||
               !formik.values.quantity}
           >
@@ -856,7 +717,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               unitPrice: formik.values.unitPrice || 0,
               total: formik.values.total || 0,
               finalAmount: formik.values.finalAmount || 0,
-              applyGST: formik.values.applyGST, // Changed from applyGST
+              applyGST: formik.values.applyGST,
               gstPercentage: formik.values.gstPercentage,
               daysAfterConfirmation: formik.values.daysAfterConfirmation,
             }}
