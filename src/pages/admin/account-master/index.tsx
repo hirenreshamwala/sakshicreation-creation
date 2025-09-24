@@ -1,19 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Box, TableCell, Typography, Avatar, IconButton, Tabs, Tab, InputBase, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Box, TableCell, Typography, Avatar, IconButton, Tabs, Tab } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   getAllAccountMastersThunk,
   deleteAccountMasterThunk,
   approvePartyThunk,
-  bulkCreateAccountMastersThunk,
   clearError,
   clearSuccessMessage,
   getAccountMasterByStaffIdThunk,
 } from "@/store/slices/accountMasterSlice";
-import Dashboard from "@/component/Dashboard";
 import BasicTable from "@/component/common_component/Table/themetable";
 import ThemeButton from "@/component/common_component/themebutton";
 import ThemeChip from "@/component/common_component/themechip";
@@ -25,14 +23,10 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { authService } from "@/services/auth.service";
 import Swal from "sweetalert2";
 import Loader from "@/component/common_component/loader";
-import DateRangePicker from "@/component/daterangepicker";
-import { FiSearch } from "react-icons/fi";
-import FilterDropdown from "@/component/fillter";
 import AssignLeadDialog from "@/component/AssignLeadDialog";
 import AssignTaskDialog from "@/component/assigntaskdailog";
 import { toast } from "react-toastify";
 import { useMemo } from "react";
-import * as XLSX from "xlsx";
 
 interface Company {
   _id: string;
@@ -83,21 +77,14 @@ const columns = [
 const IndexPage: React.FC = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { accountMasters, loading, error, successMessage } = useAppSelector((state) => state.accountMasters);
+  const { accountMasters, loading, error } = useAppSelector((state) => state.accountMasters);
   const { user } = useAppSelector((state) => state.auth);
   const [editId, setEditId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const [opentaskmodel, setOpentaskmodel] = useState(false);
   const [isRequestMode, setIsRequestMode] = useState(false);
   const [isBulkUpload, setIsBulkUpload] = useState(false); // New state for bulk upload mode
   const [tab, setTab] = useState(0);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
-  const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
   const [openBulkUploadDialog, setOpenBulkUploadDialog] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [openAssignLeadDialog, setOpenAssignLeadDialog] = useState(false);
   const [openBulkAssignTask, setOpenBulkAssignTask] = useState(false); // New state for bulk assign task dialog
@@ -108,12 +95,8 @@ const IndexPage: React.FC = () => {
   const candelete = user?.role?.permissions?.account_master?.delete;
 
   // Calculate counts for Approved and Pending tabs
-  const approvedCount = accountMasters.filter(
-    (account) => account.party?.statusApproval === "APPROVED"
-  ).length;
-  const pendingCount = accountMasters.filter(
-    (account) => account.party?.statusApproval === "PENDING"
-  ).length;
+  const approvedCount = accountMasters.filter((account) => account.party?.statusApproval === "APPROVED").length;
+  const pendingCount = accountMasters.filter((account) => account.party?.statusApproval === "PENDING").length;
 
   // Update tabLabels to include counts
   const tabLabelsWithCount = [
@@ -162,11 +145,8 @@ const IndexPage: React.FC = () => {
     }
   };
   useEffect(() => {
-      if (error) {
-        toast.error(error);
-
-      }
-    }, [error, dispatch]);
+    if (error) toast.error(error);
+  }, [error, dispatch]);
 
   const handleAddNew = () => {
     setEditId(null);
@@ -186,19 +166,16 @@ const IndexPage: React.FC = () => {
     setIsRequestMode(false);
     setOpen(true);
   };
-  const handleSelectRow = (id: string) => {
+  const handleSelectRow = (id: string) =>
     setSelectedRows((prev) =>
       prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
     );
-  };
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.checked) {
-      setSelectedRows(formattedRows.map((row) => row.id));
-    } else {
-      setSelectedRows([]);
-    }
+    if (event.target.checked) setSelectedRows(formattedRows.map((row) => row.id));
+    else setSelectedRows([]);
   };
+
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -270,115 +247,6 @@ const IndexPage: React.FC = () => {
     setOpen(true)// Open AddNewPartyDialog instead of openBulkUploadDialog
   };
 
-  const handleBulkUploadClose = () => {
-    setOpenBulkUploadDialog(false);
-    setFile(null);
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-    }
-  };
-
-  const handleBulkUploadSubmit = async () => {
-    if (!file) {
-      Swal.fire({
-        title: "Error!",
-        text: "Please select a file to upload",
-        icon: "error",
-        confirmButtonColor: "#7F56D9",
-      });
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      await dispatch(bulkCreateAccountMastersThunk(formData)).unwrap();
-      Swal.fire({
-        title: "Success!",
-        text: "Bulk upload completed successfully",
-        icon: "success",
-        confirmButtonColor: "#7F56D9",
-      });
-      dispatch(getAllAccountMastersThunk());
-      handleBulkUploadClose();
-    } catch (err: any) {
-      Swal.fire({
-        title: "Error!",
-        text: err.message || "Bulk upload failed",
-        icon: "error",
-        confirmButtonColor: "#7F56D9",
-      });
-    }
-  };
-
-  const getUniqueValues = (columnId: string): string[] => {
-    const uniqueValues = new Set<string>();
-
-    accountMasters.forEach((account) => {
-      let value: string | undefined;
-
-      switch (columnId) {
-        case 'company':
-          value = account.companyName?.name;
-          break;
-        case 'createdDate':
-          value = new Date(account.createdAt).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "2-digit",
-          });
-          break;
-        case 'party':
-          value = account.party?.partyName;
-          break;
-        case 'contactPerson':
-          value = account.party?.ownerName;
-          break;
-        case 'partyTag':
-          value = account.party?.partyTag;
-          break;
-        case 'mobile':
-          value = account.party?.ownerMobileNo;
-          break;
-        case 'reason':
-          value = account.reasonToVisit;
-          break;
-        case 'market':
-          value = account.party?.address?.marketName?.marketName;
-          break;
-        case 'area':
-          value = account.party?.address?.area?.area;
-          break;
-        case 'remarks':
-          value = account.assignment?.remarks;
-          break;
-        case 'status':
-          value = account.assignment?.status;
-          break;
-        case 'createdBy':
-          value = account.createdBy && typeof account.createdBy === "object"
-            ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
-            : undefined;
-          break;
-        case 'assignedTo':
-          value = account.assignment?.assignedTo && typeof account.assignment.assignedTo === "object"
-            ? `${account.assignment.assignedTo.firstName} ${account.assignment.assignedTo.lastName}`
-            : undefined;
-          break;
-      }
-
-      if (value) {
-        uniqueValues.add(value);
-      }
-    });
-
-    return Array.from(uniqueValues).sort();
-  };
-
   const handleDialogClose = () => {
     setOpen(false);
     setEditId(null);
@@ -393,15 +261,8 @@ const IndexPage: React.FC = () => {
       return;
     }
 
-    // Fetch data based on permissions
-
-    if (canViewGlobal) {
-      // User can view all account masters
-      dispatch(getAllAccountMastersThunk());
-    } else if (canViewOwn && user?.id) {
-      // User can only view their own account masters
-      dispatch(getAccountMasterByStaffIdThunk(user.id));
-    }
+    if (canViewGlobal) dispatch(getAllAccountMastersThunk());
+    else if (canViewOwn && user?.id) dispatch(getAccountMasterByStaffIdThunk(user.id));
 
     return () => {
       dispatch(clearError());
@@ -409,90 +270,15 @@ const IndexPage: React.FC = () => {
     };
   }, [dispatch, router, canViewGlobal, canViewOwn, user?.id]);
 
-
-
   const filteredAccountMasters = accountMasters.filter((account) => {
     const statusApproval = account.party?.statusApproval || "PENDING";
     const statusMatch = tab === 0 ? statusApproval === "APPROVED" : statusApproval === "PENDING";
-
-    // Date range filtering
-    const accountDate = new Date(account.createdAt);
-    const matchesDateRange =
-      (!startDate || accountDate >= new Date(startDate).setHours(0, 0, 0, 0)) &&
-      (!endDate || accountDate <= new Date(endDate).setHours(23, 59, 59, 999));
-
-    // Search filtering
-    const matchesSearch = searchQuery
-      ? (account.party?.partyName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (account.companyName?.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (account.reasonToVisit?.toLowerCase().includes(searchQuery.toLowerCase()))
-      : true;
-
-    // Filter by column filters
-    const matchesFilters = Object.keys(filters).every((columnId) => {
-      if (filters[columnId].length === 0) return true;
-
-      let value: string | undefined;
-
-      switch (columnId) {
-        case 'company':
-          value = account.companyName?.name;
-          break;
-        case 'createdDate':
-          value = new Date(account.createdAt).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "2-digit",
-          });
-          break;
-        case 'party':
-          value = account.party?.partyName;
-          break;
-        case 'contactPerson':
-          value = account.party?.ownerName;
-          break;
-        case 'partyTag':
-          value = account.party?.partyTag;
-          break;
-        case 'mobile':
-          value = account.party?.ownerMobileNo;
-          break;
-        case 'reason':
-          value = account.reasonToVisit;
-          break;
-        case 'market':
-          value = account.party?.address?.marketName?.marketName;
-          break;
-        case 'area':
-          value = account.party?.address?.area?.area;
-          break;
-        case 'remarks':
-          value = account.assignment?.remarks;
-          break;
-        case 'status':
-          value = account.assignment?.status;
-          break;
-        case 'createdBy':
-          value = account.createdBy && typeof account.createdBy === "object"
-            ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
-            : undefined;
-          break;
-        case 'assignedTo':
-          value = account.assignment?.assignedTo && typeof account.assignment.assignedTo === "object"
-            ? `${account.assignment.assignedTo.firstName} ${account.assignment.assignedTo.lastName}`
-            : undefined;
-          break;
-      }
-
-      return value && filters[columnId].includes(value);
-    });
-
     // Then filter by ownership if user only has view_own permission
     if (canViewOwn && !canViewGlobal) {
-      return statusMatch && matchesDateRange && matchesSearch && matchesFilters && account.createdBy?._id === user?.id;
+      return statusMatch && account.createdBy?._id === user?.id;
     }
 
-    return statusMatch && matchesDateRange && matchesSearch && matchesFilters;
+    return statusMatch;
   });
 
   const excelData = useMemo(() => {
@@ -587,73 +373,8 @@ const IndexPage: React.FC = () => {
           gap: 2,
         }}
       >
+        <Box />
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={(date) => setStartDate(date)}
-            onEndDateChange={(date) => setEndDate(date)}
-          />
-          <ThemeButton
-            onClick={() => {
-              setStartDate(null);
-              setEndDate(null);
-            }}
-          >
-            Clear Date Range
-          </ThemeButton>
-        </Box>
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              border: "1px solid #D0D5DD",
-              borderRadius: 2,
-              px: 1.5,
-              width: 200,
-              height: 35,
-            }}
-          >
-            <IconButton size="small" sx={{ color: "#98A2B3" }}>
-              <FiSearch size={18} />
-            </IconButton>
-            <InputBase
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ ml: 1, fontSize: 14 }}
-            />
-          </Box>
-          <FilterDropdown
-            filterOptions={columns
-              .filter((col) => col.id !== "action")
-              .map((col) => col.label)}
-            uniqueValues={selectedFilterField ?
-              getUniqueValues(columns.find(col => col.label === selectedFilterField)?.id || '') :
-              []}
-            onFiltersChange={(newFilters) => {
-              const idBasedFilters: { [key: string]: string[] } = {};
-              Object.entries(newFilters).forEach(([label, values]) => {
-                const columnId = columns.find(col => col.label === label)?.id;
-                if (columnId) {
-                  idBasedFilters[columnId] = values;
-                }
-              });
-              setFilters(idBasedFilters);
-            }}
-            filters={Object.keys(filters).reduce((acc, columnId) => {
-              const columnLabel = columns.find(col => col.id === columnId)?.label;
-              if (columnLabel) {
-                acc[columnLabel] = filters[columnId];
-              }
-              return acc;
-            }, {} as { [key: string]: string[] })}
-            selectedField={selectedFilterField}
-            onFieldSelect={setSelectedFilterField}
-          />
 
           {(canViewGlobal) && (
             <ThemeButton onClick={handleAddNew}>+ Add New Party</ThemeButton>
@@ -747,10 +468,10 @@ const IndexPage: React.FC = () => {
         <Typography>No account masters found for {tabLabelsWithCount[tab]} tab.</Typography>
       ) : (
         <BasicTable
-          showDatePicker={false}
+          showDatePicker={true}
           tableHeader={columns}
-          showFillter={false}
-          showSearch={false}
+          showFillter={true}
+          showSearch={true}
           title="Account-master"
           showExcelDownload={true}
           excelHeaders={excelHeaders}

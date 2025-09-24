@@ -47,7 +47,7 @@ const StaffPage = () => {
         toast.error(err.message || "Failed to fetch staff")
       })
   }, [dispatch])
-  
+
   useEffect(() => {
     if (error) {
       toast.error(error);
@@ -55,9 +55,7 @@ const StaffPage = () => {
 
   }, [error, dispatch]);
   // Handle edit action
-  const handleEdit = (id: string) => {
-    router.push(`/admin/setup/staff/view?mode=edit&id=${id}`)
-  }
+  const handleEdit = (id: string) => router.push(`/admin/setup/staff/view?mode=edit&id=${id}`)
 
   // Handle delete action with SweetAlert2 confirmation and toast feedback
   const handleDelete = (id: string, name: string) => {

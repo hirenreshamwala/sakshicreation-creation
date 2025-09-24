@@ -8,6 +8,7 @@ import { authService } from '@/services/auth.service';
 import { Box, TextField, Button, Typography, CircularProgress, InputAdornment, IconButton } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { toast } from 'react-toastify';
+import { companyOptions } from '@/constants';
 
 interface UserData {
   id: string;
@@ -71,10 +72,20 @@ const LoginPage: React.FC = () => {
       const data: LoginResponse = await response.json();
 
       if (data.success && data.data) {
-        const { token, id, firstName, lastName, email, role } = data.data;
-        const user: UserData = { id, firstName, lastName, email, role };
+        const { token, id, firstName, lastName, email, role, company } = data.data;
 
+        const companyNames = company?.map(item => item?.companyName) || [];
         const isProduction = process.env.NODE_ENV === 'production';
+        const user: UserData = {
+          id,
+          firstName,
+          lastName,
+          email,
+          role,
+          sakshi: companyNames.includes(companyOptions[0]),
+          qp: companyNames.includes(companyOptions[1])
+        };
+
 
         // Store in cookies
         Cookies.set('auth_token', token, {
@@ -109,10 +120,10 @@ const LoginPage: React.FC = () => {
     }
   };
   useEffect(() => {
-      if (error) {
-        toast.error(error);
-      }
-    }, [error, dispatch]);
+    if (error) {
+      toast.error(error);
+    }
+  }, [error, dispatch]);
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);

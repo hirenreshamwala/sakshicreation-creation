@@ -87,19 +87,6 @@ const AllOrdersPage = () => {
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own
   const canCreate = user?.role?.permissions?.all_orders?.create
 
-  // Map filter labels to data properties (including nested paths)
-  const filterFieldToKey: { [key: string]: string } = {
-    "Company": "companyName.companyName",
-    "Party": "party.partyName",
-    "Order No.": "orderNumber",
-    "Date": "createdAt",
-    "Item Name": "productItem.itemName",
-    "Size": "size",
-    "Remarks": "remarks",
-    "Ordered By": "createdBy",
-    "Order Status": "status"
-  }
-
   // Get unique values for the selected filter field
   const getUniqueValues = useMemo(() => {
     if (!selectedFilterField) return [];
@@ -300,23 +287,12 @@ const AllOrdersPage = () => {
       return (row.companyName as any).avatar;
     }
   };
-  const roleName = user?.role?.roleName || "";
-  const company = user?.role?.company?.companyName || "";
-  // console.log("DEBUG : company:", company);
-
-  const isAdmin = roleName.toLowerCase() === "admin";
-  const isSakshi = company === companyOptions[0]; // assuming index 0 is Sakshi Creation
-  const isQuality = company === companyOptions[1];
-  // console.log()
-
-  if (!isAdmin && isQuality) {
-    return <QpOrdersPage />;
-  }
   useEffect(() => {
     if (error) {
       toast.error(error);
     }
   }, [error, dispatch]);
+
 
   if (loading) return <Typography><Loader /></Typography>;
 
@@ -324,9 +300,9 @@ const AllOrdersPage = () => {
   return (
     <>
 
-      {isAdmin && <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />}
+      {user?.sakshi && user?.qp && <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />}
       {activeTab === 0 ? <>
-        {isSakshi || isAdmin ? <>
+        {user?.sakshi ? <>
           <Box
             sx={{
               display: "flex",
@@ -512,7 +488,7 @@ const AllOrdersPage = () => {
 
           <AddSakhiOrderDialog company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id} open={open} onClose={() => setOpen(false)} />
         </> : null}
-      </> : <>{isAdmin && <QpOrdersPage />}</>}
+      </> : <>{user?.qp && <QpOrdersPage />}</>}
     </>
   )
 }

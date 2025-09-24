@@ -1,24 +1,34 @@
 "use client"
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Box, Stack, Typography, Chip, FormLabel, IconButton } from "@mui/material"
+import {
+  Box,
+  Stack,
+  Typography,
+  Chip,
+  FormLabel,
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  OutlinedInput,
+} from "@mui/material"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import { toast } from "react-toastify"
 import { useRouter } from "next/router"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
-import ThemeSelect from "@/component/common_component/themeselect"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { getStaffByIdThunk, createStaffThunk, updateStaffThunk } from "@/store/slices/staffSlice"
 import { getAllRolesThunk } from "@/store/slices/roleSlice"
-import { deleteFileThunk } from "@/store/slices/fileUploadSlice" // Import deleteFileThunk
-import CompanySelect from "@/component/reusablecomponents/CompanyWithPartyName"
-import FileUpload, { type FileUploadRef } from "@/component/reusablecomponents/FileUpload" // Adjust path if necessary
-import { ArrowBack, Delete } from "@mui/icons-material" // Import Delete icon for chips
+import { deleteFileThunk } from "@/store/slices/fileUploadSlice"
+import FileUpload, { type FileUploadRef } from "@/component/reusablecomponents/FileUpload"
+import { ArrowBack, Delete, Close } from "@mui/icons-material"
 import { decryptData } from "@/utills/utills"
 import StaffService from "@/services/staff.service"
-import { companyOptions } from "@/constants"
+import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 
 interface StaffFormData {
   firstName: string;
@@ -33,21 +43,26 @@ interface StaffFormData {
   joiningDate: string;
   birthDay: string;
   role: string;
-  companyName: string;
+  companyName: string[];
   password?: string;
-  aadharFiles: string[] // Array of file paths/URLs
-  addressFiles: string[] // Array of file paths/URLs
+  aadharFiles: string[];
+  addressFiles: string[];
 }
 
-interface RoleOption {
-  label: string;
-  value: string;
-}
+const ITEM_HEIGHT = 48;
+const ITEM_PADDING_TOP = 8;
+const MenuProps = {
+  PaperProps: {
+    style: {
+      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+      width: 250,
+    },
+  },
+};
 
 const validationSchema = Yup.object({
   firstName: Yup.string().required("First name is required"),
   lastName: Yup.string().required("Last name is required"),
-  // email: Yup.string().email("Invalid email").required("Email is required"),
   mobileNo: Yup.string()
     .matches(/^[0-9]{10}$/, "Mobile No. must be 10 digits")
     .required("Mobile No. is required"),
@@ -61,33 +76,35 @@ const validationSchema = Yup.object({
   joiningDate: Yup.string().required("Joining date is required"),
   birthDay: Yup.string(),
   role: Yup.string().required("Role is required"),
-  companyName: Yup.string().required("Company name is required"),
+  companyName: Yup.array()
+    .of(Yup.string())
+    .min(1, "At least one company is required")
+    .required("Company name is required"),
   password: Yup.string().when("mode", {
     is: "add",
     then: (schema) => schema.required("Password is required").min(8, "Password must be at least 8 characters"),
     otherwise: (schema) => schema.notRequired(),
   }),
-  aadharFiles: Yup.array().of(Yup.string()).required("Aadhar files are required"), // Validation for file paths
-  addressFiles: Yup.array().of(Yup.string()).optional(), // Validation for file paths
+  aadharFiles: Yup.array().of(Yup.string()).required("Aadhar files are required"),
+  addressFiles: Yup.array().of(Yup.string()).optional(),
 })
 
 const StaffView = () => {
   const router = useRouter()
   const { mode, id } = router.query
   const dispatch = useAppDispatch()
-
   const { user } = useAppSelector((state) => state.auth)
+  const { companies } = useAppSelector((state) => state.company);
   const { roles, loading: rolesLoading } = useAppSelector((state) => state.roles)
-  const { staffList,currentStaff, loading: staffLoading } = useAppSelector((state) => state.staff)
+  const { currentStaff } = useAppSelector((state) => state.staff)
 
   const aadharFileUploadRef = useRef<FileUploadRef>(null)
   const addressFileUploadRef = useRef<FileUploadRef>(null)
-  const [roleOptions, setRoleOptions] = useState<RoleOption[]>([])
-  const [selectedRole, setSelectedRole] = useState<RoleOption | null>(null)
   const [selectedAadharFiles, setSelectedAadharFiles] = useState<File[]>([])
   const [selectedAddressFiles, setSelectedAddressFiles] = useState<File[]>([])
   const [existingAadharFiles, setExistingAadharFiles] = useState<string[]>([])
   const [existingAddressFiles, setExistingAddressFiles] = useState<string[]>([])
+  const [initialLoad, setInitialLoad] = useState(true)
 
   const formik = useFormik<StaffFormData & { mode: string }>({
     initialValues: {
@@ -103,10 +120,10 @@ const StaffView = () => {
       joiningDate: "",
       birthDay: "",
       role: "",
-      companyName: "",
+      companyName: [],
       password: "",
-      aadharFiles: [], // Initialize empty
-      addressFiles: [], // Initialize empty
+      aadharFiles: [],
+      addressFiles: [],
       mode: mode as string,
     },
     validationSchema,
@@ -126,21 +143,19 @@ const StaffView = () => {
           uploadedAadharFilePaths = uploaded.map((file) => file.path || file.url)
         }
 
-        // Upload new Address files
         let uploadedAddressFilePaths: string[] = []
         if (selectedAddressFiles.length > 0 && addressFileUploadRef.current) {
           const uploaded = await addressFileUploadRef.current.uploadSelectedFiles()
           uploadedAddressFilePaths = uploaded.map((file) => file.path || file.url)
         }
 
-        // Combine existing files with newly uploaded files
         const finalAadharFiles = [...existingAadharFiles, ...uploadedAadharFilePaths]
         const finalAddressFiles = [...existingAddressFiles, ...uploadedAddressFilePaths]
 
         const staffData = {
           firstName: values.firstName,
           lastName: values.lastName,
-          email: values.email  || undefined,
+          email: values.email || undefined,
           mobileNo: values.mobileNo,
           mobileCode: values.mobileCode,
           whatsappNo: values.whatsappNo,
@@ -152,8 +167,8 @@ const StaffView = () => {
           role: values.role,
           CompanyName: values.companyName,
           password: values.password,
-          aadharFiles: finalAadharFiles, // Include file paths
-          addressFiles: finalAddressFiles, // Include file paths
+          aadharFiles: finalAadharFiles,
+          addressFiles: finalAddressFiles,
           ...(mode === "add" && { password: values.password }),
         }
 
@@ -179,23 +194,40 @@ const StaffView = () => {
   })
 
   useEffect(() => {
+    if (!companies.length) dispatch(getAllCompaniesThunk(true))
+  }, [])
+
+  useEffect(() => {
     if (!roles.length) dispatch(getAllRolesThunk())
     if (mode === "edit" && id) dispatch(getStaffByIdThunk(id as string))
   }, [mode, id])
 
   useEffect(() => {
-    if (roles.length > 0) {
-      const options = roles.map((role) => ({
-        label: role.roleName,
-        value: role._id,
-        company: role.company?._id
-      }))
-      setRoleOptions(options)
-    }
-  }, [roles])
+    if (mode === "edit" && currentStaff && roles.length > 0 && initialLoad) {
+      // Handle existing company data - convert to array if it's a single value
+      let companyNameArray: string[] = [];
+      if (currentStaff.CompanyName) {
+        if (Array.isArray(currentStaff.CompanyName)) {
+          companyNameArray = currentStaff.CompanyName.map(comp => comp._id || comp.companyName || comp);
+        } else if (typeof currentStaff.CompanyName === 'string') {
+          companyNameArray = [currentStaff.CompanyName];
+        } else if (currentStaff.CompanyName._id) {
+          companyNameArray = [currentStaff.CompanyName._id];
+        } else if (currentStaff.CompanyName.companyName) {
+          companyNameArray = [currentStaff.CompanyName.companyName];
+        }
+      } else if (currentStaff.companyName) {
+        if (Array.isArray(currentStaff.companyName)) {
+          companyNameArray = currentStaff.companyName.map(comp => comp._id || comp.companyName || comp);
+        } else if (typeof currentStaff.companyName === 'string') {
+          companyNameArray = [currentStaff.companyName];
+        } else if (currentStaff.companyName._id) {
+          companyNameArray = [currentStaff.companyName._id];
+        } else if (currentStaff.companyName.companyName) {
+          companyNameArray = [currentStaff.companyName.companyName];
+        }
+      }
 
-  useEffect(() => {
-    if (mode === "edit" && currentStaff) {
       const editData = {
         firstName: currentStaff.firstName || "",
         lastName: currentStaff.lastName || "",
@@ -209,29 +241,36 @@ const StaffView = () => {
         joiningDate: currentStaff.joiningDate ? new Date(currentStaff.joiningDate).toISOString().split("T")[0] : "",
         birthDay: currentStaff.birthDay ? new Date(currentStaff.birthDay).toISOString().split("T")[0] : "",
         role: currentStaff.role?._id || "",
-        companyName: currentStaff.companyName?._id || currentStaff.companyName?.companyName,
-        password: user?.role?.roleName === 'Admin' && user?.role?.isDelete === false ? decryptData(currentStaff?.password) : "", // Password is not pre-filled for security
-        aadharFiles: currentStaff.aadharFiles || [], // Populate existing files
-        addressFiles: currentStaff.addressFiles || [], // Populate existing files
+        companyName: companyNameArray,
+        password: user?.role?.roleName === 'Admin' && user?.role?.isDelete === false ? decryptData(currentStaff?.password) : "",
+        aadharFiles: currentStaff.aadharFiles || [],
+        addressFiles: currentStaff.addressFiles || [],
         mode: "edit",
       }
-      const selected = roleOptions.find((opt) => opt.value === editData.role) || null
       formik.setValues(editData)
-      setSelectedRole(selected)
-      setExistingAadharFiles(currentStaff.aadharFiles || []) // Set existing files state
-      setExistingAddressFiles(currentStaff.addressFiles || []) // Set existing files state
+
+      setExistingAadharFiles(currentStaff.aadharFiles || [])
+      setExistingAddressFiles(currentStaff.addressFiles || [])
+      setInitialLoad(false)
     } else if (mode === "add") {
       formik.setFieldValue("mode", "add")
-      setSelectedRole(null)
-      setExistingAadharFiles([]) // Clear existing files for add mode
-      setExistingAddressFiles([]) // Clear existing files for add mode
+      setExistingAadharFiles([])
+      setExistingAddressFiles([])
+      setInitialLoad(false)
     }
-  }, [currentStaff, mode, roleOptions, user])
+  }, [currentStaff, mode, user, roles, initialLoad])
 
-  const handleRoleChange = (event: React.SyntheticEvent, newValue: RoleOption | null) => {
-    setSelectedRole(newValue)
-    formik.setFieldValue("role", newValue?.value || "")
-  }
+  const handleCompanyChange = (event: any) => {
+    const value = event.target.value;
+    formik.setFieldValue("companyName", typeof value === 'string' ? value.split(',') : value);
+  };
+
+  const handleDeleteChip = (companyToDelete: string) => {
+    formik.setFieldValue(
+      "companyName",
+      formik.values.companyName.filter(company => company !== companyToDelete)
+    );
+  };
 
   const handleMobileChange = (field: "mobileNo" | "whatsappNo", value: string) => {
     const cleanValue = value.replace(/\D/g, "").slice(0, 10)
@@ -250,6 +289,7 @@ const StaffView = () => {
       cleanValue && cleanValue.length !== 12 ? "Aadhar No. must be 12 digits" : undefined,
     )
   }
+
   const handleEmailChange = (value: string) => {
     const normalizedEmail = value.toLowerCase();
     formik.setFieldValue("email", normalizedEmail);
@@ -260,19 +300,17 @@ const StaffView = () => {
         : undefined
     );
   };
+
   const handleDeleteExistingFile = async (fileType: "aadhar" | "address", filePathToDelete: string) => {
-    // Extract folder and filename from the path
     const parts = filePathToDelete.split("/")
-    const folder = parts[parts.length - 2] // e.g., 'aadhar' or 'address'
-    const filename = parts[parts.length - 1] // e.g., 'file-123.jpg'
+    const folder = parts[parts.length - 2]
+    const filename = parts[parts.length - 1]
 
     try {
-      // Call backend to delete the file
       await dispatch(deleteFileThunk({ folder, filename })).unwrap()
       await StaffService.updateStaffAttachments(id, fileType === "aadhar" ? { aadharFiles: currentStaff?.aadharFiles?.filter((path) => path !== filePathToDelete) } : { addressFiles: currentStaff?.addressFiles?.filter((path) => path !== filePathToDelete) })
       toast.success(`File ${filename} deleted successfully.`)
 
-      // Update local state and formik values
       if (fileType === "aadhar") {
         setExistingAadharFiles((prev) => prev.filter((path) => path !== filePathToDelete))
         formik.setFieldValue(
@@ -293,6 +331,29 @@ const StaffView = () => {
 
   const handleDiscard = () => {
     if (mode === "edit" && currentStaff) {
+      let companyNameArray: string[] = [];
+      if (currentStaff.CompanyName) {
+        if (Array.isArray(currentStaff.CompanyName)) {
+          companyNameArray = currentStaff.CompanyName.map(comp => comp._id || comp.companyName || comp);
+        } else if (typeof currentStaff.CompanyName === 'string') {
+          companyNameArray = [currentStaff.CompanyName];
+        } else if (currentStaff.CompanyName._id) {
+          companyNameArray = [currentStaff.CompanyName._id];
+        } else if (currentStaff.CompanyName.companyName) {
+          companyNameArray = [currentStaff.CompanyName.companyName];
+        }
+      } else if (currentStaff.companyName) {
+        if (Array.isArray(currentStaff.companyName)) {
+          companyNameArray = currentStaff.companyName.map(comp => comp._id || comp.companyName || comp);
+        } else if (typeof currentStaff.companyName === 'string') {
+          companyNameArray = [currentStaff.companyName];
+        } else if (currentStaff.companyName._id) {
+          companyNameArray = [currentStaff.companyName._id];
+        } else if (currentStaff.companyName.companyName) {
+          companyNameArray = [currentStaff.companyName.companyName];
+        }
+      }
+
       const editData = {
         firstName: currentStaff.firstName || "",
         lastName: currentStaff.lastName || "",
@@ -306,15 +367,13 @@ const StaffView = () => {
         joiningDate: currentStaff.joiningDate ? new Date(currentStaff.joiningDate).toISOString().split("T")[0] : "",
         birthDay: currentStaff.birthDay ? new Date(currentStaff.birthDay).toISOString().split("T")[0] : "",
         role: currentStaff.role?._id || "",
-        companyName: currentStaff.CompanyName ? currentStaff.CompanyName._id : "",
+        companyName: companyNameArray,
         password: "",
         aadharFiles: currentStaff.aadharFiles || [],
         addressFiles: currentStaff.addressFiles || [],
         mode: "edit",
       }
       formik.setValues(editData)
-      const selected = roleOptions.find((opt) => opt.value === editData.role) || null
-      setSelectedRole(selected)
       setExistingAadharFiles(currentStaff.aadharFiles || [])
       setExistingAddressFiles(currentStaff.addressFiles || [])
     } else {
@@ -322,7 +381,6 @@ const StaffView = () => {
       setExistingAadharFiles([])
       setExistingAddressFiles([])
     }
-    // Clear any newly selected files in the FileUpload components
     aadharFileUploadRef.current?.clearSelectedFiles()
     addressFileUploadRef.current?.clearSelectedFiles()
   }
@@ -339,8 +397,8 @@ const StaffView = () => {
           Back
         </ThemeButton>
       </Box>
+
       <Stack direction="row" spacing={2} mb={2}>
-        
         <ThemeInput
           labelName="First name"
           value={formik.values.firstName}
@@ -394,27 +452,70 @@ const StaffView = () => {
           fullWidth
           required
         />
-         <CompanySelect
-          name="companyName"
-          value={formik.values.companyName}
-          onChange={(event, newValue) => {
-            formik.setFieldValue("companyName", newValue ? newValue.value : "")
-          }}
-          error={Boolean(formik.errors.companyName)}
-          helperText={formik.errors.companyName}
-          required
-        />
 
-        <ThemeSelect
-          label="Role"
-          options={roleOptions?.filter((item)=>item.company === formik.values.companyName)}
-          value={selectedRole}
-          onChange={handleRoleChange}
-          error={Boolean(formik.errors.role)}
-          helperText={formik.errors.role}
-          fullWidth
-          required
-        />
+        {/* Multi-select Company Dropdown */}
+        <FormControl fullWidth error={Boolean(formik.errors.companyName)}>
+          <InputLabel id="company-select-label">Company *</InputLabel>
+          <Select
+            labelId="company-select-label"
+            id="company-select"
+            multiple
+            value={formik.values.companyName}
+            onChange={handleCompanyChange}
+            input={<OutlinedInput label="Company *" />}
+            renderValue={(selected) => (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {selected.map((value) => (
+                  <Chip
+                    key={value}
+                    label={companies.find(comp => comp._id === value)?.companyName || value}
+                    size="small"
+                    onDelete={() => handleDeleteChip(value)}
+                    onMouseDown={(event) => event.stopPropagation()}
+                  />
+                ))}
+              </Box>
+            )}
+            MenuProps={MenuProps}
+          >
+            {companies.map((company) => (
+              <MenuItem key={company._id} value={company._id}>
+                {company?.companyName}
+              </MenuItem>
+            ))}
+          </Select>
+          {formik.errors.companyName && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+              {formik.errors.companyName}
+            </Typography>
+          )}
+        </FormControl>
+
+        <FormControl fullWidth error={Boolean(formik.errors.role)} required>
+          <InputLabel id="role-select-label">Role *</InputLabel>
+          <Select
+            labelId="role-select-label"
+            id="role-select"
+            value={formik.values.role}
+            label="Role *"
+            onChange={(e) => formik.setFieldValue("role", e.target.value as string)}
+          >
+            {rolesLoading ? (
+              <MenuItem disabled>Loading roles...</MenuItem>
+            ) : (
+              roles.map((role) => (
+                <MenuItem key={role._id} value={role._id}>
+                  {role.roleName}
+                </MenuItem>
+              ))
+            )}
+          </Select>
+          {formik.errors.role && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+              {formik.errors.role}
+            </Typography>
+          )}
+        </FormControl>
 
         <ThemeInput
           labelName="Aadhar No."
@@ -427,29 +528,26 @@ const StaffView = () => {
         />
       </Stack>
 
-      {/* New: Aadhar File Upload */}
       <Box mb={2}>
-        
         {!existingAadharFiles.length && <Box sx={{ mb: 2 }}>
-        <FormLabel required sx={{ mb: 1, display: 'block', fontWeight: 'bold' }}>
-          Aadhar File Upload (Required)
-        </FormLabel>
-        <FileUpload
-          ref={aadharFileUploadRef}
-          folder="aadhar"
-          multiple={true}
-          accept="image/*,.pdf"
-          onFilesSelected={setSelectedAadharFiles}
-          onUploadError={(errorMsg) => toast.error(errorMsg)}
-          showPreview={true}
-          showUploadButton={false}
-          autoUpload={false}
-          label="Upload Aadhar Files" // You can remove this since we're adding our own label
-          helperText="Upload Aadhar card images or PDF (required)"
-          required
-        />
-      </Box>}
-        {/* Display existing Aadhar files */}
+          <FormLabel required sx={{ mb: 1, display: 'block', fontWeight: 'bold' }}>
+            Aadhar File Upload (Required)
+          </FormLabel>
+          <FileUpload
+            ref={aadharFileUploadRef}
+            folder="aadhar"
+            multiple={true}
+            accept="image/*,.pdf"
+            onFilesSelected={setSelectedAadharFiles}
+            onUploadError={(errorMsg) => toast.error(errorMsg)}
+            showPreview={true}
+            showUploadButton={false}
+            autoUpload={false}
+            helperText="Upload Aadhar card images or PDF (required)"
+            required
+          />
+        </Box>}
+
         {existingAadharFiles.length > 0 && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
@@ -472,7 +570,6 @@ const StaffView = () => {
                       padding: '4px 8px',
                     }}
                   >
-                    {/* File name as clickable link */}
                     <Box
                       component="a"
                       href={fileUrl}
@@ -495,7 +592,6 @@ const StaffView = () => {
                       {fileName}
                     </Box>
 
-                    {/* Delete button */}
                     <IconButton
                       size="small"
                       onClick={() => handleDeleteExistingFile("aadhar", filePath)}
@@ -530,22 +626,21 @@ const StaffView = () => {
         required
       />
 
-      {/* New: Address File Upload */}
       <Box mb={2}>
         {!existingAddressFiles.length && <FileUpload
           ref={addressFileUploadRef}
-          folder="address" // Specific folder for Address files
+          folder="address"
           multiple={true}
-          accept="image/*,.pdf" // Accept images and PDFs
+          accept="image/*,.pdf"
           onFilesSelected={setSelectedAddressFiles}
           onUploadError={(errorMsg) => toast.error(errorMsg)}
           showPreview={true}
-          showUploadButton={false} // Files will be uploaded on form submit
+          showUploadButton={false}
           autoUpload={false}
           label="Upload Address Files"
           helperText="Upload Address proof images or PDF "
         />}
-        {/* Display existing Address files */}
+
         {existingAddressFiles.length > 0 && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
@@ -568,7 +663,6 @@ const StaffView = () => {
                       padding: '4px 8px',
                     }}
                   >
-                    {/* File name as clickable link */}
                     <Box
                       component="a"
                       href={fileUrl}
@@ -591,7 +685,6 @@ const StaffView = () => {
                       {fileName}
                     </Box>
 
-                    {/* Delete button */}
                     <IconButton
                       size="small"
                       onClick={() => handleDeleteExistingFile("address", filePath)}
@@ -687,8 +780,6 @@ const StaffView = () => {
         )}
       </Stack>
 
-     
-
       <Box display="flex" justifyContent="flex-end" gap={2}>
         <ThemeButton
           type="submit"
@@ -702,7 +793,6 @@ const StaffView = () => {
             width: 180,
             "&:hover": { background: mode === "add" ? "#5B3FB4" : "#079455" },
           }}
-          // disabled={staffLoading || rolesLoading || formik.isSubmitting}
           loading={formik.isSubmitting}
         >
           {formik.isSubmitting

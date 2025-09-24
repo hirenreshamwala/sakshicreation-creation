@@ -15,13 +15,15 @@ import {
   MenuItem,
   Select,
   Collapse,
+  Tooltip,
 } from "@mui/material";
 import Button from "@/component/common_component/themebutton";
-import { FiSearch, FiDownload } from "react-icons/fi";
+import { FiSearch, FiDownload, FiX } from "react-icons/fi";
 import FilterDropdown from "@/component/fillter";
 import DateRangePicker from "@/component/daterangepicker";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa6";
 import * as XLSX from "xlsx";
+import moment from "moment";
 
 interface Column {
   id: string;
@@ -103,6 +105,17 @@ const BasicTable = <T extends { id: string }>({
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
+  // Check if date range is selected
+  const isDateRangeSelected = useMemo(() => {
+    return startDate !== null || endDate !== null;
+  }, [startDate, endDate]);
+
+  // Clear date range function
+  const clearDateRange = useCallback(() => {
+    setStartDate(null);
+    setEndDate(null);
+  }, []);
+
   // Dynamically generate filter options from tableHeader, excluding "action" and "checkbox"
   const filterOptions = useMemo(() => {
     return tableHeader
@@ -164,7 +177,7 @@ const BasicTable = <T extends { id: string }>({
           break;
         case "OrderNo": // Add mapping for OrderNo
           key = "orderid" as keyof T;
-          break;  
+          break;
         default:
           key = col.id as keyof T;
       }
@@ -183,6 +196,12 @@ const BasicTable = <T extends { id: string }>({
       if (key === "company") {
         return (row[key] as any)?.name || "N/A";
       }
+      if (key === "market") {
+        return (row[key] as any)?.marketName || "N/A";
+      }
+      if (key === "area") {
+        return (row[key] as any)?.area || "N/A";
+      }
       if (key === "orderid") {
         // Handle orderid specifically to ensure correct value extraction
         return String(row[key] || "N/A");
@@ -198,29 +217,37 @@ const BasicTable = <T extends { id: string }>({
 
     // Apply search query filter (using debounced value)
     if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter((row) =>
         Object.values(row).some((value) => {
           if (value === null || value === undefined) return false;
-          
-          const stringValue = typeof value === "object" 
-            ? JSON.stringify(value).toLowerCase() 
-            : String(value).toLowerCase();
-          
-          return stringValue.includes(debouncedSearchQuery.toLowerCase());
+
+          const stringValue =
+            typeof value === "object" && value !== null
+              ? JSON.stringify(value).toLowerCase()
+              : String(value).toLowerCase();
+
+          return stringValue.includes(query);
         })
       );
     }
 
-    // Apply date range filter (if applicable)
-    if (startDate || endDate) {
+    // Parse startDate and endDate
+    const startMoment = startDate ? moment(startDate).format('DD/MM/YY') : null;
+    const endMoment = endDate ? moment(endDate).format('DD/MM/YY') : null
+
+    console.log(startMoment, endMoment, 'endMoment', moment(startDate).format('DD-MM-YY'))
+    // Apply date range filter
+    if (startMoment || endMoment) {
       filtered = filtered.filter((row) => {
-        const rowDateValue = (row as any).createdDate || (row as any).date;
-        if (!rowDateValue) return true;
-        
-        const rowDate = new Date(rowDateValue);
-        const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
-        const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-        return (!start || rowDate >= start) && (!end || rowDate <= end);
+        const rowDateValue = row.createdDate || row.date || row.createdAt;
+        if (!rowDateValue) return true; // Keep row if no date
+        const rowMoment = rowDateValue;
+
+        if (startMoment > rowMoment) return false;
+        if (endMoment < rowMoment) return false;
+
+        return true;
       });
     }
 
@@ -230,14 +257,19 @@ const BasicTable = <T extends { id: string }>({
         Object.entries(filters).every(([field, values]) => {
           const key = filterFieldToKey[field];
           if (!key) return true;
-          
-         const value = key === "company" 
-            ? (row[key] as any)?.name 
-            : key === "orderid" 
-            ? String(row[key] || "N/A")
-            : row[key];
-          
-          return values.includes(String(value || "N/A"));
+
+          const value =
+            key === "company"
+              ? (row[key] as any)?.name
+              : key === "market"
+                ? (row[key] as any)?.marketName
+                : key === "area"
+                  ? (row[key] as any)?.area
+                  : key === "orderid"
+                    ? String(row[key] || "N/A")
+                    : row[key];
+
+          return values.includes(String(value ?? "N/A"));
         })
       );
     }
@@ -267,27 +299,27 @@ const BasicTable = <T extends { id: string }>({
     const headers = excelHeaders
       ? excelHeaders
       : tableHeader
-          .filter((col) => col.id !== "checkbox" && col.id !== "action")
-          .map((col) => col.label);
+        .filter((col) => col.id !== "checkbox" && col.id !== "action")
+        .map((col) => col.label);
 
     const data = excelData
       ? excelData
       : filteredRows.map((row) => {
-          const rowData: { [key: string]: any } = {};
-          tableHeader
-            .filter((col) => col.id !== "checkbox" && col.id !== "action")
-            .forEach((col) => {
-              const key = filterFieldToKey[col.label];
-              let value = row[key];
-              if (key === "company") {
-                value = (row[key] as any)?.name || "N/A";
-              } else {
-                value = value ?? "N/A";
-              }
-              rowData[col.label] = value;
-            });
-          return rowData;
-        });
+        const rowData: { [key: string]: any } = {};
+        tableHeader
+          .filter((col) => col.id !== "checkbox" && col.id !== "action")
+          .forEach((col) => {
+            const key = filterFieldToKey[col.label];
+            let value = row[key];
+            if (key === "company") {
+              value = (row[key] as any)?.name || "N/A";
+            } else {
+              value = value ?? "N/A";
+            }
+            rowData[col.label] = value;
+          });
+        return rowData;
+      });
 
     // Create worksheet
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -419,13 +451,25 @@ const BasicTable = <T extends { id: string }>({
         >
           {/* Date Range Picker */}
           {showDatePicker && (
-            <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <DateRangePicker
                 startDate={startDate}
                 endDate={endDate}
                 onStartDateChange={setStartDate}
                 onEndDateChange={setEndDate}
               />
+
+              {/* Clear Date Range Button */}
+              {isDateRangeSelected && (
+                <Tooltip title="Clear date range">
+                  <IconButton
+                    color="error"
+                    onClick={clearDateRange}
+                  >
+                    <FiX size={16} />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Box>
           )}
 
@@ -608,8 +652,8 @@ const BasicTable = <T extends { id: string }>({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell 
-                    colSpan={tableHeader.length + (renderExpandedRow ? 1 : 0)} 
+                  <TableCell
+                    colSpan={tableHeader.length + (renderExpandedRow ? 1 : 0)}
                     align="center"
                     sx={{ py: 3 }}
                   >
