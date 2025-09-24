@@ -34,6 +34,7 @@ import Swal from "sweetalert2";
 import Loader from "@/component/common_component/loader";
 import { authService } from "@/services/auth.service";
 import { toast } from "react-toastify";
+import TabComponent from "@/component/Dialog/TabComponent";
 
 interface Lead {
   _id: string;
@@ -131,6 +132,7 @@ const LeadManagementPage: React.FC = () => {
   } = useAppSelector((state) => state.leads || {});
   const { user } = useAppSelector((state) => state.auth || {});
   const [tab, setTab] = useState(0);
+  const [comapanyTab, setCompanyTab] = useState(0);
   const [openAssignDialog, setOpenAssignDialog] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -145,13 +147,32 @@ const LeadManagementPage: React.FC = () => {
   const canViewOwn = user?.role?.permissions?.party_call?.view_own;
   const canDelete = user?.role?.permissions?.party_call?.delete;
   const cancreate = user?.role?.permissions?.party_call?.create;
-  const canEdit= user?.role?.permissions?.party_call?.edit;
+  const canEdit = user?.role?.permissions?.party_call?.edit;
+
+  // Company permissions
+  const hasSakshi = !!user?.sakshiCompanyId;
+  const hasQP = !!user?.qpCompanyId;
+  const hasBothCompanies = hasSakshi && hasQP;
+
+  // Determine active company ID
+  const activeCompanyId = useMemo(() => {
+    if (hasBothCompanies) {
+      return comapanyTab === 0 ? user.sakshiCompanyId : user.qpCompanyId;
+    }
+    return hasSakshi ? user.sakshiCompanyId : user.qpCompanyId;
+  }, [hasBothCompanies, comapanyTab, hasSakshi, hasQP, user]);
+
+  // Filter leads by company
+  const companyFilteredLeads = useMemo(() => {
+    if (!activeCompanyId) return leads;
+    return leads.filter(lead => lead.companyName?._id === activeCompanyId);
+  }, [leads, activeCompanyId]);
 
   useEffect(() => {
-      if (error) {
-        toast.error(error);
-      }
-    }, [error, dispatch]);
+    if (error) {
+      toast.error(error);
+    }
+  }, [error, dispatch]);
 
   useEffect(() => {
     const token = authService.getToken();
@@ -212,123 +233,123 @@ const LeadManagementPage: React.FC = () => {
   };
 
   // Compute unique values for the selected filter field
-const uniqueValues = useMemo(() => {
-  if (!selectedFilterField) return [];
-  const key = filterFieldToKey[selectedFilterField];
-  if (!key) return [];
+  const uniqueValues = useMemo(() => {
+    if (!selectedFilterField) return [];
+    const key = filterFieldToKey[selectedFilterField];
+    if (!key) return [];
 
-  const values = mapLeadsToRows(leads).map((lead) => {
-    if (key === "companyName.companyName") {
-      return lead.companyName?.companyName || "N/A";
-    } else if (key === "partyName.partyName") {
-      return lead.partyName?.partyName || "N/A";
-    } else if (key === "partyName.ownerMobileNo") {
-      return lead.partyName?.ownerMobileNo || "N/A";
-    } else if (key === "partyName.address.unitNo") {
-      return lead.partyName?.address?.unitNo || "N/A";
-    } else if (key === "partyName.address.marketName") {
-      return lead.partyName?.address?.marketName || "N/A";
-    } else if (key === "partyName.address.area") {
-      return lead.partyName?.address?.area || "N/A";
-    } else if (key === "partyName.partyTag") {
-      return lead.partyName?.partyTag || "N/A";
-    } else if (key === "status") {
-      return lead.status || "N/A";
-    } else if (key === "createdAt") {
-      return lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("en-GB") : "N/A";
-    } else if (key === "partyName.createdBy") {
-      return lead.partyName?.createdBy
-        ? `${lead.partyName.createdBy.firstName} ${lead.partyName.createdBy.lastName}`.trim()
-        : "N/A";
-    } else if (key === "assignedTo") {
-      return lead.assignedTo
-        ? `${lead.assignedTo.firstName} ${lead.assignedTo.lastName}`.trim()
-        : "N/A";
-    }
-    return String((lead as any)[key] || "N/A");
-  });
-  return Array.from(new Set(values)).sort();
-}, [leads, selectedFilterField]);
+    const values = mapLeadsToRows(companyFilteredLeads).map((lead) => {
+      if (key === "companyName.companyName") {
+        return lead.companyName?.companyName || "N/A";
+      } else if (key === "partyName.partyName") {
+        return lead.partyName?.partyName || "N/A";
+      } else if (key === "partyName.ownerMobileNo") {
+        return lead.partyName?.ownerMobileNo || "N/A";
+      } else if (key === "partyName.address.unitNo") {
+        return lead.partyName?.address?.unitNo || "N/A";
+      } else if (key === "partyName.address.marketName") {
+        return lead.partyName?.address?.marketName || "N/A";
+      } else if (key === "partyName.address.area") {
+        return lead.partyName?.address?.area || "N/A";
+      } else if (key === "partyName.partyTag") {
+        return lead.partyName?.partyTag || "N/A";
+      } else if (key === "status") {
+        return lead.status || "N/A";
+      } else if (key === "createdAt") {
+        return lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("en-GB") : "N/A";
+      } else if (key === "partyName.createdBy") {
+        return lead.partyName?.createdBy
+          ? `${lead.partyName.createdBy.firstName} ${lead.partyName.createdBy.lastName}`.trim()
+          : "N/A";
+      } else if (key === "assignedTo") {
+        return lead.assignedTo
+          ? `${lead.assignedTo.firstName} ${lead.assignedTo.lastName}`.trim()
+          : "N/A";
+      }
+      return String((lead as any)[key] || "N/A");
+    });
+    return Array.from(new Set(values)).sort();
+  }, [companyFilteredLeads, selectedFilterField]);
 
   // Filter leads based on search query, date range, and multiple filters
-const filteredLeads = useMemo(() => {
-  let filtered = mapLeadsToRows(leads);
+  const filteredLeads = useMemo(() => {
+    let filtered = mapLeadsToRows(companyFilteredLeads);
 
-  // Apply status filter
-  filtered = filtered.filter((lead) =>
-    tab === 0
-      ? ["pending", "rescheduled"].includes(lead.status.toLowerCase())
-      : ["completed", "cancelled"].includes(lead.status.toLowerCase())
-  );
-
-  // Apply date range filter
-  if (startDate || endDate) {
-    filtered = filtered.filter((lead) => {
-      const leadDate = new Date(lead.date);
-      const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
-      const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-      return (!start || leadDate >= start) && (!end || leadDate <= end);
-    });
-  }
-
-  // Apply search query filter
-  if (searchQuery.trim()) {
+    // Apply status filter
     filtered = filtered.filter((lead) =>
-      [
-        lead.partyName?.partyName,
-        lead.companyName?.companyName,
-        lead.reason,
-        lead.partyName?.address?.unitNo,
-        lead.partyName?.address?.marketName,
-        lead.partyName?.address?.area,
-      ].some((value) =>
-        value?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      tab === 0
+        ? ["pending", "rescheduled"].includes(lead.status.toLowerCase())
+        : ["completed", "cancelled"].includes(lead.status.toLowerCase())
     );
-  }
 
-  // Apply multiple filters
-  if (Object.keys(filters).length > 0) {
-    filtered = filtered.filter((lead) =>
-      Object.entries(filters).every(([field, values]) => {
-        const key = filterFieldToKey[field];
-        let value: string;
-        if (key === "companyName.companyName") {
-          value = lead.companyName?.companyName || "N/A";
-        } else if (key === "partyName.partyName") {
-          value = lead.partyName?.partyName || "N/A";
-        } else if (key === "partyName.ownerMobileNo") {
-          value = lead.partyName?.ownerMobileNo || "N/A";
-        } else if (key === "partyName.address.unitNo") {
-          value = lead.partyName?.address?.unitNo || "N/A";
-        } else if (key === "partyName.address.marketName") {
-          value = lead.partyName?.address?.marketName || "N/A";
-        } else if (key === "partyName.address.area") {
-          value = lead.partyName?.address?.area || "N/A";
-        } else if (key === "partyName.partyTag") {
-          value = lead.partyName?.partyTag || "N/A";
-        } else if (key === "status") {
-          value = lead.status || "N/A";
-        } else if (key === "createdAt") {
-          value = lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("en-GB") : "N/A";
-        } else if (key === "partyName.createdBy") {
-          value = lead.partyName?.createdBy
-            ? `${lead.partyName.createdBy.firstName} ${lead.partyName.createdBy.lastName}`.trim()
-            : "N/A";
-        } else if (key === "assignedTo") {
-          value = lead.assignedTo
-            ? `${lead.assignedTo.firstName} ${lead.assignedTo.lastName}`.trim()
-            : "N/A";
-        } else {
-          value = String((lead as any)[key] || "N/A");
-        }
-        return values.includes(value);
-      })
-    );
-  }
+    // Apply date range filter
+    if (startDate || endDate) {
+      filtered = filtered.filter((lead) => {
+        const leadDate = new Date(lead.date);
+        const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+        const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
+        return (!start || leadDate >= start) && (!end || leadDate <= end);
+      });
+    }
 
-  return filtered;
-}, [leads, tab, startDate, endDate, searchQuery, filters]);
+    // Apply search query filter
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((lead) =>
+        [
+          lead.partyName?.partyName,
+          lead.companyName?.companyName,
+          lead.reason,
+          lead.partyName?.address?.unitNo,
+          lead.partyName?.address?.marketName,
+          lead.partyName?.address?.area,
+        ].some((value) =>
+          value?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    }
+
+    // Apply multiple filters
+    if (Object.keys(filters).length > 0) {
+      filtered = filtered.filter((lead) =>
+        Object.entries(filters).every(([field, values]) => {
+          const key = filterFieldToKey[field];
+          let value: string;
+          if (key === "companyName.companyName") {
+            value = lead.companyName?.companyName || "N/A";
+          } else if (key === "partyName.partyName") {
+            value = lead.partyName?.partyName || "N/A";
+          } else if (key === "partyName.ownerMobileNo") {
+            value = lead.partyName?.ownerMobileNo || "N/A";
+          } else if (key === "partyName.address.unitNo") {
+            value = lead.partyName?.address?.unitNo || "N/A";
+          } else if (key === "partyName.address.marketName") {
+            value = lead.partyName?.address?.marketName || "N/A";
+          } else if (key === "partyName.address.area") {
+            value = lead.partyName?.address?.area || "N/A";
+          } else if (key === "partyName.partyTag") {
+            value = lead.partyName?.partyTag || "N/A";
+          } else if (key === "status") {
+            value = lead.status || "N/A";
+          } else if (key === "createdAt") {
+            value = lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("en-GB") : "N/A";
+          } else if (key === "partyName.createdBy") {
+            value = lead.partyName?.createdBy
+              ? `${lead.partyName.createdBy.firstName} ${lead.partyName.createdBy.lastName}`.trim()
+              : "N/A";
+          } else if (key === "assignedTo") {
+            value = lead.assignedTo
+              ? `${lead.assignedTo.firstName} ${lead.assignedTo.lastName}`.trim()
+              : "N/A";
+          } else {
+            value = String((lead as any)[key] || "N/A");
+          }
+          return values.includes(value);
+        })
+      );
+    }
+
+    return filtered;
+  }, [companyFilteredLeads, tab, startDate, endDate, searchQuery, filters]);
 
   const filteredGroupedLeads = useMemo(() => {
     return filteredLeads.reduce((acc, lead) => {
@@ -383,7 +404,7 @@ const filteredLeads = useMemo(() => {
   const handleDeleteClick = async (id: string) => {
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: "You won't be able to revert this!",
+      text: "You won't be to revert this!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#7F56D9",
@@ -441,44 +462,44 @@ const filteredLeads = useMemo(() => {
       <TableCell>
         <Box display="flex" alignItems="center" gap={1}>
           <Avatar
-          sx={{ width: 32, height: 32 }}
-          src={row.companyName?.avatar}
-          alt={row.companyName?.companyName || "Company"}
-        />
-            <Typography fontWeight={500} sx={{fontSize:14}}>
-              {row.companyName?.companyName || "N/A"}
-              {row.isRescheduledCall && (
-                <Tooltip title={`Rescheduled from ${new Date(row.originalLeadId?.date).toLocaleDateString('en-GB')}`}>
-                  <ThemeChip label="Rescheduled" color="warning" size="small" sx={{ ml: 1, background: "#FFFAEB", color: "#B54708" }} />
-                </Tooltip>
-              )}
-            </Typography>
-            </Box>
+            sx={{ width: 32, height: 32 }}
+            src={row.companyName?.avatar}
+            alt={row.companyName?.companyName || "Company"}
+          />
+          <Typography fontWeight={500} sx={{ fontSize: 14 }}>
+            {row.companyName?.companyName || "N/A"}
+            {row.isRescheduledCall && (
+              <Tooltip title={`Rescheduled from ${new Date(row.originalLeadId?.date).toLocaleDateString('en-GB')}`}>
+                <ThemeChip label="Rescheduled" color="warning" size="small" sx={{ ml: 1, background: "#FFFAEB", color: "#B54708" }} />
+              </Tooltip>
+            )}
+          </Typography>
+        </Box>
       </TableCell>
-      <TableCell sx={{fontSize:14}}>
+      <TableCell sx={{ fontSize: 14 }}>
         {row.createdAt ? new Date(row.createdAt).toLocaleDateString("en-GB") : "N/A"}
       </TableCell>
       <TableCell
-        sx={{ cursor: "pointer",fontSize:14 }}
+        sx={{ cursor: "pointer", fontSize: 14 }}
         onClick={() => handleClick(row._id || "")}
       >
         {row.partyName?.partyName || "N/A"}
       </TableCell>
-      <TableCell sx={{fontSize:14}}>
+      <TableCell sx={{ fontSize: 14 }}>
         {row.reason === "Other" ? row.customReason || "Other" : row.reason}
       </TableCell>
-      <TableCell sx={{fontSize:14}}>{row.partyName?.ownerWhatsAppNo || "N/A"}</TableCell>
-      <TableCell sx={{fontSize:14}}>
+      <TableCell sx={{ fontSize: 14 }}>{row.partyName?.ownerWhatsAppNo || "N/A"}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>
         {row.partyName?.address
           ? truncateText(
-              `${row.partyName.address.unitNo}`,
-              30
-            )
+            `${row.partyName.address.unitNo}`,
+            30
+          )
           : "N/A"}
       </TableCell>
-      <TableCell sx={{fontSize:14}}>{row.partyName?.address?.marketName?.marketName || "N/A"}</TableCell>
-      <TableCell sx={{fontSize:14}}>{row.partyName?.address?.area?.area || "N/A"}</TableCell>
-      <TableCell sx={{fontSize:14}}>
+      <TableCell sx={{ fontSize: 14 }}>{row.partyName?.address?.marketName?.marketName || "N/A"}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.partyName?.address?.area?.area || "N/A"}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip
           label={row.partyName?.partyTag || "N/A"}
           color={row.partyName?.partyTag === "New" ? "primary" : "default"}
@@ -494,14 +515,14 @@ const filteredLeads = useMemo(() => {
           }}
         />
       </TableCell>
-      <TableCell sx={{fontSize:14}}>
+      <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip
           label={row.status.charAt(0).toUpperCase() + row.status.slice(1) || "N/A"}
           color={
             row.status === "pending" ? "primary" :
-            row.status === "rescheduled" ? "warning" :
-            row.status === "completed" ? "success" :
-            row.status === "cancelled" ? "error" : "default"
+              row.status === "rescheduled" ? "warning" :
+                row.status === "completed" ? "success" :
+                  row.status === "cancelled" ? "error" : "default"
           }
           variant="filled"
           sx={{
@@ -512,8 +533,8 @@ const filteredLeads = useMemo(() => {
           }}
         />
       </TableCell>
-      
-      <TableCell sx={{fontSize:14}}>
+
+      <TableCell sx={{ fontSize: 14 }}>
         {row.partyName?.createdBy
           ? `${row.partyName.createdBy.firstName} ${row.partyName.createdBy.lastName}`.trim()
           : "N/A"}
@@ -523,12 +544,11 @@ const filteredLeads = useMemo(() => {
           ? `${row.assignedTo.firstName} ${row.assignedTo.lastName}`.trim()
           : "N/A"}
       </TableCell>
-      <TableCell sx={{ display: "flex",fontSize:14 }}>
+      <TableCell sx={{ display: "flex", fontSize: 14 }}>
         {canEdit && (
-
-        <IconButton onClick={() => handleUpdateClick(row)} color="primary">
-          <EditIcon />
-        </IconButton>
+          <IconButton onClick={() => handleUpdateClick(row)} color="primary">
+            <EditIcon />
+          </IconButton>
         )}
         {canDelete && (
           <IconButton
@@ -544,6 +564,11 @@ const filteredLeads = useMemo(() => {
 
   return (
     <>
+      {/* Only show company tabs if user has access to both companies */}
+      {hasBothCompanies && (
+        <TabComponent activeTab={comapanyTab} setActiveTab={setCompanyTab} />
+      )}
+      
       <Box
         sx={{
           display: "flex",
@@ -604,15 +629,14 @@ const filteredLeads = useMemo(() => {
           />
           {cancreate && (
             <ThemeButton
-            onClick={() => {
-              setSelectedLead(null);
-              setOpenAssignDialog(true);
-            }}
-          >
-            + Assign New Party Call
-          </ThemeButton>
+              onClick={() => {
+                setSelectedLead(null);
+                setOpenAssignDialog(true);
+              }}
+            >
+              + Assign New Party Call
+            </ThemeButton>
           )}
-          
         </Box>
       </Box>
 

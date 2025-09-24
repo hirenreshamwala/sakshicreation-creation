@@ -35,6 +35,7 @@ import Swal from "sweetalert2";
 import Loader from "@/component/common_component/loader";
 import { FiSearch } from "react-icons/fi";
 import { toast } from "react-toastify";
+import TabComponent from "@/component/Dialog/TabComponent";
 
 interface RowData {
   id: string;
@@ -85,11 +86,12 @@ const AssignTaskPage: React.FC = () => {
   } = useAppSelector((state) => state.assignTasks || {});
   const { user } = useAppSelector((state) => state.auth);
   const [open, setOpen] = useState(false);
+  const [companyTab, setCompanyTab] = useState(0);
   const [editId, setEditId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [tab, setTab] = useState(0);
+  const [statusTab, setStatusTab] = useState(0);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(
     null
   );
@@ -101,6 +103,26 @@ const AssignTaskPage: React.FC = () => {
   const cancreate = user?.role?.permissions?.assign_task?.create;
   const canedit = user?.role?.permissions?.assign_task?.edit;
   const candelete = user?.role?.permissions?.assign_task?.delete;
+
+  // Determine company permissions
+  const hasSakshi = !!user?.sakshiCompanyId;
+  const hasQP = !!user?.qpCompanyId;
+  const hasBothCompanies = hasSakshi && hasQP;
+
+  // Company tabs configuration
+  const companyTabs = useMemo(() => {
+    const tabs = [];
+    if (hasSakshi) tabs.push({ id: 'sakshi', name: 'Sakshi', companyId: user?.sakshiCompanyId });
+    if (hasQP) tabs.push({ id: 'qp', name: 'QP', companyId: user?.qpCompanyId });
+    return tabs;
+  }, [user, hasSakshi, hasQP]);
+
+  // Selected company based on permissions
+  const selectedCompanyId = hasBothCompanies
+    ? companyTabs[companyTab]?.companyId
+    : hasSakshi
+    ? user?.sakshiCompanyId
+    : user?.qpCompanyId;
 
   const mapStatusToType = (status: string): RowData["statusType"] => {
     switch (status) {
@@ -183,7 +205,6 @@ const AssignTaskPage: React.FC = () => {
     if (error) {
       toast.error(error);
     }
-
   }, [error, dispatch]);
 
   useEffect(() => {
@@ -269,12 +290,19 @@ const AssignTaskPage: React.FC = () => {
     return Array.from(new Set(values)).sort();
   }, [assignTasks, selectedFilterField]);
 
+  // Filter tasks by company first
+  const tasksFilteredByCompany = useMemo(() => {
+    return assignTasks.filter(task => 
+      task.companyName?._id === selectedCompanyId
+    );
+  }, [assignTasks, selectedCompanyId]);
+
   const filteredTasks = useMemo(() => {
-    let filtered = assignTasks;
+    let filtered = tasksFilteredByCompany;
 
     // Apply status filter
     filtered = filtered.filter((task) =>
-      tab === 0
+      statusTab === 0
         ? ["Pending", "Rescheduled"].includes(task.status)
         : ["Completed", "Cancelled"].includes(task.status)
     );
@@ -320,7 +348,7 @@ const AssignTaskPage: React.FC = () => {
     }
 
     return filtered;
-  }, [assignTasks, tab, startDate, endDate, searchQuery, filters]);
+  }, [tasksFilteredByCompany, statusTab, startDate, endDate, searchQuery, filters]);
 
   const filteredGroupedTasks = useMemo(() => {
     return filteredTasks.reduce((acc, task) => {
@@ -349,7 +377,7 @@ const AssignTaskPage: React.FC = () => {
     if (todayRef.current) {
       todayRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [filteredSortedDates, tab, startDate, endDate, searchQuery, filters]);
+  }, [filteredSortedDates, statusTab, startDate, endDate, searchQuery, filters]);
 
   const truncateText = (text: string, maxLength: number) => {
     if (!text) return "N/A";
@@ -363,8 +391,8 @@ const AssignTaskPage: React.FC = () => {
         <Box display="flex" alignItems="center" gap={1}>
           <Avatar
             sx={{ width: 32, height: 32 }}
-            src={row.company.avatar} // Add this
-            alt={row.company.name}   // And this
+            src={row.company.avatar}
+            alt={row.company.name}
           />
           <Box>
             <Typography fontWeight={500} sx={{ fontSize: 14 }}>
@@ -396,7 +424,7 @@ const AssignTaskPage: React.FC = () => {
       >
         {row.party}
       </TableCell>
-    
+
       <TableCell sx={{ fontSize: 14 }}>
         <Typography
           sx={{
@@ -417,7 +445,7 @@ const AssignTaskPage: React.FC = () => {
         : row.remarks}</Typography></TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.assignBy}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
-        <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip
           label={row.status}
@@ -480,6 +508,26 @@ const AssignTaskPage: React.FC = () => {
 
   return (
     <>
+      {/* Company Tabs - Only show if user has both companies */}
+      {hasBothCompanies && (
+        <Box sx={{ mb: 2 }}>
+          <TabComponent
+            activeTab={companyTab}
+            setActiveTab={setCompanyTab}
+            tabs={companyTabs.map((c) => c.name)}
+          />
+        </Box>
+      )}
+
+      {/* Show current company name when user has only one permission */}
+      {!hasBothCompanies && selectedCompanyId && (
+        <Box sx={{ mb: 2, p: 2, backgroundColor: 'primary.light', color: 'primary.contrastText', borderRadius: 1 }}>
+          <Typography variant="h6">
+            Showing tasks for: {hasSakshi ? 'Sakshi' : 'QP'}
+          </Typography>
+        </Box>
+      )}
+
       <Box
         sx={{
           display: "flex",
@@ -551,6 +599,7 @@ const AssignTaskPage: React.FC = () => {
         </Box>
       </Box>
 
+      {/* Status Tabs */}
       <Box sx={{ display: "flex", mb: 3 }}>
         <Box
           sx={{
@@ -567,7 +616,7 @@ const AssignTaskPage: React.FC = () => {
             sx={{
               position: "absolute",
               top: 2,
-              left: tab === 0 ? 2 : "50%",
+              left: statusTab === 0 ? 2 : "50%",
               width: "50%",
               height: "calc(100% - 4px)",
               backgroundColor: "#7F56D9",
@@ -577,8 +626,8 @@ const AssignTaskPage: React.FC = () => {
             }}
           />
           <Tabs
-            value={tab}
-            onChange={(_, v) => setTab(v)}
+            value={statusTab}
+            onChange={(_, v) => setStatusTab(v)}
             TabIndicatorProps={{ style: { display: "none" } }}
             sx={{
               minHeight: 0,
@@ -636,7 +685,7 @@ const AssignTaskPage: React.FC = () => {
           <Loader />
         ) : filteredSortedDates.length === 0 ? (
           <Typography>
-            No tasks found
+            No tasks found for {hasBothCompanies ? companyTabs[companyTab]?.name : (hasSakshi ? 'Sakshi' : 'QP')}
             {startDate || endDate ? " for the selected date range" : ""}.
           </Typography>
         ) : (

@@ -27,6 +27,7 @@ import AssignLeadDialog from "@/component/AssignLeadDialog";
 import AssignTaskDialog from "@/component/assigntaskdailog";
 import { toast } from "react-toastify";
 import { useMemo } from "react";
+import TabComponent from "@/component/Dialog/TabComponent";
 
 interface Company {
   _id: string;
@@ -82,21 +83,49 @@ const IndexPage: React.FC = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [isRequestMode, setIsRequestMode] = useState(false);
-  const [isBulkUpload, setIsBulkUpload] = useState(false); // New state for bulk upload mode
-  const [tab, setTab] = useState(0);
+  const [isBulkUpload, setIsBulkUpload] = useState(false);
+  const [companyTab, setCompanyTab] = useState(0); 
+  const [statusTab, setStatusTab] = useState(0);
   const [openBulkUploadDialog, setOpenBulkUploadDialog] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [openAssignLeadDialog, setOpenAssignLeadDialog] = useState(false);
-  const [openBulkAssignTask, setOpenBulkAssignTask] = useState(false); // New state for bulk assign task dialog
+  const [openBulkAssignTask, setOpenBulkAssignTask] = useState(false);
   const canViewGlobal = user?.role?.permissions?.account_master?.view_global;
   const canViewOwn = user?.role?.permissions?.account_master?.view_own;
   const cancreate = user?.role?.permissions?.account_master?.create;
   const canedit = user?.role?.permissions?.account_master?.edit;
   const candelete = user?.role?.permissions?.account_master?.delete;
 
+  // Determine company permissions
+  const hasSakshi = !!user?.sakshiCompanyId;
+  const hasQP = !!user?.qpCompanyId;
+  const hasBothCompanies = hasSakshi && hasQP;
+
+  // Company tabs configuration
+  const companyTabs = useMemo(() => {
+    const tabs = [];
+    if (hasSakshi) tabs.push({ id: 'sakshi', name: 'Sakshi', companyId: user?.sakshiCompanyId });
+    if (hasQP) tabs.push({ id: 'qp', name: 'QP', companyId: user?.qpCompanyId });
+    return tabs;
+  }, [user, hasSakshi, hasQP]);
+
+  // Selected company based on permissions
+  const selectedCompanyId = hasBothCompanies
+    ? companyTabs[companyTab]?.companyId
+    : hasSakshi
+    ? user?.sakshiCompanyId
+    : user?.qpCompanyId;
+
   // Calculate counts for Approved and Pending tabs
-  const approvedCount = accountMasters.filter((account) => account.party?.statusApproval === "APPROVED").length;
-  const pendingCount = accountMasters.filter((account) => account.party?.statusApproval === "PENDING").length;
+  const approvedCount = accountMasters.filter((account) => 
+    account.party?.statusApproval === "APPROVED" && 
+    account.companyName?._id === selectedCompanyId
+  ).length;
+  
+  const pendingCount = accountMasters.filter((account) => 
+    account.party?.statusApproval === "PENDING" && 
+    account.companyName?._id === selectedCompanyId
+  ).length;
 
   // Update tabLabels to include counts
   const tabLabelsWithCount = [
@@ -243,8 +272,8 @@ const IndexPage: React.FC = () => {
   const handleBulkUploadClick = () => {
     setEditId(null);
     setIsRequestMode(false);
-    setIsBulkUpload(true); // Set to true for bulk upload
-    setOpen(true)// Open AddNewPartyDialog instead of openBulkUploadDialog
+    setIsBulkUpload(true)
+    setOpen(true)
   };
 
   const handleDialogClose = () => {
@@ -272,13 +301,15 @@ const IndexPage: React.FC = () => {
 
   const filteredAccountMasters = accountMasters.filter((account) => {
     const statusApproval = account.party?.statusApproval || "PENDING";
-    const statusMatch = tab === 0 ? statusApproval === "APPROVED" : statusApproval === "PENDING";
-    // Then filter by ownership if user only has view_own permission
+    const statusMatch = statusTab === 0 ? statusApproval === "APPROVED" : statusApproval === "PENDING";
+    
+    const companyMatch = account.companyName?._id === selectedCompanyId;
+
     if (canViewOwn && !canViewGlobal) {
-      return statusMatch && account.createdBy?._id === user?.id;
+      return statusMatch && companyMatch && account.createdBy?._id === user?.id;
     }
 
-    return statusMatch;
+    return statusMatch && companyMatch;
   });
 
   const excelData = useMemo(() => {
@@ -346,7 +377,7 @@ const IndexPage: React.FC = () => {
         account.assignment?.assignedTo && typeof account.assignment.assignedTo === "object"
           ? `${account.assignment.assignedTo.firstName} ${account.assignment.assignedTo.lastName}`
           : "Unassigned",
-      statusApproval: account.party?.statusApproval || "Pending",
+      statusApproval: account.party?.statusApproval === "APPROVED" ? "Approved" : "Pending",
     };
   });
   const partyIds = selectedRows.map((accountId) => {
@@ -364,6 +395,26 @@ const IndexPage: React.FC = () => {
 
   return (
     <>
+      {/* Company Tabs - Only show if user has both companies */}
+      {hasBothCompanies && (
+        <Box sx={{ mb: 2 }}>
+          <TabComponent
+            activeTab={companyTab}
+            setActiveTab={setCompanyTab}
+            tabs={companyTabs.map((c) => c.name)}
+          />
+        </Box>
+      )}
+
+      {/* Show current company name when user has only one permission */}
+      {!hasBothCompanies && selectedCompanyId && (
+        <Box sx={{ mb: 2, p: 2, backgroundColor: 'primary.light', color: 'primary.contrastText', borderRadius: 1 }}>
+          <Typography variant="h6">
+            Showing data for: {hasSakshi ? 'Sakshi' : 'QP'}
+          </Typography>
+        </Box>
+      )}
+
       <Box
         sx={{
           display: "flex",
@@ -375,14 +426,12 @@ const IndexPage: React.FC = () => {
       >
         <Box />
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-
           {(canViewGlobal) && (
             <ThemeButton onClick={handleAddNew}>+ Add New Party</ThemeButton>
           )}
           {(canViewOwn) && (
             <ThemeButton onClick={handleAddNewRequest}>+ Add New Party Request</ThemeButton>
           )}
-          {/* {(canViewGlobal) && ( */}
           <ThemeButton onClick={handleBulkUploadClick} startIcon={<CloudUploadIcon />}>
             Bulk Upload
           </ThemeButton>
@@ -398,7 +447,6 @@ const IndexPage: React.FC = () => {
           >
             Assign Task for Selected
           </ThemeButton>
-          {/* )} */}
         </Box>
       </Box>
 
@@ -418,7 +466,7 @@ const IndexPage: React.FC = () => {
             sx={{
               position: "absolute",
               top: 2,
-              left: tab === 0 ? 2 : "50%",
+              left: statusTab === 0 ? 2 : "50%",
               width: "50%",
               height: "calc(100% - 4px)",
               backgroundColor: "#7F56D9",
@@ -428,8 +476,8 @@ const IndexPage: React.FC = () => {
             }}
           />
           <Tabs
-            value={tab}
-            onChange={(_, v) => setTab(v)}
+            value={statusTab}
+            onChange={(_, v) => setStatusTab(v)}
             TabIndicatorProps={{ style: { display: "none" } }}
             sx={{
               minHeight: 0,
@@ -465,7 +513,9 @@ const IndexPage: React.FC = () => {
       {loading ? (
         <Loader />
       ) : formattedRows.length === 0 ? (
-        <Typography>No account masters found for {tabLabelsWithCount[tab]} tab.</Typography>
+        <Typography sx={{ mt: 2 }}>
+          No account masters found for {hasBothCompanies ? companyTabs[companyTab]?.name : (hasSakshi ? 'Sakshi' : 'QP')} - {tabLabelsWithCount[statusTab]}.
+        </Typography>
       ) : (
         <BasicTable
           showDatePicker={true}
@@ -514,9 +564,13 @@ const IndexPage: React.FC = () => {
               <TableCell sx={{ fontSize: 14 }}>{row.unitno}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.market?.marketName}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.area?.area}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}><Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
-                ? `${row.remarks.substring(0, 10)}...`
-                : row.remarks}</Typography></TableCell>
+              <TableCell sx={{ fontSize: 14 }}>
+                <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>
+                  {row.remarks && row.remarks.length > 10
+                    ? `${row.remarks.substring(0, 10)}...`
+                    : row.remarks}
+                </Typography>
+              </TableCell>
               <TableCell sx={{ fontSize: 14 }}>
                 <ThemeChip
                   label={row.status}
@@ -555,7 +609,7 @@ const IndexPage: React.FC = () => {
                     <DeleteIcon />
                   </IconButton>
                 )}
-                {row.statusApproval === 'PENDING' && canViewGlobal && (
+                {row.statusApproval === 'Pending' && canViewGlobal && (
                   <IconButton onClick={() => handleApprove(row.partyId)}>
                     <CheckCircleIcon color="success" />
                   </IconButton>
