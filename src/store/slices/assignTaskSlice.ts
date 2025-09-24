@@ -3,9 +3,9 @@ import { assignTaskService, AssignTask, CreateAssignTask, UpdateAssignTask } fro
 
 export const getAllAssignTasksThunk = createAsyncThunk(
   'assignTasks/getAll',
-  async (_, { rejectWithValue }) => {
+  async (filters, { rejectWithValue }) => {
     try {
-      const response = await assignTaskService.getAllAssignTasks();
+      const response = await assignTaskService.getAllAssignTasks(filters);
       if (response.success && Array.isArray(response.data)) {
         return response.data;
       } else {
