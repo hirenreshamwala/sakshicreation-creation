@@ -4,6 +4,7 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit";
 import { orderService } from "@/services/order.service";
+import { FilterSharp } from "@mui/icons-material";
 
 interface Order {
   _id: string;
@@ -104,24 +105,16 @@ export const createOrderThunk = createAsyncThunk(
 // Get All Orders
 export const getAllOrdersThunk = createAsyncThunk(
   "order/getAll",
-  async (
-    params?: {
-      page?: number;
-      limit?: number;
-      status?: string;
-      companyName?: string;
-      party?: string;
-      search?: string;
-    },
-    { rejectWithValue }
+  async (filters,{ rejectWithValue }
   ) => {
     try {
-      const response = await orderService.getAllOrders(params);
+      const response = await orderService.getAllOrders();
 
       if (response.success && Array.isArray(response.data)) {
         return {
           data: response.data,
-          pagination: response.pagination,
+          count: response.count
+          // pagination: response.pagination,
         };
       } else {
         return rejectWithValue(

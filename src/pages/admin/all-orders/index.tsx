@@ -193,7 +193,7 @@ const AllOrdersPage = () => {
     }
 
     if (canViewGlobal) {
-      dispatch(getAllOrdersThunk({ limit: 100 })); // Increase limit to fetch more orders
+      dispatch(getAllOrdersThunk()); // Increase limit to fetch more orders
     } else if (canViewOwn && user?.id) {
       dispatch(getOrdersByStaffIdThunk(user.id));
     }
