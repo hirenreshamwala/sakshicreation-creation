@@ -555,7 +555,7 @@ const IndexPage: React.FC = () => {
                     <DeleteIcon />
                   </IconButton>
                 )}
-                {row.statusApproval === 'Pending' && canViewGlobal && (
+                {row.statusApproval === 'PENDING' && canViewGlobal && (
                   <IconButton onClick={() => handleApprove(row.partyId)}>
                     <CheckCircleIcon color="success" />
                   </IconButton>

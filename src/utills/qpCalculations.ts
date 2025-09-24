@@ -154,3 +154,4 @@ export const calculatePaperKg = (
 
   return { p1Kg, p2Kg, p3Kg, totalKg };
 };
+

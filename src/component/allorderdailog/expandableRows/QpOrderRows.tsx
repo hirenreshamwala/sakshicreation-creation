@@ -231,9 +231,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 parseFloat(row.orderdata.height),
                 parseFloat(row.orderdata.deckal),
                 parseInt(row.orderdata.ply),
+                parseFloat(row.orderdata.paper3GSM),
                 parseFloat(row.orderdata.paper1GSM),
                 parseFloat(row.orderdata.paper2GSM),
-                parseFloat(row.orderdata.paper3GSM),
                 parseFloat(formData.actualNoOfPieces || row.noOfPieces)
             );
 

@@ -43,7 +43,14 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
 
   const dispatch = useAppDispatch()
   const { companies, loading, error: companyError } = useAppSelector((state) => state.company)
+  const { user } = useAppSelector((state) => state.auth)
+  console.log("DEBUG : CompanySelect : user:", user);
+
+  console.log("DEBUG : CompanySelect : companies:", companies);
+
   const { parties, loading: partyLoading } = useAppSelector((state) => state.party)
+  console.log("DEBUG : CompanySelect : parties:", parties);
+
   const [companyOptions, setCompanyOptions] = useState<{ label: string; value: string }[]>([])
   const [partyOptions, setPartyOptions] = useState<{ label: string; value: string }[]>([])
   const [defaultSet, setDefaultSet] = useState(() => !!value || !!partyName)
