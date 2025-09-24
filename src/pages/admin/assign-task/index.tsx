@@ -12,7 +12,7 @@ import {
   Tabs,
   Tooltip,
 } from "@mui/material";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   getAllAssignTasksThunk,
@@ -77,6 +77,7 @@ const tabLabels = ["Pending", "History"];
 
 const AssignTaskPage: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const {
     assignTasks = [],
@@ -97,6 +98,11 @@ const AssignTaskPage: React.FC = () => {
   );
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const todayRef = useRef<HTMLDivElement>(null);
+
+  const staffId = searchParams.get("staffId");
+  const queryStartDate = searchParams.get("startDate");
+  const queryEndDate = searchParams.get("endDate");
+  const queryStatus = searchParams.get("status");
 
   const canViewGlobal = user?.role?.permissions?.assign_task?.view_global;
   const canViewOwn = user?.role?.permissions?.assign_task?.view_own;
@@ -121,8 +127,27 @@ const AssignTaskPage: React.FC = () => {
   const selectedCompanyId = hasBothCompanies
     ? companyTabs[companyTab]?.companyId
     : hasSakshi
-    ? user?.sakshiCompanyId
-    : user?.qpCompanyId;
+      ? user?.sakshiCompanyId
+      : user?.qpCompanyId;
+
+  // Set initial date range and status from query parameters
+  useEffect(() => {
+    if (queryStartDate) {
+      setStartDate(new Date(queryStartDate));
+    }
+    if (queryEndDate) {
+      setEndDate(new Date(queryEndDate));
+    }
+    if (queryStatus) {
+      // Set statusTab based on query status (completed,cancelled maps to History tab)
+      const statuses = queryStatus.split(",");
+      if (statuses.includes("completed") || statuses.includes("cancelled")) {
+        setStatusTab(1); // History tab
+      } else {
+        setStatusTab(0); // Pending tab
+      }
+    }
+  }, [queryStartDate, queryEndDate, queryStatus]);
 
   const mapStatusToType = (status: string): RowData["statusType"] => {
     switch (status) {
@@ -214,8 +239,24 @@ const AssignTaskPage: React.FC = () => {
       return;
     }
 
+    const filters: any = {
+      companyName: selectedCompanyId,
+    };
+    if (staffId) {
+      filters.staffId = staffId;
+    }
+    if (queryStartDate) {
+      filters.startDate = queryStartDate;
+    }
+    if (queryEndDate) {
+      filters.endDate = queryEndDate;
+    }
+    if (queryStatus) {
+      filters.status = queryStatus.split(",");
+    }
+
     if (canViewGlobal) {
-      dispatch(getAllAssignTasksThunk());
+      dispatch(getAllAssignTasksThunk(filters));
     } else if (canViewOwn && user?.id) {
       dispatch(getAssignTaskByStaffIdThunk(user.id));
     }
@@ -224,7 +265,11 @@ const AssignTaskPage: React.FC = () => {
       dispatch(clearError());
       dispatch(clearSuccessMessage());
     };
-  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id]);
+  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id, selectedCompanyId,
+    staffId,
+    queryStartDate,
+    queryEndDate,
+    queryStatus,]);
 
   const mapTasksToRows = (tasks: any[]): RowData[] =>
     tasks.map((task) => ({
@@ -292,7 +337,7 @@ const AssignTaskPage: React.FC = () => {
 
   // Filter tasks by company first
   const tasksFilteredByCompany = useMemo(() => {
-    return assignTasks.filter(task => 
+    return assignTasks.filter(task =>
       task.companyName?._id === selectedCompanyId
     );
   }, [assignTasks, selectedCompanyId]);
@@ -674,7 +719,24 @@ const AssignTaskPage: React.FC = () => {
           setEditId(null);
         }}
         taskId={editId}
-        refreshData={() => dispatch(getAllAssignTasksThunk())}
+        refreshData={() => {
+          const filters: any = {
+            companyName: selectedCompanyId,
+          };
+          if (staffId) {
+            filters.staffId = staffId;
+          }
+          if (queryStartDate) {
+            filters.startDate = queryStartDate;
+          }
+          if (queryEndDate) {
+            filters.endDate = queryEndDate;
+          }
+          if (queryStatus) {
+            filters.status = queryStatus.split(",");
+          }
+          dispatch(getAllAssignTasksThunk(filters));
+        }}
       />
     </>
   );

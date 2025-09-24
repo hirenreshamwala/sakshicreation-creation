@@ -12,9 +12,13 @@ const columns = [
   { id: 'companyName', label: 'Company' },
   { id: 'doneTasks', label: 'Tasks Done' },
   { id: 'rescheduledTasks', label: 'Rescheduled Tasks' },
+  { id: 'partyVisit', label: 'Party Visit' },
+  { id: 'donePartyVisit', label: 'Done Party Visit' },
+  { id: 'cancelledPartyVisit', label: 'Cancelled Party Visit' },
   { id: 'doneLeads', label: 'Leads Done' },
   { id: 'rescheduledLeads', label: 'Rescheduled Leads' },
   { id: 'ordersGiven', label: 'Orders Punched' },
+  { id: 'totalSale', label: 'Total Sale' },
   { id: 'newToCustomerParties', label: 'New to Customer Convert' },
   { id: 'createdParties', label: 'New Customer Added' },
 ];
@@ -112,9 +116,13 @@ const StaffPage = () => {
     'Company',
     'Tasks Done',
     'Rescheduled Tasks',
+    'Party Visit',
+    'Done Party Visit',
+    'Cancelled Party Visit',
     'Leads Done',
     'Rescheduled Leads',
     'Orders Punched',
+    'Total Sale',
     'New to Customer Convert',
     'New Customer Added'
   ], []);
@@ -123,13 +131,17 @@ const StaffPage = () => {
     return reportData.map(row => ({
       'Staff Name': row.staffName,
       'Company': row.companyName,
-      'Tasks Done' : row.doneTask,
+      'Tasks Done': row.doneTask,
       'Cancelled Tasks': row.cancelledTasks,
       'Rescheduled Tasks': row.rescheduledTasks,
+      'Party Visit': row.partyVisit,
+      'Done Party Visit': row.donePartyVisit,
+      'Cancelled Party Visit': row.cancelledPartyVisit,
       'Leads Done': row.doneLeads,
       'Cancelled Leads': row.cancelledLeads,
       'Rescheduled Leads': row.rescheduledLeads,
       'Orders Punched': row.ordersGiven,
+      'Total Sale': row.totalSale,
       'New to Customer Convert': row.newToCustomerParties,
       'New Customer Added': row.createdParties
     }));
@@ -144,7 +156,7 @@ const StaffPage = () => {
     try {
       const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
       const url = `${BaseURL}${apiEndpoint}`;
-      
+
       const response = await Request.post(url, { startDate, endDate });
 
       if (response.data.success) {
@@ -209,6 +221,11 @@ const StaffPage = () => {
     return preset ? preset.label : 'Select Date Range';
   };
 
+  const handleTaskClick = (staffId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled`;
+    window.open(url, '_blank');
+  };
+
   // Set initial date range
   useEffect(() => {
     const { startDate: initialStart, endDate: initialEnd } = getDateRange('lastWeek');
@@ -220,7 +237,7 @@ const StaffPage = () => {
 
   // Fetch data when tab, dates, or endpoint changes
   useEffect(() => {
-    fetchReport();
+    if (user) fetchReport();
   }, [tab, startDate, endDate, apiEndpoint]);
 
   return (
@@ -302,12 +319,6 @@ const StaffPage = () => {
 
       {loading && <Loader />}
 
-      {error && (
-        <Box sx={{ color: 'error.main', textAlign: 'center', mb: 2 }}>
-          Error: {error}
-        </Box>
-      )}
-
       {/* Staff Table with Excel Download */}
       {!loading && reportData.length > 0 ? (
         <BasicTable
@@ -319,21 +330,28 @@ const StaffPage = () => {
           excelData={excelData}
           tableHeader={columns}
           rowData={reportData}
-          renderRow={(row) => (
-            <>
+          renderRow={(row) => {
+    console.log("DEBUG : row:", row);
+    return (<>
               <TableCell sx={{ fontWeight: 500, cursor: 'pointer' }}>
                 {row.staffName}
               </TableCell>
               <TableCell>{row.companyName}</TableCell>
-              <TableCell>{row.doneTask}</TableCell>
+              <TableCell onClick={() => handleTaskClick(row.staffId)} sx={{ cursor: 'pointer' }}>
+                {row.doneTask}
+              </TableCell>
               <TableCell>{row.rescheduledTasks}</TableCell>
+              <TableCell>{row.partyVisit}</TableCell>
+              <TableCell>{row.donePartyVisit}</TableCell>
+              <TableCell>{row.cancelledPartyVisit}</TableCell>
               <TableCell>{row.doneLeads}</TableCell>
               <TableCell>{row.rescheduledLeads}</TableCell>
               <TableCell>{row.ordersGiven}</TableCell>
+              <TableCell>{row.totalSale}</TableCell>
               <TableCell>{row.newToCustomerParties}</TableCell>
               <TableCell>{row.createdParties}</TableCell>
-            </>
-          )}
+            </>);
+}}
         />
       ) : (
         !loading && (
