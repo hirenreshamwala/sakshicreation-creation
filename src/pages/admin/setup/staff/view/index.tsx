@@ -178,6 +178,7 @@ const StaffView = () => {
           router.push("/admin/setup/staff")
         } else if (mode === "edit" && id) {
           await dispatch(updateStaffThunk({ id: id as string, ...staffData })).unwrap()
+          dispatch(clearCurrentStaff())
           toast.success("Staff updated successfully!")
           router.push("/admin/setup/staff")
         }
