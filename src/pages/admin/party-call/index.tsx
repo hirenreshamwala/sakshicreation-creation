@@ -154,12 +154,12 @@ const LeadManagementPage: React.FC = () => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = getCompanyWisePermission(0);
-  const { staffId: si, startDate: st, endDate: e, status: s, reason: r } = router.query
+  const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c } = router.query
 
   // Determine active company ID
   const activeCompanyId = useMemo(() => {
     if (hasBothCompanies) {
-      return comapanyTab === 0 ? getCompanyWisePermission(5): getCompanyWisePermission(6);
+      return comapanyTab === 0 ? getCompanyWisePermission(5) : getCompanyWisePermission(6);
     }
     return hasSakshi ? getCompanyWisePermission(5) : getCompanyWisePermission(6);
   }, [hasBothCompanies, comapanyTab, hasSakshi, hasQP, user]);
@@ -175,6 +175,11 @@ const LeadManagementPage: React.FC = () => {
       toast.error(error);
     }
   }, [error, dispatch]);
+
+  useEffect(() => {
+    if (c)
+      setCompanyTab(c === "Quality Packaging" ? 1 : 0)
+  }, [c])
 
   useEffect(() => {
     if (st) setStartDate(new Date(st as string));

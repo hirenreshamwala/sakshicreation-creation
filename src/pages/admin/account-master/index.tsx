@@ -101,7 +101,7 @@ const IndexPage: React.FC = () => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = hasSakshi && hasQP;
-  const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p } = router.query
+  const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p, c } = router.query
 
   // Company tabs configuration
   const companyTabs = useMemo(() => {
@@ -175,6 +175,12 @@ const IndexPage: React.FC = () => {
         return "default";
     }
   };
+
+  useEffect(() => {
+    if (c)
+      setCompanyTab(c === "Quality Packaging" ? 1 : 0)
+  }, [c])
+  
   useEffect(() => {
     if (error) toast.error(error);
   }, [error, dispatch]);
@@ -297,10 +303,12 @@ const IndexPage: React.FC = () => {
       return;
     }
 
-    if (canViewGlobal) dispatch(getAllAccountMastersThunk({staffId: si,
-          startDate: st,
-          endDate: e,
-          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),}));
+    if (canViewGlobal) dispatch(getAllAccountMastersThunk({
+      staffId: si,
+      startDate: st,
+      endDate: e,
+      partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+    }));
     else if (canViewOwn && user?.id) dispatch(getAccountMasterByStaffIdThunk(user.id));
 
     return () => {
@@ -581,10 +589,12 @@ const IndexPage: React.FC = () => {
         accountId={editId ?? undefined}
         refreshData={() => {
           if (canViewGlobal) {
-            dispatch(getAllAccountMastersThunk({staffId: si,
-          startDate: st,
-          endDate: e,
-          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),}));
+            dispatch(getAllAccountMastersThunk({
+              staffId: si,
+              startDate: st,
+              endDate: e,
+              partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+            }));
           } else if (canViewOwn && user?.id) {
             dispatch(getAccountMasterByStaffIdThunk(user.id));
           }
@@ -603,10 +613,12 @@ const IndexPage: React.FC = () => {
           setOpenAssignLeadDialog(false);
           setSelectedRows([]);
           if (canViewGlobal) {
-            dispatch(getAllAccountMastersThunk({staffId: si,
-          startDate: st,
-          endDate: e,
-          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),}));
+            dispatch(getAllAccountMastersThunk({
+              staffId: si,
+              startDate: st,
+              endDate: e,
+              partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+            }));
           } else if (canViewOwn && user?.id) {
             dispatch(getAccountMasterByStaffIdThunk(user.id));
           }
@@ -623,10 +635,12 @@ const IndexPage: React.FC = () => {
           setOpenBulkAssignTask(false);
           setSelectedRows([]);
           if (canViewGlobal) {
-            dispatch(getAllAccountMastersThunk({staffId: si,
-          startDate: st,
-          endDate: e,
-          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),}));
+            dispatch(getAllAccountMastersThunk({
+              staffId: si,
+              startDate: st,
+              endDate: e,
+              partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+            }));
           } else if (canViewOwn && user?.id) {
             dispatch(getAccountMasterByStaffIdThunk(user.id));
           }

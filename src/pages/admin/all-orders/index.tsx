@@ -75,7 +75,7 @@ const AllOrdersPage = () => {
   const { user } = useAppSelector((state) => state.auth)
 
   // Filter state
-  const {companyName,c, staffId, startDate : st, endDate : ed} = router.query
+  const { companyName, c, staffId, startDate: st, endDate: ed } = router.query
   console.log("DEBUG : AllOrdersPage : c:", c);
 
   const [activeTab, setActiveTab] = useState(c === "Quality Packaging" ? 1 : 0);
@@ -139,6 +139,11 @@ const AllOrdersPage = () => {
     return Array.from(new Set(values)).filter((v) => v !== "N/A").sort();
   }, [selectedFilterField, orders]);
 
+  useEffect(() => {
+    if (c)
+      setActiveTab(c === "Quality Packaging" ? 1 : 0)
+  }, [c])
+
   // Filter orders based on search query, date range, and selected filters
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -201,7 +206,7 @@ const AllOrdersPage = () => {
     }
 
     if (canViewGlobal) {
-      dispatch(getAllOrdersThunk({companyName, staffId, startDate : st, endDate : ed})); // Increase limit to fetch more orders
+      dispatch(getAllOrdersThunk({ companyName, staffId, startDate: st, endDate: ed })); // Increase limit to fetch more orders
     } else if (canViewOwn && user?.id) {
       dispatch(getOrdersByStaffIdThunk(user.id));
     }

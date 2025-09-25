@@ -226,31 +226,31 @@ const StaffPage = () => {
   };
 
   const handleDoneTaskClick = (staffId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled`;
+    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
     window.open(url, '_blank');
   };
   const handleRescheduledTaskClick = (staffId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=rescheduled`;
+    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=rescheduled&c=${companyName}`;
     window.open(url, '_blank');
   };
   const handlePartyVisitClick = (staffId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit`;
+    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&c=${companyName}`;
     window.open(url, '_blank');
   };
   const handleDonePartyVisitClick = (staffId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=completed`;
+    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=completed&c=${companyName}`;
     window.open(url, '_blank');
   };
   const handleCancelledPartyVisitClick = (staffId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=cancelled`;
+    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=cancelled&c=${companyName}`;
     window.open(url, '_blank');
   };
   const handleDoneLeadsClick = (staffId) => {
-    const url = `/admin/party-call?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled`;
+    const url = `/admin/party-call?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
     window.open(url, '_blank');
   };
   const handleRescheduledLeadClick = (staffId) => {
-    const url = `/admin/party-call?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled`;
+    const url = `/admin/party-call?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
     window.open(url, '_blank');
   };
   const handleOrderClick = (staffId,companyId) => {
@@ -258,15 +258,15 @@ const StaffPage = () => {
     window.open(url, '_blank');
   };
   const handleCustomerClick = (staffId) => {
-    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=customer`;
+    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=customer&c=${companyName}`;
     window.open(url, '_blank');
   };
   const handleNewClick = (staffId) => {
-    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=new,customer`;
+    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=new,customer&c=${companyName}`;
     window.open(url, '_blank');
   };
   const handleNewcClick = (staffId) => {
-    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=new`;
+    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=new&c=${companyName}`;
     window.open(url, '_blank');
   };
 

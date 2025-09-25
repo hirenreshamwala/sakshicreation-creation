@@ -99,7 +99,7 @@ const AssignTaskPage: React.FC = () => {
   );
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const todayRef = useRef<HTMLDivElement>(null);
-  const { staffId: si, startDate: st, endDate: e, status: s ,reason : r  } = router.query
+  const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c } = router.query
 
   const canViewGlobal = user?.role?.permissions?.assign_task?.view_global;
   const canViewOwn = user?.role?.permissions?.assign_task?.view_own;
@@ -126,6 +126,11 @@ const AssignTaskPage: React.FC = () => {
     : hasSakshi
       ? getCompanyWisePermission(5)
       : getCompanyWisePermission(6);
+
+  useEffect(() => {
+    if (c)
+      setCompanyTab(c === "Quality Packaging" ? 1 : 0)
+  }, [c])
 
   // Set initial date range and status from query parameters
   useEffect(() => {
@@ -234,13 +239,13 @@ const AssignTaskPage: React.FC = () => {
 
     if (canViewGlobal && router.isReady) {
       dispatch(getAllAssignTasksThunk({
-      companyName: selectedCompanyId,
-      staffId:si,
-      startDate:st,
-      endDate:e,
-      status:s?.split(",").map(s => s.toLowerCase()),
-      reason:r
-    }));
+        companyName: selectedCompanyId,
+        staffId: si,
+        startDate: st,
+        endDate: e,
+        status: s?.split(",").map(s => s.toLowerCase()),
+        reason: r
+      }));
     } else if (canViewOwn && user?.id) {
       dispatch(getAssignTaskByStaffIdThunk(user.id));
     }
@@ -701,13 +706,13 @@ const AssignTaskPage: React.FC = () => {
         taskId={editId}
         refreshData={() => {
           dispatch(getAllAssignTasksThunk({
-      companyName: selectedCompanyId,
-      staffId:si,
-      startDate:st,
-      endDate:e,
-      status:s?.split(",").map(s => s.toLowerCase()),
-      reason:r
-    }));
+            companyName: selectedCompanyId,
+            staffId: si,
+            startDate: st,
+            endDate: e,
+            status: s?.split(",").map(s => s.toLowerCase()),
+            reason: r
+          }));
         }}
       />
     </>
