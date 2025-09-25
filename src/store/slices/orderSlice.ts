@@ -108,7 +108,7 @@ export const getAllOrdersThunk = createAsyncThunk(
   async (filters,{ rejectWithValue }
   ) => {
     try {
-      const response = await orderService.getAllOrders();
+      const response = await orderService.getAllOrders(filters);
 
       if (response.success && Array.isArray(response.data)) {
         return {

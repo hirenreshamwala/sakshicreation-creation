@@ -11,9 +11,9 @@ import { toast } from "react-toastify";
 // Thunks
 export const getAllAccountMastersThunk = createAsyncThunk(
   "accountMasters/getAll",
-  async (_, { rejectWithValue }) => {
+  async (filters, { rejectWithValue }) => {
     try {
-      const response = await accountMasterService.getAccountMasters();
+      const response = await accountMasterService.getAccountMasters(filters);
       if (response.success && Array.isArray(response.data)) {
         return response.data;
       } else {

@@ -103,8 +103,10 @@ export interface ApiResponse<T> {
 export const assignTaskService = {
   async getAllAssignTasks(filters: Record<string, any>): Promise<ApiResponse<AssignTask[]>> {
     try {
+      console.log("DEBUG : getAllAssignTasks : filters:", filters);
       const response: AxiosResponse<ApiResponse<AssignTask[]>> = await Request.post(
-        Endpoint.GET_ALL_ASSIGN_TASKS, {filters});
+        Endpoint.GET_ALL_ASSIGN_TASKS, filters);
+
       return {
         success: response.data.success,
         data: response.data.data || [],

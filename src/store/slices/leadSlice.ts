@@ -4,9 +4,9 @@ import { Lead } from '@/services/types';
 
 export const getAllLeadsThunk = createAsyncThunk(
   'leads/getAll',
-  async (_, { rejectWithValue }) => {
+  async (filters, { rejectWithValue }) => {
     try {
-      const response = await leadService.getAllLeads();
+      const response = await leadService.getAllLeads(filters);
       if (!response || typeof response !== 'object') {
         return rejectWithValue('Invalid response from server');
       }

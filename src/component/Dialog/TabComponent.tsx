@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Box, Typography } from "@mui/material"
 import { companyOptions } from "@/constants"
 
@@ -31,6 +31,9 @@ const TabComponent: React.FC<AddOrderDialogProps> = ({
     center: "center",
     right: "flex-end"
   }
+  useEffect(() => {
+  setTab(activeTab)
+}, [activeTab])
 
   return (
     <Box

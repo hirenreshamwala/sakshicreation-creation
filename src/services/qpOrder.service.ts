@@ -75,10 +75,10 @@ export const orderService = {
   },
 
   // Get All Orders
-  async getAllOrders(): Promise<ApiResponse<Order[]>> {
+  async getAllOrders(filters): Promise<ApiResponse<Order[]>> {
     try {
       const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
-        Endpoint.GET_ALL_QP_ORDER,
+        Endpoint.GET_ALL_QP_ORDER,filters
       );
 
       return {

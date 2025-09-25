@@ -19,8 +19,9 @@ const columns = [
   { id: 'rescheduledLeads', label: 'Rescheduled Leads' },
   { id: 'ordersGiven', label: 'Orders Punched' },
   { id: 'totalSale', label: 'Total Sale' },
-  { id: 'newToCustomerParties', label: 'New to Customer Convert' },
   { id: 'createdParties', label: 'New Customer Added' },
+  { id: 'new', label: 'Still New' },
+  { id: 'newToCustomerParties', label: 'New to Customer Convert' },
 ];
 
 // Helper function to format date
@@ -123,8 +124,9 @@ const StaffPage = () => {
     'Rescheduled Leads',
     'Orders Punched',
     'Total Sale',
+    'New Customer Added',
+    'Still New',
     'New to Customer Convert',
-    'New Customer Added'
   ], []);
 
   const excelData = useMemo(() => {
@@ -142,8 +144,9 @@ const StaffPage = () => {
       'Rescheduled Leads': row.rescheduledLeads,
       'Orders Punched': row.ordersGiven,
       'Total Sale': row.totalSale,
+      'New Customer Added': row.createdParties,
+      "Still New" : row.newPartiesStillNew,
       'New to Customer Convert': row.newToCustomerParties,
-      'New Customer Added': row.createdParties
     }));
   }, [reportData]);
 
@@ -221,8 +224,48 @@ const StaffPage = () => {
     return preset ? preset.label : 'Select Date Range';
   };
 
-  const handleTaskClick = (staffId) => {
+  const handleDoneTaskClick = (staffId) => {
     const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled`;
+    window.open(url, '_blank');
+  };
+  const handleRescheduledTaskClick = (staffId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=rescheduled`;
+    window.open(url, '_blank');
+  };
+  const handlePartyVisitClick = (staffId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit`;
+    window.open(url, '_blank');
+  };
+  const handleDonePartyVisitClick = (staffId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=completed`;
+    window.open(url, '_blank');
+  };
+  const handleCancelledPartyVisitClick = (staffId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=cancelled`;
+    window.open(url, '_blank');
+  };
+  const handleDoneLeadsClick = (staffId) => {
+    const url = `/admin/party-call?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled`;
+    window.open(url, '_blank');
+  };
+  const handleRescheduledLeadClick = (staffId) => {
+    const url = `/admin/party-call?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled`;
+    window.open(url, '_blank');
+  };
+  const handleOrderClick = (staffId,companyId) => {
+    const url = `/admin/all-orders?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&companyName=${companyId}&c=${companyName}`;
+    window.open(url, '_blank');
+  };
+  const handleCustomerClick = (staffId) => {
+    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=customer`;
+    window.open(url, '_blank');
+  };
+  const handleNewClick = (staffId) => {
+    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=new,customer`;
+    window.open(url, '_blank');
+  };
+  const handleNewcClick = (staffId) => {
+    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=new`;
     window.open(url, '_blank');
   };
 
@@ -331,27 +374,32 @@ const StaffPage = () => {
           tableHeader={columns}
           rowData={reportData}
           renderRow={(row) => {
-    console.log("DEBUG : row:", row);
-    return (<>
+            console.log("DEBUG : row:", row);
+            return (<>
               <TableCell sx={{ fontWeight: 500, cursor: 'pointer' }}>
                 {row.staffName}
               </TableCell>
               <TableCell>{row.companyName}</TableCell>
-              <TableCell onClick={() => handleTaskClick(row.staffId)} sx={{ cursor: 'pointer' }}>
+              <TableCell onClick={() => handleDoneTaskClick(row.staffId)} sx={{ cursor: 'pointer' }}>
                 {row.doneTask}
               </TableCell>
-              <TableCell>{row.rescheduledTasks}</TableCell>
-              <TableCell>{row.partyVisit}</TableCell>
-              <TableCell>{row.donePartyVisit}</TableCell>
-              <TableCell>{row.cancelledPartyVisit}</TableCell>
-              <TableCell>{row.doneLeads}</TableCell>
-              <TableCell>{row.rescheduledLeads}</TableCell>
-              <TableCell>{row.ordersGiven}</TableCell>
+              <TableCell onClick={() => handleRescheduledTaskClick(row.staffId)} sx={{ cursor: 'pointer' }}>
+                {row.rescheduledTasks}
+              </TableCell>
+              <TableCell onClick={() => handlePartyVisitClick(row.staffId)} sx={{ cursor: 'pointer' }}>
+                {row.partyVisit}
+              </TableCell>
+              <TableCell onClick={() => handleDonePartyVisitClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.donePartyVisit}</TableCell>
+              <TableCell onClick={() => handleCancelledPartyVisitClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.cancelledPartyVisit}</TableCell>
+              <TableCell onClick={() => handleDoneLeadsClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.doneLeads}</TableCell>
+              <TableCell onClick={() => handleRescheduledLeadClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.rescheduledLeads}</TableCell>
+              <TableCell onClick={() => handleOrderClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.ordersGiven}</TableCell>
               <TableCell>{row.totalSale}</TableCell>
-              <TableCell>{row.newToCustomerParties}</TableCell>
-              <TableCell>{row.createdParties}</TableCell>
+              <TableCell onClick={() => handleNewClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.createdParties}</TableCell>
+              <TableCell onClick={() => handleNewcClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.newPartiesStillNew}</TableCell>
+              <TableCell onClick={() => handleCustomerClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.newToCustomerParties}</TableCell>
             </>);
-}}
+          }}
         />
       ) : (
         !loading && (

@@ -126,10 +126,10 @@ const AllOrdersPage = () => {
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
   const canCreate = user?.role?.permissions?.all_orders?.create;
   const canStatus = user?.role?.permissions?.all_orders?.status;
-
+  const { companyName, staffId, startDate : st, endDate : ed } = router.query
   const refreshData = () => {
     if (canViewGlobal) {
-      dispatch(getAllQPOrdersThunk())
+      dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate : st, endDate : ed }))
     } else if (canViewOwn && user?.id) {
       dispatch(getQPOrdersByStaffIdThunk(user.id))
     }
@@ -531,7 +531,7 @@ const AllOrdersPage = () => {
           pagination={pagination}
           renderExpandedRow={canViewGlobal && !canStatus ? renderExpandedRow : undefined}
           renderRow={(row: any) => {
-    return (<>
+            return (<>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
                   QP-{row.orderNo || "N/A"}
@@ -539,7 +539,7 @@ const AllOrdersPage = () => {
               </TableCell>
               <TableCell>
                 <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar src={row.companyName?.avatar} sx={{ width: 32, height: 32 }} alt={row.companyName?.companyName || "Company"}/>
+                  <Avatar src={row.companyName?.avatar} sx={{ width: 32, height: 32 }} alt={row.companyName?.companyName || "Company"} />
                   <Typography fontWeight={600} fontSize="14px" color="#111827">
                     {row.companyName?.companyName || "N/A"}
                   </Typography>
@@ -636,10 +636,10 @@ const AllOrdersPage = () => {
                 </Typography>
               </TableCell>
               <TableCell>
-                <StatusCell row={row}/>
+                <StatusCell row={row} />
               </TableCell>
             </>);
-}}
+          }}
         />
       </Box>
 

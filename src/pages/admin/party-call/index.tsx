@@ -15,7 +15,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { FiSearch } from "react-icons/fi";
-import { useRouter } from "next/navigation"; // Updated to next/navigation
+import { useRouter } from "next/router"; // Updated to next/navigation
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   getAllLeadsThunk,
@@ -153,6 +153,7 @@ const LeadManagementPage: React.FC = () => {
   const hasSakshi = !!user?.sakshiCompanyId;
   const hasQP = !!user?.qpCompanyId;
   const hasBothCompanies = hasSakshi && hasQP;
+  const { staffId: si, startDate: st, endDate: e, status: s, reason: r } = router.query
 
   // Determine active company ID
   const activeCompanyId = useMemo(() => {
@@ -175,6 +176,20 @@ const LeadManagementPage: React.FC = () => {
   }, [error, dispatch]);
 
   useEffect(() => {
+    if (st) setStartDate(new Date(st as string));
+    if (e) setEndDate(new Date(e as string));
+    if (s) {
+      const statuses = (s as string).split(",");
+      setTab(
+        statuses.some((status) => ["completed", "cancelled"].includes(status))
+          ? 1
+          : 0
+      );
+    }
+  }, [st, e, s]);
+
+
+  useEffect(() => {
     const token = authService.getToken();
     if (!token) {
       router.push("/login");
@@ -182,7 +197,14 @@ const LeadManagementPage: React.FC = () => {
     }
 
     if (canViewGlobal) {
-      dispatch(getAllLeadsThunk());
+      dispatch(getAllLeadsThunk({
+        companyName: activeCompanyId,
+        staffId: si,
+        startDate: st,
+        endDate: e,
+        status: s?.toString().split(",").map((x) => x.toLowerCase()),
+        reason: r,
+      }));
     } else if (canViewOwn && user?.id) {
       dispatch(getLeadsByStaffIdThunk(user.id));
     }
@@ -444,7 +466,14 @@ const LeadManagementPage: React.FC = () => {
     }).then(() => {
       // Refetch leads to reflect changes immediately
       if (canViewGlobal) {
-        dispatch(getAllLeadsThunk());
+        dispatch(getAllLeadsThunk({
+          companyName: activeCompanyId,
+          staffId: si,
+          startDate: st,
+          endDate: e,
+          status: s?.toString().split(",").map((x) => x.toLowerCase()),
+          reason: r,
+        }));
       } else if (canViewOwn && user?.id) {
         dispatch(getLeadsByStaffIdThunk(user.id));
       }
