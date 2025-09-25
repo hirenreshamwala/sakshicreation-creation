@@ -12,7 +12,7 @@ import {
   Tabs,
   Tooltip,
 } from "@mui/material";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   getAllAssignTasksThunk,
@@ -37,6 +37,7 @@ import { FiSearch } from "react-icons/fi";
 import { toast } from "react-toastify";
 import TabComponent from "@/component/Dialog/TabComponent";
 import { getCompanyWisePermission } from "@/utills/utills";
+import { useRouter } from "next/router";
 
 interface RowData {
   id: string;
@@ -78,7 +79,6 @@ const tabLabels = ["Pending", "History"];
 
 const AssignTaskPage: React.FC = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const {
     assignTasks = [],
@@ -99,11 +99,7 @@ const AssignTaskPage: React.FC = () => {
   );
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const todayRef = useRef<HTMLDivElement>(null);
-
-  const staffId = searchParams.get("staffId");
-  const queryStartDate = searchParams.get("startDate");
-  const queryEndDate = searchParams.get("endDate");
-  const queryStatus = searchParams.get("status");
+  const { staffId: si, startDate: st, endDate: e, status: s ,reason : r  } = router.query
 
   const canViewGlobal = user?.role?.permissions?.assign_task?.view_global;
   const canViewOwn = user?.role?.permissions?.assign_task?.view_own;
@@ -133,22 +129,17 @@ const AssignTaskPage: React.FC = () => {
 
   // Set initial date range and status from query parameters
   useEffect(() => {
-    if (queryStartDate) {
-      setStartDate(new Date(queryStartDate));
-    }
-    if (queryEndDate) {
-      setEndDate(new Date(queryEndDate));
-    }
-    if (queryStatus) {
-      // Set statusTab based on query status (completed,cancelled maps to History tab)
-      const statuses = queryStatus.split(",");
+    if (st) setStartDate(new Date(st as string));
+    if (e) setEndDate(new Date(e as string));
+    if (s) {
+      const statuses = (s as string).split(",");
       if (statuses.includes("completed") || statuses.includes("cancelled")) {
-        setStatusTab(1); // History tab
+        setStatusTab(1);
       } else {
-        setStatusTab(0); // Pending tab
+        setStatusTab(0);
       }
     }
-  }, [queryStartDate, queryEndDate, queryStatus]);
+  }, [st, e, s]);
 
   const mapStatusToType = (status: string): RowData["statusType"] => {
     switch (status) {
@@ -240,24 +231,16 @@ const AssignTaskPage: React.FC = () => {
       return;
     }
 
-    const filters: any = {
-      companyName: selectedCompanyId,
-    };
-    if (staffId) {
-      filters.staffId = staffId;
-    }
-    if (queryStartDate) {
-      filters.startDate = queryStartDate;
-    }
-    if (queryEndDate) {
-      filters.endDate = queryEndDate;
-    }
-    if (queryStatus) {
-      filters.status = queryStatus.split(",");
-    }
 
-    if (canViewGlobal) {
-      dispatch(getAllAssignTasksThunk(filters));
+    if (canViewGlobal && router.isReady) {
+      dispatch(getAllAssignTasksThunk({
+      companyName: selectedCompanyId,
+      staffId:si,
+      startDate:st,
+      endDate:e,
+      status:s?.split(",").map(s => s.toLowerCase()),
+      reason:r
+    }));
     } else if (canViewOwn && user?.id) {
       dispatch(getAssignTaskByStaffIdThunk(user.id));
     }
@@ -266,11 +249,7 @@ const AssignTaskPage: React.FC = () => {
       dispatch(clearError());
       dispatch(clearSuccessMessage());
     };
-  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id, selectedCompanyId,
-    staffId,
-    queryStartDate,
-    queryEndDate,
-    queryStatus,]);
+  }, [dispatch, router.isReady, canViewGlobal, canViewOwn, user?.id, selectedCompanyId,]);
 
   const mapTasksToRows = (tasks: any[]): RowData[] =>
     tasks.map((task) => ({
@@ -646,7 +625,7 @@ const AssignTaskPage: React.FC = () => {
       </Box>
 
       {/* Status Tabs */}
-      <TabComponent activeTab={statusTab} setActiveTab={setStatusTab} tabList={tabLabels} align="left"/>
+      <TabComponent activeTab={statusTab} setActiveTab={setStatusTab} tabList={tabLabels} align="left" />
 
       <Box
         sx={{
@@ -721,22 +700,14 @@ const AssignTaskPage: React.FC = () => {
         }}
         taskId={editId}
         refreshData={() => {
-          const filters: any = {
-            companyName: selectedCompanyId,
-          };
-          if (staffId) {
-            filters.staffId = staffId;
-          }
-          if (queryStartDate) {
-            filters.startDate = queryStartDate;
-          }
-          if (queryEndDate) {
-            filters.endDate = queryEndDate;
-          }
-          if (queryStatus) {
-            filters.status = queryStatus.split(",");
-          }
-          dispatch(getAllAssignTasksThunk(filters));
+          dispatch(getAllAssignTasksThunk({
+      companyName: selectedCompanyId,
+      staffId:si,
+      startDate:st,
+      endDate:e,
+      status:s?.split(",").map(s => s.toLowerCase()),
+      reason:r
+    }));
         }}
       />
     </>

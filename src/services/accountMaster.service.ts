@@ -115,10 +115,10 @@ export interface PartySuggestion {
 }
 
 export const accountMasterService = {
-  async getAccountMasters(): Promise<ApiResponse<AccountMaster[]>> {
+  async getAccountMasters(filters): Promise<ApiResponse<AccountMaster[]>> {
     try {
       const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await Request.post(
-        Endpoint.GET_ALL_ACCOUNT_MASTERS);
+        Endpoint.GET_ALL_ACCOUNT_MASTERS,filters);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch account masters");

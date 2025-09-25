@@ -547,6 +547,8 @@ const BasicTable = <T extends { id: string }>({
             <TableHead>
               <TableRow>
                 {tableHeader.map((col) => (
+                  <Tooltip title={col.label} arrow>
+
                   <TableCell
                     key={col.id}
                     align={col.align || "left"}
@@ -563,17 +565,18 @@ const BasicTable = <T extends { id: string }>({
                       overflow: "hidden",          // 👈 required
                       textOverflow: "ellipsis",
                     }}
-                  >
+                    >
                     {col.id === "checkbox" ? (
                       <Checkbox
-                        checked={selectedRows.length === rowData.length && rowData.length > 0}
-                        onChange={onSelectAll}
+                      checked={selectedRows.length === rowData.length && rowData.length > 0}
+                      onChange={onSelectAll}
                         disabled={!onSelectAll}
-                      />
-                    ) : (
-                      col.label
+                        />
+                      ) : (
+                        col.label
                     )}
                   </TableCell>
+                        </Tooltip>
                 ))}
                 {/* Add header for expand column if needed */}
                 {renderExpandedRow && (

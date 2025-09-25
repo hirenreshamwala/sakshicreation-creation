@@ -111,18 +111,11 @@ export const createQpOrderThunk = createAsyncThunk(
 export const getAllQPOrdersThunk = createAsyncThunk(
   "qpOrder/getAll",
   async (
-    params?: {
-      page?: number;
-      limit?: number;
-      status?: string;
-      companyName?: string;
-      party?: string;
-      search?: string;
-    },
+    filters,
     { rejectWithValue }
   ) => {
     try {
-      const response = await orderService.getAllOrders(params);
+      const response = await orderService.getAllOrders(filters);
 
       if (response.success && Array.isArray(response.data)) {
         return {

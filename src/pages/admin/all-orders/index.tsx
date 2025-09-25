@@ -75,7 +75,10 @@ const AllOrdersPage = () => {
   const { user } = useAppSelector((state) => state.auth)
 
   // Filter state
-  const [activeTab, setActiveTab] = useState(0);
+  const {companyName,c, staffId, startDate : st, endDate : ed} = router.query
+  console.log("DEBUG : AllOrdersPage : c:", c);
+
+  const [activeTab, setActiveTab] = useState(c === "Quality Packaging" ? 1 : 0);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
   const [selectedFilterValues, setSelectedFilterValues] = useState<string[] | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -198,7 +201,7 @@ const AllOrdersPage = () => {
     }
 
     if (canViewGlobal) {
-      dispatch(getAllOrdersThunk());
+      dispatch(getAllOrdersThunk({companyName, staffId, startDate : st, endDate : ed})); // Increase limit to fetch more orders
     } else if (canViewOwn && user?.id) {
       dispatch(getOrdersByStaffIdThunk(user.id));
     }

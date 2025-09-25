@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Box, TableCell, Typography, Avatar, IconButton, Tabs, Tab } from "@mui/material";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   getAllAccountMastersThunk,
@@ -85,7 +85,7 @@ const IndexPage: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [isRequestMode, setIsRequestMode] = useState(false);
   const [isBulkUpload, setIsBulkUpload] = useState(false);
-  const [companyTab, setCompanyTab] = useState(0); 
+  const [companyTab, setCompanyTab] = useState(0);
   const [statusTab, setStatusTab] = useState(0);
   const [openBulkUploadDialog, setOpenBulkUploadDialog] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -101,6 +101,7 @@ const IndexPage: React.FC = () => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = hasSakshi && hasQP;
+  const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p } = router.query
 
   // Company tabs configuration
   const companyTabs = useMemo(() => {
@@ -118,13 +119,13 @@ const IndexPage: React.FC = () => {
       : getCompanyWisePermission(6);
 
   // Calculate counts for Approved and Pending tabs
-  const approvedCount = accountMasters.filter((account) => 
-    account.party?.statusApproval === "APPROVED" && 
+  const approvedCount = accountMasters.filter((account) =>
+    account.party?.statusApproval === "APPROVED" &&
     account.companyName?._id === selectedCompanyId
   ).length;
-  
-  const pendingCount = accountMasters.filter((account) => 
-    account.party?.statusApproval === "PENDING" && 
+
+  const pendingCount = accountMasters.filter((account) =>
+    account.party?.statusApproval === "PENDING" &&
     account.companyName?._id === selectedCompanyId
   ).length;
 
@@ -252,7 +253,12 @@ const IndexPage: React.FC = () => {
       try {
         await dispatch(approvePartyThunk(partyId)).unwrap();
         // Refresh data after approval
-        await dispatch(getAllAccountMastersThunk()).unwrap();
+        await dispatch(getAllAccountMastersThunk(({
+          staffId: si,
+          startDate: st,
+          endDate: e,
+          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+        }))).unwrap();
         Swal.fire({
           title: "Approved!",
           text: "Party approved successfully",
@@ -291,7 +297,10 @@ const IndexPage: React.FC = () => {
       return;
     }
 
-    if (canViewGlobal) dispatch(getAllAccountMastersThunk());
+    if (canViewGlobal) dispatch(getAllAccountMastersThunk({staffId: si,
+          startDate: st,
+          endDate: e,
+          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),}));
     else if (canViewOwn && user?.id) dispatch(getAccountMasterByStaffIdThunk(user.id));
 
     return () => {
@@ -303,7 +312,7 @@ const IndexPage: React.FC = () => {
   const filteredAccountMasters = accountMasters.filter((account) => {
     const statusApproval = account.party?.statusApproval || "PENDING";
     const statusMatch = statusTab === 0 ? statusApproval === "APPROVED" : statusApproval === "PENDING";
-    
+
     const companyMatch = account.companyName?._id === selectedCompanyId;
 
     if (canViewOwn && !canViewGlobal) {
@@ -449,9 +458,9 @@ const IndexPage: React.FC = () => {
           </ThemeButton>
         </Box>
       </Box>
-       
+
       <TabComponent activeTab={statusTab} setActiveTab={setStatusTab} tabList={tabLabelsWithCount} align="left" />
-   
+
 
 
       {loading ? (
@@ -572,7 +581,10 @@ const IndexPage: React.FC = () => {
         accountId={editId ?? undefined}
         refreshData={() => {
           if (canViewGlobal) {
-            dispatch(getAllAccountMastersThunk());
+            dispatch(getAllAccountMastersThunk({staffId: si,
+          startDate: st,
+          endDate: e,
+          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),}));
           } else if (canViewOwn && user?.id) {
             dispatch(getAccountMasterByStaffIdThunk(user.id));
           }
@@ -591,7 +603,10 @@ const IndexPage: React.FC = () => {
           setOpenAssignLeadDialog(false);
           setSelectedRows([]);
           if (canViewGlobal) {
-            dispatch(getAllAccountMastersThunk());
+            dispatch(getAllAccountMastersThunk({staffId: si,
+          startDate: st,
+          endDate: e,
+          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),}));
           } else if (canViewOwn && user?.id) {
             dispatch(getAccountMasterByStaffIdThunk(user.id));
           }
@@ -608,7 +623,10 @@ const IndexPage: React.FC = () => {
           setOpenBulkAssignTask(false);
           setSelectedRows([]);
           if (canViewGlobal) {
-            dispatch(getAllAccountMastersThunk());
+            dispatch(getAllAccountMastersThunk({staffId: si,
+          startDate: st,
+          endDate: e,
+          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),}));
           } else if (canViewOwn && user?.id) {
             dispatch(getAccountMasterByStaffIdThunk(user.id));
           }

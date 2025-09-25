@@ -11,11 +11,11 @@ export interface ApiResponse<T> {
 }
 
 export const leadService = {
-  async getAllLeads(): Promise<ApiResponse<Lead[]>> {
+  async getAllLeads(filters): Promise<ApiResponse<Lead[]>> {
     try {
 
       const response: AxiosResponse<ApiResponse<Lead[]>> = await Request.post(
-        Endpoint.GET_ALL_LEADS);
+        Endpoint.GET_ALL_LEADS,filters);
 
       // Ensure response.data exists and has the correct structure
       if (!response.data) {
