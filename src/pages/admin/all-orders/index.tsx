@@ -87,6 +87,11 @@ const AllOrdersPage = () => {
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own
   const canCreate = user?.role?.permissions?.all_orders?.create
 
+  // Determine user permissions
+  const hasSakshiPermission = user?.sakshi
+  const hasQpPermission = user?.qp
+  const hasBothPermissions = hasSakshiPermission && hasQpPermission
+
   // Get unique values for the selected filter field
   const getUniqueValues = useMemo(() => {
     if (!selectedFilterField) return [];
@@ -193,7 +198,7 @@ const AllOrdersPage = () => {
     }
 
     if (canViewGlobal) {
-      dispatch(getAllOrdersThunk()); // Increase limit to fetch more orders
+      dispatch(getAllOrdersThunk());
     } else if (canViewOwn && user?.id) {
       dispatch(getOrdersByStaffIdThunk(user.id));
     }
@@ -287,211 +292,236 @@ const AllOrdersPage = () => {
       return (row.companyName as any).avatar;
     }
   };
+
   useEffect(() => {
     if (error) {
       toast.error(error);
     }
   }, [error, dispatch]);
 
+  // Render content based on permissions
+  const renderContent = () => {
+    // If user has both permissions, show tab component
+    if (hasBothPermissions) {
+      return (
+        <>
+          <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />
+          {activeTab === 0 ? renderSakshiContent() : renderQpContent()}
+        </>
+      );
+    }
 
-  if (loading) return <Typography><Loader /></Typography>;
+    // If user has only sakshi permission
+    if (hasSakshiPermission) {
+      return renderSakshiContent();
+    }
 
+    // If user has only qp permission
+    if (hasQpPermission) {
+      return renderQpContent();
+    }
 
-  return (
+    // If user has no permissions
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+        <Typography variant="h6" color="error">
+          You don't have permission to view this page.
+        </Typography>
+      </Box>
+    );
+  };
+
+  const renderSakshiContent = () => (
     <>
-
-      {user?.sakshi && user?.qp && <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />}
-
-      {user?.sakshi ? <>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <DateRangePicker
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={(date) => setStartDate(date)}
-              onEndDateChange={(date) => setEndDate(date)}
-            />
-            <ThemeButton
-              onClick={() => {
-                setStartDate(null);
-                setEndDate(null);
-              }}
-            >
-              Clear Date Range
-            </ThemeButton>
-          </Box>
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #D0D5DD",
-                borderRadius: 2,
-                px: 1.5,
-                width: 200,
-                height: 35,
-              }}
-            >
-              <IconButton size="small" sx={{ color: "#98A2B3" }}>
-                <FiSearch size={18} />
-              </IconButton>
-              <InputBase
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{ ml: 1, fontSize: 14 }}
-              />
-            </Box>
-            <FilterDropdown
-              filterOptions={columns
-                .filter((col) => col.id !== "action")
-                .map((col) => col.label)}
-              uniqueValues={selectedFilterField ?
-                getUniqueValues :
-                []}
-              onFiltersChange={(newFilters) => {
-                // Convert label-based filters to id-based filters
-                const idBasedFilters: { [key: string]: string[] } = {};
-
-                Object.entries(newFilters).forEach(([label, values]) => {
-                  const columnId = columns.find(col => col.label === label)?.id;
-                  if (columnId) {
-                    idBasedFilters[columnId] = values;
-                  }
-                });
-
-                setFilters(idBasedFilters);
-              }}
-              filters={Object.keys(filters).reduce((acc, columnId) => {
-                const columnLabel = columns.find(col => col.id === columnId)?.label;
-                if (columnLabel) {
-                  acc[columnLabel] = filters[columnId];
-                }
-                return acc;
-              }, {} as { [key: string]: string[] })}
-              selectedField={selectedFilterField}
-              onFieldSelect={setSelectedFilterField}
-            />
-            <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
-          </Box>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={(date) => setStartDate(date)}
+            onEndDateChange={(date) => setEndDate(date)}
+          />
+          <ThemeButton
+            onClick={() => {
+              setStartDate(null);
+              setEndDate(null);
+            }}
+          >
+            Clear Date Range
+          </ThemeButton>
         </Box>
-        <Box px={2} py={2}>
-          <BasicTable
-            showDatePicker={false}
-            tableHeader={columns}
-            showFillter={false}
-            showSearch={false}
-            rowData={filteredOrders}
-            totalCount={totalCount} // Pass totalCount from Redux
-            pagination={pagination} // Pass pagination from Redux
-            renderRow={(row: OrderRow) => (
-              <>
-                <TableCell>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Avatar
-                      src={getAvatarUrl(row)}
-                      sx={{ width: 32, height: 32 }}
-                      alt={row.companyName?.companyName || "Company"}
-                    />
-                    <Typography
-                      fontWeight={600}
-                      fontSize="14px"
-                      color="#111827"
-                      sx={{ cursor: canViewGlobal ? "pointer" : "default" }}
-                      onClick={canViewGlobal ? () => handleRowClick(row) : undefined}
-                    >
-                      {row.companyName?.companyName || "N/A"}
-                    </Typography>
-                  </Box>
-                </TableCell>
 
-                {/* Party */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {row.party?.partyName || "N/A"}
-                  </Typography>
-                </TableCell>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              border: "1px solid #D0D5DD",
+              borderRadius: 2,
+              px: 1.5,
+              width: 200,
+              height: 35,
+            }}
+          >
+            <IconButton size="small" sx={{ color: "#98A2B3" }}>
+              <FiSearch size={18} />
+            </IconButton>
+            <InputBase
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{ ml: 1, fontSize: 14 }}
+            />
+          </Box>
+          <FilterDropdown
+            filterOptions={columns
+              .filter((col) => col.id !== "action")
+              .map((col) => col.label)}
+            uniqueValues={selectedFilterField ?
+              getUniqueValues :
+              []}
+            onFiltersChange={(newFilters) => {
+              const idBasedFilters: { [key: string]: string[] } = {};
 
-                {/* Order Number */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {row.orderNumber || "N/A"}
-                  </Typography>
-                </TableCell>
+              Object.entries(newFilters).forEach(([label, values]) => {
+                const columnId = columns.find(col => col.label === label)?.id;
+                if (columnId) {
+                  idBasedFilters[columnId] = values;
+                }
+              });
 
-                {/* Date */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {formatDate(row.createdAt)}
-                  </Typography>
-                </TableCell>
-
-                {/* Item Name */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {row.productItem?.itemName || "N/A"}
-                  </Typography>
-                </TableCell>
-
-                {/* Size */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {row.size?.size || "N/A"}
-                  </Typography>
-                </TableCell>
-
-                {/* Remarks */}
-                <TableCell>
-                  <Typography sx={{ fontSize: 14, color: "text.secondary" }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
-                    ? `${row.remarks.substring(0, 13)}...`
-                    : row.remarks}</Typography>
-                </TableCell>
-
-                {/* Ordered By */}
-                <TableCell>
-                  <Typography fontSize="14px" color="#6B7280">
-                    {row.createdBy?.firstName || "N/A"} {row.createdBy?.lastName || "N/A"}
-                  </Typography>
-                </TableCell>
-
-                {/* Order Status */}
-                <TableCell>
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="space-between"
+              setFilters(idBasedFilters);
+            }}
+            filters={Object.keys(filters).reduce((acc, columnId) => {
+              const columnLabel = columns.find(col => col.id === columnId)?.label;
+              if (columnLabel) {
+                acc[columnLabel] = filters[columnId];
+              }
+              return acc;
+            }, {} as { [key: string]: string[] })}
+            selectedField={selectedFilterField}
+            onFieldSelect={setSelectedFilterField}
+          />
+          <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
+        </Box>
+      </Box>
+      <Box px={2} py={2}>
+        <BasicTable
+          showDatePicker={false}
+          tableHeader={columns}
+          showFillter={false}
+          showSearch={false}
+          rowData={filteredOrders}
+          totalCount={totalCount}
+          pagination={pagination}
+          renderRow={(row: OrderRow) => (
+            <>
+              <TableCell>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar
+                    src={getAvatarUrl(row)}
+                    sx={{ width: 32, height: 32 }}
+                    alt={row.companyName?.companyName || "Company"}
+                  />
+                  <Typography
+                    fontWeight={600}
+                    fontSize="14px"
+                    color="#111827"
                     sx={{ cursor: canViewGlobal ? "pointer" : "default" }}
                     onClick={canViewGlobal ? () => handleRowClick(row) : undefined}
                   >
-                    <StatusBadge row={row} />
-                    <FaChevronRight
-                      style={{
-                        fontSize: 14,
-                        color: "#9CA3AF",
-                        marginLeft: 8,
-                      }}
-                    />
-                  </Box>
-                </TableCell>
-              </>
-            )}
-          />
-        </Box>
+                    {row.companyName?.companyName || "N/A"}
+                  </Typography>
+                </Box>
+              </TableCell>
 
-        <AddSakhiOrderDialog company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id} open={open} onClose={() => setOpen(false)} />
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.party?.partyName || "N/A"}
+                </Typography>
+              </TableCell>
 
-      </> : null}
-      <>{user?.qp ? <QpOrdersPage /> : null}</>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.orderNumber || "N/A"}
+                </Typography>
+              </TableCell>
+
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {formatDate(row.createdAt)}
+                </Typography>
+              </TableCell>
+
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.productItem?.itemName || "N/A"}
+                </Typography>
+              </TableCell>
+
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.size?.size || "N/A"}
+                </Typography>
+              </TableCell>
+
+              <TableCell>
+                <Typography sx={{ fontSize: 14, color: "text.secondary" }} title={row.remarks} noWrap>
+                  {row.remarks && row.remarks.length > 10
+                    ? `${row.remarks.substring(0, 13)}...`
+                    : row.remarks}
+                </Typography>
+              </TableCell>
+
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.createdBy?.firstName || "N/A"} {row.createdBy?.lastName || "N/A"}
+                </Typography>
+              </TableCell>
+
+              <TableCell>
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  sx={{ cursor: canViewGlobal ? "pointer" : "default" }}
+                  onClick={canViewGlobal ? () => handleRowClick(row) : undefined}
+                >
+                  <StatusBadge row={row} />
+                  <FaChevronRight
+                    style={{
+                      fontSize: 14,
+                      color: "#9CA3AF",
+                      marginLeft: 8,
+                    }}
+                  />
+                </Box>
+              </TableCell>
+            </>
+          )}
+        />
+      </Box>
+
+      <AddSakhiOrderDialog
+        company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id}
+        open={open}
+        onClose={() => setOpen(false)}
+      />
     </>
-  )
+  );
+
+  const renderQpContent = () => <QpOrdersPage />;
+
+  if (loading) return <Typography><Loader /></Typography>;
+
+  return <>{renderContent()}</>;
 }
 
 export default AllOrdersPage;

@@ -21,7 +21,7 @@ import { useRouter } from "next/router"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { getStaffByIdThunk, createStaffThunk, updateStaffThunk } from "@/store/slices/staffSlice"
+import { getStaffByIdThunk, createStaffThunk, updateStaffThunk, clearCurrentStaff } from "@/store/slices/staffSlice"
 import { getAllRolesThunk } from "@/store/slices/roleSlice"
 import { deleteFileThunk } from "@/store/slices/fileUploadSlice"
 import FileUpload, { type FileUploadRef } from "@/component/reusablecomponents/FileUpload"
@@ -195,12 +195,22 @@ const StaffView = () => {
 
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true))
+    if (!roles.length) dispatch(getAllRolesThunk())
   }, [])
 
+  console.log(currentStaff, 'currentStaff')
+
   useEffect(() => {
-    if (!roles.length) dispatch(getAllRolesThunk())
-    if (mode === "edit" && id) dispatch(getStaffByIdThunk(id as string))
-  }, [mode, id])
+    if (router.isReady && router.query.mode === "edit" && router.query.id) {
+
+      console.log('useEffect runsd ----------------------------------------', router.query.id)
+      dispatch(getStaffByIdThunk(router.query.id as string))
+    }
+  }, [router.query.mode, router.query.id, router.isReady])
+
+  useEffect(() => {
+    setInitialLoad(true);
+  }, [id]);
 
   useEffect(() => {
     if (mode === "edit" && currentStaff && roles.length > 0 && initialLoad) {
@@ -258,7 +268,9 @@ const StaffView = () => {
       setExistingAddressFiles([])
       setInitialLoad(false)
     }
-  }, [currentStaff, mode, user, roles, initialLoad])
+  }, [currentStaff,currentStaff?._id, mode, user, roles, initialLoad])
+
+  console.log(initialLoad,'initialLoad')
 
   const handleCompanyChange = (event: any) => {
     const value = event.target.value;
@@ -376,6 +388,7 @@ const StaffView = () => {
       formik.setValues(editData)
       setExistingAadharFiles(currentStaff.aadharFiles || [])
       setExistingAddressFiles(currentStaff.addressFiles || [])
+      dispatch(clearCurrentStaff())
     } else {
       formik.resetForm()
       setExistingAadharFiles([])
@@ -390,7 +403,9 @@ const StaffView = () => {
       <Box sx={{ mb: 3 }}>
         <ThemeButton
           sx={{ backgroundColor: "#6366F1", borderRadius: "8px", color: "#fff" }}
-          onClick={() => router.push("/admin/setup/staff")}
+          onClick={() =>{
+             dispatch(clearCurrentStaff())
+            router.push("/admin/setup/staff")}}
           disabled={formik.isSubmitting}
           startIcon={<ArrowBack />}
         >

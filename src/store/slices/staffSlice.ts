@@ -132,6 +132,7 @@ export const getRoleThunk = createAsyncThunk("staff/getRole", async (roleName: s
 export const getStaffByIdThunk = createAsyncThunk("staff/getById", async (id: string, { rejectWithValue }) => {
   try {
     const data = await staffApiCall(`${Endpoint.GET_STAFF_BY_ID}/${id}`, "get")
+    console.log(data,'data')
     return {
       id: data._id,
       firstName: data.firstName,

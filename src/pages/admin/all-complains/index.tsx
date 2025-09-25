@@ -11,22 +11,54 @@ const Index = () => {
     const { companies } = useAppSelector((state) => state.company);
     const [activeTab, setActiveTab] = useState(0);
 
+    // Determine user permissions
+    const hasSakshiPermission = user?.sakshi;
+    const hasQpPermission = user?.qp;
+    const hasBothPermissions = hasSakshiPermission && hasQpPermission;
+
     useEffect(() => {
         if (!companies.length) dispatch(getAllCompaniesThunk(true))
     }, [])
 
+    // Show tabs only if user has both permissions
+    const shouldShowTabs = hasBothPermissions;
+
+    // Determine what content to show based on permissions and active tab
+    const shouldShowSakshi = 
+        (hasBothPermissions && activeTab === 0) || 
+        (hasSakshiPermission && !hasQpPermission); // Show sakshi if user only has sakshi permission
+
+    const shouldShowQp = 
+        (hasBothPermissions && activeTab === 1) || 
+        (hasQpPermission && !hasSakshiPermission); // Show qp if user only has qp permission
+
+    // If user has no permissions
+    if (!hasSakshiPermission && !hasQpPermission) {
+        return (
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '200px',
+                padding: '20px'
+            }}>
+                <p style={{ color: '#ef4444', fontSize: '18px', textAlign: 'center' }}>
+                    You don't have permission to view this page.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <>
-            {user?.qp && user?.sakshi && <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />}
-
-            {(activeTab === 0 || activeTab === 1) && (
-                <>
-                    {/* Admin always sees Sakshi */}
-                    {activeTab === 0 && user?.sakshi && <ComplainPage company={companies.find((item) => item.companyName === StaticCompanyOptions[0])} />}
-
-                    {/* Admin sees Quality only when "Quality Packing" tab is active */}
-                    {activeTab === 1 && user?.qp && <ComplainPage company={companies.find((item) => item.companyName === StaticCompanyOptions[1])} />}
-                </>
+            {shouldShowTabs && <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />}
+            
+            {shouldShowSakshi && (
+                <ComplainPage company={companies.find((item) => item.companyName === StaticCompanyOptions[0])} />
+            )}
+            
+            {shouldShowQp && (
+                <ComplainPage company={companies.find((item) => item.companyName === StaticCompanyOptions[1])} />
             )}
         </>
     );
