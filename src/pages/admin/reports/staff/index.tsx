@@ -6,6 +6,7 @@ import { companyOptions } from '@/constants';
 import Request from '@/services/axios';
 import Loader from '@/component/common_component/loader';
 import TabComponent from '@/component/Dialog/TabComponent';
+import { getCompanyWisePermission } from '@/utills/utills';
 
 const columns = [
   { id: 'staffName', label: 'Staff Name' },
@@ -83,9 +84,9 @@ const StaffPage = () => {
   const { user } = useAppSelector((state) => state.auth);
 
   // Permission checks
-  const hasBothPermissions = user?.sakshi && user?.qp;
-  const hasSakshiOnly = user?.sakshi && !user?.qp;
-  const hasQpOnly = !user?.sakshi && user?.qp;
+  const hasBothPermissions = getCompanyWisePermission(0)
+  const hasSakshiOnly = getCompanyWisePermission(3)
+  const hasQpOnly = getCompanyWisePermission(4)
 
   // Determine company name and API endpoint based on permissions
   const getCompanyConfig = () => {

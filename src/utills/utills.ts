@@ -804,3 +804,23 @@ export function downloadSkippedRecordsAsCSV(skippedRecords) {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+export const getUserData = () => {
+  const user = localStorage.getItem('user')
+  return JSON.parse(user)
+}
+
+export const getCompanyWisePermission = (company) => {
+  const user = localStorage.getItem('user')
+
+  if (![null, undefined, 'null', 'undefined', ""].includes(user)) {
+    const userData = JSON.parse(user)
+    if (company === 0) return userData?.sakshi && userData?.qp
+    if (company === 1) return userData?.sakshi
+    if (company === 2) return userData?.qp
+    if (company === 3) return userData?.sakshi && !userData?.qp;
+    if (company === 4) return !userData?.sakshi && userData?.qp;
+    if (company === 5) return userData?.sakshiCompanyId
+    if (company === 6) return userData?.qpCompanyId
+  }
+}

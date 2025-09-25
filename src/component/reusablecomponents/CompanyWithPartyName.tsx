@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { getPartiesByCompanyThunk } from "@/store/slices/partySlice"
 import ThemeSelect from "../common_component/themeselect"
+import { getCompanyWisePermission } from "@/utills/utills"
 
 interface CompanySelectProps {
   label?: string
@@ -34,7 +35,7 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
   required = false,
   hasParties = false,
   showPartyName = false,
-  disableCompanySelect=false,
+  disableCompanySelect = false,
   partyName = "",
   onPartyChange,
   partyError = false,
@@ -42,21 +43,12 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
 }) => {
 
   const dispatch = useAppDispatch()
-  const { companies, loading, error: companyError } = useAppSelector((state) => state.company)
-  const { user } = useAppSelector((state) => state.auth)
-  console.log("DEBUG : CompanySelect : user:", user);
-
-  console.log("DEBUG : CompanySelect : companies:", companies);
-
+  const { companies, loading } = useAppSelector((state) => state.company)
   const { parties, loading: partyLoading } = useAppSelector((state) => state.party)
-  console.log("DEBUG : CompanySelect : parties:", parties);
 
   const [companyOptions, setCompanyOptions] = useState<{ label: string; value: string }[]>([])
   const [partyOptions, setPartyOptions] = useState<{ label: string; value: string }[]>([])
   const [defaultSet, setDefaultSet] = useState(() => !!value || !!partyName)
-
-  // console.log(parties,'parties')
-
 
   // Fetch companies on component mount
   useEffect(() => {
@@ -73,41 +65,39 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
 
   // Set company options and default to "Sakshi Creation" when companies data changes
   // Inside useEffect where you're setting default company
-useEffect(() => {
-  if (companies && companies.length > 0) {
-    let filteredCompanies = companies
+  useEffect(() => {
+    if (companies && companies.length > 0) {
+      let filteredCompanies = companies
 
-    // If hasParties is true, filter companies that have parties
-    if (hasParties) {
-      filteredCompanies = companies.filter((company: any) => {
-        return company.partyList && company.partyList.length > 0
-      })
-    }
-
-    const options = filteredCompanies.map((company: any) => ({
-      label: company.companyName || company.name,
-      value: company._id,
-      default: company?.default,
-    }))
-    setCompanyOptions(options)
-
-    // ✅ Only try setting default if NO company value, NO partyName, and NO defaultSet
-    const hasCompanyValue = !!(typeof value === "object" ? value?.value : value)
-    const hasPartyValue = !!(typeof partyName === "object" ? partyName?.value : partyName)
-
-    if (!hasCompanyValue && !hasPartyValue && !defaultSet) {
-      const defaultCompany = options.find((option) => option.default)
-      if (defaultCompany) {
-        onChange(null, defaultCompany)
-        setDefaultSet(true)
+      // If hasParties is true, filter companies that have parties
+      if (hasParties) {
+        filteredCompanies = companies.filter((company: any) => {
+          return company.partyList && company.partyList.length > 0
+        })
       }
+
+      const options = filteredCompanies.map((company: any) => ({
+        label: company.companyName || company.name,
+        value: company._id,
+        default: company?.default,
+      }))
+      setCompanyOptions(options)
+
+      // ✅ Only try setting default if NO company value, NO partyName, and NO defaultSet
+      const hasCompanyValue = !!(typeof value === "object" ? value?.value : value)
+      const hasPartyValue = !!(typeof partyName === "object" ? partyName?.value : partyName)
+
+      if (!hasCompanyValue && !hasPartyValue && !defaultSet) {
+        const defaultCompany = options.find((option) => option.default)
+        if (defaultCompany) {
+          onChange(null, defaultCompany)
+          setDefaultSet(true)
+        }
+      }
+    } else {
+      setCompanyOptions([])
     }
-  } else {
-    setCompanyOptions([])
-  }
-}, [companies, hasParties, value, partyName, onChange, defaultSet])
-
-
+  }, [companies, hasParties, value, partyName, onChange, defaultSet])
 
   // Fetch parties when company changes (only if showPartyName is true)
   useEffect(() => {
@@ -134,7 +124,7 @@ useEffect(() => {
   useEffect(() => {
     if (parties && parties.length > 0) {
       const options = parties.map((party: any) => ({
-        label: `${party?.partyName?.trim() || ""} - ${party?.unitNo?.trim() || ""}, ${party?.marketName|| ""}`,
+        label: `${party?.partyName?.trim() || ""} - ${party?.unitNo?.trim() || ""}, ${party?.marketName || ""}`,
         value: party._id,
       }));
       setPartyOptions(options)
@@ -184,7 +174,6 @@ useEffect(() => {
   const selectedCompanyValue = getSelectedCompanyValue()
   const selectedPartyValue = getSelectedPartyValue()
 
-
   if (loading) {
     return (
       <Box display="flex" alignItems="center" justifyContent="center" minHeight={56}>
@@ -199,7 +188,7 @@ useEffect(() => {
       <Box flex={showPartyName ? 1 : 1}>
         <ThemeSelect
           label={label}
-          options={companyOptions}
+          options={companyOptions.filter((item) => [getCompanyWisePermission(5), getCompanyWisePermission(6)].includes(item.value))}
           value={selectedCompanyValue}
           onChange={onChange}
           name={name}

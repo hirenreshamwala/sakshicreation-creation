@@ -12,7 +12,7 @@ import FilterDropdown from "@/component/fillter"
 import DateRangePicker from "@/component/daterangepicker"
 import { FiSearch } from "react-icons/fi"
 import { InputBase } from "@mui/material"
-import { getDisplayStatus } from "@/utills/utills"
+import { getCompanyWisePermission, getDisplayStatus } from "@/utills/utills"
 import QpOrdersPage from "@/component/allorderdailog/QpOrder"
 import TabComponent from "@/component/Dialog/TabComponent"
 import { companyOptions, StaticCompanyOptions } from "@/constants"
@@ -88,9 +88,9 @@ const AllOrdersPage = () => {
   const canCreate = user?.role?.permissions?.all_orders?.create
 
   // Determine user permissions
-  const hasSakshiPermission = user?.sakshi
-  const hasQpPermission = user?.qp
-  const hasBothPermissions = hasSakshiPermission && hasQpPermission
+  const hasSakshiPermission = getCompanyWisePermission(1)
+  const hasQpPermission = getCompanyWisePermission(2)
+  const hasBothPermissions = getCompanyWisePermission(0)
 
   // Get unique values for the selected filter field
   const getUniqueValues = useMemo(() => {

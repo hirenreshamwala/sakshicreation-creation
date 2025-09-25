@@ -21,7 +21,7 @@ import { useRouter } from "next/router"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { getStaffByIdThunk, createStaffThunk, updateStaffThunk, clearCurrentStaff } from "@/store/slices/staffSlice"
+import { getStaffByIdThunk, createStaffThunk, updateStaffThunk } from "@/store/slices/staffSlice"
 import { getAllRolesThunk } from "@/store/slices/roleSlice"
 import { deleteFileThunk } from "@/store/slices/fileUploadSlice"
 import FileUpload, { type FileUploadRef } from "@/component/reusablecomponents/FileUpload"
@@ -29,6 +29,8 @@ import { ArrowBack, Delete, Close } from "@mui/icons-material"
 import { decryptData } from "@/utills/utills"
 import StaffService from "@/services/staff.service"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
+import Request from "@/services/axios"
+import Endpoint from "@/API/apiConfig"
 
 interface StaffFormData {
   firstName: string;
@@ -96,10 +98,10 @@ const StaffView = () => {
   const { user } = useAppSelector((state) => state.auth)
   const { companies } = useAppSelector((state) => state.company);
   const { roles, loading: rolesLoading } = useAppSelector((state) => state.roles)
-  const { currentStaff } = useAppSelector((state) => state.staff)
 
   const aadharFileUploadRef = useRef<FileUploadRef>(null)
   const addressFileUploadRef = useRef<FileUploadRef>(null)
+  const [staffData, setStaffData] = useState(null)
   const [selectedAadharFiles, setSelectedAadharFiles] = useState<File[]>([])
   const [selectedAddressFiles, setSelectedAddressFiles] = useState<File[]>([])
   const [existingAadharFiles, setExistingAadharFiles] = useState<string[]>([])
@@ -178,7 +180,6 @@ const StaffView = () => {
           router.push("/admin/setup/staff")
         } else if (mode === "edit" && id) {
           await dispatch(updateStaffThunk({ id: id as string, ...staffData })).unwrap()
-          dispatch(clearCurrentStaff())
           toast.success("Staff updated successfully!")
           router.push("/admin/setup/staff")
         }
@@ -199,90 +200,53 @@ const StaffView = () => {
     if (!roles.length) dispatch(getAllRolesThunk())
   }, [])
 
-  console.log(currentStaff, 'currentStaff')
 
-  useEffect(() => {
-    if (router.isReady && router.query.mode === "edit" && router.query.id) {
+  const getData = async () => {
 
-      console.log('useEffect runsd ----------------------------------------', router.query.id)
-      dispatch(getStaffByIdThunk(router.query.id as string))
-    }
-  }, [router.query.mode, router.query.id, router.isReady])
-
-  useEffect(() => {
-    setInitialLoad(true);
-  }, [id]);
-
-  useEffect(() => {
-    if (mode === "edit" && currentStaff && roles.length > 0 && initialLoad) {
-      // Handle existing company data - convert to array if it's a single value
-      let companyNameArray: string[] = [];
-      if (currentStaff.CompanyName) {
-        if (Array.isArray(currentStaff.CompanyName)) {
-          companyNameArray = currentStaff.CompanyName.map(comp => comp._id || comp.companyName || comp);
-        } else if (typeof currentStaff.CompanyName === 'string') {
-          companyNameArray = [currentStaff.CompanyName];
-        } else if (currentStaff.CompanyName._id) {
-          companyNameArray = [currentStaff.CompanyName._id];
-        } else if (currentStaff.CompanyName.companyName) {
-          companyNameArray = [currentStaff.CompanyName.companyName];
-        }
-      } else if (currentStaff.companyName) {
-        if (Array.isArray(currentStaff.companyName)) {
-          companyNameArray = currentStaff.companyName.map(comp => comp._id || comp.companyName || comp);
-        } else if (typeof currentStaff.companyName === 'string') {
-          companyNameArray = [currentStaff.companyName];
-        } else if (currentStaff.companyName._id) {
-          companyNameArray = [currentStaff.companyName._id];
-        } else if (currentStaff.companyName.companyName) {
-          companyNameArray = [currentStaff.companyName.companyName];
-        }
-      }
+    const res = await Request.get(`${Endpoint.GET_STAFF_BY_ID}/${id}`)
+    if (res.status === 200) {
+      const newData = res?.data?.data
+      setStaffData(res?.data?.data)
 
       const editData = {
-        firstName: currentStaff.firstName || "",
-        lastName: currentStaff.lastName || "",
-        email: currentStaff.email ? currentStaff.email.toLowerCase() : "",
-        mobileNo: currentStaff.mobileNo || "",
-        mobileCode: currentStaff.mobileCode || "91",
-        whatsappNo: currentStaff.whatsappNo || "",
-        whatsappCode: currentStaff.whatsappCode || "91",
-        address: currentStaff.address || "",
-        aadharNo: currentStaff.aadharNo || "",
-        joiningDate: currentStaff.joiningDate ? new Date(currentStaff.joiningDate).toISOString().split("T")[0] : "",
-        birthDay: currentStaff.birthDay ? new Date(currentStaff.birthDay).toISOString().split("T")[0] : "",
-        role: currentStaff.role?._id || "",
-        companyName: companyNameArray,
-        password: user?.role?.roleName === 'Admin' && user?.role?.isDelete === false ? decryptData(currentStaff?.password) : "",
-        aadharFiles: currentStaff.aadharFiles || [],
-        addressFiles: currentStaff.addressFiles || [],
+        firstName: newData.firstName || "",
+        lastName: newData.lastName || "",
+        email: newData.email ? newData.email.toLowerCase() : "",
+        mobileNo: newData.mobileNo || "",
+        mobileCode: newData.mobileCode || "91",
+        whatsappNo: newData.whatsappNo || "",
+        whatsappCode: newData.whatsappCode || "91",
+        address: newData.address || "",
+        aadharNo: newData.aadharNo || "",
+        joiningDate: newData.joiningDate ? new Date(newData.joiningDate).toISOString().split("T")[0] : "",
+        birthDay: newData.birthDay ? new Date(newData.birthDay).toISOString().split("T")[0] : "",
+        role: newData.role?._id || "",
+        companyName: newData.CompanyName?.map((item) => item._id),
+        password: user?.role?.roleName === 'Admin' && user?.role?.isDelete === false ? decryptData(newData?.password) : "",
+        aadharFiles: newData.aadharFiles || [],
+        addressFiles: newData.addressFiles || [],
         mode: "edit",
       }
       formik.setValues(editData)
 
-      setExistingAadharFiles(currentStaff.aadharFiles || [])
-      setExistingAddressFiles(currentStaff.addressFiles || [])
-      setInitialLoad(false)
-    } else if (mode === "add") {
+      setExistingAadharFiles(newData.aadharFiles || [])
+      setExistingAddressFiles(newData.addressFiles || [])
+    }
+  }
+
+  useEffect(() => {
+    if (mode === "edit" && id) getData()
+    if (mode === "add") {
       formik.setFieldValue("mode", "add")
       setExistingAadharFiles([])
       setExistingAddressFiles([])
       setInitialLoad(false)
     }
-  }, [currentStaff,currentStaff?._id, mode, user, roles, initialLoad])
-
-  console.log(initialLoad,'initialLoad')
+  }, [mode, id])
 
   const handleCompanyChange = (event: any) => {
     const value = event.target.value;
     formik.setFieldValue("companyName", typeof value === 'string' ? value.split(',') : value);
-  };
-
-  const handleDeleteChip = (companyToDelete: string) => {
-    formik.setFieldValue(
-      "companyName",
-      formik.values.companyName.filter(company => company !== companyToDelete)
-    );
   };
 
   const handleMobileChange = (field: "mobileNo" | "whatsappNo", value: string) => {
@@ -321,7 +285,7 @@ const StaffView = () => {
 
     try {
       await dispatch(deleteFileThunk({ folder, filename })).unwrap()
-      await StaffService.updateStaffAttachments(id, fileType === "aadhar" ? { aadharFiles: currentStaff?.aadharFiles?.filter((path) => path !== filePathToDelete) } : { addressFiles: currentStaff?.addressFiles?.filter((path) => path !== filePathToDelete) })
+      await StaffService.updateStaffAttachments(id, fileType === "aadhar" ? { aadharFiles: staffData?.aadharFiles?.filter((path) => path !== filePathToDelete) } : { addressFiles: staffData?.addressFiles?.filter((path) => path !== filePathToDelete) })
       toast.success(`File ${filename} deleted successfully.`)
 
       if (fileType === "aadhar") {
@@ -343,53 +307,29 @@ const StaffView = () => {
   }
 
   const handleDiscard = () => {
-    if (mode === "edit" && currentStaff) {
-      let companyNameArray: string[] = [];
-      if (currentStaff.CompanyName) {
-        if (Array.isArray(currentStaff.CompanyName)) {
-          companyNameArray = currentStaff.CompanyName.map(comp => comp._id || comp.companyName || comp);
-        } else if (typeof currentStaff.CompanyName === 'string') {
-          companyNameArray = [currentStaff.CompanyName];
-        } else if (currentStaff.CompanyName._id) {
-          companyNameArray = [currentStaff.CompanyName._id];
-        } else if (currentStaff.CompanyName.companyName) {
-          companyNameArray = [currentStaff.CompanyName.companyName];
-        }
-      } else if (currentStaff.companyName) {
-        if (Array.isArray(currentStaff.companyName)) {
-          companyNameArray = currentStaff.companyName.map(comp => comp._id || comp.companyName || comp);
-        } else if (typeof currentStaff.companyName === 'string') {
-          companyNameArray = [currentStaff.companyName];
-        } else if (currentStaff.companyName._id) {
-          companyNameArray = [currentStaff.companyName._id];
-        } else if (currentStaff.companyName.companyName) {
-          companyNameArray = [currentStaff.companyName.companyName];
-        }
-      }
-
+    if (mode === "edit" && staffData) {
       const editData = {
-        firstName: currentStaff.firstName || "",
-        lastName: currentStaff.lastName || "",
-        email: currentStaff.email || "",
-        mobileNo: currentStaff.mobileNo || "",
-        mobileCode: currentStaff.mobileCode || "91",
-        whatsappNo: currentStaff.whatsappNo || "",
-        whatsappCode: currentStaff.whatsappCode || "91",
-        address: currentStaff.address || "",
-        aadharNo: currentStaff.aadharNo || "",
-        joiningDate: currentStaff.joiningDate ? new Date(currentStaff.joiningDate).toISOString().split("T")[0] : "",
-        birthDay: currentStaff.birthDay ? new Date(currentStaff.birthDay).toISOString().split("T")[0] : "",
-        role: currentStaff.role?._id || "",
-        companyName: companyNameArray,
+        firstName: staffData.firstName || "",
+        lastName: staffData.lastName || "",
+        email: staffData.email || "",
+        mobileNo: staffData.mobileNo || "",
+        mobileCode: staffData.mobileCode || "91",
+        whatsappNo: staffData.whatsappNo || "",
+        whatsappCode: staffData.whatsappCode || "91",
+        address: staffData.address || "",
+        aadharNo: staffData.aadharNo || "",
+        joiningDate: staffData.joiningDate ? new Date(staffData.joiningDate).toISOString().split("T")[0] : "",
+        birthDay: staffData.birthDay ? new Date(staffData.birthDay).toISOString().split("T")[0] : "",
+        role: staffData.role?._id || "",
+        companyName: staffData.CompanyName?.map((item) => item._id),
         password: "",
-        aadharFiles: currentStaff.aadharFiles || [],
-        addressFiles: currentStaff.addressFiles || [],
+        aadharFiles: staffData.aadharFiles || [],
+        addressFiles: staffData.addressFiles || [],
         mode: "edit",
       }
       formik.setValues(editData)
-      setExistingAadharFiles(currentStaff.aadharFiles || [])
-      setExistingAddressFiles(currentStaff.addressFiles || [])
-      dispatch(clearCurrentStaff())
+      setExistingAadharFiles(staffData.aadharFiles || [])
+      setExistingAddressFiles(staffData.addressFiles || [])
     } else {
       formik.resetForm()
       setExistingAadharFiles([])
@@ -404,9 +344,9 @@ const StaffView = () => {
       <Box sx={{ mb: 3 }}>
         <ThemeButton
           sx={{ backgroundColor: "#6366F1", borderRadius: "8px", color: "#fff" }}
-          onClick={() =>{
-             dispatch(clearCurrentStaff())
-            router.push("/admin/setup/staff")}}
+          onClick={() => {
+            router.push("/admin/setup/staff")
+          }}
           disabled={formik.isSubmitting}
           startIcon={<ArrowBack />}
         >
@@ -486,7 +426,10 @@ const StaffView = () => {
                     key={value}
                     label={companies.find(comp => comp._id === value)?.companyName || value}
                     size="small"
-                    onDelete={() => handleDeleteChip(value)}
+                    onDelete={() => formik.setFieldValue(
+                      "companyName",
+                      formik.values.companyName.filter(company => company !== value)
+                    )}
                     onMouseDown={(event) => event.stopPropagation()}
                   />
                 ))}
@@ -801,12 +744,6 @@ const StaffView = () => {
           type="submit"
           sx={{
             background: mode === "add" ? "#7F56D9" : "#12B76A",
-            color: "#fff",
-            fontWeight: 600,
-            fontSize: 16,
-            borderRadius: 2,
-            py: 1.2,
-            width: 180,
             "&:hover": { background: mode === "add" ? "#5B3FB4" : "#079455" },
           }}
           loading={formik.isSubmitting}
@@ -822,12 +759,6 @@ const StaffView = () => {
         <ThemeButton
           sx={{
             background: "#D92D20",
-            color: "#fff",
-            fontWeight: 600,
-            fontSize: 16,
-            borderRadius: 2,
-            py: 1.2,
-            width: 180,
             "&:hover": { background: "#B42318" },
           }}
           onClick={handleDiscard}

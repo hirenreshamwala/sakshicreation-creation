@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import React, { useEffect, useState } from 'react';
 import ComplainPage from './ComplainPage';
 import { getAllCompaniesThunk } from '@/store/slices/compnaySlice';
+import { getCompanyWisePermission } from '@/utills/utills';
 
 const Index = () => {
     const dispatch = useAppDispatch()
@@ -12,9 +13,9 @@ const Index = () => {
     const [activeTab, setActiveTab] = useState(0);
 
     // Determine user permissions
-    const hasSakshiPermission = user?.sakshi;
-    const hasQpPermission = user?.qp;
-    const hasBothPermissions = hasSakshiPermission && hasQpPermission;
+    const hasSakshiPermission = getCompanyWisePermission(1)
+    const hasQpPermission = getCompanyWisePermission(2)
+    const hasBothPermissions = getCompanyWisePermission(0)
 
     useEffect(() => {
         if (!companies.length) dispatch(getAllCompaniesThunk(true))

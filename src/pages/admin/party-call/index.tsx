@@ -35,6 +35,7 @@ import Loader from "@/component/common_component/loader";
 import { authService } from "@/services/auth.service";
 import { toast } from "react-toastify";
 import TabComponent from "@/component/Dialog/TabComponent";
+import { getCompanyWisePermission } from "@/utills/utills";
 
 interface Lead {
   _id: string;
@@ -150,16 +151,16 @@ const LeadManagementPage: React.FC = () => {
   const canEdit = user?.role?.permissions?.party_call?.edit;
 
   // Company permissions
-  const hasSakshi = !!user?.sakshiCompanyId;
-  const hasQP = !!user?.qpCompanyId;
-  const hasBothCompanies = hasSakshi && hasQP;
+  const hasSakshi = !!getCompanyWisePermission(5);
+  const hasQP = !!getCompanyWisePermission(6);
+  const hasBothCompanies = getCompanyWisePermission(0);
 
   // Determine active company ID
   const activeCompanyId = useMemo(() => {
     if (hasBothCompanies) {
-      return comapanyTab === 0 ? user.sakshiCompanyId : user.qpCompanyId;
+      return comapanyTab === 0 ? getCompanyWisePermission(5): getCompanyWisePermission(6);
     }
-    return hasSakshi ? user.sakshiCompanyId : user.qpCompanyId;
+    return hasSakshi ? getCompanyWisePermission(5) : getCompanyWisePermission(6);
   }, [hasBothCompanies, comapanyTab, hasSakshi, hasQP, user]);
 
   // Filter leads by company

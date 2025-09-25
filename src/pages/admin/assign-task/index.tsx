@@ -36,6 +36,7 @@ import Loader from "@/component/common_component/loader";
 import { FiSearch } from "react-icons/fi";
 import { toast } from "react-toastify";
 import TabComponent from "@/component/Dialog/TabComponent";
+import { getCompanyWisePermission } from "@/utills/utills";
 
 interface RowData {
   id: string;
@@ -111,15 +112,15 @@ const AssignTaskPage: React.FC = () => {
   const candelete = user?.role?.permissions?.assign_task?.delete;
 
   // Determine company permissions
-  const hasSakshi = !!user?.sakshiCompanyId;
-  const hasQP = !!user?.qpCompanyId;
+  const hasSakshi = !!getCompanyWisePermission(5);
+  const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = hasSakshi && hasQP;
 
   // Company tabs configuration
   const companyTabs = useMemo(() => {
     const tabs = [];
-    if (hasSakshi) tabs.push({ id: 'sakshi', name: 'Sakshi', companyId: user?.sakshiCompanyId });
-    if (hasQP) tabs.push({ id: 'qp', name: 'QP', companyId: user?.qpCompanyId });
+    if (hasSakshi) tabs.push({ id: 'sakshi', name: 'Sakshi', companyId: getCompanyWisePermission(5) });
+    if (hasQP) tabs.push({ id: 'qp', name: 'QP', companyId: getCompanyWisePermission(6) });
     return tabs;
   }, [user, hasSakshi, hasQP]);
 
@@ -127,8 +128,8 @@ const AssignTaskPage: React.FC = () => {
   const selectedCompanyId = hasBothCompanies
     ? companyTabs[companyTab]?.companyId
     : hasSakshi
-      ? user?.sakshiCompanyId
-      : user?.qpCompanyId;
+      ? getCompanyWisePermission(5)
+      : getCompanyWisePermission(6);
 
   // Set initial date range and status from query parameters
   useEffect(() => {
