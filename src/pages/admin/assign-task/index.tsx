@@ -99,7 +99,7 @@ const AssignTaskPage: React.FC = () => {
   );
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const todayRef = useRef<HTMLDivElement>(null);
-  const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c } = router.query
+  const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c, companyName } = router.query
 
   const canViewGlobal = user?.role?.permissions?.assign_task?.view_global;
   const canViewOwn = user?.role?.permissions?.assign_task?.view_own;
@@ -239,7 +239,7 @@ const AssignTaskPage: React.FC = () => {
 
     if (canViewGlobal && router.isReady) {
       dispatch(getAllAssignTasksThunk({
-        companyName: selectedCompanyId,
+        companyName,
         staffId: si,
         startDate: st,
         endDate: e,
@@ -706,7 +706,7 @@ const AssignTaskPage: React.FC = () => {
         taskId={editId}
         refreshData={() => {
           dispatch(getAllAssignTasksThunk({
-            companyName: selectedCompanyId,
+            companyName,
             staffId: si,
             startDate: st,
             endDate: e,

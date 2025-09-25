@@ -154,7 +154,7 @@ const LeadManagementPage: React.FC = () => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = getCompanyWisePermission(0);
-  const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c } = router.query
+  const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c ,companyName} = router.query
 
   // Determine active company ID
   const activeCompanyId = useMemo(() => {
@@ -162,7 +162,7 @@ const LeadManagementPage: React.FC = () => {
       return comapanyTab === 0 ? getCompanyWisePermission(5) : getCompanyWisePermission(6);
     }
     return hasSakshi ? getCompanyWisePermission(5) : getCompanyWisePermission(6);
-  }, [hasBothCompanies, comapanyTab, hasSakshi, hasQP, user]);
+  }, [hasBothCompanies, comapanyTab, hasSakshi, hasQP]);
 
   // Filter leads by company
   const companyFilteredLeads = useMemo(() => {
@@ -177,11 +177,7 @@ const LeadManagementPage: React.FC = () => {
   }, [error, dispatch]);
 
   useEffect(() => {
-    if (c)
-      setCompanyTab(c === "Quality Packaging" ? 1 : 0)
-  }, [c])
-
-  useEffect(() => {
+    if (c) setCompanyTab(c === "Quality Packaging" ? 1 : 0)
     if (st) setStartDate(new Date(st as string));
     if (e) setEndDate(new Date(e as string));
     if (s) {
@@ -192,8 +188,7 @@ const LeadManagementPage: React.FC = () => {
           : 0
       );
     }
-  }, [st, e, s]);
-
+  }, [st, e, s, c]);
 
   useEffect(() => {
     const token = authService.getToken();
@@ -202,9 +197,9 @@ const LeadManagementPage: React.FC = () => {
       return;
     }
 
-    if (canViewGlobal) {
+    if (canViewGlobal && router.isReady) {
       dispatch(getAllLeadsThunk({
-        companyName: activeCompanyId,
+        companyName,
         staffId: si,
         startDate: st,
         endDate: e,
@@ -219,7 +214,7 @@ const LeadManagementPage: React.FC = () => {
       dispatch(clearError());
       dispatch(clearSuccessMessage());
     };
-  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id]);
+  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id, router.isReady]);
 
   useEffect(() => {
     if (error) {
@@ -473,7 +468,7 @@ const LeadManagementPage: React.FC = () => {
       // Refetch leads to reflect changes immediately
       if (canViewGlobal) {
         dispatch(getAllLeadsThunk({
-          companyName: activeCompanyId,
+          companyName,
           staffId: si,
           startDate: st,
           endDate: e,
@@ -741,7 +736,7 @@ const LeadManagementPage: React.FC = () => {
         )}
       </Box>
 
-      <AssignLeadDialog
+      {openAssignDialog ? <AssignLeadDialog
         open={openAssignDialog}
         onClose={() => {
           setOpenAssignDialog(false);
@@ -749,7 +744,7 @@ const LeadManagementPage: React.FC = () => {
         }}
         lead={selectedLead}
         onSuccess={handleAssignSuccess}
-      />
+      /> : null}
     </>
   );
 };

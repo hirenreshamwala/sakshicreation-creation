@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { Box, TableCell, Typography, Avatar, IconButton, Tabs, Tab } from "@mui/material";
 import { useRouter } from "next/router";
 import { useAppDispatch, useAppSelector } from "@/store";
@@ -20,7 +20,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { authService } from "@/services/auth.service";
 import Swal from "sweetalert2";
 import Loader from "@/component/common_component/loader";
 import AssignLeadDialog from "@/component/AssignLeadDialog";
@@ -76,21 +75,23 @@ const columns = [
   { id: "action", label: "Action" },
 ];
 
-const IndexPage: React.FC = () => {
+const IndexPage: React.FC = memo(() => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { accountMasters, loading, error } = useAppSelector((state) => state.accountMasters);
   const { user } = useAppSelector((state) => state.auth);
-  const [editId, setEditId] = useState<string | null>(null);
+
   const [open, setOpen] = useState(false);
-  const [isRequestMode, setIsRequestMode] = useState(false);
-  const [isBulkUpload, setIsBulkUpload] = useState(false);
-  const [companyTab, setCompanyTab] = useState(0);
   const [statusTab, setStatusTab] = useState(0);
-  const [openBulkUploadDialog, setOpenBulkUploadDialog] = useState(false);
+  const [companyTab, setCompanyTab] = useState(0);
+  const [isBulkUpload, setIsBulkUpload] = useState(false);
+  const [isRequestMode, setIsRequestMode] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
-  const [openAssignLeadDialog, setOpenAssignLeadDialog] = useState(false);
   const [openBulkAssignTask, setOpenBulkAssignTask] = useState(false);
+  const [openBulkUploadDialog, setOpenBulkUploadDialog] = useState(false);
+  const [openAssignLeadDialog, setOpenAssignLeadDialog] = useState(false);
+
   const canViewGlobal = user?.role?.permissions?.account_master?.view_global;
   const canViewOwn = user?.role?.permissions?.account_master?.view_own;
   const cancreate = user?.role?.permissions?.account_master?.create;
@@ -101,7 +102,7 @@ const IndexPage: React.FC = () => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = hasSakshi && hasQP;
-  const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p, c } = router.query
+  const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p, c ,companyName } = router.query
 
   // Company tabs configuration
   const companyTabs = useMemo(() => {
@@ -177,10 +178,9 @@ const IndexPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (c)
-      setCompanyTab(c === "Quality Packaging" ? 1 : 0)
+    if (c) setCompanyTab(c === "Quality Packaging" ? 1 : 0)
   }, [c])
-  
+
   useEffect(() => {
     if (error) toast.error(error);
   }, [error, dispatch]);
@@ -260,6 +260,7 @@ const IndexPage: React.FC = () => {
         await dispatch(approvePartyThunk(partyId)).unwrap();
         // Refresh data after approval
         await dispatch(getAllAccountMastersThunk(({
+          companyName,
           staffId: si,
           startDate: st,
           endDate: e,
@@ -297,25 +298,23 @@ const IndexPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const token = authService.getToken();
-    if (!token) {
-      router.push("/login");
-      return;
+    if (canViewGlobal && router.isReady) {
+      console.log('jhdvbfgjkbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhg')
+      dispatch(getAllAccountMastersThunk({
+        companyName,
+        staffId: si,
+        startDate: st,
+        endDate: e,
+        partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+      }));
     }
-
-    if (canViewGlobal) dispatch(getAllAccountMastersThunk({
-      staffId: si,
-      startDate: st,
-      endDate: e,
-      partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
-    }));
     else if (canViewOwn && user?.id) dispatch(getAccountMasterByStaffIdThunk(user.id));
 
     return () => {
       dispatch(clearError());
       dispatch(clearSuccessMessage());
     };
-  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id]);
+  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id, router.isReady]);
 
   const filteredAccountMasters = accountMasters.filter((account) => {
     const statusApproval = account.party?.statusApproval || "PENDING";
@@ -330,6 +329,7 @@ const IndexPage: React.FC = () => {
     return statusMatch && companyMatch;
   });
 
+  console.log(accountMasters.length, 'xdvsfjhusegfuighuigh')
   const excelData = useMemo(() => {
     return filteredAccountMasters.map((account) => ({
       "Company Name": account.companyName?.name || "N/A",
@@ -583,13 +583,14 @@ const IndexPage: React.FC = () => {
           selectedRows={selectedRows}
         />
       )}
-      <AddNewPartyDialog
+      {open ? <AddNewPartyDialog
         open={open}
         onClose={handleDialogClose}
         accountId={editId ?? undefined}
         refreshData={() => {
           if (canViewGlobal) {
             dispatch(getAllAccountMastersThunk({
+              companyName,
               staffId: si,
               startDate: st,
               endDate: e,
@@ -601,8 +602,8 @@ const IndexPage: React.FC = () => {
         }}
         isRequestMode={isRequestMode}
         isBulkUpload={isBulkUpload}
-      />
-      <AssignLeadDialog
+      /> : null}
+      {openAssignLeadDialog ? <AssignLeadDialog
         open={openAssignLeadDialog}
         onClose={() => {
           setOpenAssignLeadDialog(false);
@@ -614,6 +615,7 @@ const IndexPage: React.FC = () => {
           setSelectedRows([]);
           if (canViewGlobal) {
             dispatch(getAllAccountMastersThunk({
+              companyName,
               staffId: si,
               startDate: st,
               endDate: e,
@@ -623,8 +625,8 @@ const IndexPage: React.FC = () => {
             dispatch(getAccountMasterByStaffIdThunk(user.id));
           }
         }}
-      />
-      <AssignTaskDialog
+      /> : null}
+      {openBulkAssignTask ? <AssignTaskDialog
         open={openBulkAssignTask}
         onClose={() => {
           setOpenBulkAssignTask(false);
@@ -636,6 +638,7 @@ const IndexPage: React.FC = () => {
           setSelectedRows([]);
           if (canViewGlobal) {
             dispatch(getAllAccountMastersThunk({
+              companyName,
               staffId: si,
               startDate: st,
               endDate: e,
@@ -645,9 +648,9 @@ const IndexPage: React.FC = () => {
             dispatch(getAccountMasterByStaffIdThunk(user.id));
           }
         }}
-      />
+      /> : null}
     </>
   );
-};
+});
 
 export default IndexPage;

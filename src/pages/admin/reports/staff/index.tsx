@@ -225,48 +225,48 @@ const StaffPage = () => {
     return preset ? preset.label : 'Select Date Range';
   };
 
-  const handleDoneTaskClick = (staffId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
+  const handleDoneTaskClick = (staffId,companyId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
     window.open(url, '_blank');
   };
-  const handleRescheduledTaskClick = (staffId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=rescheduled&c=${companyName}`;
+  const handleRescheduledTaskClick = (staffId,companyId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&status=rescheduled&c=${companyName}`;
     window.open(url, '_blank');
   };
-  const handlePartyVisitClick = (staffId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&c=${companyName}`;
+  const handlePartyVisitClick = (staffId,companyId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&c=${companyName}`;
     window.open(url, '_blank');
   };
-  const handleDonePartyVisitClick = (staffId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=completed&c=${companyName}`;
+  const handleDonePartyVisitClick = (staffId,companyId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=completed&c=${companyName}`;
     window.open(url, '_blank');
   };
-  const handleCancelledPartyVisitClick = (staffId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=cancelled&c=${companyName}`;
+  const handleCancelledPartyVisitClick = (staffId,companyId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=cancelled&c=${companyName}`;
     window.open(url, '_blank');
   };
-  const handleDoneLeadsClick = (staffId) => {
-    const url = `/admin/party-call?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
+  const handleDoneLeadsClick = (staffId,companyId) => {
+    const url = `/admin/party-call?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
     window.open(url, '_blank');
   };
-  const handleRescheduledLeadClick = (staffId) => {
-    const url = `/admin/party-call?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
+  const handleRescheduledLeadClick = (staffId,companyId) => {
+    const url = `/admin/party-call?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
     window.open(url, '_blank');
   };
   const handleOrderClick = (staffId,companyId) => {
     const url = `/admin/all-orders?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&companyName=${companyId}&c=${companyName}`;
     window.open(url, '_blank');
   };
-  const handleCustomerClick = (staffId) => {
-    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=customer&c=${companyName}`;
+  const handleCustomerClick = (staffId,companyId) => {
+    const url = `/admin/account-master?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&partyTag=customer&c=${companyName}`;
     window.open(url, '_blank');
   };
-  const handleNewClick = (staffId) => {
-    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=new,customer&c=${companyName}`;
+  const handleNewClick = (staffId,companyId) => {
+    const url = `/admin/account-master?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&partyTag=new,customer&c=${companyName}`;
     window.open(url, '_blank');
   };
-  const handleNewcClick = (staffId) => {
-    const url = `/admin/account-master?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&partyTag=new&c=${companyName}`;
+  const handleNewcClick = (staffId,companyId) => {
+    const url = `/admin/account-master?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&partyTag=new&c=${companyName}`;
     window.open(url, '_blank');
   };
 
@@ -381,24 +381,24 @@ const StaffPage = () => {
                 {row.staffName}
               </TableCell>
               <TableCell>{row.companyName}</TableCell>
-              <TableCell onClick={() => handleDoneTaskClick(row.staffId)} sx={{ cursor: 'pointer' }}>
+              <TableCell onClick={() => handleDoneTaskClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>
                 {row.doneTask}
               </TableCell>
-              <TableCell onClick={() => handleRescheduledTaskClick(row.staffId)} sx={{ cursor: 'pointer' }}>
+              <TableCell onClick={() => handleRescheduledTaskClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>
                 {row.rescheduledTasks}
               </TableCell>
-              <TableCell onClick={() => handlePartyVisitClick(row.staffId)} sx={{ cursor: 'pointer' }}>
+              <TableCell onClick={() => handlePartyVisitClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>
                 {row.partyVisit}
               </TableCell>
-              <TableCell onClick={() => handleDonePartyVisitClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.donePartyVisit}</TableCell>
-              <TableCell onClick={() => handleCancelledPartyVisitClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.cancelledPartyVisit}</TableCell>
-              <TableCell onClick={() => handleDoneLeadsClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.doneLeads}</TableCell>
-              <TableCell onClick={() => handleRescheduledLeadClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.rescheduledLeads}</TableCell>
+              <TableCell onClick={() => handleDonePartyVisitClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.donePartyVisit}</TableCell>
+              <TableCell onClick={() => handleCancelledPartyVisitClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.cancelledPartyVisit}</TableCell>
+              <TableCell onClick={() => handleDoneLeadsClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.doneLeads}</TableCell>
+              <TableCell onClick={() => handleRescheduledLeadClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.rescheduledLeads}</TableCell>
               <TableCell onClick={() => handleOrderClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.ordersGiven}</TableCell>
               <TableCell>{row.totalSale}</TableCell>
-              <TableCell onClick={() => handleNewClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.createdParties}</TableCell>
-              <TableCell onClick={() => handleNewcClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.newPartiesStillNew}</TableCell>
-              <TableCell onClick={() => handleCustomerClick(row.staffId)} sx={{ cursor: 'pointer' }}>{row.newToCustomerParties}</TableCell>
+              <TableCell onClick={() => handleNewClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.createdParties}</TableCell>
+              <TableCell onClick={() => handleNewcClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.newPartiesStillNew}</TableCell>
+              <TableCell onClick={() => handleCustomerClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.newToCustomerParties}</TableCell>
             </>);
           }}
         />

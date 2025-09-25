@@ -517,11 +517,11 @@ const AllOrdersPage = () => {
         />
       </Box>
 
-      <AddSakhiOrderDialog
+      {open ? <AddSakhiOrderDialog
         company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id}
         open={open}
         onClose={() => setOpen(false)}
-      />
+      /> : null}
     </>
   );
 

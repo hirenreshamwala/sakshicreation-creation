@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo } from "react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -82,7 +82,7 @@ const getValidationSchema = (isBulkMode: boolean) =>
     }),
   });
 
-const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
+const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   open,
   onClose,
   taskId,
@@ -782,6 +782,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
       />
     </>
   );
-};
+});
 
 export default AssignTaskDialog;
