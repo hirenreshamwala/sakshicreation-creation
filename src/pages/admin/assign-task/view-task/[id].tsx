@@ -17,7 +17,7 @@ import AssignTaskDialog from '@/component/assigntaskdailog';
 interface Address {
   unitNo: string;
   marketName: string;
-  streetAddress: string;
+  // streetAddress: string;
   landMark?: string;
   area: string;
   pincode: string;
@@ -336,7 +336,7 @@ const ViewTaskPage: React.FC = () => {
         companyName: typeof fullTask?.companyName === 'string' ? fullTask.companyName : undefined,
         companyNameObj: company ? { companyName: company.companyName } : undefined,
         address: party.address
-          ? `${party.address.unitNo}, ${party.address?.marketName?.marketName}, ${party.address.streetAddress?.streetAddress}, ${party.address?.landMark?.landMark || ''}, ${party.address?.area?.area} - ${party.address?.pincode?.pincode}`
+          ? `${party.address.unitNo}, ${party.address?.marketName?.marketName}, ${party.address?.landMark?.landmark || ''}, ${party.address?.area?.area} - ${party.address?.pincode?.pincode}`
           : 'Address not available',
         createdByObj: fullTask?.createdBy || singleAssignTask?.createdBy,
         ownerMobileNo: party.ownerMobileNo || 'Not available',

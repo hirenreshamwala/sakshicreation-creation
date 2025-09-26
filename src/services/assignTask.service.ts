@@ -5,7 +5,7 @@ import Request from './axios';
 export interface Address {
   unitNo: string;
   marketName: string;
-  streetAddress: string;
+  // streetAddress: string;
   landMark?: string;
   area: string;
   pincode: string;

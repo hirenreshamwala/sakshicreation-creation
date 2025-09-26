@@ -6,7 +6,7 @@ export interface Market {
   _id: string;
   name: string;
   area: string;
-  streetAddress: string;
+  // streetAddress: string;
   landmark?: string;
   pincode: string;
   createdAt: string;

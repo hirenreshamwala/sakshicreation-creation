@@ -33,7 +33,6 @@ import { downloadSkippedRecordsAsCSV } from "@/utills/utills";
 interface Address {
   unitNo: string;
   marketName: string;
-  streetAddress: string;
   landMark?: string;
   area: string;
   pincode: string;
@@ -82,7 +81,7 @@ const validationSchema = Yup.object({
   address: Yup.object({
     unitNo: Yup.string().required("Unit No. is required"),
     marketName: Yup.string().required("Market Name is required"),
-    streetAddress: Yup.string().required("Street Address is required"),
+    // streetAddress: Yup.string(),
     landMark: Yup.string(),
     area: Yup.string().required("Area is required"),
     pincode: Yup.string()
@@ -185,7 +184,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       address: {
         unitNo: "",
         marketName: "",
-        streetAddress: "",
+        // streetAddress: "",
         landMark: "",
         area: "",
         pincode: "",
@@ -239,7 +238,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   // console.log(markets, 'markets')
 
   const handleDownloadSample = () => {
-    const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,streetAddress,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,createdBy\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Street 1,Near Park,Area A,400001,Visit,Ref123,FALSE,New,SUSHIL CHHAJER\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Street 2,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer,SUSHIL CHHAJER`;
+    const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,createdBy\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Near Abc,Area A,400001,Visit,Ref123,FALSE,New,SUSHIL CHHAJER\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer,SUSHIL CHHAJER`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -281,7 +280,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             address: {
               unitNo: result.address?.unitNo || "",
               marketName: result.address?.marketName?._id || "",
-              streetAddress: result.address?.streetAddress?._id || "",
+              // streetAddress: result.address?.streetAddress?._id || "",
               landMark: result.address?.landMark?._id || "",
               area: result.address?.area?._id || "",
               pincode: result.address?.pincode?._id || "",
@@ -389,7 +388,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
           address: {
             unitNo: partyData.address?.unitNo || "",
             marketName: partyData.address?.marketName?._id || "",
-            streetAddress: partyData.address?.streetAddress?._id || "",
+            // streetAddress: partyData.address?.streetAddress?._id || "",
             landMark: partyData.address?.landMark?._id || "",
             area: partyData.address?.area?._id || "",
             pincode: partyData.address?.pincode?._id || "",
@@ -823,7 +822,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                     onChange={(event, newValue) => {
                       formik.setFieldValue("address.marketName", newValue ? newValue.value : "")
                       formik.setFieldValue("address.area", newValue ? newValue.value : "")
-                      formik.setFieldValue("address.streetAddress", newValue ? newValue.value : "")
+                      // formik.setFieldValue("address.streetAddress", newValue ? newValue.value : "")
                       formik.setFieldValue("address.landMark", newValue ? newValue.value : "")
                       formik.setFieldValue("address.pincode", newValue ? newValue.value : "")
                     }}
@@ -856,7 +855,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                     helperText={formik.touched.address?.area && formik.errors.address?.area}
                     required
                   />
-                  <ThemeSelect
+                  {/* <ThemeSelect
                     label="Street Address"
                     options={getUniqueOptions(
                       getFilteredData(markets, formik.values?.address?.area, "streetAddress"),
@@ -878,18 +877,18 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                     error={Boolean(formik.errors.address?.streetAddress)}
                     helperText={formik.touched.address?.streetAddress && formik.errors.address?.streetAddress}
                     required
-                  />
+                  /> */}
                   <ThemeSelect
                     label="Land Mark"
                     options={getUniqueOptions(
-                      getFilteredData(markets, formik.values?.address?.streetAddress, "streetAddress"),
+                      getFilteredData(markets, formik.values?.address?.landMark, "landMark"),
                       "landmark",
                       "_id"
                     )}
                     value={getSelectedOption(
                       formik.values?.address?.landMark,
                       getUniqueOptions(
-                        getFilteredData(markets, formik.values?.address?.streetAddress, "streetAddress"),
+                        getFilteredData(markets, formik.values?.address?.landMark, "landMark"),
                         "landmark",
                         "_id"
                       )

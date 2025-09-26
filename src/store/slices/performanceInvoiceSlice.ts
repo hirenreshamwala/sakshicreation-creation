@@ -103,7 +103,7 @@ export interface PerformanceInvoice {
     GSTNo?: string;
     address?: {
       unitNo?: string;
-      streetAddress?: string;
+      // streetAddress?: string;
       marketName?: string;
       landMark?: string;
       area?: string;
@@ -116,7 +116,7 @@ export interface PerformanceInvoice {
   GSTNo?: string;
   partyAddress?: {
     unitNo?: string;
-    streetAddress?: string;
+    // streetAddress?: string;
     marketName?: string;
     landMark?: string;
     area?: string;
@@ -138,7 +138,7 @@ export interface CreatePerformanceInvoice {
   GSTNo?: string;
   partyAddress?: {
     unitNo?: string;
-    streetAddress?: string;
+    // streetAddress?: string;
     marketName?: string;
     landMark?: string;
     area?: string;
@@ -161,7 +161,7 @@ export interface Order {
     GSTNo?: string;
     address?: {
       unitNo?: string;
-      streetAddress?: string;
+      // streetAddress?: string;
       marketName?: string;
       landMark?: string;
       area?: string;

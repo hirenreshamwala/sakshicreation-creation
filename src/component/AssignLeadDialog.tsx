@@ -84,12 +84,12 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
             reason: lead?.reason || '',
             assignedTo: lead?.assignedTo?._id || '',
             remark: lead?.remark || '',
-            status: lead?._id ? 'rescheduled' : 'pending',
+            status: lead?.status || 'pending',
             rescheduleDate: lead?.rescheduleDate ? new Date(lead.rescheduleDate).toISOString().split('T')[0] : '',
             dateType: lead?.dateType || 'today',
             statusOfParty: lead?.partyName?.partyTag || 'New',
             address: lead?.partyName?.address
-                ? `${lead.partyName.address.unitNo}, ${lead.partyName.address.streetAddress}`
+                ? `${lead.partyName.address.unitNo}, ${lead.partyName.address.landMark}`
                 : '',
             market: lead?.partyName?.address?.marketName || '',
             mobile: lead?.partyName?.personMobileNo || '',

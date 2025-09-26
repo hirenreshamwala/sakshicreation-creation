@@ -50,7 +50,7 @@ interface Task {
     address: {
       unitNo: string;
       marketName: string;
-      streetAddress: string;
+      landMark: string;
       area: string;
       pincode: string;
     };
@@ -82,7 +82,7 @@ interface Lead {
     address: {
       unitNo: string;
       marketName: string;
-      streetAddress: string;
+      landMark: string;
       area: string;
     };
     contactPerson: string;
@@ -418,7 +418,7 @@ const ViewCompanyPage: React.FC = () => {
       address: {
         unitNo: task.accountMaster?.party?.address?.unitNo || '',
         marketName: task.accountMaster?.party?.address?.marketName || '',
-        streetAddress: task.accountMaster?.party?.address?.streetAddress || '',
+        landMark: task.accountMaster?.party?.address?.landMark || '',
         area: task.accountMaster?.party?.address?.area || '',
         pincode: task.accountMaster?.party?.address?.pincode || '',
       },
@@ -450,7 +450,7 @@ const ViewCompanyPage: React.FC = () => {
       address: {
         unitNo: lead.partyName?.address?.unitNo || '',
         marketName: lead.partyName?.address?.marketName || '',
-        streetAddress: lead.partyName?.address?.streetAddress || '',
+        landMark: lead.partyName?.address?.landMark || '',
         area: lead.partyName?.address?.area || '',
       },
       contactPerson: lead.partyName?.contactPerson || '',
@@ -648,7 +648,7 @@ const ViewCompanyPage: React.FC = () => {
             </Typography>
             <Typography component="div">
               {singleAccountMaster?.address?.unitNo}, {singleAccountMaster.address?.marketName?.marketName},{' '}
-              {singleAccountMaster.address?.streetAddress?.streetAddress}, {singleAccountMaster.address?.area?.area},{' '}
+              {singleAccountMaster.address?.landMark?.landmark}, {singleAccountMaster.address?.area?.area},{' '}
               {singleAccountMaster.address?.pincode?.pincode}
             </Typography>
           </Box>

@@ -934,7 +934,7 @@ const ViewOrderDesigner = () => {
     try {
       const fullAddress = [
         singleOrder?.party?.address?.unitNo || "",
-        singleOrder?.party?.address?.streetAddress || "",
+        // singleOrder?.party?.address?.streetAddress || "",
         singleOrder?.party?.address?.marketName || "",
         singleOrder?.party?.address?.landMark || "",
         singleOrder?.party?.address?.area || "",

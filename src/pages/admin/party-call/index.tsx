@@ -61,7 +61,7 @@ interface Lead {
     address?: {
       unitNo: string;
       marketName: string;
-      streetAddress: string;
+      // streetAddress: string;
       landMark: string;
       area: string;
       pincode: string;

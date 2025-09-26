@@ -30,7 +30,6 @@ const columns = [
     { id: "id", label: "ID" },
     { id: "name", label: "Market Name" },
     { id: "area", label: "Area" },
-    { id: "streetAddress", label: "Street Address" },
     { id: "landmark", label: "Landmark" },
     { id: "pincode", label: "Pincode" },
     { id: "options", label: "Options" },
@@ -59,7 +58,6 @@ const MarketPage = () => {
     const validationSchema = Yup.object({
         marketName: Yup.string().required("Market Name is required"),
         area: Yup.string().required("Area is required"),
-        streetAddress: Yup.string().nullable(),
         landmark: Yup.string().nullable(),
         pincode: Yup.string()
             .matches(/^\d{6}$/, "Pincode must be 6 digits")
@@ -71,7 +69,6 @@ const MarketPage = () => {
         initialValues: {
             marketName: "",
             area: "",
-            streetAddress: "",
             landmark: "",
             pincode: "",
         },
@@ -93,7 +90,6 @@ const MarketPage = () => {
             formik.setValues({
                 marketName: market.marketName,
                 area: market.area,
-                streetAddress: market.streetAddress,
                 landmark: market.landmark,
                 pincode: market.pincode,
             });
@@ -154,7 +150,7 @@ const MarketPage = () => {
 
     const handleDownloadSample = () => {
         const csvContent =
-            "marketName,area,streetAddress,landmark,pincode\nMain Market,Downtown,123 Street,Near Temple,400001\n";
+            "marketName,area,landmark,pincode\nMain Market,Downtown,Near Temple,400001\n";
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
@@ -199,7 +195,6 @@ const MarketPage = () => {
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>{row?.marketName}</TableCell>
                         <TableCell>{row?.area}</TableCell>
-                        <TableCell>{row?.streetAddress}</TableCell>
                         <TableCell>{row?.landmark}</TableCell>
                         <TableCell>{row?.pincode}</TableCell>
                         <TableCell>
@@ -223,7 +218,7 @@ const MarketPage = () => {
             >
                 <form onSubmit={formik.handleSubmit}>
                     <Box display="grid" gap={2}>
-                        {["marketName", "area", "streetAddress", "landmark", "pincode"].map((field) => (
+                        {["marketName", "area", "landmark", "pincode"].map((field) => (
                             <Box key={field}>
                                 <Input
                                     label={field.toUpperCase()}
@@ -254,7 +249,7 @@ const MarketPage = () => {
                 </form>
             </CustomDialog>
 
-            {/* Bulk Upload Dialog (unchanged) */}
+            {/* Bulk Upload Dialog */}
             <CustomDialog
                 open={bulkDialogOpen}
                 onClose={() => setBulkDialogOpen(false)}

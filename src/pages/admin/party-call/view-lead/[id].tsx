@@ -37,7 +37,7 @@ interface Lead {
     address?: {
       unitNo: string;
       marketName: string;
-      streetAddress: string;
+      landMark: string;
       area: string;
       pincode: string;
     };
@@ -298,7 +298,7 @@ const ViewLeadPage: React.FC = () => {
         setSelectedLead(lead);
         setPartyDetails({
           address: lead.partyName?.address
-            ? `${lead.partyName.address.unitNo}, ${lead.partyName.address.marketName?.marketName}, ${lead.partyName.address.streetAddress?.streetAddress}, ${lead.partyName.address.area?.area} - ${lead.partyName.address.pincode?.pincode}`
+            ? `${lead.partyName.address.unitNo}, ${lead.partyName.address.marketName?.marketName}, ${lead.partyName.address.landMark?.landmark}, ${lead.partyName.address.area?.area} - ${lead.partyName.address.pincode?.pincode}`
             : 'N/A',
           ownerMobileNo: lead.partyName?.ownerMobileNo || 'N/A',
           ownerName: lead.partyName?.ownerName || 'N/A',

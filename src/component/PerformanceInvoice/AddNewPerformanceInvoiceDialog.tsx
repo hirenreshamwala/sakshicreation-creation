@@ -57,7 +57,7 @@ interface Order {
     GSTNo?: string;
     address?: {
       unitNo?: string;
-      streetAddress?: string;
+      // streetAddress?: string;
       marketName?: string;
       landMark?: string;
       area?: string;
@@ -246,10 +246,10 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           remarks: values.remarks || "",
           ownerMobileNo: values.ownerMobileNo || "",
           partyAddress: {
-            streetAddress: values.addressName || "",
+            landMark: values.addressName || "",
             unitNo: "",
             marketName: "",
-            landMark: "",
+            // landMark: "",
             area: "",
             pincode: "",
           },
@@ -297,7 +297,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
         if (result) {
           const fullAddress = [
             result.partyAddress?.unitNo || "",
-            result.partyAddress?.streetAddress || "",
+            // result.partyAddress?.streetAddress || "",
             result.partyAddress?.marketName || "",
             result.partyAddress?.landMark || "",
             result.partyAddress?.area || "",
@@ -370,7 +370,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     
     const fullAddress = [
       selectedOrder.party.address?.unitNo || "",
-      markets.find((item) => item._id === selectedOrder.party.address?.streetAddress)?.streetAddress || "",
+      // markets.find((item) => item._id === selectedOrder.party.address?.streetAddress)?.streetAddress || "",
       markets.find((item) => item._id === selectedOrder.party.address?.marketName)?.marketName || "",
       markets.find((item) => item._id === selectedOrder.party.address?.landMark)?.landMark || "",
       markets.find((item) => item._id === selectedOrder.party.address?.area)?.area || "",
@@ -395,7 +395,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           setIsSaved(true);
           const invoiceAddress = [
             existingInvoice.partyAddress?.unitNo || "",
-            existingInvoice.partyAddress?.streetAddress || "",
+            // existingInvoice.partyAddress?.streetAddress || "",
             existingInvoice.partyAddress?.marketName || "",
             existingInvoice.partyAddress?.landMark || "",
             existingInvoice.partyAddress?.area || "",
