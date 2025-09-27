@@ -1,0 +1,101 @@
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { getAllQPOrdersThunk } from "@/store/slices/qpOrderSlice";
+import BasicTable from "@/component/common_component/Table/themetable"; // Adjust path as needed
+import { TableCell } from "@mui/material";
+import Loader from "@/component/common_component/loader";
+
+interface Order {
+  _id: string;
+  orderNo: number;
+  companyName: { _id: string; companyName: string };
+  party: { _id: string; partyName: string };
+  status: string;
+  printer: { _id: string; firstName: string; lastName: string };
+  createdAt: string;
+}
+
+const OrdersList: React.FC = () => {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const { orders, loading, error, totalCount, pagination } = useSelector(
+    (state: RootState) => state.qpOrders
+  );
+
+  const [page, setPage] = useState(1);
+
+  console.log("DEBUG : OrdersList : user:", user);
+  console.log("DEBUG : OrdersList : orders:", orders);
+
+  const printer = user?.role?.roleName === "Printer"
+  const binder = user?.role?.roleName === "Binder"
+  console.log("DEBUG : OrdersList : printer:", printer);
+
+
+
+  // Filter orders where printer._id matches user.id
+  const filteredOrders = orders.filter((order: Order) => {
+  if (printer) {
+    return order.printer?._id === user?.id;
+  } else if (binder) {
+    return order.binder?._id === user?.id;
+  }
+  return false; // If neither printer nor binder, show all orders (or change this logic if needed)
+});
+
+  console.log("DEBUG : OrdersList : filteredOrders:", filteredOrders);
+
+  useEffect(() => {
+    if (user?.id) {
+      // Dispatch with printerId for server-side filtering
+      dispatch(getAllQPOrdersThunk());
+    }
+  }, [dispatch, user?.id, page]);
+
+  // Define columns for BasicTable
+  const columns = [
+    { id: "orderNo", label: "Order Number", align: "left" as const },
+    {
+      id: "companyName",
+      label: "Company",
+      align: "left" as const,
+      render: (row: Order) => row.companyName.companyName,
+    },
+    {
+      id: "partyName",
+      label: "Party",
+      align: "left" as const,
+      render: (row: Order) => row.party.partyName,
+    },
+    { id: "status", label: "Status", align: "left" as const },
+  ];
+
+  if (loading) return <Loader />
+
+  return (
+    <div>
+      <BasicTable
+        tableHeader={columns}
+        rowData={filteredOrders}
+        renderRow={(row: Order, index: number) => (
+          <>
+            <TableCell>QP-{row.orderNo}</TableCell>
+            <TableCell>{row.companyName.companyName}</TableCell>
+            <TableCell>{row.party.partyName}</TableCell>
+            <TableCell>{row.status}</TableCell>
+          </>
+        )}
+        // title="Printer Orders"
+        showDatePicker={false}
+        showSearch={false}
+        showFillter={false}
+        showExcelDownload={false}
+        totalCount={totalCount}
+        onPageChange={(newPage: number) => setPage(newPage)} // Handle page changes
+      />
+    </div>
+  );
+};
+
+export default OrdersList;

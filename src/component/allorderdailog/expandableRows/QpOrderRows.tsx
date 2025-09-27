@@ -1,6 +1,7 @@
 import ThemeButton from "@/component/common_component/themebutton";
-import { useAppDispatch } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store";
 import { updateQPOrderThunk } from "@/store/slices/qpOrderSlice";
+import { getAllStaffThunk } from "@/store/slices/staffSlice";
 import {
     Box,
     MenuItem,
@@ -8,8 +9,8 @@ import {
     TextField,
     Dialog,
     DialogActions,
-    DialogContent,
     DialogTitle,
+    DialogContent,
     Button,
     Typography,
     Divider,
@@ -33,6 +34,8 @@ type Remark = {
     text: string;
     date: string;
     previousValue?: string;
+    assignedPrinterId?: string;
+    assignedBinderId?: string;
 };
 
 interface ExpandedRowFormProps {
@@ -45,20 +48,19 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     console.log("DEBUG : ExpandedRowForm : row:", row);
 
     const dispatch = useAppDispatch();
+    const { staffList, loading: staffLoading, error: staffError } = useAppSelector((state) => state.staff);
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
     const [isCompleted, setIsCompleted] = useState(row.status === "Completed");
-
-    // remark modal (add reason)
     const [remarkModalOpen, setRemarkModalOpen] = useState(false);
     const [remarkType, setRemarkType] = useState<"startDate" | "onHold" | "canceled" | null>(null);
     const [tempStartDate, setTempStartDate] = useState("");
     const [remarkText, setRemarkText] = useState("");
-
-    // view remarks modal state
     const [viewRemarksOpen, setViewRemarksOpen] = useState(false);
-
-    // NEW: State to track if actualNoOfPieces has been updated
     const [isActualNoOfPiecesUpdated, setIsActualNoOfPiecesUpdated] = useState(!!row.actualNoOfPieces);
+    const [selectedPrinter, setSelectedPrinter] = useState<string>("");
+    const [selectedBinder, setSelectedBinder] = useState<string>("");
+    const [showPrinterDropdown, setShowPrinterDropdown] = useState(row.status === "Printer" && !row.printer);
+    const [showBinderDropdown, setShowBinderDropdown] = useState(row.status === "Lamination" && !row.binder);
 
     const [formData, setFormData] = useState({
         _id: row._id,
@@ -75,9 +77,16 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         factoryRemark: row.factoryRemark || "",
         status: row.status || "Pending",
         remarks: (row.remarks as Remark[]) || [],
+        printer: row.printer?._id || "",
+        binder: row.binder?._id || "",
     });
 
     const [initialFormData, setInitialFormData] = useState(formData);
+
+    // Fetch staff list on component mount
+    useEffect(() => {
+        dispatch(getAllStaffThunk());
+    }, [dispatch]);
 
     useEffect(() => {
         const newFormData = {
@@ -95,13 +104,27 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             factoryRemark: row.factoryRemark || "",
             status: row.status || "Pending",
             remarks: (row.remarks as Remark[]) || [],
+            printer: row.printer?._id || "",
+            binder: row.binder?._id || "",
         };
         setFormData(newFormData);
         setInitialFormData(newFormData);
         setIsInitialUnitSet(!!row.unitNo);
         setIsCompleted(row.status === "Completed");
-        setIsActualNoOfPiecesUpdated(!!row.actualNoOfPieces); // Set based on whether actualNoOfPieces exists
+        setIsActualNoOfPiecesUpdated(!!row.actualNoOfPieces);
+        setShowPrinterDropdown(row.status === "Printer" && !row.printer);
+        setShowBinderDropdown(row.status === "Lamination" && !row.binder);
+        setSelectedPrinter(row.printer?._id || "");
+        setSelectedBinder(row.binder?._id || "");
     }, [row]);
+
+    // Filter staff with role "printer" or "binder" (case-insensitive)
+    const printers = staffList.filter(
+        (staff) => staff.role?.roleName?.toLowerCase() === "printer"
+    );
+    const binders = staffList.filter(
+        (staff) => staff.role?.roleName?.toLowerCase() === "binder"
+    );
 
     const handleFormChange = (field: string, value: string) => {
         if (field === "startDate") {
@@ -124,17 +147,35 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 }
                 const currentDate = new Date().toISOString().split("T")[0];
                 setFormData((prev) => ({ ...prev, status: value, deliveryDate: currentDate }));
+                setShowPrinterDropdown(false);
+                setShowBinderDropdown(false);
                 return;
             }
             if (value === "On Hold") {
                 setRemarkType("onHold");
                 setRemarkModalOpen(true);
+                setShowPrinterDropdown(false);
+                setShowBinderDropdown(false);
                 return;
             }
             if (value === "Canceled") {
                 setRemarkType("canceled");
                 setRemarkModalOpen(true);
+                setShowPrinterDropdown(false);
+                setShowBinderDropdown(false);
                 return;
+            }
+            if (value === "Printer" && !row.printer) {
+                setShowPrinterDropdown(true);
+                setShowBinderDropdown(false);
+            } else if (value === "Lamination" && !row.binder) {
+                setShowPrinterDropdown(false);
+                setShowBinderDropdown(true);
+            } else {
+                setShowPrinterDropdown(false);
+                setShowBinderDropdown(false);
+                setSelectedPrinter(formData.printer || "");
+                setSelectedBinder(formData.binder || "");
             }
         }
 
@@ -146,10 +187,114 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         }
 
         if (field === "actualNoOfPieces") {
-            setIsActualNoOfPiecesUpdated(true); // Mark as updated when user changes actualNoOfPieces
+            setIsActualNoOfPiecesUpdated(true);
         }
 
         setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleAssignPrinter = async () => {
+        if (!selectedPrinter) {
+            toast.error("Please select a printer before assigning");
+            return;
+        }
+
+        const selectedPrinterData = printers.find((printer) => printer.id === selectedPrinter);
+        if (!selectedPrinterData) {
+            toast.error("Invalid printer selected");
+            return;
+        }
+
+        const now = new Date().toISOString();
+        const remarkText = `Assigned to printer: ${selectedPrinterData.name} (ID: ${selectedPrinter})`;
+
+        try {
+            const updateData = {
+                ...formData,
+                printer: selectedPrinter,
+                remarks: [
+                    ...formData.remarks,
+                    {
+                        type: "Printer Assigned",
+                        text: remarkText,
+                        date: now,
+                        assignedPrinterId: selectedPrinter,
+                    },
+                ],
+            };
+
+            await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
+            setFormData((prev) => ({
+                ...prev,
+                printer: selectedPrinter,
+                remarks: [
+                    ...prev.remarks,
+                    {
+                        type: "Printer Assigned",
+                        text: remarkText,
+                        date: now,
+                        assignedPrinterId: selectedPrinter,
+                    },
+                ],
+            }));
+            setShowPrinterDropdown(false);
+            toast.success("Printer assigned successfully");
+        } catch (err: any) {
+            console.error("ExpandedRowForm: Assign printer failed:", err);
+            toast.error(err?.message || "Failed to assign printer");
+        }
+    };
+
+    const handleAssignBinder = async () => {
+        if (!selectedBinder) {
+            toast.error("Please select a binder before assigning");
+            return;
+        }
+
+        const selectedBinderData = binders.find((binder) => binder.id === selectedBinder);
+        if (!selectedBinderData) {
+            toast.error("Invalid binder selected");
+            return;
+        }
+
+        const now = new Date().toISOString();
+        const remarkText = `Assigned to binder: ${selectedBinderData.name} (ID: ${selectedBinder})`;
+
+        try {
+            const updateData = {
+                ...formData,
+                binder: selectedBinder,
+                remarks: [
+                    ...formData.remarks,
+                    {
+                        type: "Binder Assigned",
+                        text: remarkText,
+                        date: now,
+                        assignedBinderId: selectedBinder,
+                    },
+                ],
+            };
+
+            await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
+            setFormData((prev) => ({
+                ...prev,
+                binder: selectedBinder,
+                remarks: [
+                    ...prev.remarks,
+                    {
+                        type: "Binder Assigned",
+                        text: remarkText,
+                        date: now,
+                        assignedBinderId: selectedBinder,
+                    },
+                ],
+            }));
+            setShowBinderDropdown(false);
+            toast.success("Binder assigned successfully");
+        } catch (err: any) {
+            console.error("ExpandedRowForm: Assign binder failed:", err);
+            toast.error(err?.message || "Failed to assign binder");
+        }
     };
 
     const handleRemarkSubmit = () => {
@@ -252,6 +397,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 factoryRemark: formData.factoryRemark,
                 status: formData.status,
                 remarks: formData.remarks,
+                printer: formData.printer,
+                binder: formData.binder,
                 actualTotalKantan: {
                     reel: reel.toString(),
                     inch: inch.toString(),
@@ -292,13 +439,17 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setFormData(initialFormData);
         setIsInitialUnitSet(!!initialFormData.unitNo);
         setIsActualNoOfPiecesUpdated(!!initialFormData.actualNoOfPieces);
+        setShowPrinterDropdown(initialFormData.status === "Printer" && !row.printer);
+        setShowBinderDropdown(initialFormData.status === "Lamination" && !row.binder);
+        setSelectedPrinter(initialFormData.printer || "");
+        setSelectedBinder(initialFormData.binder || "");
     };
 
     return (
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
             <form onSubmit={handleSubmit}>
                 <Stack spacing={2}>
-                    <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
+                    <Stack direction="row" spacing={2}>
                         <TextField
                             select
                             label="Unit No"
@@ -314,7 +465,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             }}
                             variant="outlined"
                             size="small"
-                            sx={{ minWidth: 120 }}
+                            sx={{ minWidth: 80 }}
                             disabled={isCompleted}
                         >
                             <MenuItem value="Unit1">Unit1</MenuItem>
@@ -328,7 +479,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             onChange={(e) => handleFormChange("startDate", e.target.value)}
                             variant="outlined"
                             size="small"
-                            sx={{ minWidth: 150 }}
+                            sx={{ minWidth: 100 }}
                             InputLabelProps={{ shrink: true }}
                             disabled={isCompleted}
                         />
@@ -339,7 +490,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             onChange={(e) => handleFormChange("deliveryDate", e.target.value)}
                             variant="outlined"
                             size="small"
-                            sx={{ minWidth: 150 }}
+                            sx={{ minWidth: 100 }}
                             InputLabelProps={{ shrink: true }}
                             disabled={isCompleted}
                         />
@@ -349,7 +500,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             onChange={(e) => handleFormChange("dyeNumber", e.target.value)}
                             variant="outlined"
                             size="small"
-                            sx={{ minWidth: 150 }}
+                            sx={{ minWidth: 100 }}
                             disabled={isCompleted}
                         />
                         <TextField
@@ -358,7 +509,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             onChange={(e) => handleFormChange("dyeSize", e.target.value)}
                             variant="outlined"
                             size="small"
-                            sx={{ minWidth: 150 }}
+                            sx={{ minWidth: 100 }}
                             disabled={isCompleted}
                         />
                         <TextField
@@ -367,7 +518,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             onChange={(e) => handleFormChange("glue", e.target.value)}
                             variant="outlined"
                             size="small"
-                            sx={{ minWidth: 150 }}
+                            sx={{ minWidth: 100 }}
                             disabled={isCompleted}
                         />
                         <TextField
@@ -376,7 +527,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             onChange={(e) => handleFormChange("wire", e.target.value)}
                             variant="outlined"
                             size="small"
-                            sx={{ minWidth: 150 }}
+                            sx={{ minWidth: 100 }}
                             disabled={isCompleted}
                         />
                         <TextField
@@ -385,7 +536,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             onChange={(e) => handleFormChange("actualNoOfPieces", e.target.value)}
                             variant="outlined"
                             size="small"
-                            sx={{ minWidth: 150 }}
+                            sx={{ minWidth: 100 }}
                             disabled={isCompleted}
                         />
                         <TextField
@@ -395,7 +546,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             onChange={(e) => handleFormChange("status", e.target.value)}
                             variant="outlined"
                             size="small"
-                            sx={{ minWidth: 150 }}
+                            sx={{ minWidth: 100 }}
                             disabled={isCompleted}
                         >
                             {ORDER_STATUSES.map((item) => (
@@ -404,8 +555,109 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                                 </MenuItem>
                             ))}
                         </TextField>
+
                     </Stack>
 
+                    <Stack direction="row" spacing={2}>
+                        {row.printer && (
+                            <TextField
+                                label="Assigned Printer"
+                                value={`${row.printer.firstName} ${row.printer.lastName}`}
+                                variant="outlined"
+                                size="small"
+                                sx={{ minWidth: 100, mt: 10 }}
+                                InputProps={{
+                                    readOnly: true,
+                                }}
+                            />
+                        )}
+                        {row.binder && (
+                            <TextField
+                                label="Assigned Binder"
+                                value={`${row.binder.firstName} ${row.binder.lastName}`}
+                                variant="outlined"
+                                size="small"
+                                sx={{ minWidth: 100 }}
+                                InputProps={{
+                                    readOnly: true,
+                                }}
+                            />
+                        )}
+                        {showPrinterDropdown && (
+                            <>
+                                <TextField
+                                    select
+                                    label="Select Printer"
+                                    value={selectedPrinter}
+                                    onChange={(e) => setSelectedPrinter(e.target.value)}
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ minWidth: 100, mt: 2 }}
+                                    disabled={isCompleted || staffLoading}
+                                >
+                                    {staffLoading ? (
+                                        <MenuItem value="" disabled>
+                                            Loading printers...
+                                        </MenuItem>
+                                    ) : printers.length === 0 ? (
+                                        <MenuItem value="" disabled>
+                                            No printers available
+                                        </MenuItem>
+                                    ) : (
+                                        printers.map((printer) => (
+                                            <MenuItem key={printer.id} value={printer.id}>
+                                                {printer.name}
+                                            </MenuItem>
+                                        ))
+                                    )}
+                                </TextField>
+                                <ThemeButton
+                                    type="button"
+                                    onClick={handleAssignPrinter}
+                                    disabled={isCompleted || !selectedPrinter || staffLoading}
+                                >
+                                    Assign Printer
+                                </ThemeButton>
+                            </>
+                        )}
+                        {showBinderDropdown && (
+                            <>
+                                <TextField
+                                    select
+                                    label="Select Binder"
+                                    value={selectedBinder}
+                                    onChange={(e) => setSelectedBinder(e.target.value)}
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ minWidth: 100, mt: 2 }}
+                                    disabled={isCompleted || staffLoading}
+                                >
+                                    {staffLoading ? (
+                                        <MenuItem value="" disabled>
+                                            Loading binders...
+                                        </MenuItem>
+                                    ) : binders.length === 0 ? (
+                                        <MenuItem value="" disabled>
+                                            No binders available
+                                        </MenuItem>
+                                    ) : (
+                                        binders.map((binder) => (
+                                            <MenuItem key={binder.id} value={binder.id}>
+                                                {binder.name}
+                                            </MenuItem>
+                                        ))
+                                    )}
+                                </TextField>
+                                <ThemeButton
+                                    type="button"
+                                    onClick={handleAssignBinder}
+                                    disabled={isCompleted || !selectedBinder || staffLoading}
+                                >
+                                    Assign Binder
+                                </ThemeButton>
+                            </>
+                        )}
+                    </Stack>
                     <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
                         <TextField
                             label="Dye Remark"
@@ -415,7 +667,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             size="small"
                             multiline
                             rows={2}
-                            sx={{ flex: 1, minWidth: 220 }}
+                            sx={{ flex: 1, minWidth: 150 }}
                             disabled={isCompleted}
                         />
                         <TextField
@@ -426,7 +678,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             size="small"
                             multiline
                             rows={2}
-                            sx={{ flex: 1, minWidth: 220 }}
+                            sx={{ flex: 1, minWidth: 150 }}
                             disabled={isCompleted}
                         />
                         <TextField
@@ -437,7 +689,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             size="small"
                             multiline
                             rows={2}
-                            sx={{ flex: 1, minWidth: 220 }}
+                            sx={{ flex: 1, minWidth: 150 }}
                             disabled={isCompleted}
                         />
                     </Stack>
@@ -528,6 +780,16 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                                         <Typography variant="body1" sx={{ mt: 0.5 }}>
                                             {remark.text}
                                         </Typography>
+                                        {remark.assignedPrinterId && (
+                                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                                                Printer ID: {remark.assignedPrinterId}
+                                            </Typography>
+                                        )}
+                                        {remark.assignedBinderId && (
+                                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                                                Binder ID: {remark.assignedBinderId}
+                                            </Typography>
+                                        )}
                                         {index !== formData.remarks.length - 1 && <Divider sx={{ mt: 1, mb: 1 }} />}
                                     </TimelineContent>
                                 </TimelineItem>
