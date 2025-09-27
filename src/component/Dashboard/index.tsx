@@ -50,6 +50,7 @@ const permissionMapping: { [key: string]: string } = {
   Inventory: "inventory",
   Purchase: "purchase",
   Task: "task",
+  "Quality Task": "qp_task",
   History: "history",
   "Designer-Task": "designer_task",
   "Printer-Task": "printer_task",
@@ -95,6 +96,7 @@ const menuItems = [
   { label: "Inventory", icon: <MdInventory size={18} />, path: "/admin/inventory" },
   { label: "Purchase", icon: <MdShoppingCart size={18} />, path: "/admin/purchase" },
   { label: "Task", icon: <MdShoppingCart size={18} />, path: "/admin/task" },
+  { label: "Quality Task", icon: <MdShoppingCart size={18} />, path: "/admin/qp-task" },
   { label: "History", icon: <MdShoppingCart size={18} />, path: "/admin/history" },
   {
     label: "Setup",

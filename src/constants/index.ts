@@ -77,6 +77,13 @@ export const permissionsArray = {
     edit: false,
     delete: false,
   },
+  qp_task: {
+    view_global: false,
+    view_own: false,
+    create: false,
+    edit: false,
+    delete: false,
+  },
   history: {
     view_global: false,
     view_own: false,
@@ -223,6 +230,8 @@ export const printerTypeOption = [
 
 export const ORDER_STATUSES = [
     "Paper cutting",
+    "Printer",
+    "Lamination",
     "Corogation",
     "Pasting",
     "Rotery",
