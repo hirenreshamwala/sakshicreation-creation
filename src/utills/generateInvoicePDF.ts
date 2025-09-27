@@ -1,8 +1,8 @@
 // utils/generateInvoicePDF.ts
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoImage1 from "../../public/images/logo2.png"; // Adjust path
-import logoImage2 from "../../public/images/logo1.png"; // Adjust path
+import logoImage1 from "../../public/images/sakshilogo2.png"; // Adjust path
+import logoImage2 from "../../public/images/sakshilogo1.png"; // Adjust path
 
 interface InvoiceFormData {
   orderNumber: string;
