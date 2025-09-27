@@ -494,7 +494,7 @@ const OperatorView = () => {
                 <ThemeInput
                   placeholder="No of piece"
                   type="number"
-                  value={pieceInputs[row._id] || ""}
+                   value={pieceInputs[row._id] !== undefined ? pieceInputs[row._id] : (row.operatorNoOfPieces || "")}
                   onChange={(e) =>
                     setPieceInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
                   }
