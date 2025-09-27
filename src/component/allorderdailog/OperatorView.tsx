@@ -112,13 +112,17 @@ type OrderRow = {
     deckal?: string;
   };
   actualNoOfPieces?: string;
+  paperKG?: {
+    paper1?: { totalKg?: string };
+    paper2?: { totalKg?: string };
+    paper3?: { totalKg?: string };
+  };
 }
 
 const OperatorView = () => {
   const [open, setOpen] = React.useState(false)
   const [jobSheetOpen, setJobSheetOpen] = React.useState(false)
   const [selectedRow, setSelectedRow] = React.useState<OrderRow | null>(null)
-  console.log("DEBUG : OperatorView : selectedRow:", selectedRow);
   const [pieceInputs, setPieceInputs] = useState<{ [key: string]: string }>({});
   const [remarksOpen, setRemarksOpen] = useState(false);
   const [remarksRow, setRemarksRow] = useState<OrderRow | null>(null);
@@ -158,114 +162,107 @@ const OperatorView = () => {
     }
   }
 
+  // Helper function to get field value based on column ID
+  const getFieldValue = (order: OrderRow, columnId: string): string => {
+    switch (columnId) {
+      case "orderNo":
+        return order.orderNo || "N/A";
+      case "party":
+        return order.party?.partyName || "N/A";
+      case "boxSize":
+        return `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`;
+      case "noOfBox":
+        return order.noOfPieces?.toString() || "N/A";
+      case "ply":
+        return order.orderdata?.ply || "N/A";
+      case "top":
+        return order.orderdata?.paper1GSM || "N/A";
+      case "corogation":
+        return order.orderdata?.paper2GSM || "N/A";
+      case "bottom":
+        return order.orderdata?.paper3GSM || "N/A";
+      case "deckal":
+        return order.orderdata?.deckal || "N/A";
+      case "cuttingLength":
+        return order.orderdata?.length && order.orderdata?.height
+          ? (Number(order.orderdata.length) + Number(order.orderdata.height)).toString()
+          : "N/A";
+      case "noOfSheetut":
+        return order.noOfPieces
+          ? (Number(order.noOfPieces) * 2).toString()
+          : "N/A";
+      case "liner":
+        return order.orderdata?.ply
+          ? (Number(order.orderdata.ply) - 1).toString()
+          : "N/A";
+      case "totalKG":
+        return order.totalKg || "N/A";
+      case "kgOfPaper":
+        return `${order?.paperKG?.paper1?.totalKg || "N/A"} - ${order?.paperKG?.paper2?.totalKg || "N/A"} - ${order?.paperKG?.paper3?.totalKg || "N/A"}`;
+      case "status":
+        return order.status || "N/A";
+      case "noOfPeice":
+        return order.noOfPieces?.toString() || "N/A";
+      default:
+        return "N/A";
+    }
+  };
+
+  // Safe string conversion for search
+  const safeToString = (value: any): string => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return value.toString();
+    if (typeof value === 'boolean') return value.toString();
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  };
 
   const filteredOrders = useMemo(() => {
-    return orders.filter((order: any) => {
+    return orders.filter((order: OrderRow) => {
+      // Date range filter
       const matchesDateRange =
         (!startDate || new Date(order.createdAt) >= new Date(startDate).setHours(0, 0, 0, 0)) &&
         (!endDate || new Date(order.createdAt) <= new Date(endDate).setHours(23, 59, 59, 999))
 
+      // Search filter - search across all visible fields
       const matchesSearch = searchQuery
-        ? order.orderNo?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.companyName?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.party?.partyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.date?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.ply?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.length?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.height?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.width?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.paper1GSM?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.paper2GSM?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.paper3GSM?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.gsm?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.deckalCalculation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.deckal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.noOfPieces?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.ratePerPiece?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.amount?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.kgPerUnit?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.totalKg?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.kantan?.kantanName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.kantanPerUnit?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (order.totalKantan && `${order.totalKantan.reel} reel ${order.totalKantan.inch} inch`.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        order.kantanDeckal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.salesRemark?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.status?.toLowerCase().includes(searchQuery.toLowerCase())
+        ? columns.some(column => {
+            const value = getFieldValue(order, column.id);
+            return safeToString(value).toLowerCase().includes(searchQuery.toLowerCase());
+          }) ||
+          safeToString(order.companyName?.companyName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.party?.partyName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.date).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.orderdata?.ply).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.orderdata?.length).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.orderdata?.height).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.orderdata?.width).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.orderdata?.paper1GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.orderdata?.paper2GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.orderdata?.paper3GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.gsm).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.deckalCalculation).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.orderdata?.deckal).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.noOfPieces).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.ratePerPiece).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.amount).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.kgPerUnit).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.totalKg).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.kantan?.kantanName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.kantanPerUnit).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (order.totalKantan && safeToString(`${order.totalKantan.reel} reel ${order.totalKantan.inch} inch`).toLowerCase().includes(searchQuery.toLowerCase())) ||
+          safeToString(order.kantanDeckal).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.salesRemark).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          safeToString(order.status).toLowerCase().includes(searchQuery.toLowerCase())
         : true
 
+      // Column filters
       const matchesFilters = Object.keys(filters).every((columnId) => {
         if (filters[columnId].length === 0) return true
-        let value: string | number | undefined
-
-        switch (columnId) {
-          case "orderNo":
-            value = order.orderNo
-            break
-          case "companyName":
-            value = order.companyName?.companyName
-            break
-          case "party":
-            value = order.party?.partyName
-            break
-          case "date":
-            value = order.date
-            break
-          case "ply":
-            value = order.orderdata?.ply
-            break
-          case "length":
-            value = order.orderdata?.length
-            break
-          case "height":
-            value = order.orderdata?.height
-            break
-          case "width":
-            value = order.orderdata?.width
-            break
-          case "gsm":
-            value = order.gsm
-            break
-          case "deckalCalculation":
-            value = order.deckalCalculation
-            break
-          case "deckal":
-            value = order.orderdata?.deckal
-            break
-          case "noOfPieces":
-            value = order.noOfPieces
-            break
-          case "ratePerPiece":
-            value = order.ratePerPiece
-            break
-          case "amount":
-            value = order.amount
-            break
-          case "kgPerUnit":
-            value = order.kgPerUnit
-            break
-          case "totalKg":
-            value = order.totalKg
-            break
-          case "kantan":
-            value = order.kantan?.kantanName
-            break
-          case "kantanPerUnit":
-            value = order.kantanPerUnit
-            break
-          case "totalKantan":
-            value = order.totalKantan ? `${order.totalKantan.reel} reel ${order.totalKantan.inch} inch` : "N/A"
-            break
-          case "kantanDeckal":
-            value = order.kantanDeckal
-            break
-          case "salesRemark":
-            value = order.salesRemark
-            break
-          case "status":
-            value = order.status
-            break
-        }
-        return value && filters[columnId].includes(value.toString())
+        
+        const value = getFieldValue(order, columnId);
+        return value && value !== "N/A" && filters[columnId].includes(value.toString())
       })
 
       return matchesDateRange && matchesSearch && matchesFilters
@@ -274,85 +271,16 @@ const OperatorView = () => {
 
   const getUniqueValues = useMemo(() => {
     if (!selectedFilterField) return []
+    
     const columnId = columns.find(col => col.label === selectedFilterField)?.id
     if (!columnId) return []
 
-    const values = orders.map((order: any) => {
-      let value: string | number | undefined
-      switch (columnId) {
-        case "orderNo":
-          value = order.orderNo
-          break
-        case "companyName":
-          value = order.companyName?.companyName
-          break
-        case "party":
-          value = order.party?.partyName
-          break
-        case "date":
-          value = order.date
-          break
-        case "ply":
-          value = order.orderdata?.ply
-          break
-        case "length":
-          value = order.orderdata?.length
-          break
-        case "height":
-          value = order.orderdata?.height
-          break
-        case "width":
-          value = order.orderdata?.width
-          break
-        case "gsm":
-          value = order.gsm
-          break
-        case "deckalCalculation":
-          value = order.deckalCalculation
-          break
-        case "deckal":
-          value = order.orderdata.deckal
-          break
-        case "noOfPieces":
-          value = order.noOfPieces
-          break
-        case "ratePerPiece":
-          value = order.ratePerPiece
-          break
-        case "amount":
-          value = order.amount
-          break
-        case "kgPerUnit":
-          value = order.kgPerUnit
-          break
-        case "totalKg":
-          value = order.totalKg
-          break
-        case "kantan":
-          value = order.kantan?.kantanName
-          break
-        case "kantanPerUnit":
-          value = order.kantanPerUnit
-          break
-        case "totalKantan":
-          value = order.totalKantan ? `${order.totalKantan.reel} reel ${order.totalKantan.inch} inch` : "N/A"
-          break
-        case "kantanDeckal":
-          value = order.kantanDeckal
-          break
-        case "salesRemark":
-          value = order.salesRemark
-          break
-        case "status":
-          value = order.status
-          break
-      }
-      return value?.toString() || "N/A"
+    const values = orders.map((order: OrderRow) => {
+      return getFieldValue(order, columnId)
     })
 
     return Array.from(new Set(values)).filter((v) => v !== "N/A").sort()
   }, [selectedFilterField, orders])
-
 
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true))
@@ -378,30 +306,28 @@ const OperatorView = () => {
     if (error) {
       toast.error(error);
     }
-
   }, [error, dispatch]);
 
   const handleSavePieces = async (row: OrderRow) => {
-  const value = pieceInputs[row._id];
-  if (!value) {
-    toast.error("Please enter a number before saving");
-    return;
-  }
+    const value = pieceInputs[row._id];
+    if (!value) {
+      toast.error("Please enter a number before saving");
+      return;
+    }
 
-  try {
-    await dispatch(
-      updateQPOrderThunk({
-        id: row._id,
-        data: { operatorNoOfPieces: Number(value) },
-      })
-    ).unwrap();
+    try {
+      await dispatch(
+        updateQPOrderThunk({
+          id: row._id,
+          data: { operatorNoOfPieces: Number(value) },
+        })
+      ).unwrap();
 
-    toast.success("Pieces saved successfully");
-  } catch (err: any) {
-    toast.error(err?.message || "Failed to save pieces");
-  }
-};
-
+      toast.success("Pieces saved successfully");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save pieces");
+    }
+  };
 
   if (loading) return <Loader />
 
@@ -497,16 +423,11 @@ const OperatorView = () => {
           tableHeader={columns}
           showFillter={false}
           showSearch={false}
-          // title="QP-ORDERS"
-          // showExcelDownload={true}
-          // excelHeaders={excelHeaders}
-          // excelData={excelData}
           rowData={filteredOrders as any}
           totalCount={totalCount}
           pagination={pagination}
           renderExpandedRow={canViewGlobal && !canStatus ? renderExpandedRow : undefined}
-          renderRow={(row: any) => {
-            // console.log("DEBUG : row:", row);
+          renderRow={(row: OrderRow) => {
             return (<>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
@@ -537,7 +458,7 @@ const OperatorView = () => {
                 <Typography>{row.orderdata?.paper3GSM || "N/A"}</Typography>
               </TableCell>
               <TableCell>
-                <Typography>{row.deckalCalculation || "N/A"}</Typography>
+                <Typography>{row.orderdata?.deckal || "N/A"}</Typography>
               </TableCell>
               <TableCell>
                 <Typography>
@@ -555,7 +476,7 @@ const OperatorView = () => {
               </TableCell>
               <TableCell>
                 <Typography>
-                  {row.orderdata.ply
+                  {row.orderdata?.ply
                     ? Number(row.orderdata.ply) - 1
                     : "N/A"}
                 </Typography>
@@ -633,7 +554,6 @@ const OperatorView = () => {
           </Box>
         </Box>
       </Modal>
-
 
       {open && (
         <>
