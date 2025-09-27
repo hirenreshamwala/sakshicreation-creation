@@ -179,6 +179,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         setIsSubmitting(true);
         try {
             const packagingOption = {
+                party: qpFormData.partyName, // Include party ID in packagingOption
                 ply: qpFormData.ply,
                 length: qpFormData.length,
                 width: qpFormData.width,
@@ -199,7 +200,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 parseFloat(qpFormData.paper2GSM),
                 parseFloat(qpFormData.paper1GSM),
                 parseFloat(qpFormData.noOfPieces)
-                
             );  
             
             const orderData = {
@@ -659,7 +659,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
         let gsmValue: number | null = null;
         if (ply && paper1GSM && paper2GSM && paper3GSM) {
-            gsmValue = calculateGSM(Number(ply), Number(paper3GSM), Number(paper2GSM), Number(paper1GSM),);
+            gsmValue = calculateGSM(Number(ply), Number(paper3GSM), Number(paper2GSM), Number(paper1GSM));
             handleQpChange("gsm", gsmValue.toFixed(2));
         } else {
             handleQpChange("gsm", "");
@@ -694,20 +694,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             handleQpChange("kantanPerUnit", "");
             handleQpChange("totalKantan", { reel: "", inch: "" });
         }
-
-        // if (ply && paper1GSM && paper2GSM && paper3GSM && length && width && deckal) {
-        //     const { p1Kg, p2Kg, p3Kg, totalKg } = calculatePaperKg(
-        //         Number(length),
-        //         Number(width),
-        //         Number(height),
-        //         Number(deckal),
-        //         Number(ply),
-        //         Number(paper3GSM),
-        //         Number(paper2GSM),
-        //         Number(paper1GSM),
-        //         Number(noOfPieces)
-        //     );
-        // }
     }, [
         qpFormData.length,
         qpFormData.width,
