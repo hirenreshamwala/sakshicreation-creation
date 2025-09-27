@@ -57,10 +57,11 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
 
     // Get the last quotation to pre-fill the form
     const lastQuotation = data?.quotation?.[data?.quotation?.length - 1];
+    console.log(data?.qty,'data',lastQuotation?.qty)
 
     const formik = useFormik<FormData>({
         initialValues: {
-            quantity: lastQuotation?.qty || 0,
+            quantity: lastQuotation?.qty ? lastQuotation?.qty : data?.qty,
             unitPrice: lastQuotation?.unitPrice || 0,
             applyGST: lastQuotation?.gst > 0, // Set to true if last quotation had GST
             gstPercentage: lastQuotation?.gst || 0,
@@ -122,7 +123,7 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
         if (open && data) {
             const lastQuote = data?.quotation?.[data?.quotation?.length - 1];
             formik.setValues({
-                quantity: lastQuote?.qty || 0,
+                quantity: lastQuote?.qty || data?.qty || 0,
                 unitPrice: lastQuote?.unitPrice || 0,
                 applyGST: lastQuote?.gst > 0, // This will be true if last quotation had GST > 0
                 gstPercentage: lastQuote?.gst || 0,

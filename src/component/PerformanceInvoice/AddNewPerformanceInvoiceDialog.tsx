@@ -132,6 +132,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
   const { loading: invoiceLoading, error: invoiceError } = useAppSelector((state) => state.performanceInvoices);
   const { markets } = useAppSelector((state) => state.markets);
   const [isLoading, setIsLoading] = useState(false);
+  const [invoiceData, setInvoiceData] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isEditMode, setIsEditMode] = useState(!!invoiceId);
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | undefined>(invoiceId);
@@ -141,6 +142,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
   useEffect(() => {
     if (!markets.length) dispatch(getAllMarketsThunk())
   }, [])
+
+  console.log(data, 'soidfnjhoidefjhoi')
 
   useEffect(() => {
     if (!open) return;
@@ -295,24 +298,26 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       try {
         const result = await dispatch(getPerformanceInvoiceByIdThunk(invoiceId)).unwrap();
         if (result) {
+          console.log(result, 'result')
+          setInvoiceData(result)
           const fullAddress = [
             result.partyAddress?.unitNo || "",
             // result.partyAddress?.streetAddress || "",
-            result.partyAddress?.marketName || "",
-            result.partyAddress?.landMark || "",
-            result.partyAddress?.area || "",
-            result.partyAddress?.pincode || "",
+            result.partyAddress?.marketName?.marketName || "",
+            result.partyAddress?.landMark?.landMark || "",
+            result.partyAddress?.area?.area || "",
+            result.partyAddress?.pincode?.pincode || "",
           ]
             .filter((part) => part.trim() !== "")
             .join(", ");
-          
+
           const assignedToValue = result.assignedTo?._id
             ? result.assignedTo._id.toString()
             : result.assignedTo || "";
 
           // Get last quotation data
           const lastQuotation = getLastQuotation();
-          
+
           formik.setValues({
             orderNumber: result.orderNumber || "",
             companyName: result.companyName?._id?.toString() || result.companyName || "",
@@ -356,10 +361,10 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       }
       return;
     }
-    
+
     const orderNumber = data?.orderNumber || "";
     if (!orderNumber) return;
-    
+
     formik.setFieldValue("orderNumber", orderNumber);
 
     const selectedOrder = orders.find((order) => order.orderNumber === orderNumber);
@@ -367,7 +372,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       toast.error("Selected order not found");
       return;
     }
-    
+
     const fullAddress = [
       selectedOrder.party.address?.unitNo || "",
       // markets.find((item) => item._id === selectedOrder.party.address?.streetAddress)?.streetAddress || "",
@@ -391,15 +396,17 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
         const existingInvoice = response.data?.find((invoice) => invoice.orderNumber === orderNumber);
         if (existingInvoice && !invoiceId) {
           setIsEditMode(true);
+          console.log(existingInvoice, 'existingInvoice')
+          setInvoiceData(existingInvoice);
           setCurrentInvoiceId(existingInvoice._id);
           setIsSaved(true);
           const invoiceAddress = [
             existingInvoice.partyAddress?.unitNo || "",
             // existingInvoice.partyAddress?.streetAddress || "",
-            existingInvoice.partyAddress?.marketName || "",
-            existingInvoice.partyAddress?.landMark || "",
-            existingInvoice.partyAddress?.area || "",
-            existingInvoice.partyAddress?.pincode || "",
+            existingInvoice.partyAddress?.marketName?.marketName || "",
+            existingInvoice.partyAddress?.landMark?.landmark || "",
+            existingInvoice.partyAddress?.area?.area || "",
+            existingInvoice.partyAddress?.pincode?.pincode || "",
           ]
             .filter((part) => part.trim() !== "")
             .join(", ");
@@ -407,7 +414,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           const assignedToValue = existingInvoice.assignedTo?._id
             ? existingInvoice.assignedTo._id.toString()
             : existingInvoice.assignedTo || "";
-            
+
           formik.setValues({
             orderNumber: existingInvoice.orderNumber || "",
             companyName: existingInvoice.companyName?._id?.toString() || existingInvoice.companyName || "",
@@ -522,7 +529,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           <Autocomplete
             options={orderOptions}
             getOptionLabel={(option) => option.label}
-            onChange={() => {}} // No-op since field is disabled
+            onChange={() => { }} // No-op since field is disabled
             value={orderOptions.find((opt) => opt.value === formik.values.orderNumber) || null}
             renderInput={(params) => (
               <TextField
@@ -589,7 +596,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           </Box>
           <TextField
             label="Address Name"
-            value={formik.values.addressName}
+            value={`${data?.party?.address?.unitNo} ${markets?.find((item) => item._id === data?.party?.address?.marketName)?.marketName} ${markets?.find((item) => item._id === data?.party?.address?.landMark)?.landmark} ${markets?.find((item) => item._id === data?.party?.address?.area)?.area} ${markets?.find((item) => item._id === data?.party?.address?.pincode)?.pincode}`}
             onChange={formik.handleChange("addressName")}
             disabled
             fullWidth
@@ -650,6 +657,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
                 control={
                   <Checkbox
                     checked={formik.values.applyGST}
+                    disabled
                     onChange={(e) => {
                       formik.setFieldValue("applyGST", e.target.checked);
                       if (!e.target.checked) {
@@ -710,7 +718,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               remarks: formik.values.remarks || "",
               ownerMobileNo: formik.values.ownerMobileNo || "",
               partyName: displayPartyName,
-              addressName: formik.values.addressName,
+              addressName: `${data?.party?.address?.unitNo} ${markets?.find((item) => item._id === data?.party?.address?.marketName)?.marketName} ${markets?.find((item) => item._id === data?.party?.address?.landMark)?.landmark} 
+              ${markets?.find((item) => item._id === data?.party?.address?.area)?.area} ${markets?.find((item) => item._id === data?.party?.address?.pincode)?.pincode}`,
               GSTNo: formik.values.GSTNo,
               servicePerformance: formik.values.servicePerformance,
               quantity: formik.values.quantity,

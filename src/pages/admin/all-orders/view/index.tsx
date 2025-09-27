@@ -13,6 +13,8 @@ import { toast } from "react-toastify"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import AddNewQuotation from "@/component/PerformanceInvoice/AddQuotationDialog"
+import { MdDownload } from "react-icons/md"
+import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 
 const activeStep = 0
 
@@ -50,7 +52,7 @@ const ViewOrderPage = () => {
   const { singleOrder } = useAppSelector((state: any) => state.orders)
   const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
 
-  console.log(singleOrder?.quotationProof,'singleOrder?.quotationProof')
+  console.log(singleOrder?.quotationProof, 'singleOrder?.quotationProof')
   const formik = useFormik<FormValues>({
     initialValues: {
       companyName: "",
@@ -223,6 +225,45 @@ const ViewOrderPage = () => {
 
     fetchOrderData()
   }, [dispatch, orderId])
+  const handleDownloadInvoice = () => {
+    try {
+      const fullAddress = [
+        singleOrder?.party?.address?.unitNo || "",
+        // singleOrder?.party?.address?.streetAddress || "",
+        singleOrder?.party?.address?.marketName || "",
+        singleOrder?.party?.address?.landMark || "",
+        singleOrder?.party?.address?.area || "",
+        singleOrder?.party?.address?.pincode || "",
+      ]
+        .filter((part) => part.trim() !== "")
+        .join(", ");
+
+      const formData = {
+        quotation: true,
+        orderNumber: singleOrder?.orderNumber || "N/A",
+        companyName: singleOrder?.companyName?.companyName || "N/A",
+        remarks: singleOrder?.remarks || "",
+        ownerMobileNo: singleOrder?.party?.ownerMobileNo || "",
+        partyName: singleOrder?.party?.partyName || "N/A",
+        addressName: fullAddress || "N/A",
+        GSTNo: singleOrder?.party?.GSTNo || "N/A",
+        servicePerformance: singleOrder?.productItem?.itemName || "N/A",
+        quantity: singleOrder?.qty || 0,
+        unitPrice: singleOrder?.quotation[singleOrder?.quotation?.length - 1]?.unitPrice || 0,
+        total: singleOrder?.total || 0,
+        finalAmount: singleOrder?.finalAmount || 0,
+        applyGST: singleOrder?.applyGST || false,
+        gstPercentage: singleOrder?.gstPercentage || 18,
+        daysAfterConfirmation: singleOrder?.daysAfterConfirmation || 0,
+      };
+
+      generateInvoicePDF(formData);
+      toast.success("Quotation downloaded successfully");
+    } catch (error) {
+      console.error("Error downloading Quotation:", error);
+      toast.error("Failed to download Quotation");
+    }
+  };
 
   useEffect(() => {
     if (singleOrder) {
@@ -546,16 +587,34 @@ const ViewOrderPage = () => {
           <Typography variant="h6" fontWeight={600} mb={2}>
             Quotation Proof
           </Typography>
-          <Button
-            variant="contained"
-            onClick={() => setQuotationHistoryDialog(true)}
-            sx={{
-             
-              mb: 2
-            }}
-          >
-            View Quotation History
-          </Button>
+          {singleOrder?.quotation.length ? <>
+
+            <Button
+              variant="contained"
+              onClick={() => setQuotationHistoryDialog(true)}
+              sx={{
+
+                mb: 2
+              }}
+            >
+              View Quotation History
+            </Button>
+            <ThemeButton
+              fullWidth
+              sx={{
+                background: "#2196F3",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 16,
+                borderRadius: 2,
+                py: 1.2,
+                "&:hover": { background: "#1976D2" },
+              }}
+              onClick={handleDownloadInvoice}
+            >
+              <MdDownload style={{ marginRight: "8px" }} />
+              Download Quotation
+            </ThemeButton></> : null}
           {!hasQuotationProof ? (
             <>
               <ThemeButton
@@ -713,8 +772,8 @@ const ViewOrderPage = () => {
                         Quotation - {index + 1}
                       </Typography>
                       <Chip
-                        label={ singleOrder?.quotationProof === "" ? "Pending": index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled"}
-                        color={getStatusColor(singleOrder?.quotationProof === "" ? "Pending": index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled") as any}
+                        label={singleOrder?.quotationProof === "" ? "Pending" : index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled"}
+                        color={getStatusColor(singleOrder?.quotationProof === "" ? "Pending" : index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled") as any}
                         size="small"
                       />
                     </Box>
@@ -725,6 +784,12 @@ const ViewOrderPage = () => {
 
                     <Typography variant="body2" color="textSecondary">
                       Amount: ₹{item.unitPrice.toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Total: ₹
+                      {item.gst > 0
+                        ? (Number(item.unitPrice) * Number(item.qty)) * (1 + Number(item.gst) / 100)
+                        : (Number(item.unitPrice) * Number(item.qty))}
                     </Typography>
 
 

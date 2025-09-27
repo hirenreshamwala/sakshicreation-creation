@@ -430,7 +430,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   };
 
 
-
+console.log(hasReference,'hasReference')
   return (
     <CustomDialog
       open={open}
@@ -750,7 +750,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                   <RadioGroup
                     row
                     name="hasReference"
-                    value={hasReference}
+                    value={hasReference.toLowerCase()}
                     onChange={(e) => {
                       const value = e.target.value.toUpperCase();
                       setHasReference(value);
@@ -766,7 +766,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
               </Box>
 
               {/* Reference Input Field - Only shows when "Yes" is selected */}
-              {hasReference === "yes" && (
+              {hasReference.toLowerCase() === "yes" && (
                 <Box sx={{ width: '50%' }}>
                   <Autocomplete
                     freeSolo

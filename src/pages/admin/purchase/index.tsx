@@ -5,9 +5,7 @@ import QpPurchasePage from '@/component/Purchase/QpPurchase';
 
 const PurchasePage = () => {
 
-  const [activeTab, setActiveTab] = useState(1);
-
-  // console.log(activeTab, 'jshddhn')
+  const [activeTab, setActiveTab] = useState(0);
 
   return (
     <>

@@ -8,7 +8,7 @@ function index({ isEditMode = false, purchaseId }: any) {
   const { type } = router.query
   return (
     <div>
-      {type === 1 ? <QpNewPurchase />:<SakshiNewPurchase isEditMode={isEditMode} purchaseId={purchaseId} /> }
+      {router.isReady && type === "1" ? <QpNewPurchase />:<SakshiNewPurchase isEditMode={isEditMode} purchaseId={purchaseId} /> }
     </div>
   )
 }
