@@ -375,7 +375,7 @@ const StaffPage = () => {
           tableHeader={columns}
           rowData={reportData}
           renderRow={(row) => {
-            console.log("DEBUG : row:", row);
+            // console.log("DEBUG : row:", row);
             return (<>
               <TableCell sx={{ fontWeight: 500, cursor: 'pointer' }}>
                 {row.staffName}

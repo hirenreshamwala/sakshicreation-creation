@@ -46,7 +46,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     const dispatch = useAppDispatch();
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
-    const [isCompleted, setIsCompleted] = useState(row.status === "Completed"); // Track backend status
+    const [isCompleted, setIsCompleted] = useState(row.status === "Completed");
 
     // remark modal (add reason)
     const [remarkModalOpen, setRemarkModalOpen] = useState(false);
@@ -54,8 +54,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [tempStartDate, setTempStartDate] = useState("");
     const [remarkText, setRemarkText] = useState("");
 
-    // NEW: view remarks modal state
+    // view remarks modal state
     const [viewRemarksOpen, setViewRemarksOpen] = useState(false);
+
+    // NEW: State to track if actualNoOfPieces has been updated
+    const [isActualNoOfPiecesUpdated, setIsActualNoOfPiecesUpdated] = useState(!!row.actualNoOfPieces);
 
     const [formData, setFormData] = useState({
         _id: row._id,
@@ -66,7 +69,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         dyeSize: row.dyeSize || "",
         glue: row.glue || "",
         wire: row.wire || "",
-        actualNoOfPieces: row.actualNoOfPieces || "",
+        actualNoOfPieces: row.actualNoOfPieces || row.operatorNoOfPieces || "",
         dyeRemark: row.dyeRemark || "",
         godownRemark: row.godownRemark || "",
         factoryRemark: row.factoryRemark || "",
@@ -86,7 +89,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             dyeSize: row.dyeSize || "",
             glue: row.glue || "",
             wire: row.wire || "",
-            actualNoOfPieces: row.actualNoOfPieces || "",
+            actualNoOfPieces: row.actualNoOfPieces || row.operatorNoOfPieces || "",
             dyeRemark: row.dyeRemark || "",
             godownRemark: row.godownRemark || "",
             factoryRemark: row.factoryRemark || "",
@@ -96,14 +99,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setFormData(newFormData);
         setInitialFormData(newFormData);
         setIsInitialUnitSet(!!row.unitNo);
-        setIsCompleted(row.status === "Completed"); // Initialize based on row.status
-
-        // reset states
-        setRemarkModalOpen(false);
-        setRemarkType(null);
-        setRemarkText("");
-        setTempStartDate("");
-        setViewRemarksOpen(false);
+        setIsCompleted(row.status === "Completed");
+        setIsActualNoOfPiecesUpdated(!!row.actualNoOfPieces); // Set based on whether actualNoOfPieces exists
     }, [row]);
 
     const handleFormChange = (field: string, value: string) => {
@@ -146,6 +143,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             setFormData((prev) => ({ ...prev, unitNo: value, startDate: currentDate }));
             setIsInitialUnitSet(true);
             return;
+        }
+
+        if (field === "actualNoOfPieces") {
+            setIsActualNoOfPiecesUpdated(true); // Mark as updated when user changes actualNoOfPieces
         }
 
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -278,7 +279,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
             setInitialFormData({ ...formData });
             if (formData.status === "Completed") {
-                setIsCompleted(true); // Disable form only after successful API update
+                setIsCompleted(true);
             }
             toast.success("Order updated successfully");
         } catch (err: any) {
@@ -290,6 +291,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const handleCancel = () => {
         setFormData(initialFormData);
         setIsInitialUnitSet(!!initialFormData.unitNo);
+        setIsActualNoOfPiecesUpdated(!!initialFormData.actualNoOfPieces);
     };
 
     return (

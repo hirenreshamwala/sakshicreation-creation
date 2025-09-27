@@ -172,7 +172,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     };
 
     const handleQpSubmit = async () => {
-        if (!qpFormData.companyName || !qpFormData.partyName) {
+        if (!qpFormData.partyName) {
             toast.error("Please fill all required fields (Company Name and Party Name)");
             return;
         }
@@ -188,7 +188,20 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 paper2GSM: qpFormData.paper2GSM,
                 paper3GSM: qpFormData.paper3GSM,
             };
-
+            const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
+                
+                parseFloat(qpFormData.length),
+                parseFloat(qpFormData.width),
+                parseFloat(qpFormData.height),
+                parseFloat(qpFormData.deckal),
+                parseInt(qpFormData.ply),
+                parseFloat(qpFormData.paper3GSM),
+                parseFloat(qpFormData.paper2GSM),
+                parseFloat(qpFormData.paper1GSM),
+                parseFloat(qpFormData.noOfPieces)
+                
+            );  
+            
             const orderData = {
                 isQp: true,
                 companyName: qpFormData.companyName,
@@ -211,11 +224,28 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 },
                 kantanDeckal: qpFormData.kantanDeckal || undefined,
                 salesRemark: qpFormData.salesRemark || undefined,
+                paperKG: {
+                    paper1: {
+                        deckal: qpFormData.deckal,
+                        gsm: qpFormData.paper1GSM,
+                        totalKg: paper3Kg.toFixed(3).toString(),
+                    },
+                    paper2: {
+                        deckal: qpFormData.deckal,
+                        gsm: qpFormData.paper2GSM,
+                        totalKg: paper2Kg.toFixed(3).toString(),
+                    },
+                    paper3: {
+                        deckal: qpFormData.deckal,
+                        gsm: qpFormData.paper3GSM,
+                        totalKg: paper1Kg.toFixed(3).toString(),
+                    },
+                },
             };
 
             if (editData?._id) {
                 // Update existing order
-                await dispatch(updateQPOrderThunk({ id: editData._id, data:orderData })).unwrap();
+                await dispatch(updateQPOrderThunk({ id: editData._id, data: orderData })).unwrap();
                 toast.success("Order updated successfully");
             } else {
                 // Create new order
@@ -629,7 +659,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
         let gsmValue: number | null = null;
         if (ply && paper1GSM && paper2GSM && paper3GSM) {
-            gsmValue = calculateGSM(Number(ply),  Number(paper2GSM), Number(paper3GSM) ,Number(paper1GSM),);
+            gsmValue = calculateGSM(Number(ply), Number(paper3GSM), Number(paper2GSM), Number(paper1GSM),);
             handleQpChange("gsm", gsmValue.toFixed(2));
         } else {
             handleQpChange("gsm", "");
@@ -665,19 +695,19 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             handleQpChange("totalKantan", { reel: "", inch: "" });
         }
 
-        if (ply && paper1GSM && paper2GSM && paper3GSM && length && width && deckal) {
-            const { p1Kg, p2Kg, p3Kg, totalKg } = calculatePaperKg(
-                Number(length),
-                Number(width),
-                Number(height),
-                Number(deckal),
-                Number(ply),
-                Number(paper2GSM),
-                Number(paper3GSM),
-                Number(paper1GSM),
-                Number(noOfPieces)
-            );
-        }
+        // if (ply && paper1GSM && paper2GSM && paper3GSM && length && width && deckal) {
+        //     const { p1Kg, p2Kg, p3Kg, totalKg } = calculatePaperKg(
+        //         Number(length),
+        //         Number(width),
+        //         Number(height),
+        //         Number(deckal),
+        //         Number(ply),
+        //         Number(paper3GSM),
+        //         Number(paper2GSM),
+        //         Number(paper1GSM),
+        //         Number(noOfPieces)
+        //     );
+        // }
     }, [
         qpFormData.length,
         qpFormData.width,
