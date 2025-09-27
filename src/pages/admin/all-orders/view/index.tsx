@@ -15,6 +15,7 @@ import * as Yup from "yup"
 import AddNewQuotation from "@/component/PerformanceInvoice/AddQuotationDialog"
 import { MdDownload } from "react-icons/md"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
+import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
 
 const activeStep = 0
 
@@ -47,12 +48,12 @@ const ViewOrderPage = () => {
   const [uploadedQuotationProofs, setUploadedQuotationProofs] = useState<any[]>([])
   const router = useRouter()
   const dispatch = useAppDispatch()
-
+  const { markets } = useAppSelector((state) => state.markets);
   const { id: orderId } = router.query
   const { singleOrder } = useAppSelector((state: any) => state.orders)
   const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
 
-  console.log(singleOrder?.quotationProof, 'singleOrder?.quotationProof')
+  console.log(singleOrder, 'singleOrder?.quotationProof')
   const formik = useFormik<FormValues>({
     initialValues: {
       companyName: "",
@@ -144,6 +145,11 @@ const ViewOrderPage = () => {
       }
     },
   })
+
+  useEffect(() => {
+    if (!markets.length) dispatch(getAllMarketsThunk())
+  }, [])
+
 
   const handleUploadQuotationProof = async () => {
     if (!orderId || typeof orderId !== "string") {
@@ -245,7 +251,8 @@ const ViewOrderPage = () => {
         remarks: singleOrder?.remarks || "",
         ownerMobileNo: singleOrder?.party?.ownerMobileNo || "",
         partyName: singleOrder?.party?.partyName || "N/A",
-        addressName: fullAddress || "N/A",
+        addressName: `${singleOrder?.party?.address?.unitNo} ${markets?.find((item) => item._id === singleOrder?.party?.address?.marketName)?.marketName} ${markets?.find((item) => item._id === singleOrder?.party?.address?.landMark)?.landmark} 
+              ${markets?.find((item) => item._id === singleOrder?.party?.address?.area)?.area} ${markets?.find((item) => item._id === singleOrder?.party?.address?.pincode)?.pincode}`,
         GSTNo: singleOrder?.party?.GSTNo || "N/A",
         servicePerformance: singleOrder?.productItem?.itemName || "N/A",
         quantity: singleOrder?.qty || 0,

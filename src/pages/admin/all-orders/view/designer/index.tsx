@@ -36,6 +36,7 @@ import AddNewPerformanceInvoiceDialog from "@/component/PerformanceInvoice/AddNe
 import { performanceInvoiceService } from "@/services/performanceInvoice.service"
 import Request from "@/services/axios"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
+import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
 
 // Helper function to upload files to server
 
@@ -598,7 +599,7 @@ const ViewOrderDesigner = () => {
   const [pinvoiceModal, setPInvoiceModal] = useState(false)
   const [invoiceValidProofOpen, setInvoiceValidProofOpen] = useState(false)
   const [isPerformaInvoiceSaved, setIsPerformaInvoiceSaved] = useState(false)
-
+  const { markets } = useAppSelector((state) => state.markets);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false)
   const [newSelectedDesigner, setNewSelectedDesigner] = useState<any>(null)
   const isEditingDisabled = singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0;
@@ -630,6 +631,10 @@ const ViewOrderDesigner = () => {
     }
     fetchOrderData()
   }, [dispatch, orderId, singleOrder?.orderNumber])
+
+  useEffect(() => {
+    if (!markets.length) dispatch(getAllMarketsThunk())
+  }, [])
 
   // useEffect(() => {
   //   if (singleOrder?.status === "Printer" && orderId) {
@@ -949,7 +954,8 @@ const ViewOrderDesigner = () => {
         remarks: singleOrder?.remarks || "",
         ownerMobileNo: singleOrder?.party?.ownerMobileNo || "",
         partyName: singleOrder?.party?.partyName || "N/A",
-        addressName: fullAddress || "N/A",
+        addressName: `${singleOrder?.party?.address?.unitNo} ${markets?.find((item) => item._id === singleOrder?.party?.address?.marketName)?.marketName} ${markets?.find((item) => item._id === singleOrder?.party?.address?.landMark)?.landmark} 
+              ${markets?.find((item) => item._id === singleOrder?.party?.address?.area)?.area} ${markets?.find((item) => item._id === singleOrder?.party?.address?.pincode)?.pincode}`,
         GSTNo: singleOrder?.party?.GSTNo || "N/A",
         servicePerformance: singleOrder?.productItem?.itemName || "N/A",
         quantity: singleOrder?.qty || 0,
