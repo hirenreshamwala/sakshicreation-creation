@@ -226,15 +226,15 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 parseFloat(formData.actualNoOfPieces || row.noOfPieces)
             );
 
-            const { p1Kg, p2Kg, p3Kg, totalKg } = calculatePaperKg(
+            const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
                 parseFloat(row.orderdata.length),
                 parseFloat(row.orderdata.width),
                 parseFloat(row.orderdata.height),
                 parseFloat(row.orderdata.deckal),
                 parseInt(row.orderdata.ply),
                 parseFloat(row.orderdata.paper3GSM),
-                parseFloat(row.orderdata.paper1GSM),
                 parseFloat(row.orderdata.paper2GSM),
+                parseFloat(row.orderdata.paper1GSM),
                 parseFloat(formData.actualNoOfPieces || row.noOfPieces)
             );
 
@@ -260,20 +260,20 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     paper1: {
                         deckal: row.orderdata.deckal,
                         gsm: row.orderdata.paper1GSM,
-                        totalKg: p1Kg.toFixed(3).toString(),
+                        totalKg: paper3Kg?.toFixed(3).toString(),
                     },
                     paper2: {
                         deckal: row.orderdata.deckal,
                         gsm: row.orderdata.paper2GSM,
-                        totalKg: p2Kg.toFixed(3).toString(),
+                        totalKg: paper2Kg?.toFixed(3).toString(),
                     },
                     paper3: {
                         deckal: row.orderdata.deckal,
                         gsm: row.orderdata.paper3GSM,
-                        totalKg: p3Kg.toFixed(3).toString(),
+                        totalKg: paper1Kg?.toFixed(3).toString(),
                     },
                 },
-                actualTotalKg: totalKg.toFixed(3).toString(),
+                actualTotalKg: totalKgss?.toFixed(3).toString(),
             };
 
             await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
