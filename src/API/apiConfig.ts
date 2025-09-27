@@ -51,7 +51,7 @@ const Endpoint = {
   DELETE_QP_PURCHASE: `${BaseURL}/api/qppurchase/delete`,
   GET_QP_PURCHASE_BY_ID: `${BaseURL}/api/qppurchase/getbyid`,
   BULK_CREATE_QP_PURCHASES: `${BaseURL}/api/qppurchase/bulk`,
-  
+
   UPDATE_COMPLAIN: `${BaseURL}/api/complain/update`,
   DELETE_COMPLAIN: `${BaseURL}/api/complain/delete`,
   CREATE_COMPLAIN: `${BaseURL}/api/complain/create`,
@@ -178,6 +178,8 @@ const Endpoint = {
   // quality packaging orders 
   CREATE_QP_ORDER: `${BaseURL}/api/qporder/create`,
   UPDATE_QP_ORDER: `${BaseURL}/api/qporder/update`,
+  UPDATE_QP_ORDER_STATUS: `${BaseURL}/api/qporder/updatestatus`,
+  UPDATE_QP_ORDER_BULK_STATUS: `${BaseURL}/api/qporder/bulkupdatestatus`,
   DELETE_QP_ORDER: `${BaseURL}/api/qporder/delete`,
   GET_ALL_QP_ORDER: `${BaseURL}/api/qporder/getall`,
   GET_QP_ORDER_BY_STAFF_ID: `${BaseURL}/api/qporder/getbystaff`,
@@ -187,7 +189,7 @@ const Endpoint = {
   DELETE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/delete`,
   GET_ALL_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/getall`,
   BULK_UPLOAD_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/bulk`,
-  
+
   CREATE_PAPER_GSM: `${BaseURL}/api/paperGSM/create`,
   UPDATE_PAPER_GSM: `${BaseURL}/api/paperGSM/update`,
   DELETE_PAPER_GSM: `${BaseURL}/api/paperGSM/delete`,
@@ -195,7 +197,7 @@ const Endpoint = {
   BULK_UPLOAD_PAPER_GSM: `${BaseURL}/api/paperGSM/bulk`,
   GET_GSM_BY_DECKAL: `${BaseURL}/api/paperGSM/getbydeckal`,
 
-  
+
 
   CREATE_MARKET: `${BaseURL}/api/market/create`,
   GET_ALL_MARKETS: `${BaseURL}/api/market/getall`,

@@ -12,7 +12,7 @@ import FilterDropdown from "@/component/fillter"
 import DateRangePicker from "@/component/daterangepicker"
 import { FiSearch } from "react-icons/fi"
 import { InputBase } from "@mui/material"
-import { getCompanyWisePermission, getDisplayStatus } from "@/utills/utills"
+import { getCompanyWisePermission, getDisplayStatus, getUserData } from "@/utills/utills"
 import QpOrdersPage from "@/component/allorderdailog/QpOrder"
 import TabComponent from "@/component/Dialog/TabComponent"
 import { companyOptions, StaticCompanyOptions } from "@/constants"
@@ -73,6 +73,7 @@ const AllOrdersPage = () => {
 
   const { companies } = useAppSelector((state) => state.company)
   const { user } = useAppSelector((state) => state.auth)
+  const userData = getUserData()
 
   // Filter state
   const { companyName, c, staffId, startDate: st, endDate: ed } = router.query
@@ -86,9 +87,9 @@ const AllOrdersPage = () => {
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
 
-  const canViewGlobal = user?.role?.permissions?.all_orders?.view_global
-  const canViewOwn = user?.role?.permissions?.all_orders?.view_own
-  const canCreate = user?.role?.permissions?.all_orders?.create
+  const canViewGlobal = userData?.role?.permissions?.all_orders?.view_global
+  const canViewOwn = userData?.role?.permissions?.all_orders?.view_own
+  const canCreate = userData?.role?.permissions?.all_orders?.create
 
   // Determine user permissions
   const hasSakshiPermission = getCompanyWisePermission(1)
@@ -207,10 +208,10 @@ const AllOrdersPage = () => {
 
     if (canViewGlobal) {
       dispatch(getAllOrdersThunk({ companyName, staffId, startDate: st, endDate: ed })); // Increase limit to fetch more orders
-    } else if (canViewOwn && user?.id) {
-      dispatch(getOrdersByStaffIdThunk(user.id));
+    } else if (canViewOwn && userData?.id) {
+      dispatch(getOrdersByStaffIdThunk(userData.id));
     }
-  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id]);
+  }, [dispatch, router, canViewGlobal, canViewOwn, userData?.id]);
 
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true))

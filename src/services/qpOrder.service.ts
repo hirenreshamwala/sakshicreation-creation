@@ -52,6 +52,26 @@ interface ApiResponse<T> {
   };
 }
 
+interface BulkStatusUpdateData {
+  orderIds: string[];
+  status?: 'pending' | 'in_progress' | 'completed' | 'loading' | 'going_to_delivery' | 'delivered';
+  deliveryStatus?: 'not_started' | 'loading' | 'in_transit' | 'delivered' | 'cancelled';
+  billPhotos?: Array<{
+    url: string;
+    filename?: string;
+  }>;
+}
+
+interface StatusUpdateData {
+  status?: 'pending' | 'in_progress' | 'completed' | 'loading' | 'going_to_delivery' | 'delivered';
+  deliveryStatus?: 'not_started' | 'loading' | 'in_transit' | 'delivered' | 'cancelled';
+  billPhotos?: Array<{
+    url: string;
+    filename?: string;
+  }>;
+}
+
+
 export const orderService = {
   // Create Order
   async createOrder(data: CreateOrderData): Promise<ApiResponse<Order>> {
@@ -172,6 +192,51 @@ export const orderService = {
       );
     }
   },
+   async driverStatusUpdate(
+    id: string,
+    data: StatusUpdateData
+  ): Promise<ApiResponse<Order>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
+        `${Endpoint.UPDATE_QP_ORDER_STATUS}/${id}/status`,
+        data
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Driver status update error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to update order status"
+      );
+    }
+  },
+
+  // Driver Bulk Status Update (Multiple Orders)
+  async driverBulkStatusUpdate(
+    data: BulkStatusUpdateData
+  ): Promise<ApiResponse<Order[]>> {
+    try {
+      console.log(data,'service data')
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
+        Endpoint.UPDATE_QP_ORDER_BULK_STATUS,
+        data
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data || [],
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Driver bulk status update error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to bulk update order status"
+      );
+    }
+  },
+
 
   // Delete Order
   async deleteOrder(id: string): Promise<ApiResponse<null>> {

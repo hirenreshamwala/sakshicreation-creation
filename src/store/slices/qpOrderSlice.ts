@@ -324,6 +324,68 @@ export const getQPOrdersByStaffIdThunk = createAsyncThunk(
   }
 );
 
+export const updateQPOrderStatusThunk = createAsyncThunk(
+  "qpOrder/updateStatus",
+  async (
+    { orderId, status, deliveryStatus, billPhotos }: {
+      orderId: string;
+      status?: any;
+      deliveryStatus?: any;
+      billPhotos?: any;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const updateData: any = {};
+      if (status) updateData.status = status;
+      if (deliveryStatus) updateData.deliveryStatus = deliveryStatus;
+      if (billPhotos) updateData.billPhotos = billPhotos;
+
+      const response = await orderService.driverStatusUpdate(orderId, updateData);
+
+      if (response.success) {
+        return response.data;
+      } else {
+        return rejectWithValue(response.message || "Failed to update order status");
+      }
+    } catch (error: any) {
+      console.error("Redux: Update QP order status error:", error);
+      return rejectWithValue(error.message || "Failed to update order status");
+    }
+  }
+);
+
+// Bulk Update Order Status - Driver
+export const bulkUpdateQPOrderStatusThunk = createAsyncThunk(
+  "qpOrder/bulkUpdateStatus",
+  async (
+    { orderIds, status, deliveryStatus, billPhotos }: any,
+    { rejectWithValue }
+  ) => {
+    try {
+      console.log(orderIds, status, deliveryStatus, billPhotos,'orderIds, status, deliveryStatus, billPhotos')
+      const updateData: any = { orderIds };
+      if (status) updateData.status = status;
+      if (deliveryStatus) updateData.deliveryStatus = deliveryStatus;
+      if (billPhotos) updateData.billPhotos = billPhotos;
+
+      const response = await orderService.driverBulkStatusUpdate(updateData);
+
+      if (response.success) {
+        return {
+          data: response.data || [],
+          orderIds: orderIds
+        };
+      } else {
+        return rejectWithValue(response.message || "Failed to bulk update order status");
+      }
+    } catch (error: any) {
+      console.error("Redux: Bulk update QP order status error:", error);
+      return rejectWithValue(error.message || "Failed to bulk update order status");
+    }
+  }
+);
+
 const qpOrderSlice = createSlice({
   name: "qpOrder",
   initialState,
@@ -572,6 +634,68 @@ const qpOrderSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
         state.orders = [];
+      })
+      .addCase(updateQPOrderStatusThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        updateQPOrderStatusThunk.fulfilled,
+        (state, action: PayloadAction<Order>) => {
+          state.loading = false;
+          // Update the order in the orders array
+          const index = state.orders.findIndex(
+            (order) => order._id === action.payload._id
+          );
+          if (index !== -1) {
+            state.orders[index] = action.payload;
+          }
+          // Also update singleOrder if it's the current one
+          if (state.singleOrder && state.singleOrder._id === action.payload._id) {
+            state.singleOrder = action.payload;
+          }
+          state.successMessage = "Order status updated successfully";
+          state.error = null;
+        }
+      )
+      .addCase(updateQPOrderStatusThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // Bulk Update Order Status
+      .addCase(bulkUpdateQPOrderStatusThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        bulkUpdateQPOrderStatusThunk.fulfilled,
+        (
+          state,
+          action: PayloadAction<{
+            data: Order[];
+            orderIds: string[];
+          }>
+        ) => {
+          state.loading = false;
+
+          // Update all orders that were modified
+          action.payload.data.forEach(updatedOrder => {
+            const index = state.orders.findIndex(
+              order => order._id === updatedOrder._id
+            );
+            if (index !== -1) {
+              state.orders[index] = updatedOrder;
+            }
+          });
+
+          state.successMessage = `Successfully updated ${action.payload.data.length} orders`;
+          state.error = null;
+        }
+      )
+      .addCase(bulkUpdateQPOrderStatusThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

@@ -4,7 +4,7 @@ import Endpoint from "@/API/apiConfig";
 import { authService } from "@/services/auth.service";
 
 const Request: AxiosInstance = axios.create({
-  baseURL: Endpoint.BASE_URL, // make sure apiConfig has BASE_URL
+  baseURL: Endpoint.BaseURL, // make sure apiConfig has BASE_URL
   withCredentials: true,
 });
 

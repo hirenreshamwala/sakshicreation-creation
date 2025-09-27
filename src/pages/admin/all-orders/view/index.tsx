@@ -615,6 +615,7 @@ const ViewOrderPage = () => {
                 fontSize: 16,
                 borderRadius: 2,
                 py: 1.2,
+                mb: 2,
                 "&:hover": { background: "#1976D2" },
               }}
               onClick={handleDownloadInvoice}
