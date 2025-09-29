@@ -10,6 +10,7 @@ import { getCompaniesThunk, getRolesThunk, getStaffByRoleThunk, createPurchaseTh
 import { getAllVendorsThunk } from '@/store/slices/vendorSlice';
 import Swal from 'sweetalert2';
 import { useRouter } from 'next/router';
+import { StaticCompanyOptions } from '@/constants';
 
 interface NewPurchaseProps {
   isEditMode?: boolean;
@@ -114,6 +115,13 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
       dispatch({ type: 'purchases/clearError' });
     }
   }, [error, dispatch]);
+
+  useEffect(() => {
+    if (companies.length) {
+      const company = companies.find((item) => item.companyName === StaticCompanyOptions[0])
+      setFormData((prev) => ({ ...prev, companyName: company?._id || '' }))
+    }
+  }, [companies])
 
   useEffect(() => {
     if (isEditMode && singlePurchase) {
@@ -242,7 +250,7 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
   return (
     <Box>
       <ToastContainer position="top-right" autoClose={3000} />
-      
+
       <form onSubmit={handleSubmit}>
         <Stack direction="row" spacing={2} mb={2}>
           <ThemeSelect
@@ -262,7 +270,7 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
             required
           />
         </Stack>
-        
+
         <Stack direction="row" spacing={2} mb={2}>
           <ThemeSelect
             label="MATERIAL NAME"
@@ -322,38 +330,36 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
           />
         </Stack>
         <Stack direction="row" spacing={2} mb={2}>
-          
-        <ThemeSelect
-          label="COMPANY NAME"
-          options={companyOptions}
-          value={companyOptions.find(opt => opt.value === formData.companyName) || null}
-          onChange={(e, newValue) => handleSelectChange('companyName', newValue?.value)}
-          required
-          fullWidth
-          sx={{ mb: 3 }}
-        />
-        
-        <ThemeSelect
-          label="DELIVER TO"
-          options={roleOptions}
-          value={roleOptions.find(opt => opt.value === formData.for) || null}
-          onChange={(e, newValue) => handleSelectChange('for', newValue?.value)}
-          required
-          fullWidth
-          sx={{ mb: 3 }}
-          disabled={!formData.companyName}
-        />
-        
-        <ThemeSelect
-          label="PRINTER NAME"
-          options={staffOptions}
-          value={staffOptions.find(opt => opt.value === formData.forCompany) || null}
-          onChange={(e, newValue) => handleSelectChange('forCompany', newValue?.value)}
-          required
-          fullWidth
-          sx={{ mb: 3 }}
-          disabled={!formData.for}
-        />
+
+          <ThemeSelect
+            label="COMPANY NAME"
+            options={companyOptions}
+            value={companyOptions.find(opt => opt.value === formData.companyName) || null}
+            onChange={(e, newValue) => handleSelectChange('companyName', newValue?.value)}
+            required
+            disabled
+            sx={{ mb: 3 }}
+          />
+
+          <ThemeSelect
+            label="DELIVER TO"
+            options={roleOptions}
+            value={roleOptions.find(opt => opt.value === formData.for) || null}
+            onChange={(e, newValue) => handleSelectChange('for', newValue?.value)}
+            required
+            sx={{ mb: 3 }}
+            disabled={!formData.companyName}
+          />
+
+          <ThemeSelect
+            label="PRINTER NAME"
+            options={staffOptions}
+            value={staffOptions.find(opt => opt.value === formData.forCompany) || null}
+            onChange={(e, newValue) => handleSelectChange('forCompany', newValue?.value)}
+            required
+            sx={{ mb: 3 }}
+            disabled={!formData.for}
+          />
         </Stack>
         <Stack direction="row" spacing={2} mt={3} justifyContent="flex-end">
           <Button

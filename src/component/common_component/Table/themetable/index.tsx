@@ -302,8 +302,9 @@ const BasicTable = <T extends { id: string }>({
         .filter((col) => col.id !== "checkbox" && col.id !== "action")
         .map((col) => col.label);
 
+    const array = filteredRows.map((row) => row.id);
     const data = excelData
-      ? excelData
+      ? excelData?.filter((item) => array.includes(item.id))
       : filteredRows.map((row) => {
         const rowData: { [key: string]: any } = {};
         tableHeader

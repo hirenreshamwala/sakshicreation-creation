@@ -8,11 +8,8 @@ import {
   Avatar,
   IconButton,
   InputBase,
-  Tab,
-  Tabs,
   Tooltip,
 } from "@mui/material";
-import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   getAllAssignTasksThunk,
@@ -38,6 +35,8 @@ import { toast } from "react-toastify";
 import TabComponent from "@/component/Dialog/TabComponent";
 import { getCompanyWisePermission } from "@/utills/utills";
 import { useRouter } from "next/router";
+import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
+import { StaticCompanyOptions } from "@/constants";
 
 interface RowData {
   id: string;
@@ -67,10 +66,10 @@ const columns = [
   { id: "market", label: "Market Name" },
   { id: "area", label: "Area" },
   { id: "mobile", label: "Mobile No." },
-  { id: "remarks", label: "Remarks" },
+  { id: "reason", label: "Reason to Visit" },
   { id: "assignBy", label: "Assign By" },
   { id: "assignTo", label: "Assign To" },
-  { id: "reason", label: "Reason to Visit" },
+  { id: "remarks", label: "Remarks" },
   { id: "status", label: "Status" },
   { id: "action", label: "Action" },
 ];
@@ -100,7 +99,7 @@ const AssignTaskPage: React.FC = () => {
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const todayRef = useRef<HTMLDivElement>(null);
   const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c, companyName } = router.query
-
+  const { companies } = useAppSelector((state) => state.company)
   const canViewGlobal = user?.role?.permissions?.assign_task?.view_global;
   const canViewOwn = user?.role?.permissions?.assign_task?.view_own;
   const cancreate = user?.role?.permissions?.assign_task?.create;
@@ -131,6 +130,10 @@ const AssignTaskPage: React.FC = () => {
     if (c)
       setCompanyTab(c === "Quality Packaging" ? 1 : 0)
   }, [c])
+
+  useEffect(() => {
+    if (!companies.length) dispatch(getAllCompaniesThunk(true))
+  }, [])
 
   // Set initial date range and status from query parameters
   useEffect(() => {
@@ -470,12 +473,12 @@ const AssignTaskPage: React.FC = () => {
       <TableCell sx={{ fontSize: 14 }}>{row.market}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.assignBy}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
       <TableCell ><Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
         ? `${row.remarks.substring(0, 10)}...`
         : row.remarks}</Typography></TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.assignBy}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip
           label={row.status}
@@ -714,6 +717,7 @@ const AssignTaskPage: React.FC = () => {
             reason: r
           }));
         }}
+        company={companies?.find((item) => item.companyName === StaticCompanyOptions[companyTab])}
       />
     </>
   );

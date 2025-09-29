@@ -22,9 +22,11 @@ interface AssignLeadDialogProps {
     lead?: Lead;
     partyIds?: string[];
     onSuccess?: () => void;
+    company?:any;
+    type?: 'add' | 'edit';
 }
 
-const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead, type, partyIds, onSuccess }) => {
+const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead, type, partyIds, onSuccess, company }) => {
     const dispatch = useAppDispatch();
     const { accountMasters, loading: accountLoading, error: accountError } = useAppSelector(
         (state) => state.accountMasters || {}
@@ -77,7 +79,7 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
 
     const formik = useFormik<Partial<Lead>>({
         initialValues: {
-            companyName: lead?.companyName?._id || lead?.companyName || '',
+            companyName: lead?.companyName?._id || lead?.companyName || company?._id || '',
             partyName: lead?.partyName?._id || lead?.partyId || '',
             date: lead?.date ? new Date(lead.date).toISOString().split('T')[0] : '',
             time: lead?.time || '',

@@ -36,6 +36,8 @@ import { authService } from "@/services/auth.service";
 import { toast } from "react-toastify";
 import TabComponent from "@/component/Dialog/TabComponent";
 import { getCompanyWisePermission } from "@/utills/utills";
+import { StaticCompanyOptions } from "@/constants";
+import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 
 interface Lead {
   _id: string;
@@ -149,12 +151,12 @@ const LeadManagementPage: React.FC = () => {
   const canDelete = user?.role?.permissions?.party_call?.delete;
   const cancreate = user?.role?.permissions?.party_call?.create;
   const canEdit = user?.role?.permissions?.party_call?.edit;
-
+  const { companies } = useAppSelector((state) => state.company)
   // Company permissions
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = getCompanyWisePermission(0);
-  const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c ,companyName} = router.query
+  const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c, companyName } = router.query
 
   // Determine active company ID
   const activeCompanyId = useMemo(() => {
@@ -175,6 +177,10 @@ const LeadManagementPage: React.FC = () => {
       toast.error(error);
     }
   }, [error, dispatch]);
+
+  useEffect(() => {
+    if (!companies.length) dispatch(getAllCompaniesThunk(true))
+  }, [])
 
   useEffect(() => {
     if (c) setCompanyTab(c === "Quality Packaging" ? 1 : 0)
@@ -744,6 +750,7 @@ const LeadManagementPage: React.FC = () => {
         }}
         lead={selectedLead}
         onSuccess={handleAssignSuccess}
+        company={companies.find((item) => item.companyName === StaticCompanyOptions[comapanyTab])}
       /> : null}
     </>
   );

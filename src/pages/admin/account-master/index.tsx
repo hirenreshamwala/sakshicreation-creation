@@ -28,6 +28,8 @@ import { toast } from "react-toastify";
 import { useMemo } from "react";
 import TabComponent from "@/component/Dialog/TabComponent";
 import { getCompanyWisePermission } from "@/utills/utills";
+import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
+import { StaticCompanyOptions } from "@/constants";
 
 interface Company {
   _id: string;
@@ -80,6 +82,7 @@ const IndexPage: React.FC = memo(() => {
   const dispatch = useAppDispatch();
   const { accountMasters, loading, error } = useAppSelector((state) => state.accountMasters);
   const { user } = useAppSelector((state) => state.auth);
+  const { companies } = useAppSelector((state) => state.company)
 
   const [open, setOpen] = useState(false);
   const [statusTab, setStatusTab] = useState(0);
@@ -184,6 +187,10 @@ const IndexPage: React.FC = memo(() => {
   useEffect(() => {
     if (error) toast.error(error);
   }, [error, dispatch]);
+
+  useEffect(() => {
+    if (!companies.length) dispatch(getAllCompaniesThunk(true))
+  }, [])
 
   const handleAddNew = () => {
     setEditId(null);
@@ -332,6 +339,7 @@ const IndexPage: React.FC = memo(() => {
   console.log(accountMasters.length, 'xdvsfjhusegfuighuigh')
   const excelData = useMemo(() => {
     return filteredAccountMasters.map((account) => ({
+      "id": account._id,
       "Company Name": account.companyName?.name || "N/A",
       "Party Name": account.party?.partyName || "N/A",
       "Owner Name": account.party?.ownerName || "N/A",
@@ -602,6 +610,7 @@ const IndexPage: React.FC = memo(() => {
         }}
         isRequestMode={isRequestMode}
         isBulkUpload={isBulkUpload}
+        company={companies?.find((item) => item?.companyName === StaticCompanyOptions[companyTab])}
       /> : null}
       {openAssignLeadDialog ? <AssignLeadDialog
         open={openAssignLeadDialog}

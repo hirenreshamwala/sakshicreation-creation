@@ -229,7 +229,7 @@ const MarketPage = () => {
                                             const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
                                             formik.setFieldValue("pincode", numericValue);
                                         }
-                                        else formik.handleChange(e)
+                                        else formik.setFieldValue(field,e.target.value.toUpperCase())
                                     }}
                                     fullWidth
                                     error={formik.touched[field as keyof typeof formik.touched] && Boolean(formik.errors[field as keyof typeof formik.errors])}

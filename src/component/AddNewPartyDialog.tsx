@@ -67,6 +67,7 @@ interface AddNewPartyDialogProps {
   accountId?: string;
   refreshData?: () => void;
   isRequestMode?: boolean;
+  company:any;
   isBulkUpload?: boolean; // New prop to handle bulk upload mode
 }
 
@@ -98,6 +99,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   refreshData,
   isRequestMode = false,
   isBulkUpload = false,
+  company
 }) => {
   const dispatch = useAppDispatch();
   const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
@@ -166,7 +168,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
 
   const formik = useFormik<FormData>({
     initialValues: {
-      companyName: "",
+      companyName:company?._id,
       partyName: "",
       ownerName: "",
       ownerMobileNo: "",

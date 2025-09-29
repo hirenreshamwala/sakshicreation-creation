@@ -10,6 +10,7 @@ import CustomDialog from "@/component/customdialog";
 import ThemeButton from "@/component/common_component/themebutton";
 import { useAppDispatch } from "@/store";
 import { updateOrderThunk } from "@/store/slices/orderSlice";
+import moment from "moment";
 
 interface FormData {
   quantity: number;
@@ -17,6 +18,7 @@ interface FormData {
   applyGST: boolean;
   gstPercentage: number;
   total: number;
+  gstAmount: number;
   finalAmount: number;
 }
 
@@ -52,6 +54,7 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
   const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   const lastQuotation = data?.quotation?.[data?.quotation?.length - 1];
 
@@ -62,12 +65,18 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
       applyGST: lastQuotation?.gst > 0,
       gstPercentage: lastQuotation?.gst || 0,
       total: 0,
+      gstAmount: 0,
       finalAmount: 0,
     },
     validationSchema,
     validateOnBlur: true,
     validateOnChange: true,
     onSubmit: async (values, { setSubmitting }) => {
+      if (!hasChanges) {
+        toast.warning("No changes made to save");
+        return;
+      }
+
       setIsLoading(true);
       setSubmitting(true);
 
@@ -92,6 +101,7 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
 
         toast.success("Quotation added successfully");
         setIsSaved(true);
+        setHasChanges(false);
 
         if (refreshData) refreshData();
         if (onInvoiceSaved) onInvoiceSaved();
@@ -105,6 +115,24 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
     },
   });
 
+  const checkForChanges = (currentValues: FormData) => {
+    if (!lastQuotation) {
+      return currentValues.quantity > 0 || currentValues.unitPrice > 0;
+    }
+
+    const initialTotal = (lastQuotation.qty || 0) * (lastQuotation.unitPrice || 0);
+    const currentTotal = (currentValues.quantity || 0) * (currentValues.unitPrice || 0);
+    const initialGst = lastQuotation.gst || 0;
+    const currentGst = currentValues.applyGST ? currentValues.gstPercentage : 0;
+
+    return (
+      currentValues.quantity !== lastQuotation.qty ||
+      currentValues.unitPrice !== lastQuotation.unitPrice ||
+      currentGst !== initialGst ||
+      currentTotal !== initialTotal
+    );
+  };
+
   // Recalculate totals on change
   useEffect(() => {
     const total = (formik.values.quantity || 0) * (formik.values.unitPrice || 0);
@@ -114,8 +142,27 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
     const finalAmount = total + gstAmount;
 
     formik.setFieldValue("total", total);
+    formik.setFieldValue("gstAmount", gstAmount);
     formik.setFieldValue("finalAmount", finalAmount);
-  }, [formik.values.quantity, formik.values.unitPrice, formik.values.gstPercentage, formik.values.applyGST]);
+
+    setHasChanges(checkForChanges({ ...formik.values, total, gstAmount, finalAmount }));
+  }, [
+    formik.values.quantity,
+    formik.values.unitPrice,
+    formik.values.gstPercentage,
+    formik.values.applyGST,
+  ]);
+
+  const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    formik.handleChange(e);
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    formik.setFieldValue("applyGST", e.target.checked);
+    if (!e.target.checked) {
+      formik.setFieldValue("gstPercentage", 0);
+    }
+  };
 
   // Reset form when dialog opens with last quotation totals
   useEffect(() => {
@@ -133,6 +180,7 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
           applyGST: lastQuote.gst > 0,
           gstPercentage: lastQuote.gst || 0,
           total,
+          gstAmount,
           finalAmount,
         });
       } else {
@@ -142,17 +190,20 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
           applyGST: false,
           gstPercentage: 0,
           total: 0,
+          gstAmount: 0,
           finalAmount: 0,
         });
       }
 
       setIsSaved(false);
+      setHasChanges(false);
     }
   }, [open, data]);
 
   const handleClose = () => {
     formik.resetForm();
     setIsSaved(false);
+    setHasChanges(false);
     onClose();
   };
 
@@ -165,10 +216,19 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
     "& .MuiInputLabel-root.Mui-disabled": {
       color: "#333",
     },
+    "& .MuiInputBase-input.Mui-disabled": {
+      WebkitTextFillColor: "#333",
+      fontWeight: "bold",
+    },
   };
 
   return (
-    <CustomDialog open={open} maxWidth="md" onClose={handleClose} title={`${data?.orderNumber || "Order"} Quotation`}>
+    <CustomDialog
+      open={open}
+      maxWidth="md"
+      onClose={handleClose}
+      title={`${data?.orderNumber || "Order"} Quotation`}
+    >
       <Box sx={{ background: "#fff", borderRadius: 2 }} component="form" onSubmit={formik.handleSubmit}>
         <Box display="flex" flexDirection="column" gap={2} mb={1} width="100%">
           <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
@@ -177,7 +237,7 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
               name="quantity"
               type="number"
               value={formik.values.quantity}
-              onChange={formik.handleChange}
+              onChange={handleFieldChange}
               onBlur={formik.handleBlur}
               error={formik.touched.quantity && Boolean(formik.errors.quantity)}
               helperText={formik.touched.quantity && formik.errors.quantity}
@@ -190,7 +250,7 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
               name="unitPrice"
               type="number"
               value={formik.values.unitPrice}
-              onChange={formik.handleChange}
+              onChange={handleFieldChange}
               onBlur={formik.handleBlur}
               error={formik.touched.unitPrice && Boolean(formik.errors.unitPrice)}
               helperText={formik.touched.unitPrice && formik.errors.unitPrice}
@@ -204,12 +264,7 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
               control={
                 <Checkbox
                   checked={formik.values.applyGST}
-                  onChange={(e) => {
-                    formik.setFieldValue("applyGST", e.target.checked);
-                    if (!e.target.checked) {
-                      formik.setFieldValue("gstPercentage", 0);
-                    }
-                  }}
+                  onChange={handleCheckboxChange}
                   name="applyGST"
                   color="primary"
                 />
@@ -227,6 +282,7 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
                   if (value === "") value = "0";
                   if (value.length > 1) value = value.replace(/^0+/, "");
                   formik.setFieldValue("gstPercentage", Number(value));
+                  setHasChanges(true);
                 }}
                 onBlur={formik.handleBlur}
                 error={formik.touched.gstPercentage && Boolean(formik.errors.gstPercentage)}
@@ -237,44 +293,93 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
             )}
           </Box>
 
-          <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
-            <TextField
-              label="Total"
-              type="number"
-              value={formik.values.total || 0}
-              disabled
-              fullWidth
-              sx={disabledLabelStyle}
-            />
-            <TextField
-              label="Final Amount"
-              type="number"
-              value={formik.values.finalAmount ? formik.values.finalAmount.toFixed(2) : "0.00"}
-              disabled
-              fullWidth
-              sx={disabledLabelStyle}
-              InputProps={{
-                endAdornment: formik.values.applyGST ? (
-                  <Chip label="GST Selected" size="small" color="primary" variant="filled" sx={{ ml: 1 }} />
-                ) : null,
-              }}
-            />
-          </Box>
+          <Box sx={{ border: "1px solid #e0e0e0", borderRadius: 1, p: 2, backgroundColor: "#f9f9f9" }}>
+            <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
+              <TextField
+                label="Total Amount"
+                type="number"
+                value={formik.values.total || 0}
+                disabled
+                fullWidth
+                sx={disabledLabelStyle}
+              />
 
-          <Box display="flex" justifyContent="flex-end">
-            {formik.values.applyGST ? (
-              <Chip label={`GST Applied: ${formik.values.gstPercentage}%`} color="primary" variant="filled" sx={{ fontWeight: "bold" }} />
-            ) : (
-              <Chip label="No GST Applied" color="default" variant="outlined" />
-            )}
+              {formik.values.applyGST && (
+                <TextField
+                  label="GST Amount"
+                  type="number"
+                  value={formik.values.gstAmount ? formik.values.gstAmount.toFixed(2) : "0.00"}
+                  disabled
+                  fullWidth
+                  sx={disabledLabelStyle}
+                />
+              )}
+            </Box>
+
+            <Box mt={2}>
+              <TextField
+                label="Final Amount (Including GST)"
+                type="number"
+                value={formik.values.finalAmount ? formik.values.finalAmount.toFixed(2) : "0.00"}
+                disabled
+                fullWidth
+                sx={{
+                  ...disabledLabelStyle,
+                  "& .MuiInputBase-input": {
+                    fontSize: "1.1rem",
+                    fontWeight: "bold",
+                    color: "#1976d2",
+                  },
+                }}
+                InputProps={{
+                  endAdornment: formik.values.applyGST ? (
+                    <Chip
+                      label={`GST: ${formik.values.gstPercentage}%`}
+                      size="small"
+                      color="primary"
+                      variant="filled"
+                      sx={{ ml: 1, fontWeight: "bold" }}
+                    />
+                  ) : null,
+                }}
+              />
+            </Box>
+
+            <Box display="flex" justifyContent="flex-end" mt={1}>
+              {formik.values.applyGST ? (
+                <Chip
+                  label={`Total: ₹${formik.values.total} + GST: ₹${formik.values.gstAmount.toFixed(2)} = Final: ₹${formik.values.finalAmount.toFixed(2)}`}
+                  color="primary"
+                  variant="filled"
+                  sx={{ fontWeight: "bold" }}
+                />
+              ) : (
+                <Chip
+                  label={`Total Amount: ₹${formik.values.finalAmount.toFixed(2)} (No GST)`}
+                  color="default"
+                  variant="outlined"
+                />
+              )}
+            </Box>
           </Box>
         </Box>
 
-        <Box display="flex" justifyContent="flex-end" mt={2} gap={2}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mt={2} gap={2}>
+          <Box>
+            {!hasChanges && (
+              <Chip
+                label="No changes made"
+                color="warning"
+                variant="outlined"
+                size="small"
+              />
+            )}
+          </Box>
+
           <ThemeButton
             type="submit"
             sx={{ minWidth: 120, height: 40 }}
-            disabled={isLoading || formik.isSubmitting || !formik.isValid}
+            disabled={isLoading || formik.isSubmitting || !formik.isValid || !hasChanges}
           >
             {isLoading || formik.isSubmitting ? "Saving..." : "Save Quotation"}
           </ThemeButton>
@@ -292,15 +397,16 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
                 <Box key={index} p={1} border={1} borderColor="grey.300" borderRadius={1} mb={1}>
                   <Box display="flex" justifyContent="space-between" alignItems="center">
                     <div>
-                      Price: ₹{quote.unitPrice} | Qty: {quote.qty} | Total: ₹{total} | Final: ₹
-                      {finalAmount.toFixed(2)}
+                      Price: ₹{quote.unitPrice} | Qty: {quote.qty} | Total: ₹{total} |
+                      {quote.gst > 0 ? ` GST: ₹${gstAmount.toFixed(2)} | ` : " "}
+                      Final: ₹{finalAmount.toFixed(2)}
                       {quote.gst > 0 ? (
                         <Chip label={`GST: ${quote.gst}%`} size="small" color="primary" sx={{ ml: 1 }} />
                       ) : (
                         <Chip label="No GST" size="small" color="default" variant="outlined" sx={{ ml: 1 }} />
                       )}
                     </div>
-                    <small>{new Date(quote.createdAt || quote.timestamp).toLocaleString()}</small>
+                    <small>{moment(quote.createdAt).format('DD-MM-YYYY HH:mm')}</small>
                   </Box>
                 </Box>
               );
