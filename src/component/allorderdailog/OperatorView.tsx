@@ -184,8 +184,8 @@ const OperatorView = () => {
       case "deckal":
         return order.orderdata?.deckal || "N/A";
       case "cuttingLength":
-        return order.orderdata?.length && order.orderdata?.height
-          ? (Number(order.orderdata.length) + Number(order.orderdata.height)).toString()
+        return order.orderdata?.length && order.orderdata?.width
+          ? (Number(order.orderdata.length) + Number(order.orderdata.width) + 2).toString()
           : "N/A";
       case "noOfSheetut":
         return order.noOfPieces
@@ -228,39 +228,39 @@ const OperatorView = () => {
       // Search filter - search across all visible fields
       const matchesSearch = searchQuery
         ? columns.some(column => {
-            const value = getFieldValue(order, column.id);
-            return safeToString(value).toLowerCase().includes(searchQuery.toLowerCase());
-          }) ||
-          safeToString(order.companyName?.companyName).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.party?.partyName).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.date).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.orderdata?.ply).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.orderdata?.length).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.orderdata?.height).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.orderdata?.width).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.orderdata?.paper1GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.orderdata?.paper2GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.orderdata?.paper3GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.gsm).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.deckalCalculation).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.orderdata?.deckal).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.noOfPieces).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.ratePerPiece).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.amount).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.kgPerUnit).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.totalKg).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.kantan?.kantanName).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.kantanPerUnit).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (order.totalKantan && safeToString(`${order.totalKantan.reel} reel ${order.totalKantan.inch} inch`).toLowerCase().includes(searchQuery.toLowerCase())) ||
-          safeToString(order.kantanDeckal).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.salesRemark).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          safeToString(order.status).toLowerCase().includes(searchQuery.toLowerCase())
+          const value = getFieldValue(order, column.id);
+          return safeToString(value).toLowerCase().includes(searchQuery.toLowerCase());
+        }) ||
+        safeToString(order.companyName?.companyName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.party?.partyName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.date).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.ply).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.length).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.height).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.width).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.paper1GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.paper2GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.paper3GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.gsm).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.deckalCalculation).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.deckal).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.noOfPieces).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.ratePerPiece).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.amount).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.kgPerUnit).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.totalKg).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.kantan?.kantanName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.kantanPerUnit).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (order.totalKantan && safeToString(`${order.totalKantan.reel} reel ${order.totalKantan.inch} inch`).toLowerCase().includes(searchQuery.toLowerCase())) ||
+        safeToString(order.kantanDeckal).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.salesRemark).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.status).toLowerCase().includes(searchQuery.toLowerCase())
         : true
 
       // Column filters
       const matchesFilters = Object.keys(filters).every((columnId) => {
         if (filters[columnId].length === 0) return true
-        
+
         const value = getFieldValue(order, columnId);
         return value && value !== "N/A" && filters[columnId].includes(value.toString())
       })
@@ -271,7 +271,7 @@ const OperatorView = () => {
 
   const getUniqueValues = useMemo(() => {
     if (!selectedFilterField) return []
-    
+
     const columnId = columns.find(col => col.label === selectedFilterField)?.id
     if (!columnId) return []
 
@@ -381,9 +381,10 @@ const OperatorView = () => {
             />
           </Box>
           <FilterDropdown
-            filterOptions={columns
-              .filter((col) => col.id !== "action")
-              .map((col) => col.label)}
+            filterOptions={["Deckal"]}
+            // filterOptions={columns
+            //   .filter((col) => col.id !== "action")
+            //   .map((col) => col.label)}
             uniqueValues={selectedFilterField ? getUniqueValues : []}
             onFiltersChange={(newFilters) => {
               const idBasedFilters: { [key: string]: string[] } = {}
@@ -494,7 +495,7 @@ const OperatorView = () => {
                 <ThemeInput
                   placeholder="No of piece"
                   type="number"
-                   value={pieceInputs[row._id] !== undefined ? pieceInputs[row._id] : (row.operatorNoOfPieces || "")}
+                  value={pieceInputs[row._id] !== undefined ? pieceInputs[row._id] : (row.operatorNoOfPieces || "")}
                   onChange={(e) =>
                     setPieceInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
                   }
@@ -543,12 +544,36 @@ const OperatorView = () => {
           <Typography variant="h6" mb={2}>
             Remarks
           </Typography>
-          <Typography>
-            {remarksRow?.factoryRemark ||
-              remarksRow?.godownRemark ||
-              remarksRow?.dyeRemark ||
-              "No remarks available"}
-          </Typography>
+          <Box>
+            {remarksRow?.salesRemark && (
+              <Box mb={1}>
+                <Typography variant="subtitle2">Sales Remark:</Typography>
+                <Typography variant="body2">{remarksRow.salesRemark}</Typography>
+              </Box>
+            )}
+
+            {remarksRow?.factoryRemark && (
+              <Box mb={1}>
+                <Typography variant="subtitle2">Factory Remark:</Typography>
+                <Typography variant="body2">{remarksRow.factoryRemark}</Typography>
+              </Box>
+            )}
+
+            {remarksRow?.godownRemark && (
+              <Box mb={1}>
+                <Typography variant="subtitle2">Godown Remark:</Typography>
+                <Typography variant="body2">{remarksRow.godownRemark}</Typography>
+              </Box>
+            )}
+
+            {remarksRow?.dyeRemark && (
+              <Box mb={1}>
+                <Typography variant="subtitle2">Dye Remark:</Typography>
+                <Typography variant="body2">{remarksRow.dyeRemark}</Typography>
+              </Box>
+            )}
+          </Box>
+
           <Box textAlign="right" mt={2}>
             <ThemeButton onClick={() => setRemarksOpen(false)}>Close</ThemeButton>
           </Box>

@@ -77,8 +77,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         factoryRemark: row.factoryRemark || "",
         status: row.status || "Pending",
         remarks: (row.remarks as Remark[]) || [],
-        printer: row.printer?._id || "",
-        binder: row.binder?._id || "",
+        printer: row.printer?._id || null,
+        binder: row.binder?._id || null,
     });
 
     const [initialFormData, setInitialFormData] = useState(formData);
@@ -104,8 +104,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             factoryRemark: row.factoryRemark || "",
             status: row.status || "Pending",
             remarks: (row.remarks as Remark[]) || [],
-            printer: row.printer?._id || "",
-            binder: row.binder?._id || "",
+            printer: row.printer?._id || null,
+            binder: row.binder?._id || null,
         };
         setFormData(newFormData);
         setInitialFormData(newFormData);
