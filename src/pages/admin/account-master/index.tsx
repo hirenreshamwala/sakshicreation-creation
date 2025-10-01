@@ -30,6 +30,7 @@ import TabComponent from "@/component/Dialog/TabComponent";
 import { getCompanyWisePermission } from "@/utills/utills";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { StaticCompanyOptions } from "@/constants";
+import moment from "moment";
 
 interface Company {
   _id: string;
@@ -371,6 +372,8 @@ const IndexPage: React.FC = memo(() => {
   }, [filteredAccountMasters]);
 
   const formattedRows: RowData[] = filteredAccountMasters.map((account) => {
+    console.log("DEBUG : account:", account);
+
     return {
       id: account._id,
       partyId: account.party?._id || "",
@@ -379,11 +382,7 @@ const IndexPage: React.FC = memo(() => {
         name: account.companyName?.name || "N/A",
         avatar: account.companyName?.avatar,
       },
-      createdDate: new Date(account.createdAt).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit",
-      }),
+      createdDate: moment(account.createdAt).format('DD-MM-YYYY'),
       party: account.party?.partyName || "N/A",
       contactPerson: account.party?.contactPerson || "N/A",
       partyTag: account.party?.partyTag || "New",
@@ -406,6 +405,10 @@ const IndexPage: React.FC = memo(() => {
       statusApproval: account.party?.statusApproval === "APPROVED" ? "Approved" : "Pending",
     };
   });
+  console.log("DEBUG : filteredAccountMasters:", filteredAccountMasters);
+
+  console.log("DEBUG : formattedRows:", formattedRows);
+
   const partyIds = selectedRows.map((accountId) => {
     const account = accountMasters.find((acc) => acc._id === accountId);
     return account?.party?._id || "";

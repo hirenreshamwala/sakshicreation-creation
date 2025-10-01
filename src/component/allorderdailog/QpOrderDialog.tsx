@@ -204,7 +204,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             
             const orderData = {
                 isQp: true,
-                companyName: qpFormData.companyName,
+                companyName: qpFormData?.companyName?._id ? qpFormData?.companyName?._id : qpFormData.companyName,
                 party: qpFormData.partyName,
                 packagingOption,
                 date: qpFormData.date || undefined,

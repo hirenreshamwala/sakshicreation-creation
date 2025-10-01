@@ -168,7 +168,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
             if (order.party && !unique.find(item => item.value === order.party._id)) {
                 unique.push({
                     value: order.party._id,
-                    label: `${order.party.partyName} ${order.party.address?.marketName?.marketName || ''} ${order.party.address?.area?.area || ''}`.trim() || "Party",
+                    label: `${order.party.partyName} - ${order.party.address?.marketName?.marketName || ''} - ${order.party.address?.area?.area || ''}`.trim() || "Party",
                 });
             }
             return unique;

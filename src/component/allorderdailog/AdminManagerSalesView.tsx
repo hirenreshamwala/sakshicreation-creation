@@ -20,29 +20,6 @@ import AddQPOrderDialog from "./QpOrderDialog"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { StaticCompanyOptions } from "@/constants"
 
-const columns = [
-  { id: "orderNo", label: "Order No" },
-  { id: "companyName", label: "Company Name" },
-  { id: "party", label: "Party Name" },
-  { id: "date", label: "Order Date" },
-  { id: "ply", label: "Ply" },
-  { id: "size", label: "Size" },
-  { id: "paperGSM", label: "Paper GSM" },
-  { id: "gsm", label: "GSM" },
-  { id: "deckalCalculation", label: "Cal Deckal" },
-  { id: "deckal", label: "Deckal" },
-  { id: "noOfPieces", label: "Piece No" },
-  { id: "ratePerPiece", label: "Rate/Piece" },
-  { id: "amount", label: "Amount" },
-  { id: "kgPerUnit", label: "KG Per Unit" },
-  { id: "totalKg", label: "Total KG" },
-  { id: "kantan", label: "Kantan" },
-  { id: "kantanPerUnit", label: "Kantan/Piece" },
-  { id: "totalKantan", label: "Total Kantan" },
-  { id: "kantanDeckal", label: "Kantan Dec" },
-  { id: "salesRemark", label: "Sales Remarks" },
-  { id: "status", label: "Status" },
-]
 
 type OrderRow = {
   _id: string;
@@ -120,18 +97,74 @@ const AdminManagerSalesView = () => {
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({})
-
+  
   const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
   const canCreate = user?.role?.permissions?.all_orders?.create;
   const canStatus = user?.role?.permissions?.all_orders?.status;
-  const { companyName, staffId, startDate : st, endDate : ed } = router.query
+  const { companyName, staffId, startDate: st, endDate: ed } = router.query
+  
+  const columns = [
+    { id: "orderNo", label: "Order No" },
+    { id: "companyName", label: "Company Name" },
+    { id: "party", label: "Party Name" },
+    { id: "date", label: "Order Date" },
+    { id: "ply", label: "Ply" },
+    { id: "size", label: "Size" },
+    { id: "paperGSM", label: "Paper GSM" },
+    { id: "gsm", label: "GSM" },
+    { id: "deckalCalculation", label: "Cal Deckal" },
+    { id: "deckal", label: "Deckal" },
+    { id: "noOfPieces", label: "Piece No" },
+    { id: "ratePerPiece", label: "Rate/Piece" },
+    { id: "amount", label: "Amount" },
+    { id: "kgPerUnit", label: "KG Per Unit" },
+    { id: "totalKg", label: "Total KG" },
+    { id: "kantan", label: "Kantan" },
+    { id: "kantanPerUnit", label: "Kantan/Piece" },
+    { id: "totalKantan", label: "Total Kantan" },
+    { id: "kantanDeckal", label: "Kantan Dec" },
+    { id: "salesRemark", label: "Sales Remarks" },
+    { id: "status", label: "Status" },
+    ...(canCreate ? [{ id: "repeatOrder", label: "Repeat Order" }] : []),
+  ]
+
   const refreshData = () => {
     if (canViewGlobal) {
-      dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate : st, endDate : ed }))
+      dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate: st, endDate: ed }))
     } else if (canViewOwn && user?.id) {
       dispatch(getQPOrdersByStaffIdThunk(user.id))
     }
+  };
+
+   const handleRepeatOrder = (rowData: OrderRow) => {
+    // Purane data ko copy karen but orderNo, createdAt, status wagairah ko reset karen
+    const repeatOrderData = {
+      ...rowData,
+      _id: undefined, // New order ke liye ID reset
+      orderNo: undefined, // New order number generate hoga
+      createdAt: new Date().toISOString(), // Current date set karen
+      status: "pending", // Status reset karen
+      // Status fields reset karen
+      designerStatus: undefined,
+      printerStatus: undefined,
+      binderStatus: undefined,
+      bookletBinderStatus: undefined,
+      // Additional fields reset karen
+      unitNo: undefined,
+      startDate: undefined,
+      deliveryDate: undefined,
+      dyeNumber: undefined,
+      dyeSize: undefined,
+      glue: undefined,
+      wire: undefined,
+      dyeRemark: undefined,
+      godownRemark: undefined,
+      factoryRemark: undefined,
+    };
+
+    setEditData(repeatOrderData);
+    setOpen(true);
   };
 
   const formatDate = (dateString: string) => {
@@ -633,6 +666,16 @@ const AdminManagerSalesView = () => {
               <TableCell>
                 <StatusCell row={row} />
               </TableCell>
+              {canCreate && (
+                <TableCell>
+                  <ThemeButton
+                    onClick={() => handleRepeatOrder(row)}
+                    // size="small"
+                  >
+                    Repeat Order
+                  </ThemeButton>
+                </TableCell>
+              )}
             </>);
           }}
         />
