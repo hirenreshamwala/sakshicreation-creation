@@ -154,6 +154,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <Box
+    className="login-page"
       sx={{
         minHeight: '100vh',
         display: 'flex',

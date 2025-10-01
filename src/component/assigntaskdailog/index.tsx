@@ -122,8 +122,8 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
 
   const formik = useFormik<CreateAssignTask>({
     initialValues: {
-      companyName: companyOptions?.value,
-      partyName: partyOptions?.value,
+      companyName: companyOptions?.value || "",
+      partyName: partyOptions?.value || "",
       date: "",
       time: "",
       reasonForVisit: "",

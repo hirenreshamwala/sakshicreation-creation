@@ -719,6 +719,7 @@ const StaffView = () => {
             helperText={formik.errors.password}
             fullWidth
             InputLabelProps={{ shrink: true }}
+            
             sx={{ mb: 2 }}
             required
           />

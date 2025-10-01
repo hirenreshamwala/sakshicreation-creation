@@ -24,3 +24,50 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ✅ Uppercase everywhere */
+* {
+  text-transform: uppercase;
+}
+
+/* ✅ Inputs default to uppercase */
+input, textarea,
+.MuiInputBase-input {
+  text-transform: uppercase;
+}
+
+/* ❌ EXCEPT email & password fields */
+input[type="email"],
+input[type="password"] {
+  text-transform: none !important;
+}
+
+/* ✅ MUI Buttons uppercase */
+.MuiButton-root {
+  text-transform: uppercase !important;
+}
+/* ✅ Apply uppercase globally except login page */
+:not(.login-page) * {
+  text-transform: uppercase;
+}
+
+:not(.login-page) input,
+:not(.login-page) textarea,
+:not(.login-page) .MuiInputBase-input {
+  text-transform: uppercase;
+}
+
+/* MUI Buttons outside login page */
+:not(.login-page) .MuiButton-root {
+  text-transform: uppercase !important;
+}
+
+/* Optional: reset for login page inputs (email/password) */
+.login-page input[type="email"],
+.login-page input[type="password"]
+.login-page input[type="text"] {
+  text-transform: none !important;
+}
+.login-page .MuiInputBase-input {
+  text-transform: none !important;
+}

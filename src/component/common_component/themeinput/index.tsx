@@ -67,7 +67,7 @@ const ThemeInput: React.FC<ThemeInputProps> = ({
       setShowPassword(!showPassword);
     }
   };
-if (autocomplete && options) {
+  if (autocomplete && options) {
     return (
       <Box width="100%">
         {labelName && (
@@ -75,7 +75,7 @@ if (autocomplete && options) {
             {labelName} {required && <span style={{ color: 'red' }}>*</span>}
           </Typography>
         )}
-        
+
         <Autocomplete
           freeSolo
           options={options}
@@ -118,6 +118,7 @@ if (autocomplete && options) {
                 '& .MuiInputBase-input': {
                   padding: '12px 124px',
                   cursor: readOnly ? 'default' : 'text',
+                  textTransform: 'uppercase',   // ✅ only visual uppercase
                 },
                 ...rest.sx,
               }}
