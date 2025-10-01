@@ -42,8 +42,8 @@ const IndexPage: React.FC = () => {
   // Fetch companies and staff on mount
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true));
-    dispatch(getAllStaffThunk());
-  }, [companies.length, dispatch]);
+    if (!staffList.length) dispatch(getAllStaffThunk());
+  }, []);
 
   // Date helper
   const formatDate = (date: Date) =>
