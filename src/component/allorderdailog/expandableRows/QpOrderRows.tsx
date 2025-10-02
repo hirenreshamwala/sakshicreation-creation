@@ -407,20 +407,20 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     paper1: {
                         deckal: row.orderdata.deckal,
                         gsm: row.orderdata.paper1GSM,
-                        totalKg: paper3Kg?.toFixed(3).toString(),
+                        totalKg: paper3Kg?.toFixed(2).toString(),
                     },
                     paper2: {
                         deckal: row.orderdata.deckal,
                         gsm: row.orderdata.paper2GSM,
-                        totalKg: paper2Kg?.toFixed(3).toString(),
+                        totalKg: paper2Kg?.toFixed(2).toString(),
                     },
                     paper3: {
                         deckal: row.orderdata.deckal,
                         gsm: row.orderdata.paper3GSM,
-                        totalKg: paper1Kg?.toFixed(3).toString(),
+                        totalKg: paper1Kg?.toFixed(2).toString(),
                     },
                 },
-                actualTotalKg: totalKgss?.toFixed(3).toString(),
+                actualTotalKg: totalKgss?.toFixed(2).toString(),
             };
 
             await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();

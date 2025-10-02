@@ -228,17 +228,17 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     paper1: {
                         deckal: qpFormData.deckal,
                         gsm: qpFormData.paper1GSM,
-                        totalKg: paper3Kg?.toFixed(3).toString(),
+                        totalKg: paper3Kg?.toFixed(2).toString(),
                     },
                     paper2: {
                         deckal: qpFormData.deckal,
                         gsm: qpFormData.paper2GSM,
-                        totalKg: paper2Kg?.toFixed(3).toString(),
+                        totalKg: paper2Kg?.toFixed(2).toString(),
                     },
                     paper3: {
                         deckal: qpFormData.deckal,
                         gsm: qpFormData.paper3GSM,
-                        totalKg: paper1Kg?.toFixed(3).toString(),
+                        totalKg: paper1Kg?.toFixed(2).toString(),
                     },
                 },
             };

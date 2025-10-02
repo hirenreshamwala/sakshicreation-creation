@@ -20,6 +20,7 @@ import AddQPOrderDialog from "./QpOrderDialog"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { StaticCompanyOptions } from "@/constants"
 import ThemeInput from "../common_component/themeinput"
+import { calculatePaperKg } from "@/utills/qpCalculations"
 
 const columns = [
   { id: "orderNo", label: "Order No" },
@@ -309,18 +310,56 @@ const OperatorView = () => {
   }, [error, dispatch]);
 
   const handleSavePieces = async (row: OrderRow) => {
+    console.log("DEBUG : handleSavePieces : row:", row);
+
     const value = pieceInputs[row._id];
     if (!value) {
       toast.error("Please enter a number before saving");
       return;
     }
 
+    const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
+      parseFloat(row?.orderdata?.length),
+      parseFloat(row.orderdata.width),
+      parseFloat(row.orderdata.height),
+      parseFloat(row.orderdata.deckal),
+      parseInt(row.orderdata.ply),
+      parseFloat(row.orderdata.paper3GSM),
+      parseFloat(row.orderdata.paper2GSM),
+      parseFloat(row.orderdata.paper1GSM),
+      Number(value)
+    );
+
+    // 📝 build payload for operatorPaperKG
+    const operatorPaperKG = {
+      paper1: {
+        deckal: row.orderdata.deckal,
+        gsm: row.orderdata.paper1GSM,
+        totalKg: paper3Kg?.toFixed(2).toString(),
+      },
+      paper2: {
+        deckal: row.orderdata.deckal,
+        gsm: row.orderdata.paper2GSM,
+        totalKg: paper2Kg?.toFixed(2).toString(),
+      },
+      paper3: {
+        deckal: row.orderdata.deckal,
+        gsm: row.orderdata.paper3GSM,
+        totalKg: paper1Kg?.toFixed(2).toString(),
+      },
+    };
+    const operatorTotalKg = totalKgss?.toFixed(2).toString()
+
     try {
       await dispatch(
         updateQPOrderThunk({
-          id: row._id,
-          data: { operatorNoOfPieces: Number(value) },
-        })
+        id: row._id,
+        data: {
+          operatorNoOfPieces: Number(value),
+          operatorPaperKG,
+          operatorTotalKg
+        },
+      })
       ).unwrap();
 
       toast.success("Pieces saved successfully");
