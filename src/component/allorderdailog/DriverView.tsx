@@ -55,18 +55,28 @@ const DriverView = () => {
 
     const dispatch = useAppDispatch();
     const { companies } = useAppSelector((state) => state.company);
+    const { user } = useAppSelector((state) => state.auth)
     const { orders, loading, totalCount, pagination } = useAppSelector((state) => state.qpOrders);
 
     // Filter only driver-relevant orders
     const driverOrders = useMemo(() => {
-        return orders.filter((order: any) =>
-            order.status === "Completed" ||
-            order.deliveryStatus === "loading" ||
-            order.deliveryStatus === "in_transit" ||
-            !order.deliveryStatus ||
-            order.deliveryStatus === "not_started"
-        );
-    }, [orders]);
+        return orders.filter((order: any) => {
+            const deliveryMatch =
+                order.status === "Completed" ||
+                order.deliveryStatus === "loading" ||
+                order.deliveryStatus === "in_transit" ||
+                !order.deliveryStatus ||
+                order.deliveryStatus === "not_started";
+
+            const driverMatch =
+                !order.driver || 
+                order.driver === user?.id || 
+                order.driver?._id === user?.id; 
+
+            return deliveryMatch && driverMatch;
+        });
+    }, [orders, user]);
+
 
     const refreshData = () => dispatch(getAllQPOrdersThunk());
 

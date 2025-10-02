@@ -20,7 +20,7 @@ export default function App({ Component, pageProps }: AppProps) {
 {router.pathname === "/login" ? <Component {...pageProps} />:<Dashboard>
   <Component {...pageProps} /></Dashboard>}
           {/* <Component {...pageProps} />; */}
-          <ToastContainer/>
+          <ToastContainer />
         </ThemeProvider>
       </PersistGate>
     </Provider>
