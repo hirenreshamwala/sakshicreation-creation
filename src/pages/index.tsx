@@ -13,6 +13,8 @@ import { getAllStaffThunk } from "@/store/slices/staffSlice";
 import { getCompanyWisePermission } from "@/utills/utills";
 import LeadManagementPage from "./admin/party-call";
 import CustomerData from "@/component/dashboardPages/CustomerData";
+import Request from "@/services/axios";
+import Loader from "@/component/common_component/loader";
 
 const IndexPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -34,10 +36,31 @@ const IndexPage: React.FC = () => {
   const [staffFilter, setStaffFilter] = useState<string[]>([]);
   const [selectedField, setSelectedField] = useState<string | null>("Staff Name");
 
+  // --- Single Data State ---
+  const [apiData, setApiData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+
   // Permissions
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = hasSakshi && hasQP;
+
+  const getCompanyConfig = () => {
+    if (hasBothCompanies) {
+      return {
+        companyName: companyTab === 0 ? 'Sakshi' : 'QP',
+        apiEndpoint: companyTab === 0 ? '/api/report/getsc' : '/api/report/getqp'
+      };
+    } else if (hasSakshi) {
+      return { companyName: 'Sakshi', apiEndpoint: '/api/report/getsc' };
+    } else if (hasQP) {
+      return { companyName: 'QP', apiEndpoint: '/api/report/getqp' };
+    }
+    return { companyName: '', apiEndpoint: '' };
+  };
+
+  const { apiEndpoint, companyName } = getCompanyConfig();
 
   // Fetch companies and staff on mount
   useEffect(() => {
@@ -84,6 +107,52 @@ const IndexPage: React.FC = () => {
     setCustomStartDate(s);
     setCustomEndDate(e);
   }, [selectedPreset]);
+
+  // Main API Call Function
+  const fetchData = async () => {
+    if (!startDate || !endDate || !apiEndpoint) return;
+
+    setLoading(true);
+    try {
+      const BaseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8383';
+      const res = await Request.post(`${BaseURL}${apiEndpoint}`, {
+        startDate,
+        endDate
+      });
+
+      if (res.data.success) {
+        setApiData(res.data.data || []);
+      } else {
+        setApiData([]);
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setApiData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (startDate && endDate && apiEndpoint) {
+      fetchData();
+    }
+  }, [startDate, endDate, apiEndpoint, companyTab]);
+
+  // Filter data based on staff selection
+  const filteredData = React.useMemo(() => {
+    const filterArray = Array.isArray(staffFilter)
+      ? staffFilter
+      : staffFilter && Array.isArray(staffFilter["Staff Name"])
+        ? staffFilter["Staff Name"]
+        : [];
+
+    if (!filterArray || filterArray.length === 0) return apiData;
+
+    return apiData.filter((row) =>
+      filterArray.some((f: string) => f.toLowerCase() === row.staffName.toLowerCase())
+    );
+  }, [apiData, staffFilter]);
 
   // Date Picker popover
   const presets = [
@@ -138,6 +207,7 @@ const IndexPage: React.FC = () => {
   return (
     <Box sx={{ p: 2 }}>
       {/* Tabs */}
+      {/* {loading && <Loader />} */}
       {hasBothCompanies && <TabComponent activeTab={companyTab} setActiveTab={setCompanyTab} />}
 
       {/* Date Picker and Filter in a single row */}
@@ -228,30 +298,44 @@ const IndexPage: React.FC = () => {
       </Box>
 
       {/* TaskData Table */}
-      <TaskData
-        activeTab={companyTab}
-        startDate={startDate}
-        endDate={endDate}
-        staffFilter={staffFilter}
-      />
-      <LeadData
-        activeTab={companyTab}
-        startDate={startDate}
-        endDate={endDate}
-        staffFilter={staffFilter}
-      />
-      <VisitData
-        activeTab={companyTab}
-        startDate={startDate}
-        endDate={endDate}
-        staffFilter={staffFilter}
-      />
-      <CustomerData
-        activeTab={companyTab}
-        startDate={startDate}
-        endDate={endDate}
-        staffFilter={staffFilter}
-      />
+      {loading ? <Loader /> : <>
+        <TaskData
+          activeTab={companyTab}
+          startDate={startDate}
+          endDate={endDate}
+          staffFilter={staffFilter}
+          data={filteredData}
+          loading={loading}
+          companyName={companyName}
+        />
+        <LeadData
+          activeTab={companyTab}
+          startDate={startDate}
+          endDate={endDate}
+          staffFilter={staffFilter}
+          data={filteredData}
+          loading={loading}
+          companyName={companyName}
+        />
+        <VisitData
+          activeTab={companyTab}
+          startDate={startDate}
+          endDate={endDate}
+          staffFilter={staffFilter}
+          data={filteredData}
+          loading={loading}
+          companyName={companyName}
+        />
+        <CustomerData
+          activeTab={companyTab}
+          startDate={startDate}
+          endDate={endDate}
+          staffFilter={staffFilter}
+          data={filteredData}
+          loading={loading}
+          companyName={companyName}
+        />
+      </>}
     </Box>
   );
 };
