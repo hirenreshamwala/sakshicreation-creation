@@ -13,6 +13,7 @@ import { getAllKantansThunk } from '@/store/slices/kantanSlice';
 import { StaticCompanyOptions } from '@/constants';
 import { createQpPurchaseThunk, getQpPurchaseByIdThunk, updateQpPurchaseThunk } from '@/store/slices/qpPurchaseSlice';
 import { getAllPaperGSMThunk } from '@/store/slices/paperGSMSlice';
+import { getAllPackagingOptionsThunk } from '@/store/slices/packagingOptionSlice';
 
 interface NewPurchaseProps {
   isEditMode?: boolean;
@@ -31,13 +32,13 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
   const { kantans } = useAppSelector(state => state.kantans);
   const { paperGSM } = useAppSelector(state => state.paperGSMs);
   const { companies, roles, staff, singlePurchase, error } = useAppSelector(state => state.purchase);
-  
+  const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
   // State for individual options
   const [paperOptions, setPaperOptions] = useState<Option[]>([]);
   const [deckalOptions, setDeckalOptions] = useState<Option[]>([]);
   const [gsmOptions, setGsmOptions] = useState<Option[]>([]);
   const [vendorOptions, setVendorOptions] = useState<Option[]>([]);
-  
+
   const [formData, setFormData] = useState({
     vendorName: '',
     billNumber: '',
@@ -46,17 +47,48 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     forCompany: '',
     type: '',
     kantan: '',
-    paperName: '',
     deckal: '',
     gsm: '',
     category: "",
     kg: '',
     reel: '',
+    paperMil: '', // Added paper mill name field
   });
 
   useEffect(() => {
     if (!paperGSM.length) dispatch(getAllPaperGSMThunk());
-  }, [dispatch]);
+    if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
+  }, []);
+
+  console.log(packagingOptions, 'packagingOptions')
+
+  useEffect(() => {
+    if (packagingOptions.length) {
+      // Unique Deckal options
+      const uniqueDeckals = Array.from(
+        new Set(packagingOptions.map(opt => opt.deckal).filter(Boolean))
+      ).map(deckal => ({
+        value: deckal,
+        label: deckal,
+      }));
+      setDeckalOptions(uniqueDeckals);
+
+      // Collect all GSMs (paper1GSM, paper2GSM, paper3GSM)
+      const allGsms = packagingOptions.flatMap(opt => [
+        opt.paper1GSM,
+        opt.paper2GSM,
+        opt.paper3GSM,
+      ]);
+
+      // Unique GSM options
+      const uniqueGsms = Array.from(new Set(allGsms.filter(Boolean))).map(gsm => ({
+        value: gsm,
+        label: gsm,
+      }));
+      setGsmOptions(uniqueGsms);
+    }
+  }, [packagingOptions]);
+
 
   // Fetch data on component mount
   useEffect(() => {
@@ -126,46 +158,48 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     }
   }, [paperGSM]);
 
+  console.log(paperGSM, 'paperGSM')
+
   // Create individual deckal options
- // Deckal options
-useEffect(() => {
-  if (paperGSM.length > 0) {
-    const uniqueDeckals = Array.from(
-      new Map(
-        paperGSM
-          .filter(paper => paper.deckal && paper.deckal.trim() !== '')
-          .map(paper => [paper.deckal, paper]) // keep unique by deckal
-      ).values()
-    );
+  // Deckal options
+  useEffect(() => {
+    if (paperGSM.length > 0) {
+      const uniqueDeckals = Array.from(
+        new Map(
+          paperGSM
+            .filter(paper => paper.deckal && paper.deckal.trim() !== '')
+            .map(paper => [paper.deckal, paper]) // keep unique by deckal
+        ).values()
+      );
 
-    const options = uniqueDeckals.map(paper => ({
-      value: paper._id,   // <-- now using paper._id
-      label: paper.deckal,
-    }));
+      const options = uniqueDeckals.map(paper => ({
+        value: paper._id,   // <-- now using paper._id
+        label: paper.deckal,
+      }));
 
-    setDeckalOptions(options);
-  }
-}, [paperGSM]);
+      setDeckalOptions(options);
+    }
+  }, [paperGSM]);
 
-// GSM options
-useEffect(() => {
-  if (paperGSM.length > 0) {
-    const uniqueGsms = Array.from(
-      new Map(
-        paperGSM
-          .filter(paper => paper.gsm && paper.gsm.trim() !== '')
-          .map(paper => [paper.gsm, paper]) // keep unique by gsm
-      ).values()
-    );
+  // GSM options
+  useEffect(() => {
+    if (paperGSM.length > 0) {
+      const uniqueGsms = Array.from(
+        new Map(
+          paperGSM
+            .filter(paper => paper.gsm && paper.gsm.trim() !== '')
+            .map(paper => [paper.gsm, paper]) // keep unique by gsm
+        ).values()
+      );
 
-    const options = uniqueGsms.map(paper => ({
-      value: paper._id,   // <-- now using paper._id
-      label: paper.gsm,
-    }));
+      const options = uniqueGsms.map(paper => ({
+        value: paper._id,   // <-- now using paper._id
+        label: paper.gsm,
+      }));
 
-    setGsmOptions(options);
-  }
-}, [paperGSM]);
+      setGsmOptions(options);
+    }
+  }, [paperGSM]);
 
 
   useEffect(() => {
@@ -185,12 +219,12 @@ useEffect(() => {
         forCompany: singlePurchase.forCompany?._id || '',
         type: singlePurchase.type || '',
         kantan: singlePurchase.kantan?._id || '',
-        paperName: singlePurchase.paperName?._id || '',
         deckal: singlePurchase.deckal || '',
         gsm: singlePurchase.gsm || '',
         kg: singlePurchase.kg || '',
         reel: singlePurchase.reel || '',
-        category: singlePurchase.category || ""
+        category: singlePurchase.category || "",
+        paperMil: singlePurchase.paperMil || '', // Added for edit mode
       });
 
       if (singlePurchase.for?._id) {
@@ -222,7 +256,7 @@ useEffect(() => {
       ...prev,
       [name]: value || '',
       ...(name === 'type'
-        ? { kantan: '', kg: '', paperName: '', deckal: '', gsm: '', reel: '' }
+        ? { kantan: '', kg: '', deckal: '', gsm: '', reel: '', paperMil: '' }
         : {}),
     }));
 
@@ -237,7 +271,7 @@ useEffect(() => {
       } else if (formData.type === 'glue' || formData.type === 'wire') {
         requiredFields.push('kg');
       } else if (formData.type === 'paper') {
-        requiredFields.push('paperName', 'deckal', 'gsm', 'kg');
+        requiredFields.push( 'deckal', 'gsm', 'kg', 'paperMil');
       }
 
       const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
@@ -359,16 +393,15 @@ useEffect(() => {
             />
           )}
 
-          {formData.type === 'paper' && (
-            <ThemeSelect
-              label="PAPER TYPE"
-              options={paperOptions}
-              value={paperOptions.find(opt => opt.value === formData.paperName) || null}
-              onChange={(e, newValue) => handleSelectChange('paperName', newValue?.value)}
-              required
-              fullWidth
-            />
-          )}
+          <ThemeInput
+            labelName="PAPER MILL NAME"
+            name="paperMil"
+            value={formData.paperMil}
+            onChange={handleChange}
+            fullWidth
+            required
+            placeholder="Enter paper mill name"
+          />
         </Stack>
 
         {formData.type === 'paper' && (
@@ -391,7 +424,7 @@ useEffect(() => {
                 required
                 fullWidth
               />
-              
+
               <ThemeInput
                 labelName="KG"
                 name="kg"

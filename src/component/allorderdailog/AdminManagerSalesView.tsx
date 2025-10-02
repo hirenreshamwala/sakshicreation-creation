@@ -19,6 +19,7 @@ import { ExpandedRowForm } from "./expandableRows/QpOrderRows"
 import AddQPOrderDialog from "./QpOrderDialog"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { StaticCompanyOptions } from "@/constants"
+import { getAllInventoryThunk } from "@/store/slices/inventorySlice"
 
 
 type OrderRow = {
@@ -89,6 +90,7 @@ const AdminManagerSalesView = () => {
   const dispatch = useAppDispatch()
   const [editData, setEditData] = useState<OrderRow | null>(null)
   const { user } = useAppSelector((state) => state.auth)
+  const { allInventory } = useAppSelector(state => state.inventory);
 
   const { companies } = useAppSelector((state) => state.company)
   const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.qpOrders)
@@ -97,13 +99,13 @@ const AdminManagerSalesView = () => {
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({})
-  
+
   const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
   const canCreate = user?.role?.permissions?.all_orders?.create;
   const canStatus = user?.role?.permissions?.all_orders?.status;
   const { companyName, staffId, startDate: st, endDate: ed } = router.query
-  
+
   const columns = [
     { id: "orderNo", label: "Order No" },
     { id: "companyName", label: "Company Name" },
@@ -137,7 +139,11 @@ const AdminManagerSalesView = () => {
     }
   };
 
-   const handleRepeatOrder = (rowData: OrderRow) => {
+  useEffect(() => {
+    dispatch(getAllInventoryThunk());
+  }, []);
+
+  const handleRepeatOrder = (rowData: OrderRow) => {
     // Purane data ko copy karen but orderNo, createdAt, status wagairah ko reset karen
     const repeatOrderData = {
       ...rowData,
@@ -670,7 +676,7 @@ const AdminManagerSalesView = () => {
                 <TableCell>
                   <ThemeButton
                     onClick={() => handleRepeatOrder(row)}
-                    // size="small"
+                  // size="small"
                   >
                     Repeat Order
                   </ThemeButton>

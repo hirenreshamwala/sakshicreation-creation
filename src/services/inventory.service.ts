@@ -9,6 +9,7 @@ export interface Inventory {
   material: any;
   quantity: number;
   kg: number;
+  usedKg?: number;
   vendor: any;
   date: string;
   purchase?: string;
@@ -51,14 +52,27 @@ export const inventoryService = {
     }
   },
 
-  async getAllInventory() {
+  async getAllInventory(): Promise<ApiResponse<Inventory[]>> {
     try {
-      const response: AxiosResponse<ApiResponse<{ lastPurchase: number, usedQty: number, balance: number }>> = await Request.get(
+      const response: AxiosResponse<ApiResponse<Inventory[]>> = await Request.get(
         Endpoint.GET_ALL_INVENTORY);
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 'Failed to fetch inventory summary'
+        error.response?.data?.message || 'Failed to fetch inventory'
+      );
+    }
+  },
+
+  // NEW: Update inventory item service
+  async updateInventoryItem(id: string, updateData: Partial<Inventory>): Promise<ApiResponse<Inventory>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Inventory>> = await Request.put(
+        `${Endpoint.UPDATE_INVENTORY}/${id}`, updateData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 'Failed to update inventory item'
       );
     }
   },

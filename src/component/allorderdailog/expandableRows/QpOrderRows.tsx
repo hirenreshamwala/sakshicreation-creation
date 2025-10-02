@@ -2,6 +2,7 @@ import ThemeButton from "@/component/common_component/themebutton";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { updateQPOrderThunk } from "@/store/slices/qpOrderSlice";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
+import { getAllInventoryThunk, updateInventoryItemThunk } from "@/store/slices/inventorySlice";
 import {
     Box,
     MenuItem,
@@ -14,6 +15,11 @@ import {
     Button,
     Typography,
     Divider,
+    Card,
+    CardContent,
+    Grid,
+    Autocomplete,
+    Chip,
 } from "@mui/material";
 import moment from "moment";
 import { useEffect, useState } from "react";
@@ -44,10 +50,38 @@ interface ExpandedRowFormProps {
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
-    console.log("DEBUG : ExpandedRowForm : row:", row);
+interface PaperSelection {
+    paper1?: string;
+    paper2?: string;
+    paper3?: string;
+}
 
+interface InventoryPaper {
+    _id: string;
+    paperName: string;
+    deckal: string;
+    gsm: number;
+    paperMillName: string;
+    kg: number;
+    usedKg: number;
+    inventoryType: string;
+    type: string;
+    qpOrder: string | null;
+}
+
+interface PaperOption {
+    value: string;
+    label: string;
+    kg: number;
+    usedKg: number;
+    availableKg: number;
+    isSufficient: boolean;
+    isSelectedForOtherType: boolean;
+}
+
+export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
     const dispatch = useAppDispatch();
+    const { allInventory, error } = useAppSelector(state => state.inventory);
     const { staffList, loading: staffLoading, error: staffError } = useAppSelector((state) => state.staff);
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
     const [isCompleted, setIsCompleted] = useState(row.status === "Completed");
@@ -61,6 +95,18 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [selectedBinder, setSelectedBinder] = useState<string>("");
     const [showPrinterDropdown, setShowPrinterDropdown] = useState(row.status === "Printer" && !row.printer);
     const [showBinderDropdown, setShowBinderDropdown] = useState(row.status === "Lamination" && !row.binder);
+    const [availablePapers, setAvailablePapers] = useState<InventoryPaper[]>([]);
+    const [paperSelections, setPaperSelections] = useState<PaperSelection>({
+        paper1: null,
+        paper2: null,
+        paper3: null
+    });
+    const [paperRequirements, setPaperRequirements] = useState({
+        paper1: 0,
+        paper2: 0,
+        paper3: 0
+    });
+    const [isPaperSelectionRequired, setIsPaperSelectionRequired] = useState(false);
 
     const [formData, setFormData] = useState({
         _id: row._id,
@@ -79,14 +125,18 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         remarks: (row.remarks as Remark[]) || [],
         printer: row.printer?._id || null,
         binder: row.binder?._id || null,
+        selectedPapers: row.selectedPapers || {
+            paper1: "",
+            paper2: "",
+            paper3: ""
+        }
     });
-
     const [initialFormData, setInitialFormData] = useState(formData);
 
-    // Fetch staff list on component mount
     useEffect(() => {
-        dispatch(getAllStaffThunk());
-    }, [dispatch]);
+        if (!staffList.length) dispatch(getAllStaffThunk());
+        if (!allInventory.length) dispatch(getAllInventoryThunk());
+    }, []);
 
     useEffect(() => {
         const newFormData = {
@@ -106,6 +156,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             remarks: (row.remarks as Remark[]) || [],
             printer: row.printer?._id || null,
             binder: row.binder?._id || null,
+            selectedPapers: row.selectedPapers || {
+                paper1: "",
+                paper2: "",
+                paper3: ""
+            }
         };
         setFormData(newFormData);
         setInitialFormData(newFormData);
@@ -116,7 +171,45 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setShowBinderDropdown(row.status === "Lamination" && !row.binder);
         setSelectedPrinter(row.printer?._id || "");
         setSelectedBinder(row.binder?._id || "");
+        setPaperSelections(row.selectedPapers || {
+            paper1: null,
+            paper2: null,
+            paper3: null
+        });
+
+        // Calculate paper requirements
+        if (row.actualPaperKG) {
+            setPaperRequirements({
+                paper1: parseFloat(row.actualPaperKG.paper1?.totalKg || 0),
+                paper2: parseFloat(row.actualPaperKG.paper2?.totalKg || 0),
+                paper3: parseFloat(row.actualPaperKG.paper3?.totalKg || 0)
+            });
+        }
     }, [row]);
+
+    // Filter available papers from inventory
+    useEffect(() => {
+        if (allInventory.length > 0 && row.orderdata) {
+            const papers = allInventory.filter((item: InventoryPaper) =>
+                item.inventoryType === 'paper' &&
+                item.type === 'inward' &&
+                [undefined, null].includes(item.qpOrder)
+            );
+            setAvailablePapers(papers);
+        }
+    }, [allInventory, row.orderdata]);
+
+    // Check if paper selection is required when status changes to "In Progress"
+    useEffect(() => {
+        if (formData.status === "In Progress" && row.status === "Pending") {
+            const hasPaperRequirements = paperRequirements.paper1 > 0 || paperRequirements.paper2 > 0 || paperRequirements.paper3 > 0;
+            setIsPaperSelectionRequired(hasPaperRequirements);
+
+            if (hasPaperRequirements) {
+                toast.info("Please select papers from inventory before proceeding");
+            }
+        }
+    }, [formData.status, row.status, paperRequirements]);
 
     // Filter staff with role "printer" or "binder" (case-insensitive)
     const printers = staffList.filter(
@@ -125,6 +218,103 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const binders = staffList.filter(
         (staff) => staff.role?.roleName?.toLowerCase() === "binder"
     );
+
+    // Calculate available quantity for a paper considering current selections
+    const calculateAvailableKg = (paperId: string, currentPaperType: keyof PaperSelection) => {
+        const paper = availablePapers.find(p => p._id === paperId);
+        if (!paper) return 0;
+
+        let totalAllocated = paper.usedKg || 0;
+
+        // Add requirements from other paper types that are already selected
+        Object.entries(paperSelections).forEach(([paperType, selectedPaperId]) => {
+            if (paperType !== currentPaperType && selectedPaperId === paperId) {
+                totalAllocated += paperRequirements[paperType as keyof PaperSelection];
+            }
+        });
+
+        return Math.max(0, paper.kg - totalAllocated);
+    };
+
+    const handlePaperSelection = (paperType: keyof PaperSelection, value: string) => {
+        setPaperSelections(prev => ({
+            ...prev,
+            [paperType]: value
+        }));
+    };
+
+    const getAllAvailablePapersForRequirement = (
+        gsm: string,
+        deckal: string,
+        requiredKg: number,
+        paperType: keyof PaperSelection
+    ): PaperOption[] => {
+        const matchingPapers = availablePapers.filter(
+            (item: InventoryPaper) =>
+                item.deckal === deckal && Number(item.gsm) === Number(gsm)
+        );
+
+        return matchingPapers.map((item) => {
+            // Calculate total allocated KG for this paper
+            const allocatedKg = item.allocations?.reduce(
+                (sum, alloc) => sum + (alloc.allocatedKg || 0),
+                0
+            );
+
+            // Available KG = total KG - allocated KG
+            const availableKg = (item.kg || 0) - allocatedKg;
+
+            const isSufficient = availableKg >= requiredKg;
+
+            const isSelectedForOtherType = Object.entries(paperSelections).some(
+                ([key, value]) => key !== paperType && value === item._id
+            );
+
+            return {
+                value: item._id,
+                label: `${availableKg.toFixed(2)} KG (available of ${item.kg} KG) ${!isSufficient ? " ⚠️ Insufficient" : ""
+                    }`,
+                kg: item.kg,
+                usedKg: allocatedKg,
+                availableKg,
+                isSufficient,
+                isSelectedForOtherType,
+            };
+        });
+    };
+
+
+    // Check if specific paper selection is valid
+    const isPaperSelectionValid = (paperType: keyof PaperSelection) => {
+        const paperId = paperSelections[paperType];
+        const requirement = paperRequirements[paperType];
+
+        if (!paperId || requirement === 0) return true;
+
+        const availableKg = calculateAvailableKg(paperId, paperType);
+        return availableKg >= requirement;
+    };
+
+    // Check if all paper selections are valid
+    const arePaperSelectionsValid = () => {
+        if (!isPaperSelectionRequired) return true;
+
+        const checks = [];
+
+        if (paperRequirements.paper1 > 0) {
+            checks.push(isPaperSelectionValid('paper1'));
+        }
+
+        if (paperRequirements.paper2 > 0) {
+            checks.push(isPaperSelectionValid('paper2'));
+        }
+
+        if (paperRequirements.paper3 > 0) {
+            checks.push(isPaperSelectionValid('paper3'));
+        }
+
+        return checks.every(check => check === true);
+    };
 
     const handleFormChange = (field: string, value: string) => {
         if (field === "startDate") {
@@ -151,6 +341,17 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 setShowBinderDropdown(false);
                 return;
             }
+
+            if (value === "In Progress" && row.status === "Pending") {
+                // Check if paper selection is required and valid
+                const hasPaperRequirements = paperRequirements.paper1 > 0 || paperRequirements.paper2 > 0 || paperRequirements.paper3 > 0;
+
+                if (hasPaperRequirements && !arePaperSelectionsValid()) {
+                    toast.error("Please select valid papers from inventory before changing status to In Progress");
+                    return;
+                }
+            }
+
             if (value === "On Hold") {
                 setRemarkType("onHold");
                 setRemarkModalOpen(true);
@@ -183,12 +384,15 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             const currentDate = new Date().toISOString().split("T")[0];
             setFormData((prev) => ({ ...prev, unitNo: value, startDate: currentDate }));
             setIsInitialUnitSet(true);
+
+            // Auto-change status to In Progress if paper selection is not required
+            if (formData.status === "Pending" && !isPaperSelectionRequired) {
+                setFormData((prev) => ({ ...prev, status: "In Progress" }));
+            }
             return;
         }
 
-        if (field === "actualNoOfPieces") {
-            setIsActualNoOfPiecesUpdated(true);
-        }
+        if (field === "actualNoOfPieces") setIsActualNoOfPiecesUpdated(true);
 
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
@@ -354,16 +558,27 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
         if (!formData._id) {
             toast.error("Cannot submit: Invalid order ID");
             return;
         }
+
+        // Validate paper selections when changing to In Progress
+        if (formData.status === "In Progress" && row.status === "Pending") {
+            if (isPaperSelectionRequired && !arePaperSelectionsValid()) {
+                toast.error("Please select valid papers from inventory before submitting");
+                return;
+            }
+        }
+
         if (formData.status === "Completed") {
             if (!formData.actualNoOfPieces || parseInt(formData.actualNoOfPieces) === 0) {
                 toast.error("You need to fill the actual number of pieces before marking as completed");
                 return;
             }
         }
+
         try {
             const { kantanPerUnit, reel, inch } = calculateKantan(
                 parseFloat(row.orderdata.length),
@@ -383,6 +598,23 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 parseFloat(formData.actualNoOfPieces || row.noOfPieces)
             );
 
+            // Calculate new usedKg values for inventory updates
+            const inventoryUpdates = [];
+
+            // Process each paper selection
+            for (const [paperType, paperId] of Object.entries(paperSelections)) {
+                if (paperId && paperRequirements[paperType as keyof PaperSelection] > 0) {
+                    const paper = availablePapers.find(p => p._id === paperId);
+                    if (paper) {
+                        const newUsedKg = (paper.usedKg || 0) + paperRequirements[paperType as keyof PaperSelection];
+                        inventoryUpdates.push({
+                            paperId,
+                            newUsedKg
+                        });
+                    }
+                }
+            }
+
             const updateData = {
                 unitNo: formData.unitNo,
                 startDate: formData.startDate,
@@ -399,6 +631,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 remarks: formData.remarks,
                 printer: formData.printer,
                 binder: formData.binder,
+                selectedPapers: paperSelections,
                 actualTotalKantan: {
                     reel: reel.toString(),
                     inch: inch.toString(),
@@ -423,7 +656,21 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 actualTotalKg: totalKgss?.toFixed(3).toString(),
             };
 
+            // Update the order
             await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
+
+            // Update inventory items
+            if (row?.selectedPapers?.paper1 === null || row?.selectedPapers?.paper1 === undefined)
+                for (const update of inventoryUpdates) {
+                    await dispatch(updateInventoryItemThunk({
+                        id: update.paperId,
+                        data: { usedKg: update.newUsedKg }
+                    })).unwrap();
+                }
+
+            // Refresh inventory data
+            dispatch(getAllInventoryThunk());
+
             setInitialFormData({ ...formData });
             if (formData.status === "Completed") {
                 setIsCompleted(true);
@@ -443,6 +690,199 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setShowBinderDropdown(initialFormData.status === "Lamination" && !row.binder);
         setSelectedPrinter(initialFormData.printer || "");
         setSelectedBinder(initialFormData.binder || "");
+        setPaperSelections(initialFormData.selectedPapers || {
+            paper1: null,
+            paper2: null,
+            paper3: null
+        });
+    };
+
+    // Render paper selection section
+    const renderPaperSelection = () => {
+        if (!row.actualPaperKG) return null;
+
+        return (
+            <Card sx={{ mt: 2, border: '1px solid #e0e0e0' }}>
+                <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                        📄 Select Papers from Inventory {isPaperSelectionRequired && "(*Required)"}
+                    </Typography>
+
+                    {isPaperSelectionRequired && (
+                        <Typography variant="body2" color="warning.main" sx={{ mb: 2 }}>
+                            ⚠️ Paper selection is required before changing status to "In Progress"
+                        </Typography>
+                    )}
+
+                    <Grid container spacing={2}>
+                        {paperRequirements.paper1 > 0 && (
+                            <Grid item xs={12} sm={6} md={4}>
+                                <Autocomplete
+                                    size="small"
+                                    fullWidth
+                                    value={
+                                        getAllAvailablePapersForRequirement(
+                                            row.actualPaperKG.paper1.gsm,
+                                            row.actualPaperKG.paper1.deckal,
+                                            paperRequirements.paper1,
+                                            "paper1"
+                                        ).find((p) => p.value === paperSelections.paper1) || null
+                                    }
+                                    onChange={(e, newValue) => handlePaperSelection("paper1", newValue ? newValue.value : "")}
+                                    options={getAllAvailablePapersForRequirement(
+                                        row.actualPaperKG.paper1.gsm,
+                                        row.actualPaperKG.paper1.deckal,
+                                        paperRequirements.paper1,
+                                        "paper1"
+                                    )}
+                                    getOptionDisabled={(option) => !option.isSufficient}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label={`Paper 1 (${row.actualPaperKG.paper1.gsm} GSM)`}
+                                            error={!isPaperSelectionValid('paper1')}
+                                            helperText={!isPaperSelectionValid('paper1') ? "Insufficient quantity" : ""}
+                                        />
+                                    )}
+                                    disabled={isCompleted}
+                                />
+                                <Typography variant="caption" color="text.secondary">
+                                    Required: {paperRequirements.paper1.toFixed(2)} KG
+                                </Typography>
+                                {paperSelections.paper1 && (
+                                    <Box sx={{ mt: 1 }}>
+                                        <Chip
+                                            label={`Will use: ${paperRequirements.paper1.toFixed(2)} KG`}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    </Box>
+                                )}
+                            </Grid>
+                        )}
+
+                        {paperRequirements.paper2 > 0 && (
+                            <Grid item xs={12} sm={6} md={4}>
+                                <Autocomplete
+                                    size="small"
+                                    fullWidth
+                                    value={
+                                        getAllAvailablePapersForRequirement(
+                                            row.actualPaperKG.paper2.gsm,
+                                            row.actualPaperKG.paper2.deckal,
+                                            paperRequirements.paper2,
+                                            "paper2"
+                                        ).find((p) => p.value === paperSelections.paper2) || null
+                                    }
+                                    onChange={(e, newValue) => handlePaperSelection("paper2", newValue ? newValue.value : "")}
+                                    options={getAllAvailablePapersForRequirement(
+                                        row.actualPaperKG.paper2.gsm,
+                                        row.actualPaperKG.paper2.deckal,
+                                        paperRequirements.paper2,
+                                        "paper2"
+                                    )}
+                                    getOptionDisabled={(option) => !option.isSufficient}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label={`Paper 2 (${row.actualPaperKG.paper2.gsm} GSM)`}
+                                            error={!isPaperSelectionValid('paper2')}
+                                            helperText={!isPaperSelectionValid('paper2') ? "Insufficient quantity" : ""}
+                                        />
+                                    )}
+                                    disabled={isCompleted}
+                                />
+                                <Typography variant="caption" color="text.secondary">
+                                    Required: {paperRequirements.paper2.toFixed(2)} KG
+                                </Typography>
+                                {paperSelections.paper2 && (
+                                    <Box sx={{ mt: 1 }}>
+                                        <Chip
+                                            label={`Will use: ${paperRequirements.paper2.toFixed(2)} KG`}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    </Box>
+                                )}
+                            </Grid>
+                        )}
+
+                        {paperRequirements.paper3 > 0 && (
+                            <Grid item xs={12} sm={6} md={4}>
+                                <Autocomplete
+                                    size="small"
+                                    fullWidth
+                                    value={
+                                        getAllAvailablePapersForRequirement(
+                                            row.actualPaperKG.paper3.gsm,
+                                            row.actualPaperKG.paper3.deckal,
+                                            paperRequirements.paper3,
+                                            "paper3"
+                                        ).find((p) => p.value === paperSelections.paper3) || null
+                                    }
+                                    onChange={(e, newValue) => handlePaperSelection("paper3", newValue ? newValue.value : "")}
+                                    options={getAllAvailablePapersForRequirement(
+                                        row.actualPaperKG.paper3.gsm,
+                                        row.actualPaperKG.paper3.deckal,
+                                        paperRequirements.paper3,
+                                        "paper3"
+                                    )}
+                                    getOptionDisabled={(option) => !option.isSufficient}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label={`Paper 3 (${row.actualPaperKG.paper3.gsm} GSM)`}
+                                            error={!isPaperSelectionValid('paper3')}
+                                            helperText={!isPaperSelectionValid('paper3') ? "Insufficient quantity" : ""}
+                                        />
+                                    )}
+                                    disabled={isCompleted}
+                                />
+                                <Typography variant="caption" color="text.secondary">
+                                    Required: {paperRequirements.paper3.toFixed(2)} KG
+                                </Typography>
+                                {paperSelections.paper3 && (
+                                    <Box sx={{ mt: 1 }}>
+                                        <Chip
+                                            label={`Will use: ${paperRequirements.paper3.toFixed(2)} KG`}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    </Box>
+                                )}
+                            </Grid>
+                        )}
+                    </Grid>
+
+                    {/* Show allocation summary */}
+                    {(paperSelections.paper1 || paperSelections.paper2 || paperSelections.paper3) && (
+                        <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                📋 Paper Allocation Summary:
+                            </Typography>
+                            {Object.entries(paperSelections).map(([paperType, paperId]) => {
+                                if (!paperId || paperRequirements[paperType as keyof PaperSelection] === 0) return null;
+
+                                const paper = availablePapers.find(p => p._id === paperId);
+                                if (!paper) return null;
+
+                                const availableAfterAllocation = calculateAvailableKg(paperId, paperType as keyof PaperSelection) - paperRequirements[paperType as keyof PaperSelection];
+
+                                return (
+                                    <Typography key={paperType} variant="body2" sx={{ mt: 0.5 }}>
+                                        • {paperType.toUpperCase()}: {paperRequirements[paperType as keyof PaperSelection].toFixed(2)} KG from {paper.paperName}
+                                        {availableAfterAllocation >= 0 ? ` (${availableAfterAllocation.toFixed(2)} KG remaining)` : ' ⚠️ Over-allocated'}
+                                    </Typography>
+                                );
+                            })}
+                        </Box>
+                    )}
+                </CardContent>
+            </Card>
+        );
     };
 
     return (
@@ -458,9 +898,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                                 handleFormChange("unitNo", e.target.value);
                                 if (!formData.startDate) {
                                     handleFormChange("startDate", moment().format("YYYY-MM-DD"));
-                                }
-                                if (formData.status === "Pending") {
-                                    handleFormChange("status", "In Progress");
                                 }
                             }}
                             variant="outlined"
@@ -555,8 +992,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                                 </MenuItem>
                             ))}
                         </TextField>
-
                     </Stack>
+
+                    {/* Paper Selection Section */}
+                    {renderPaperSelection()}
 
                     <Stack direction="row" spacing={2}>
                         {row.printer && (
@@ -658,6 +1097,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             </>
                         )}
                     </Stack>
+
                     <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
                         <TextField
                             label="Dye Remark"
@@ -695,7 +1135,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     </Stack>
 
                     <Stack direction="row" spacing={2}>
-                        <ThemeButton type="submit" disabled={isCompleted}>Submit</ThemeButton>
+                        <ThemeButton
+                            type="submit"
+                            disabled={isCompleted || (isPaperSelectionRequired && !arePaperSelectionsValid())}
+                        >
+                            Submit
+                        </ThemeButton>
                         <ThemeButton type="button" disabled={isCompleted} onClick={handleCancel} variant="outlined">
                             Cancel
                         </ThemeButton>
