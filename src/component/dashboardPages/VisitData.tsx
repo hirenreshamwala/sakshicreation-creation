@@ -1,19 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Box, TableCell, Button, TextField, Popover, List, ListItem, ListItemText } from '@mui/material';
+import React from 'react';
+import { Box, TableCell } from '@mui/material';
 import BasicTable from '@/component/common_component/Table/themetable';
-import { useAppSelector } from '@/store';
-import { companyOptions } from '@/constants';
-import Request from '@/services/axios';
-import Loader from '@/component/common_component/loader';
-import { getCompanyWisePermission } from '@/utills/utills';
+
 
 interface Props {
   activeTab: number;
   startDate: string;
   endDate: string;
   staffFilter: string[];
+  data: any[];
+  loading: boolean;
+  companyName: string;
 }
 
 const columns = [
@@ -23,83 +22,35 @@ const columns = [
   { id: 'customer', label: 'Customer Party Visit' },
 ];
 
-const VisitData: React.FC<Props> = ({ activeTab, startDate, endDate, staffFilter }) => {
-  const [reportData, setReportData] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const { user } = useAppSelector((state) => state.auth);
-
-  const hasBothPermissions = getCompanyWisePermission(0);
-  const hasSakshiOnly = getCompanyWisePermission(3);
-  const hasQpOnly = getCompanyWisePermission(4);
-
-  const getCompanyConfig = () => {
-    if (hasBothPermissions) {
-      return {
-        companyName: companyOptions[activeTab],
-        apiEndpoint: activeTab === 0 ? '/api/report/getsc' : '/api/report/getqp'
-      };
-    } else if (hasSakshiOnly) {
-      return { companyName: companyOptions[0], apiEndpoint: '/api/report/getsc' };
-    } else if (hasQpOnly) {
-      return { companyName: companyOptions[1], apiEndpoint: '/api/report/getqp' };
-    }
-    return { companyName: '', apiEndpoint: '' };
+const VisitData: React.FC<Props> = ({ startDate,endDate,data, loading, companyName }) => {
+  const handleNewcClick = (staffId, companyId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&partyTag=new&c=${companyName}&reason=visit`;
+    window.open(url, '_blank');
   };
-
-  const { companyName, apiEndpoint } = getCompanyConfig();
-
-  // Fetch report
-  const fetchReport = async () => {
-    if (!startDate || !endDate || !apiEndpoint) return;
-    setLoading(true);
-    try {
-      const BaseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8383';
-      const res = await Request.post(`${BaseURL}${apiEndpoint}`, { startDate, endDate });
-      if (res.data.success) setReportData(res.data.data);
-      else setReportData([]);
-    } catch (err) {
-      setReportData([]);
-    } finally {
-      setLoading(false);
-    }
+  const handleVisitClick = (staffId, companyId) => {
+    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&c=${companyName}&reason=visit`;
+    window.open(url, '_blank');
   };
-
-  useEffect(() => {
-    if (user) fetchReport();
-  }, [activeTab, startDate, endDate, apiEndpoint]);
-
-  // Filter data dynamically
-  const filteredData = React.useMemo(() => {
-    // Check if staffFilter is an array
-    const filterArray = Array.isArray(staffFilter)
-      ? staffFilter
-      : staffFilter && Array.isArray(staffFilter["Staff Name"])
-        ? staffFilter["Staff Name"]
-        : [];
-
-    if (!filterArray || filterArray.length === 0) return reportData;
-    return reportData.filter((row) =>
-      filterArray.some((f: string) => f.toLowerCase() === row.staffName.toLowerCase())
-    );
-  }, [reportData, staffFilter]);
-
+  const handleCustomerClick = (staffId, companyId) => {
+    const url = `/admin/account-master?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&partyTag=customer&c=${companyName}&reason=visit`;
+    window.open(url, '_blank');
+  };
   return (
     <Box sx={{ p: 2 }}>
-      {loading && <Loader />}
-      {!loading && filteredData.length > 0 ? (
+      {!loading && data.length > 0 ? (
         <BasicTable
           showDatePicker={false}
           showFillter={false}
           showSearch={false}
           title='Visit Data'
           tableHeader={columns}
-          rowData={filteredData}
-          renderRow={(row) => ( 
+          rowData={data}
+          renderRow={(row) => (
             <>
               <TableCell>{row.staffName}</TableCell>
-              <TableCell>{row.getVisitCount}</TableCell>
-              <TableCell>{row.newPartyCount}</TableCell>
-              <TableCell>{row.customerPartyCount}</TableCell>
+              <TableCell onClick={() => handleNewcClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.getVisitCount}</TableCell>
+              <TableCell onClick={() => handleNewcClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.newPartyCount}</TableCell>
+              <TableCell onClick={() => handleCustomerClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.customerPartyCount}</TableCell>
             </>
           )}
         />

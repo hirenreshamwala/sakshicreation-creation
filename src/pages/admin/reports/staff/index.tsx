@@ -1,29 +1,122 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, TableCell, Button, TextField, Popover, List, ListItem, ListItemText } from '@mui/material';
+import { Box, TableCell, Button, TextField, Popover, List, ListItem, ListItemText, Chip, Menu, MenuItem, Checkbox, FormControlLabel, Typography, Stack } from '@mui/material';
 import BasicTable from '@/component/common_component/Table/themetable';
-import { useAppSelector } from '@/store';
+import { useAppDispatch, useAppSelector } from '@/store';
 import { companyOptions } from '@/constants';
 import Request from '@/services/axios';
 import Loader from '@/component/common_component/loader';
 import TabComponent from '@/component/Dialog/TabComponent';
 import { getCompanyWisePermission } from '@/utills/utills';
+import FilterDropdown from '@/component/fillter'; // Adjust path as needed
+import { getAllStaffThunk } from '@/store/slices/staffSlice'; // Adjust path as needed
 
-const columns = [
-  { id: 'staffName', label: 'Staff Name' },
-  { id: 'companyName', label: 'Company' },
-  { id: 'doneTasks', label: 'Tasks Done' },
-  { id: 'rescheduledTasks', label: 'Rescheduled Tasks' },
-  { id: 'partyVisit', label: 'Party Visit' },
-  { id: 'donePartyVisit', label: 'Done Party Visit' },
-  { id: 'cancelledPartyVisit', label: 'Cancelled Party Visit' },
-  { id: 'doneLeads', label: 'Leads Done' },
-  { id: 'rescheduledLeads', label: 'Rescheduled Leads' },
-  { id: 'ordersGiven', label: 'Orders Punched' },
-  { id: 'totalSale', label: 'Total Sale' },
-  { id: 'createdParties', label: 'New Customer Added' },
-  { id: 'new', label: 'Still New' },
-  { id: 'newToCustomerParties', label: 'New to Customer Convert' },
+// Task reasons for filtering
+const TASK_REASONS = [
+  'delivery',
+  'getpayment',
+  'getvisit',
+  'order',
+  'complain',
+  'sampleapproval',
+  'other'
 ];
+
+const REASON_LABELS = {
+  delivery: 'Delivery',
+  getpayment: 'Get Payment',
+  getvisit: 'Visit',
+  order: 'Order',
+  complain: 'Complain',
+  sampleapproval: 'Sample Approval',
+  other: 'Other'
+};
+
+// Lead reasons for filtering
+const LEAD_REASONS = [
+  'coldcall',
+  'proofapproval',
+  'inquirycall',
+  'confirmationcall',
+  'other'
+];
+
+const LEAD_LABELS = {
+  coldcall: 'Cold Call',
+  proofapproval: 'Proof Approval',
+  inquirycall: 'Enquiry Call',
+  confirmationcall: 'Confirmation Call',
+  other: 'Others'
+};
+
+const STATUS_TYPES = ['total', 'completed', 'cancelled', 'rescheduled'];
+
+const STATUS_LABELS = {
+  total: 'Total',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  rescheduled: 'Rescheduled'
+};
+
+// Function to format reason for URL parameter (add spaces where needed)
+const formatReasonForUrl = (reason: string): string => {
+  const reasonMap: { [key: string]: string } = {
+    'getpayment': 'Get Payment',
+    'sampleapproval': 'Sample Approval',
+    'coldcall': 'Cold Call',
+    'proofapproval': 'Proof Approval',
+    'inquirycall': 'Enquiry Call',
+    'confirmationcall': 'Confirmation Call',
+    'delivery': 'Delivery',
+    'getvisit': 'Visit',
+    'order': 'Order',
+    'complain': 'Complain',
+    'other': 'Other'
+  };
+
+  return reasonMap[reason] || reason;
+};
+
+// Generate dynamic columns for tasks - grouped by status first, then reason
+const generateTaskColumns = (selectedReasons: string[]) => {
+  const baseColumns = [
+    { id: 'srNo', label: 'Sr. No.' },
+    { id: 'staffName', label: 'Staff Name' },
+    { id: 'companyName', label: 'Company' }
+  ];
+
+  // Add columns grouped by status first
+  STATUS_TYPES.forEach(status => {
+    selectedReasons.forEach(reason => {
+      baseColumns.push({
+        id: `task_${reason}_${status}`,
+        label: `${REASON_LABELS[reason]} ${STATUS_LABELS[status]}`
+      });
+    });
+  });
+
+  return baseColumns;
+};
+
+// Generate dynamic columns for leads - grouped by status first, then reason
+const generateLeadColumns = (selectedLeadReasons: string[]) => {
+  const baseColumns = [
+    { id: 'srNo', label: 'Sr. No.' },
+    { id: 'staffName', label: 'Staff Name' },
+    { id: 'companyName', label: 'Company' }
+  ];
+
+  // Add columns grouped by status first
+  STATUS_TYPES.forEach(status => {
+    selectedLeadReasons.forEach(reason => {
+      baseColumns.push({
+        id: `lead_${reason}_${status}`,
+        label: `${LEAD_LABELS[reason]} ${STATUS_LABELS[status]}`
+      });
+    });
+  });
+
+  return baseColumns;
+};
 
 // Helper function to format date
 const formatDate = (date: Date): string => {
@@ -72,6 +165,7 @@ const getDateRange = (preset: string) => {
 };
 
 const StaffPage = () => {
+  const dispatch = useAppDispatch();
   const [tab, setTab] = useState(0);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -82,7 +176,16 @@ const StaffPage = () => {
   const [selectedPreset, setSelectedPreset] = useState('lastWeek');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [selectedTaskReasons, setSelectedTaskReasons] = useState<string[]>(TASK_REASONS);
+  const [selectedLeadReasons, setSelectedLeadReasons] = useState<string[]>(LEAD_REASONS);
+  const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
+  const [selectedField, setSelectedField] = useState<string | null>(null);
+  console.log("DEBUG : StaffPage : selectedLeadReasons:", selectedLeadReasons);
+
+  const [taskFilterAnchorEl, setTaskFilterAnchorEl] = useState<null | HTMLElement>(null);
+  const [leadFilterAnchorEl, setLeadFilterAnchorEl] = useState<null | HTMLElement>(null);
   const { user } = useAppSelector((state) => state.auth);
+  const { staffList = [], loading: staffLoading } = useAppSelector((state) => state.staff || {});
 
   // Permission checks
   const hasBothPermissions = getCompanyWisePermission(0)
@@ -112,44 +215,53 @@ const StaffPage = () => {
 
   const { companyName, apiEndpoint } = getCompanyConfig();
 
-  // Excel headers and data
-  const excelHeaders = useMemo(() => [
-    'Staff Name',
-    'Company',
-    'Tasks Done',
-    'Rescheduled Tasks',
-    'Party Visit',
-    'Done Party Visit',
-    'Cancelled Party Visit',
-    'Leads Done',
-    'Rescheduled Leads',
-    'Orders Punched',
-    'Total Sale',
-    'New Customer Added',
-    'Still New',
-    'New to Customer Convert',
-  ], []);
+  // Generate dynamic columns based on selected reasons
+  const taskColumns = useMemo(() => generateTaskColumns(selectedTaskReasons), [selectedTaskReasons]);
+  const leadColumns = useMemo(() => generateLeadColumns(selectedLeadReasons), [selectedLeadReasons]);
 
-  const excelData = useMemo(() => {
-    return reportData.map(row => ({
-      'Staff Name': row.staffName,
-      'Company': row.companyName,
-      'Tasks Done': row.doneTask,
-      'Cancelled Tasks': row.cancelledTasks,
-      'Rescheduled Tasks': row.rescheduledTasks,
-      'Party Visit': row.partyVisit,
-      'Done Party Visit': row.donePartyVisit,
-      'Cancelled Party Visit': row.cancelledPartyVisit,
-      'Leads Done': row.doneLeads,
-      'Cancelled Leads': row.cancelledLeads,
-      'Rescheduled Leads': row.rescheduledLeads,
-      'Orders Punched': row.ordersGiven,
-      'Total Sale': row.totalSale,
-      'New Customer Added': row.createdParties,
-      "Still New" : row.newPartiesStillNew,
-      'New to Customer Convert': row.newToCustomerParties,
-    }));
-  }, [reportData]);
+  // Sales staff filter
+  const salesStaff = useMemo(() =>
+    staffList.filter((staff: any) => staff.role?.roleName?.includes('Sales Staff')),
+    [staffList]
+  );
+  console.log("DEBUG : StaffPage : salesStaff:", salesStaff);
+
+
+  const uniqueStaffNames = useMemo(() =>
+    [...new Set(salesStaff.map((staff: any) => staff.name))].sort(),
+    [salesStaff]
+  );
+
+  // Filtered report data based on staff filter
+  const filteredReportData = useMemo(() => {
+    if (!filters['Staff Name'] || filters['Staff Name'].length === 0) {
+      return reportData;
+    }
+    return reportData.filter((row: any) =>
+      filters['Staff Name'].includes(row.staffName)
+    );
+  }, [reportData, filters]);
+
+  // Handle remove filter
+  const handleRemoveFilter = (field: string, value?: string) => {
+    const newFilters = { ...filters };
+    if (value) {
+      newFilters[field] = newFilters[field].filter((v: string) => v !== value);
+      if (newFilters[field].length === 0) {
+        delete newFilters[field];
+      }
+    } else {
+      delete newFilters[field];
+    }
+    setFilters(newFilters);
+  };
+
+  // Fetch staff on mount
+  useEffect(() => {
+    if (staffList.length === 0 && !staffLoading) {
+      dispatch(getAllStaffThunk());
+    }
+  }, [dispatch, staffList.length, staffLoading]);
 
   // Fetch report data
   const fetchReport = async () => {
@@ -164,7 +276,6 @@ const StaffPage = () => {
       const response = await Request.post(url, { startDate, endDate });
 
       if (response.data.success) {
-        // Use API data as-is
         setReportData(response.data.data);
       } else {
         setError(response.data.message);
@@ -225,50 +336,88 @@ const StaffPage = () => {
     return preset ? preset.label : 'Select Date Range';
   };
 
-  const handleDoneTaskClick = (staffId,companyId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
-    window.open(url, '_blank');
+  // Filter handlers for tasks
+  const handleTaskFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setTaskFilterAnchorEl(event.currentTarget);
   };
-  const handleRescheduledTaskClick = (staffId,companyId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&status=rescheduled&c=${companyName}`;
-    window.open(url, '_blank');
+
+  const handleTaskFilterClose = () => {
+    setTaskFilterAnchorEl(null);
   };
-  const handlePartyVisitClick = (staffId,companyId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&c=${companyName}`;
-    window.open(url, '_blank');
+
+  const handleTaskReasonToggle = (reason: string) => {
+    setSelectedTaskReasons(prev =>
+      prev.includes(reason)
+        ? prev.filter(r => r !== reason)
+        : [...prev, reason]
+    );
   };
-  const handleDonePartyVisitClick = (staffId,companyId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=completed&c=${companyName}`;
-    window.open(url, '_blank');
+
+  const handleSelectAllTaskReasons = () => {
+    setSelectedTaskReasons(selectedTaskReasons.length === TASK_REASONS.length ? [] : TASK_REASONS);
   };
-  const handleCancelledPartyVisitClick = (staffId,companyId) => {
-    const url = `/admin/assign-task?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&reason=get visit&status=cancelled&c=${companyName}`;
-    window.open(url, '_blank');
+
+  // Filter handlers for leads
+  const handleLeadFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setLeadFilterAnchorEl(event.currentTarget);
   };
-  const handleDoneLeadsClick = (staffId,companyId) => {
-    const url = `/admin/party-call?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
-    window.open(url, '_blank');
+
+  const handleLeadFilterClose = () => {
+    setLeadFilterAnchorEl(null);
   };
-  const handleRescheduledLeadClick = (staffId,companyId) => {
-    const url = `/admin/party-call?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&status=completed,cancelled&c=${companyName}`;
-    window.open(url, '_blank');
+
+  const handleLeadReasonToggle = (reason: string) => {
+    setSelectedLeadReasons(prev =>
+      prev.includes(reason)
+        ? prev.filter(r => r !== reason)
+        : [...prev, reason]
+    );
   };
-  const handleOrderClick = (staffId,companyId) => {
-    const url = `/admin/all-orders?staffId=${staffId}&startDate=${startDate}&endDate=${endDate}&companyName=${companyId}&c=${companyName}`;
-    window.open(url, '_blank');
+
+  const handleSelectAllLeadReasons = () => {
+    setSelectedLeadReasons(selectedLeadReasons.length === LEAD_REASONS.length ? [] : LEAD_REASONS);
   };
-  const handleCustomerClick = (staffId,companyId) => {
-    const url = `/admin/account-master?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&partyTag=customer&c=${companyName}`;
-    window.open(url, '_blank');
+
+  // Task click handlers - Fixed URL parameters with proper reason formatting
+  const handleTaskClick = (staffId: string, companyId: string, reason: string, status: string, value: number) => {
+    // If zero, do nothing
+    if (!value || value === 0) return;
+
+    let params = `staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&c=${companyName}`;
+
+    // Only add status if it is not "total"
+    if (status !== 'total') {
+      params += `&status=${status}`;
+    }
+
+    // Only add reason if not "all"
+    if (reason !== 'all') {
+      const formattedReason = formatReasonForUrl(reason);
+      params += `&reason=${encodeURIComponent(formattedReason)}`;
+    }
+
+    window.open(`/admin/assign-task?${params}`, '_blank');
   };
-  const handleNewClick = (staffId,companyId) => {
-    const url = `/admin/account-master?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&partyTag=new,customer&c=${companyName}`;
-    window.open(url, '_blank');
+
+
+  // Lead click handlers - Fixed URL parameters with proper reason formatting
+  const handleLeadClick = (staffId: string, companyId: string, reason: string, status: string, value: number) => {
+    if (!value || value === 0) return;
+
+    let params = `staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&c=${companyName}`;
+
+    if (status !== 'total') {
+      params += `&status=${status}`;
+    }
+
+    if (reason !== 'all') {
+      const formattedReason = formatReasonForUrl(reason);
+      params += `&reason=${encodeURIComponent(formattedReason)}`;
+    }
+
+    window.open(`/admin/party-call?${params}`, '_blank');
   };
-  const handleNewcClick = (staffId,companyId) => {
-    const url = `/admin/account-master?staffId=${staffId}&companyName=${companyId}&startDate=${startDate}&endDate=${endDate}&partyTag=new&c=${companyName}`;
-    window.open(url, '_blank');
-  };
+
 
   // Set initial date range
   useEffect(() => {
@@ -296,118 +445,365 @@ const StaffPage = () => {
         </Box>
       )}
 
-      {/* Date Range Picker */}
-      <Box sx={{ mb: 3 }}>
-        <Button
-          aria-describedby={id}
-          variant="outlined"
-          onClick={handleClick}
-          sx={{ minWidth: 200, justifyContent: 'flex-start' }}
-        >
-          {getDisplayText()}
-        </Button>
-        <Popover
-          id={id}
-          open={open}
-          anchorEl={anchorEl}
-          onClose={handleClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-        >
-          <Box sx={{ p: 2, width: 300 }}>
-            <List>
-              {presets.map((preset) => (
-                <ListItem
-                  button
-                  key={preset.value}
-                  onClick={() => handlePresetSelect(preset.value)}
-                  selected={selectedPreset === preset.value}
-                >
-                  <ListItemText primary={preset.label} />
-                </ListItem>
-              ))}
-            </List>
-            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
-              <TextField
-                label="Start Date"
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                sx={{ mb: 1 }}
-              />
-              <TextField
-                label="End Date"
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                sx={{ mb: 1 }}
-              />
-              <Button
-                variant="contained"
-                onClick={handleCustomDateChange}
-                disabled={!customStartDate || !customEndDate}
-                fullWidth
-              >
-                Apply Custom Range
-              </Button>
-            </Box>
-          </Box>
-        </Popover>
+      {/* Controls Row */}
+      <Box
+        sx={{
+          mb: 3,
+          mt: 2,
+          display: 'flex',
+          gap: 2,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
+        {/* Left Side Buttons */}
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Button
+            aria-describedby={id}
+            variant="outlined"
+            onClick={handleClick}
+            sx={{ minWidth: 200, justifyContent: 'flex-start' }}
+          >
+            {getDisplayText()}
+          </Button>
+
+          <Button
+            variant="outlined"
+            onClick={handleTaskFilterClick}
+            sx={{ minWidth: 200, justifyContent: 'flex-start' }}
+          >
+            Task Reasons ({selectedTaskReasons.length})
+          </Button>
+
+          <Button
+            variant="outlined"
+            onClick={handleLeadFilterClick}
+            sx={{ minWidth: 200, justifyContent: 'flex-start' }}
+          >
+            Lead Reasons ({selectedLeadReasons.length})
+          </Button>
+        </Box>
+
+        {/* Right Side Filter */}
+        <Box sx={{ marginLeft: 'auto' }}>
+          <FilterDropdown
+            filterOptions={['Staff Name']}
+            uniqueValues={uniqueStaffNames}
+            onFiltersChange={setFilters}
+            filters={filters}
+            selectedField={selectedField}
+            onFieldSelect={setSelectedField}
+          />
+        </Box>
       </Box>
 
-      {loading && <Loader />}
 
-      {/* Staff Table with Excel Download */}
-      {!loading && reportData.length > 0 ? (
-        <BasicTable
-          showDatePicker={false}
-          showFillter={false}
-          showSearch={false}
-          showExcelDownload={true}
-          excelHeaders={excelHeaders}
-          excelData={excelData}
-          tableHeader={columns}
-          rowData={reportData}
-          renderRow={(row) => {
-            // console.log("DEBUG : row:", row);
-            return (<>
-              <TableCell sx={{ fontWeight: 500, cursor: 'pointer' }}>
-                {row.staffName}
-              </TableCell>
-              <TableCell>{row.companyName}</TableCell>
-              <TableCell onClick={() => handleDoneTaskClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>
-                {row.doneTask}
-              </TableCell>
-              <TableCell onClick={() => handleRescheduledTaskClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>
-                {row.rescheduledTasks}
-              </TableCell>
-              <TableCell onClick={() => handlePartyVisitClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>
-                {row.partyVisit}
-              </TableCell>
-              <TableCell onClick={() => handleDonePartyVisitClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.donePartyVisit}</TableCell>
-              <TableCell onClick={() => handleCancelledPartyVisitClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.cancelledPartyVisit}</TableCell>
-              <TableCell onClick={() => handleDoneLeadsClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.doneLeads}</TableCell>
-              <TableCell onClick={() => handleRescheduledLeadClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.rescheduledLeads}</TableCell>
-              <TableCell onClick={() => handleOrderClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.ordersGiven}</TableCell>
-              <TableCell>{row.totalSale}</TableCell>
-              <TableCell onClick={() => handleNewClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.createdParties}</TableCell>
-              <TableCell onClick={() => handleNewcClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.newPartiesStillNew}</TableCell>
-              <TableCell onClick={() => handleCustomerClick(row.staffId, row.companyId)} sx={{ cursor: 'pointer' }}>{row.newToCustomerParties}</TableCell>
-            </>);
-          }}
-        />
-      ) : (
-        !loading && (
-          <Box sx={{ textAlign: 'center', color: 'gray', mt: 4 }}>
-            No data found for {companyName} in the selected date range.
+      {/* Selected Reasons Chips - FIXED: Now showing both task and lead chips */}
+      <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+        {selectedTaskReasons.length > 0 && (
+          <>
+            <Typography variant="subtitle2" sx={{ mr: 1, fontWeight: 'bold' }}>Tasks:</Typography>
+            {selectedTaskReasons.map(reason => (
+              <Chip
+                key={reason}
+                label={REASON_LABELS[reason]}
+                size="small"
+                onDelete={() => handleTaskReasonToggle(reason)}
+                color="primary"
+                variant="outlined"
+              />
+            ))}
+          </>
+        )}
+
+        {selectedLeadReasons.length > 0 && (
+          <>
+            <Typography variant="subtitle2" sx={{ mr: 1, ml: 2, fontWeight: 'bold' }}>Leads:</Typography>
+            {selectedLeadReasons.map(reason => (
+              <Chip
+                key={reason}
+                label={LEAD_LABELS[reason]}
+                size="small"
+                onDelete={() => handleLeadReasonToggle(reason)}
+                color="primary"
+                variant="outlined"
+              />
+            ))}
+          </>
+        )}
+      </Box>
+
+      {/* Date Range Popover */}
+      <Popover
+        id={id}
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+      >
+        <Box sx={{ p: 2, width: 300 }}>
+          <List>
+            {presets.map((preset) => (
+              <ListItem
+                button
+                key={preset.value}
+                onClick={() => handlePresetSelect(preset.value)}
+                selected={selectedPreset === preset.value}
+              >
+                <ListItemText primary={preset.label} />
+              </ListItem>
+            ))}
+          </List>
+          <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
+            <TextField
+              label="Start Date"
+              type="date"
+              value={customStartDate}
+              onChange={(e) => setCustomStartDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              sx={{ mb: 1 }}
+            />
+            <TextField
+              label="End Date"
+              type="date"
+              value={customEndDate}
+              onChange={(e) => setCustomEndDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              sx={{ mb: 1 }}
+            />
+            <Button
+              variant="contained"
+              onClick={handleCustomDateChange}
+              disabled={!customStartDate || !customEndDate}
+              fullWidth
+            >
+              Apply Custom Range
+            </Button>
           </Box>
-        )
+        </Box>
+      </Popover>
+
+      {/* Task Reason Filter Menu */}
+      <Menu
+        anchorEl={taskFilterAnchorEl}
+        open={Boolean(taskFilterAnchorEl)}
+        onClose={handleTaskFilterClose}
+        PaperProps={{
+          style: {
+            width: 250,
+          },
+        }}
+      >
+        <MenuItem>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={selectedTaskReasons.length === TASK_REASONS.length}
+                indeterminate={selectedTaskReasons.length > 0 && selectedTaskReasons.length < TASK_REASONS.length}
+                onChange={handleSelectAllTaskReasons}
+              />
+            }
+            label="Select All Tasks"
+          />
+        </MenuItem>
+        {TASK_REASONS.map((reason) => (
+          <MenuItem key={reason} onClick={() => handleTaskReasonToggle(reason)}>
+            <Checkbox checked={selectedTaskReasons.includes(reason)} />
+            <ListItemText primary={REASON_LABELS[reason]} />
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {/* Lead Reason Filter Menu */}
+      <Menu
+        anchorEl={leadFilterAnchorEl}
+        open={Boolean(leadFilterAnchorEl)}
+        onClose={handleLeadFilterClose}
+        PaperProps={{
+          style: {
+            width: 250,
+          },
+        }}
+      >
+        <MenuItem>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={selectedLeadReasons.length === LEAD_REASONS.length}
+                indeterminate={selectedLeadReasons.length > 0 && selectedLeadReasons.length < LEAD_REASONS.length}
+                onChange={handleSelectAllLeadReasons}
+              />
+            }
+            label="Select All Leads"
+          />
+        </MenuItem>
+        {LEAD_REASONS.map((reason) => (
+          <MenuItem key={reason} onClick={() => handleLeadReasonToggle(reason)}>
+            <Checkbox checked={selectedLeadReasons.includes(reason)} />
+            <ListItemText primary={LEAD_LABELS[reason]} />
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {(loading || staffLoading) && <Loader />}
+
+      {/* Tasks Table */}
+      {!loading && !staffLoading && filteredReportData.length > 0 && (
+        <>
+          <Typography variant="h6" sx={{ mb: 2, mt: 4 }}>
+            Tasks Report
+          </Typography>
+          <BasicTable
+            showDatePicker={false}
+            showFillter={false}
+            showSearch={false}
+            tableHeader={taskColumns}
+            rowData={filteredReportData}
+            renderRow={(row, index) => {
+              return (
+                <>
+                  <TableCell sx={{ fontWeight: 500 }}>
+                    {index + 1}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>
+                    {row.staffName}
+                  </TableCell>
+                  <TableCell>{row.companyName}</TableCell>
+
+                  {/* Dynamic task reason columns - grouped by status first */}
+                  {STATUS_TYPES.map(status => (
+                    selectedTaskReasons.map(reason => {
+                      const taskData = row.tasksByReason?.[reason];
+                      let value = 0;
+                      let displayValue = '0';
+
+                      if (taskData) {
+                        switch (status) {
+                          case 'total':
+                            value = taskData.total || 0;
+                            break;
+                          case 'completed':
+                            value = taskData.completed || 0;
+                            break;
+                          case 'cancelled':
+                            value = taskData.cancelled || 0;
+                            break;
+                          case 'rescheduled':
+                            value = taskData.rescheduled || 0;
+                            break;
+                        }
+                        displayValue = value.toString();
+                      }
+
+                      return (
+                        <TableCell
+                          key={`task_${reason}_${status}`}
+                          onClick={() => handleTaskClick(row.staffId, row.companyId, reason, status, value)}
+                          sx={{
+                            cursor: value > 0 ? 'pointer' : 'default',
+                            // color: value > 0 ? 'primary.main' : 'text.secondary',
+                            // fontWeight: value > 0 ? 500 : 400,
+                            // '&:hover': value > 0 ? {
+                            //   backgroundColor: 'action.hover',
+                            //   textDecoration: 'underline'
+                            // } : {}
+                          }}
+                        >
+                          {displayValue}
+                        </TableCell>
+                      );
+                    })
+                  ))}
+                </>
+              );
+            }}
+          />
+        </>
+      )}
+
+      {/* Leads Table */}
+      {!loading && !staffLoading && filteredReportData.length > 0 && (
+        <>
+          <Typography variant="h6" sx={{ mb: 2, mt: 4 }}>
+            Leads Report
+          </Typography>
+          <BasicTable
+            showDatePicker={false}
+            showFillter={false}
+            showSearch={false}
+            tableHeader={leadColumns}
+            rowData={filteredReportData}
+            renderRow={(row, index) => {
+              return (
+                <>
+                  <TableCell sx={{ fontWeight: 500 }}>
+                    {index + 1}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>
+                    {row.staffName}
+                  </TableCell>
+                  <TableCell>{row.companyName}</TableCell>
+
+                  {/* Dynamic lead reason columns - grouped by status first */}
+                  {STATUS_TYPES.map(status => (
+                    selectedLeadReasons.map(reason => {
+                      const leadData = row.leadsByReason?.[reason];
+                      let value = 0;
+                      let displayValue = '0';
+
+                      if (leadData) {
+                        switch (status) {
+                          case 'total':
+                            value = leadData.total || 0;
+                            break;
+                          case 'completed':
+                            value = leadData.completed || 0;
+                            break;
+                          case 'cancelled':
+                            value = leadData.cancelled || 0;
+                            break;
+                          case 'rescheduled':
+                            value = leadData.rescheduled || 0;
+                            break;
+                        }
+                        displayValue = value.toString();
+                      }
+
+                      return (
+                        <TableCell
+                          key={`lead_${reason}_${status}`}
+                          onClick={() => value > 0 && handleLeadClick(row.staffId, row.companyId, reason, status, value)}
+                          sx={{
+                            cursor: value > 0 ? 'pointer' : 'default',
+                            // color: value > 0 ? 'secondary.main' : 'text.secondary',
+                            // fontWeight: value > 0 ? 500 : 400,
+                            // '&:hover': value > 0 ? {
+                            //   backgroundColor: 'action.hover',
+                            //   textDecoration: 'underline'
+                            // } : {}
+                          }}
+                        >
+                          {displayValue}
+                        </TableCell>
+                      );
+                    })
+                  ))}
+                </>
+              );
+            }}
+          />
+        </>
+      )}
+
+      {!loading && !staffLoading && filteredReportData.length === 0 && (
+        <Box sx={{ textAlign: 'center', color: 'gray', mt: 4 }}>
+          No data found for {companyName} in the selected date range.
+        </Box>
       )}
     </Box>
   );
