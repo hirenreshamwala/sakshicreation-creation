@@ -7,6 +7,8 @@ import React, { useEffect, useMemo } from 'react'
 const columns = [
     { id: "orderNo", label: "Order No"},
     { id: "partyName", label: "Party Name"},
+    { id: "market", label: "Market"},
+    { id: "area", label: "Area"},
     { id: "noOfBox", label: "No of Box"},
     { id: "status", label: "Order Status"},
     { id: "driver", label: "Driver"},
@@ -108,7 +110,9 @@ const QPOrdersPage = () => {
             .map(order => ({
                 id: order._id,
                 orderNo: order.orderNo,
-                partyName: order.party?.partyName || "N/A",
+                partyName: `${order.party?.partyName} - ${order.party?.address.unitNo} - ${order.party?.address.marketName.marketName} - ${order.party?.address.area.area}` || "N/A",
+                market: order.party?.address.marketName.marketName,
+                area: order.party?.address.area.area,
                 noOfBox: order.noOfPieces || "N/A",
                 status: order.status || "N/A",
                 driverEmail: order.driver?.email ? order.driver.email.split("@")[0] : "Not Started Delivery",
@@ -132,6 +136,12 @@ const QPOrdersPage = () => {
                 </TableCell>
                 <TableCell>
                     {order.partyName}
+                </TableCell>
+                <TableCell>
+                    {order.market}
+                </TableCell>
+                <TableCell>
+                    {order.area}
                 </TableCell>
                 <TableCell>
                     {order.noOfBox}
