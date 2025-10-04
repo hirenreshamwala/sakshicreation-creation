@@ -175,8 +175,11 @@ const BasicTable = <T extends { id: string }>({
         case "Address":
           key = "address" as keyof T;
           break;
-        case "OrderNo": // Add mapping for OrderNo
+        case "OrderNo":
           key = "orderid" as keyof T;
+          break;
+        case "Driver":
+          key = "driverEmail" as keyof T;
           break;
         default:
           key = col.id as keyof T;
@@ -202,8 +205,13 @@ const BasicTable = <T extends { id: string }>({
       if (key === "area") {
         return (row[key] as any)?.area || "N/A";
       }
+      if (key === "driverEmail") {
+        // For driver email, show only the part before @ in filter dropdown
+        const email = row[key] as string;
+        if (!email || email === "Not Started Delivery") return "Not Started Delivery";
+        return email.split("@")[0];
+      }
       if (key === "orderid") {
-        // Handle orderid specifically to ensure correct value extraction
         return String(row[key] || "N/A");
       }
       return String(row[key] || "N/A");
@@ -234,9 +242,8 @@ const BasicTable = <T extends { id: string }>({
 
     // Parse startDate and endDate
     const startMoment = startDate ? moment(startDate).format('DD/MM/YY') : null;
-    const endMoment = endDate ? moment(endDate).format('DD/MM/YY') : null
+    const endMoment = endDate ? moment(endDate).format('DD/MM/YY') : null;
 
-    console.log(startMoment, endMoment, 'endMoment', moment(startDate).format('DD-MM-YY'))
     // Apply date range filter
     if (startMoment || endMoment) {
       filtered = filtered.filter((row) => {
@@ -258,16 +265,26 @@ const BasicTable = <T extends { id: string }>({
           const key = filterFieldToKey[field];
           if (!key) return true;
 
-          const value =
-            key === "company"
-              ? (row[key] as any)?.name
-              : key === "market"
-                ? (row[key] as any)?.marketName
-                : key === "area"
-                  ? (row[key] as any)?.area
-                  : key === "orderid"
-                    ? String(row[key] || "N/A")
-                    : row[key];
+          let value;
+          if (key === "company") {
+            value = (row[key] as any)?.name;
+          } else if (key === "market") {
+            value = (row[key] as any)?.marketName;
+          } else if (key === "area") {
+            value = (row[key] as any)?.area;
+          } else if (key === "driverEmail") {
+            // For driver email filter, compare with the part before @
+            const email = row[key] as string;
+            if (!email || email === "Not Started Delivery") {
+              value = "Not Started Delivery";
+            } else {
+              value = email.split("@")[0];
+            }
+          } else if (key === "orderid") {
+            value = String(row[key] || "N/A");
+          } else {
+            value = row[key];
+          }
 
           return values.includes(String(value ?? "N/A"));
         })

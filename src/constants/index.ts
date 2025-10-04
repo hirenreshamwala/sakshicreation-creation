@@ -28,6 +28,14 @@ export const permissionsArray = {
     delete: false,
     status: false,
   },
+  driver: {
+    view_global: false,
+    // view_own: false,
+    // create: false,
+    // edit: false,
+    // delete: false,
+    // status: false,
+  },
   all_complains: {
     view_global: false,
     view_own: false,
