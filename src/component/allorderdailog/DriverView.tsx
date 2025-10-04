@@ -18,6 +18,8 @@ const columns = [
     { id: "select", label: "Select" },
     { id: "orderNo", label: "Order No" },
     { id: "party", label: "Party Name" },
+    { id: "market", label: "Market" },
+    { id: "area", label: "Area" },
     { id: "noOfBox", label: "No of Box" },
     { id: "status", label: "Status" },
     { id: "deliveryStatus", label: "Delivery Status" },
@@ -43,14 +45,17 @@ const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]
 const DriverView = () => {
     const [selectAll, setSelectAll] = useState(false);
     const [billPhotos, setBillPhotos] = useState<File[]>([]);
+    const [dispatchPhotos, setDispatchPhotos] = useState<File[]>([]);
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
     const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
+    const [deliveredModalOpen, setDeliveredModalOpen] = useState(false);
     const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
     const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
     const [currentDispatchOrder, setCurrentDispatchOrder] = useState<any>(null);
+    const [currentDeliveredOrder, setCurrentDeliveredOrder] = useState<any>(null);
     const [selectionType, setSelectionType] = useState<"completed" | "loading" | null>(null);
 
     const dispatch = useAppDispatch();
@@ -182,8 +187,12 @@ const DriverView = () => {
         if (billPhotos.length === 0) return toast.warning("Please upload bill photos");
         try {
             const uploadedPhotos = await uploadFilesToServer(billPhotos, "bill-photos");
-            const imageUrls = uploadedPhotos.map((p) => (p.path));
-            await dispatch(bulkUpdateQPOrderStatusThunk({ orderIds: selectedOrders, deliveryStatus: "in_transit", billPhotos: imageUrls })).unwrap();
+            const imageUrls = uploadedPhotos.map((p) => p.path);
+            await dispatch(bulkUpdateQPOrderStatusThunk({ 
+                orderIds: selectedOrders, 
+                deliveryStatus: "in_transit", 
+                billPhotos: imageUrls 
+            })).unwrap();
             toast.success("Orders marked as in transit successfully");
             setSelectedOrders([]);
             setBillPhotos([]);
@@ -193,6 +202,50 @@ const DriverView = () => {
             refreshData();
         } catch {
             toast.error("Failed to update delivery status");
+        }
+    };
+
+    const handleDispatchSubmit = async () => {
+        if (!currentDispatchOrder) return;
+        if (dispatchPhotos.length === 0) return toast.warning("Please upload dispatch photos");
+        try {
+            const uploadedPhotos = await uploadFilesToServer(dispatchPhotos, "dispatch-photos");
+            const imageUrls = uploadedPhotos.map((p) => p.path);
+            await dispatch(bulkUpdateQPOrderStatusThunk({ 
+                orderIds: [currentDispatchOrder._id], 
+                deliveryStatus: "in_transit", 
+                dispatchPhotos: imageUrls,
+                dispatchTime: new Date().toISOString()
+            })).unwrap();
+            toast.success("Order dispatched successfully");
+            setDispatchModalOpen(false);
+            setDispatchPhotos([]);
+            setCurrentDispatchOrder(null);
+            refreshData();
+        } catch {
+            toast.error("Failed to dispatch order");
+        }
+    };
+
+    const handleDeliveredSubmit = async () => {
+        if (!currentDeliveredOrder) return;
+        if (billPhotos.length === 0) return toast.warning("Please upload delivery photos");
+        try {
+            const uploadedPhotos = await uploadFilesToServer(billPhotos, "delivery-photos");
+            const imageUrls = uploadedPhotos.map((p) => p.path);
+            await dispatch(bulkUpdateQPOrderStatusThunk({ 
+                orderIds: [currentDeliveredOrder._id], 
+                deliveryStatus: "delivered", 
+                billPhotos: imageUrls,
+                deliveryTime: new Date().toISOString()
+            })).unwrap();
+            toast.success("Order marked as delivered successfully");
+            setDeliveredModalOpen(false);
+            setBillPhotos([]);
+            setCurrentDeliveredOrder(null);
+            refreshData();
+        } catch {
+            toast.error("Failed to mark order as delivered");
         }
     };
 
@@ -258,7 +311,9 @@ const DriverView = () => {
                                     />
                                 </TableCell>
                                 <TableCell>{row.orderNo}</TableCell>
-                                <TableCell>{row.party?.partyName}</TableCell>
+                                <TableCell>{`${row.party?.partyName} - ${row.party?.address.unitNo} - ${row.party?.address.marketName.marketName} - ${row.party?.address.area.area}`}</TableCell>
+                                <TableCell>{`${row.party?.address.marketName.marketName}`}</TableCell>
+                                <TableCell>{`${row.party?.address.area.area}`}</TableCell>
                                 <TableCell>{row.noOfPieces}</TableCell>
                                 <TableCell><StatusCell row={row} /></TableCell>
                                 <TableCell>{row.deliveryStatus === 'loading' ? "Loading" : row.deliveryStatus === 'delivered' ? "Delivered" : row.deliveryStatus === "in_transit" ? "Dispatched" : "Not Started"}</TableCell>
@@ -267,10 +322,7 @@ const DriverView = () => {
                                         <ThemeButton onClick={() => { setCurrentDispatchOrder(row); setDispatchModalOpen(true); }}>Mark as Dispatched</ThemeButton>
                                     )}
                                     {row.deliveryStatus === "in_transit" && (
-                                        <ThemeButton onClick={async () => {
-                                            try { await dispatch(bulkUpdateQPOrderStatusThunk({ orderIds: [row._id], deliveryStatus: "delivered", deliveryTime: new Date().toISOString() })).unwrap(); toast.success("Order marked as delivered"); refreshData(); }
-                                            catch { toast.error("Failed to mark as delivered"); }
-                                        }}>Mark as Delivered</ThemeButton>
+                                        <ThemeButton onClick={() => { setCurrentDeliveredOrder(row); setDeliveredModalOpen(true); }}>Mark as Delivered</ThemeButton>
                                     )}
                                 </TableCell>
                             </>
@@ -282,33 +334,26 @@ const DriverView = () => {
             {/* Dispatch Modal */}
             <Modal open={dispatchModalOpen} onClose={() => setDispatchModalOpen(false)}>
                 <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, bgcolor: "background.paper", p: 3, borderRadius: 2 }}>
-                    <Typography variant="h6" mb={2}>Upload Bill Photo to Dispatch Order</Typography>
+                    <Typography variant="h6" mb={2}>Upload Dispatch Photos</Typography>
                     <Typography variant="body2" mb={2}>Order No: <strong>{currentDispatchOrder?.orderNo}</strong></Typography>
 
-                    <input type="file" id="dispatch-photo" accept="image/*" onChange={(e) => { if (e.target.files) setBillPhotos([e.target.files[0]]); }} style={{ display: "none" }} />
-                    <label htmlFor="dispatch-photo">
-                        <Button variant="outlined" component="span" startIcon={<FiUpload />} sx={{ mb: 2 }}>Upload Bill Photo</Button>
+                    <input type="file" id="dispatch-photos" multiple accept="image/*" onChange={(e) => { if (e.target.files) setDispatchPhotos(Array.from(e.target.files)); }} style={{ display: "none" }} />
+                    <label htmlFor="dispatch-photos">
+                        <Button variant="outlined" component="span" startIcon={<FiUpload />} sx={{ mb: 2 }}>Upload Dispatch Photos</Button>
                     </label>
 
-                    {billPhotos.length > 0 && <Typography variant="body2">Uploaded: {billPhotos[0].name}</Typography>}
+                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                        {dispatchPhotos.map((photo, i) => <Chip key={i} label={`Photo ${i + 1}`} onDelete={() => setDispatchPhotos(prev => prev.filter((_, idx) => idx !== i))} />)}
+                    </Box>
 
                     <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 2 }}>
                         <ThemeButton onClick={() => setDispatchModalOpen(false)}>Cancel</ThemeButton>
-                        <ThemeButton onClick={async () => {
-                            if (!billPhotos.length) return toast.warning("Please upload a bill photo");
-                            try {
-                                const uploaded = await uploadFilesToServer(billPhotos, "bill-photos");
-                                const imageUrl = uploaded[0]?.path;
-                                await dispatch(bulkUpdateQPOrderStatusThunk({ orderIds: [currentDispatchOrder!._id], deliveryStatus: "in_transit", billPhotos: [imageUrl], dispatchTime: new Date().toISOString() })).unwrap();
-                                toast.success("Order dispatched successfully");
-                                setDispatchModalOpen(false); setBillPhotos([]); setCurrentDispatchOrder(null); refreshData();
-                            } catch { toast.error("Failed to dispatch order"); }
-                        }}>Dispatch</ThemeButton>
+                        <ThemeButton onClick={handleDispatchSubmit} disabled={dispatchPhotos.length === 0}>Dispatch Order</ThemeButton>
                     </Box>
                 </Box>
             </Modal>
 
-            {/* Delivery Modal */}
+            {/* Delivery Modal (for bulk in-transit) */}
             <Modal open={deliveryModalOpen} onClose={() => setDeliveryModalOpen(false)}>
                 <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, bgcolor: "background.paper", p: 3, borderRadius: 2 }}>
                     <Typography variant="h6" mb={2}>Upload Bill Photos for Delivery</Typography>
@@ -322,6 +367,28 @@ const DriverView = () => {
                     <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 2 }}>
                         <ThemeButton onClick={() => setDeliveryModalOpen(false)}>Cancel</ThemeButton>
                         <ThemeButton onClick={handleDeliverySubmit} disabled={billPhotos.length === 0}>Mark as In Transit</ThemeButton>
+                    </Box>
+                </Box>
+            </Modal>
+
+            {/* Delivered Modal */}
+            <Modal open={deliveredModalOpen} onClose={() => setDeliveredModalOpen(false)}>
+                <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, bgcolor: "background.paper", p: 3, borderRadius: 2 }}>
+                    <Typography variant="h6" mb={2}>Upload Delivery Photos</Typography>
+                    <Typography variant="body2" mb={2}>Order No: <strong>{currentDeliveredOrder?.orderNo}</strong></Typography>
+
+                    <input type="file" id="delivery-photos" multiple accept="image/*" onChange={(e) => { if (e.target.files) setBillPhotos(Array.from(e.target.files)); }} style={{ display: "none" }} />
+                    <label htmlFor="delivery-photos">
+                        <Button variant="outlined" component="span" startIcon={<FiUpload />} sx={{ mb: 2 }}>Upload Delivery Photos</Button>
+                    </label>
+
+                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                        {billPhotos.map((photo, i) => <Chip key={i} label={`Photo ${i + 1}`} onDelete={() => setBillPhotos(prev => prev.filter((_, idx) => idx !== i))} />)}
+                    </Box>
+
+                    <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 2 }}>
+                        <ThemeButton onClick={() => setDeliveredModalOpen(false)}>Cancel</ThemeButton>
+                        <ThemeButton onClick={handleDeliveredSubmit} disabled={billPhotos.length === 0}>Mark as Delivered</ThemeButton>
                     </Box>
                 </Box>
             </Modal>
