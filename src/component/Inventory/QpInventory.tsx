@@ -28,21 +28,6 @@ const wardTabs: TabItem[] = [
     { label: 'Outward', value: WardTab.OUTWARD, icon: <FaArrowUp size={14} /> },
 ];
 
-interface AggregatedInventory {
-    printerId: string;
-    printerName: string;
-    materialId: string;
-    materialName: string;
-    materialSize: string;
-    materialGSM: string;
-    totalQuantity: number;
-    lastPurchase: number;
-    lastPurchaseDate: Date | null;
-    usedQty: number;
-    balance: number;
-    purchases: any[];
-}
-
 const QpInventoryPage = () => {
     const dispatch = useAppDispatch();
     const { user } = useAppSelector((state) => state.auth)
@@ -66,6 +51,7 @@ const QpInventoryPage = () => {
     useEffect(() => {
         dispatch(getAllInventoryThunk());
     }, []);
+    console.log(inventory,'inventory')
 
     useEffect(() => {
         if (error) {
@@ -172,9 +158,9 @@ const QpInventoryPage = () => {
             render: (row) => (
                 <>
                     <TableCell>{"Paper"}</TableCell>
-                    <TableCell>{row?.p2gsm?.deckal || "N/A"}</TableCell>
-                    <TableCell>{row.p2gsm?.gsm || "N/A"}</TableCell>
-                    <TableCell>{row.quantity || "N/A"}</TableCell>
+                    <TableCell>{row?.paper?.deckal || "N/A"}</TableCell>
+                    <TableCell>{row.paper?.gsm || "N/A"}</TableCell>
+                    <TableCell>{row.paper?.totalKg || "N/A"}</TableCell>
                     {/* <TableCell>{row.kg || "N/A"}</TableCell> */}
                     <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
                 </>
