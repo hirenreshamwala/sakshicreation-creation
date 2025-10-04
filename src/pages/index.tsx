@@ -18,6 +18,7 @@ import Loader from "@/component/common_component/loader";
 
 const IndexPage: React.FC = () => {
   const dispatch = useAppDispatch();
+  const {user} = useAppSelector(state=>state.auth)
   const { companies } = useAppSelector((state) => state.company);
   const { staffList } = useAppSelector((state) => state.staff);
 
@@ -64,8 +65,8 @@ const IndexPage: React.FC = () => {
 
   // Fetch companies and staff on mount
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true));
-    if (!staffList.length) dispatch(getAllStaffThunk());
+    if (!companies.length && user.id) dispatch(getAllCompaniesThunk(true));
+    if (!staffList.length && user.id) dispatch(getAllStaffThunk());
   }, []);
 
   // Date helper
@@ -134,7 +135,7 @@ const IndexPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (startDate && endDate && apiEndpoint) {
+    if (startDate && endDate && apiEndpoint && user.id) {
       fetchData();
     }
   }, [startDate, endDate, apiEndpoint, companyTab]);

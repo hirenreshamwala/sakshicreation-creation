@@ -660,13 +660,13 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
 
             // Update inventory items
-            if (row?.selectedPapers?.paper1 === null || row?.selectedPapers?.paper1 === undefined)
-                for (const update of inventoryUpdates) {
-                    await dispatch(updateInventoryItemThunk({
-                        id: update.paperId,
-                        data: { usedKg: update.newUsedKg }
-                    })).unwrap();
-                }
+            // if (row?.selectedPapers?.paper1 === null || row?.selectedPapers?.paper1 === undefined)
+                // for (const update of inventoryUpdates) {
+                //     await dispatch(updateInventoryItemThunk({
+                //         id: update.paperId,
+                //         updateData: { usedKg: update.newUsedKg }
+                //     })).unwrap();
+                // }
 
             // Refresh inventory data
             dispatch(getAllInventoryThunk());
