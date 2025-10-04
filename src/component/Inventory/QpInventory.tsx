@@ -175,7 +175,7 @@ const QpInventoryPage = () => {
                     <TableCell>{row?.p2gsm?.deckal || "N/A"}</TableCell>
                     <TableCell>{row.p2gsm?.gsm || "N/A"}</TableCell>
                     <TableCell>{row.quantity || "N/A"}</TableCell>
-                    <TableCell>{row.kg || "N/A"}</TableCell>
+                    {/* <TableCell>{row.kg || "N/A"}</TableCell> */}
                     <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
                 </>
             ),
