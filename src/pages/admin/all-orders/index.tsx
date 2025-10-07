@@ -22,9 +22,9 @@ import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import AddSakhiOrderDialog from "@/component/allorderdailog"
 
 const columns = [
+  { id: "orderNumber", label: "Order No." },
   { id: "company", label: "Company" },
   { id: "party", label: "Party" },
-  { id: "orderNumber", label: "Order No." },
   { id: "date", label: "Date" },
   { id: "item", label: "Item Name" },
   { id: "size", label: "Size" },
@@ -76,7 +76,7 @@ const AllOrdersPage = () => {
   const userData = getUserData()
 
   // Filter state
-  const { companyName, c, staffId, startDate: st, endDate: ed } = router.query
+  const { companyName, c, staffId, startDate: st, endDate: ed, party } = router.query
   console.log("DEBUG : AllOrdersPage : c:", c);
 
   const [activeTab, setActiveTab] = useState(c === "Quality Packaging" ? 1 : 0);
@@ -142,7 +142,8 @@ const AllOrdersPage = () => {
 
   useEffect(() => {
     if (c)
-      setActiveTab(c === "Quality Packaging" ? 1 : 0)
+      setActiveTab(c === "Quality Packaging" || c === "QP" ? 1 : 0)
+    
   }, [c])
 
   // Filter orders based on search query, date range, and selected filters
@@ -207,7 +208,7 @@ const AllOrdersPage = () => {
     }
 
     if (canViewGlobal) {
-      dispatch(getAllOrdersThunk({ companyName, staffId, startDate: st, endDate: ed })); // Increase limit to fetch more orders
+      dispatch(getAllOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party,c })); // Increase limit to fetch more orders
     } else if (canViewOwn && userData?.id) {
       dispatch(getOrdersByStaffIdThunk(userData.id));
     }
@@ -216,6 +217,8 @@ const AllOrdersPage = () => {
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true))
   }, [])
+
+  
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -433,6 +436,11 @@ const AllOrdersPage = () => {
           renderRow={(row: OrderRow) => (
             <>
               <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.orderNumber || "N/A"}
+                </Typography>
+              </TableCell>
+              <TableCell>
                 <Box display="flex" alignItems="center" gap={2}>
                   <Avatar
                     src={getAvatarUrl(row)}
@@ -457,11 +465,7 @@ const AllOrdersPage = () => {
                 </Typography>
               </TableCell>
 
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.orderNumber || "N/A"}
-                </Typography>
-              </TableCell>
+
 
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">

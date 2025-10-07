@@ -43,44 +43,7 @@ interface AssignTaskDialogProps {
   refreshData?: () => void;
 }
 
-const getValidationSchema = (isBulkMode: boolean) =>
-  Yup.object({
-    companyName: isBulkMode
-      ? Yup.string().notRequired()
-      : Yup.string().required("Company Name is required"),
-    partyName: isBulkMode
-      ? Yup.string().notRequired()
-      : Yup.string().required("Party Name is required"),
-    date: Yup.string().required("Date is required"),
-    time: Yup.string().matches(
-      /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
-      "Invalid time format (use HH:MM)"
-    ),
-    reasonForVisit: Yup.string().required("Reason for Visit is required"),
-    remarks: Yup.string(),
-    assignTo: Yup.string().required("Assign To is required"),
-    visitDate: Yup.string(),
-    visitTime: Yup.string().matches(
-      /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
-      "Invalid time format (use HH:MM)"
-    ),
-    feedback: Yup.string(),
-    status: Yup.string().required("Status is required"),
-    rescheduleDate: Yup.string().when("status", {
-      is: "Rescheduled",
-      then: () =>
-        Yup.string()
-          .required("Reschedule Date is required when status is Rescheduled")
-          .test("is-future-date", "Reschedule Date must be a future date", (value) => {
-            if (!value) return false;
-            const selectedDate = new Date(value);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            return selectedDate >= today;
-          }),
-      otherwise: () => Yup.string().nullable(),
-    }),
-  });
+
 
 const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   open,
@@ -119,6 +82,46 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   });
   const isEditMode = !!taskId;
   const isBulkMode = selectedParties.length > 0;
+  const getValidationSchema = (isBulkMode: boolean) =>
+    Yup.object({
+      companyName: isBulkMode
+        ? Yup.string().notRequired()
+        : Yup.string().required("Company Name is required"),
+      partyName: isBulkMode
+        ? Yup.string().notRequired()
+        : Yup.string().required("Party Name is required"),
+      date: Yup.string().required("Date is required"),
+      time: Yup.string().matches(
+        /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
+        "Invalid time format (use HH:MM)"
+      ),
+      reasonForVisit: Yup.string().required("Reason for Visit is required"),
+      remarks: Yup.string(),
+      assignTo: Yup.string().required("Assign To is required"),
+      visitDate: Yup.string(),
+      visitTime: Yup.string().matches(
+        /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
+        "Invalid time format (use HH:MM)"
+      ),
+      feedback: isEditMode
+        ? Yup.string().required("Feedback is required while editing")
+        : Yup.string(),
+      status: Yup.string().required("Status is required"),
+      rescheduleDate: Yup.string().when("status", {
+        is: "Rescheduled",
+        then: () =>
+          Yup.string()
+            .required("Reschedule Date is required when status is Rescheduled")
+            .test("is-future-date", "Reschedule Date must be a future date", (value) => {
+              if (!value) return false;
+              const selectedDate = new Date(value);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              return selectedDate >= today;
+            }),
+        otherwise: () => Yup.string().nullable(),
+      }),
+    });
 
   const formik = useFormik<CreateAssignTask>({
     initialValues: {
@@ -739,8 +742,10 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
                   helperText={formik.touched.feedback && formik.errors.feedback}
                   fullWidth
                   multiline
+                  required
                   rows={3}
                 />
+
               </Box>
             </>
           )}

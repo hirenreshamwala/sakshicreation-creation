@@ -22,25 +22,7 @@ import { StaticCompanyOptions } from "@/constants"
 import ThemeInput from "../common_component/themeinput"
 import { calculatePaperKg } from "@/utills/qpCalculations"
 
-const columns = [
-  { id: "orderNo", label: "Order No" },
-  { id: "party", label: "Party Name" },
-  { id: "boxSize", label: "Box Size" },
-  { id: "noOfBox", label: "No of Box" },
-  { id: "ply", label: "Ply" },
-  { id: "top", label: "Top" },
-  { id: "corogation", label: "Corogation" },
-  { id: "bottom", label: "Bottom" },
-  { id: "deckal", label: "Deckal" },
-  { id: "cuttingLength", label: "Cutting length" },
-  { id: "noOfSheetut", label: "No of sheet to cut / PCs" },
-  { id: "liner", label: "Liner" },
-  { id: "totalKG", label: "Total KG" },
-  { id: "kgOfPaper", label: "KG of each paper" },
-  { id: "status", label: "Status" },
-  { id: "noOfPeice", label: "No of piece" },
-  { id: "action", label: "Actions" },
-]
+
 
 type OrderRow = {
   _id: string;
@@ -145,6 +127,34 @@ const OperatorView = () => {
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
   const canCreate = user?.role?.permissions?.all_orders?.create;
   const canStatus = user?.role?.permissions?.all_orders?.status;
+  const cutting = user?.role?.roleName
+    ?.toLowerCase()
+    ?.includes("cutting") || false;
+  console.log("DEBUG : OperatorView : cutting:", cutting);
+  const columns = [
+    { id: "orderNo", label: "Order No" },
+    { id: "party", label: "Party Name" },
+    { id: "boxSize", label: "Box Size" },
+    { id: "noOfBox", label: "No of Box" },
+    { id: "ply", label: "Ply" },
+    { id: "top", label: "Top" },
+    { id: "corogation", label: "Corogation" },
+    { id: "bottom", label: "Bottom" },
+    { id: "deckal", label: "Deckal" },
+    { id: "cuttingLength", label: "Cutting length" },
+    { id: "noOfSheetut", label: "No of sheet to cut / PCs" },
+    { id: "liner", label: "Liner" },
+    { id: "totalKG", label: "Total KG" },
+    { id: "kgOfPaper", label: "KG of each paper" },
+    { id: "status", label: "Status" },
+    ...(cutting
+      ? [{ id: "noOfSheetCut", label: "No of sheet to cut" }]
+      : [{ id: "noOfPeice", label: "No of piece" }]
+    ),
+
+    { id: "action", label: "Actions" },
+  ]
+
   const { companyName, staffId, startDate: st, endDate: ed } = router.query
   const refreshData = () => {
     if (canViewGlobal) {
@@ -351,18 +361,25 @@ const OperatorView = () => {
     const operatorTotalKg = totalKgss?.toFixed(2).toString()
 
     try {
-      await dispatch(
-        updateQPOrderThunk({
-        id: row._id,
-        data: {
+      const payloadData = cutting
+        ? {
+          operatorNoOfSheet: Number(value),
+          operatorPaperKG,
+          operatorTotalKg,
+        }
+        : {
           operatorNoOfPieces: Number(value),
           operatorPaperKG,
-          operatorTotalKg
-        },
-      })
-      ).unwrap();
+          operatorTotalKg,
+        };
 
-      toast.success("Pieces saved successfully");
+      await dispatch(
+        updateQPOrderThunk({
+          id: row._id,
+          data: payloadData,
+        })
+      ).unwrap();
+      toast.success("Data saved successfully");
     } catch (err: any) {
       toast.error(err?.message || "Failed to save pieces");
     }
@@ -532,14 +549,21 @@ const OperatorView = () => {
               </TableCell>
               <TableCell>
                 <ThemeInput
-                  placeholder="No of piece"
+                  placeholder={cutting ? "No of sheet to cut" : "No of piece"}
                   type="number"
-                  value={pieceInputs[row._id] !== undefined ? pieceInputs[row._id] : (row.operatorNoOfPieces || "")}
+                  value={
+                    pieceInputs[row._id] !== undefined
+                      ? pieceInputs[row._id]
+                      : cutting
+                        ? row.operatorNoOfSheet || ""
+                        : row.operatorNoOfPieces || ""
+                  }
                   onChange={(e) =>
                     setPieceInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
                   }
                 />
               </TableCell>
+
 
               <TableCell>
                 <Box display="flex" gap={1}>

@@ -19,6 +19,7 @@ import Swal from "sweetalert2";
 const columns = [
     { id: 'sr', label: 'Sr no' },
     { id: 'orderno', label: 'OrderNo' },
+    { id: 'partyName', label: 'Party' },
     { id: 'subject', label: 'SUBJECT' },
     { id: 'status', label: 'STATUS' },
     { id: 'createdBy', label: 'CREATED BY' },
@@ -93,7 +94,7 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
     }
 
     const handleEdit = (id: string) => {
-        const complaint = complains.find((c) => c._id === id)
+        const complaint = complains.find((c) => c?._id === id)
         if (complaint) {
             setEditData(complaint)
             setOpen(true)
@@ -144,7 +145,7 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
   };
 
     const handleView = (id: string) => {
-        const complaint = complains.find((c) => c._id === id);
+        const complaint = complains.find((c) => c?._id === id);
         if (complaint) {
             setViewData(complaint);
             setViewOpen(true);
@@ -152,10 +153,11 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
     };
 
     const rows = complains
-        .filter((complaint) => complaint.company._id === company._id)
+        .filter((complaint) => complaint.company?._id === company?._id)
         .map((complaint, index) => ({
-            id: complaint._id,
+            id: complaint?._id,
             orderid: complaint.qporder?.orderNo ? `QP-${complaint.qporder.orderNo}` : complaint.scorder?.orderNumber || "N/A",
+            partyName: complaint?.party?.partyName,
             subject: complaint.subject,
             status: complaint.status,
             createdBy: `${complaint.createdBy.firstName} ${complaint.createdBy.lastName}`,
@@ -184,6 +186,7 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
                     <>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{row.orderid}</TableCell>
+                        <TableCell>{row.partyName}</TableCell>
                         <TableCell>{row.subject}</TableCell>
                         <TableCell>{row.status}</TableCell>
                         <TableCell>{row.createdBy}</TableCell>

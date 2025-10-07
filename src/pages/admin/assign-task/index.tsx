@@ -128,7 +128,7 @@ const AssignTaskPage: React.FC = () => {
 
   useEffect(() => {
     if (c)
-      setCompanyTab(c === "Quality Packaging" ? 1 : 0)
+      setCompanyTab(c === "Quality Packaging" || c === "QP"? 1 : 0)
   }, [c])
 
   useEffect(() => {

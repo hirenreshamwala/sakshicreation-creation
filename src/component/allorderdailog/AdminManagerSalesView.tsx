@@ -21,7 +21,6 @@ import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { StaticCompanyOptions } from "@/constants"
 import { getAllInventoryThunk } from "@/store/slices/inventorySlice"
 
-
 type OrderRow = {
   _id: string;
   orderNo: string;
@@ -82,6 +81,16 @@ type OrderRow = {
   dyeRemark?: string
   godownRemark?: string
   factoryRemark?: string
+  orderdata?: {
+    ply?: string;
+    length?: string;
+    height?: string;
+    width?: string;
+    paper1GSM?: string;
+    paper2GSM?: string;
+    paper3GSM?: string;
+    deckal?: string;
+  }
 }
 
 const AdminManagerSalesView = () => {
@@ -104,13 +113,13 @@ const AdminManagerSalesView = () => {
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
   const canCreate = user?.role?.permissions?.all_orders?.create;
   const canStatus = user?.role?.permissions?.all_orders?.status;
-  const { companyName, staffId, startDate: st, endDate: ed } = router.query
+  const { companyName, staffId, startDate: st, endDate: ed, party } = router.query
 
   const columns = [
     { id: "orderNo", label: "Order No" },
     { id: "companyName", label: "Company Name" },
     { id: "party", label: "Party Name" },
-    { id: "date", label: "Order Date" },
+    { id: "orderDate", label: "Order Date" },
     { id: "ply", label: "Ply" },
     { id: "size", label: "Size" },
     { id: "paperGSM", label: "Paper GSM" },
@@ -118,6 +127,8 @@ const AdminManagerSalesView = () => {
     { id: "deckalCalculation", label: "Cal Deckal" },
     { id: "deckal", label: "Deckal" },
     { id: "noOfPieces", label: "Piece No" },
+    { id: "cuttingLength", label: "Cutting length" },
+    { id: "noOfSheetut", label: "sheet to cut" },
     { id: "ratePerPiece", label: "Rate/Piece" },
     { id: "amount", label: "Amount" },
     { id: "kgPerUnit", label: "KG Per Unit" },
@@ -133,7 +144,7 @@ const AdminManagerSalesView = () => {
 
   const refreshData = () => {
     if (canViewGlobal) {
-      dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate: st, endDate: ed }))
+      dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party }))
     } else if (canViewOwn && user?.id) {
       dispatch(getQPOrdersByStaffIdThunk(user.id))
     }
@@ -144,19 +155,16 @@ const AdminManagerSalesView = () => {
   }, []);
 
   const handleRepeatOrder = (rowData: OrderRow) => {
-    // Purane data ko copy karen but orderNo, createdAt, status wagairah ko reset karen
     const repeatOrderData = {
       ...rowData,
-      _id: undefined, // New order ke liye ID reset
-      orderNo: undefined, // New order number generate hoga
-      createdAt: new Date().toISOString(), // Current date set karen
-      status: "pending", // Status reset karen
-      // Status fields reset karen
+      _id: undefined,
+      orderNo: undefined,
+      createdAt: new Date().toISOString(),
+      status: "pending",
       designerStatus: undefined,
       printerStatus: undefined,
       binderStatus: undefined,
       bookletBinderStatus: undefined,
-      // Additional fields reset karen
       unitNo: undefined,
       startDate: undefined,
       deliveryDate: undefined,
@@ -206,18 +214,18 @@ const AdminManagerSalesView = () => {
         (!startDate || new Date(order.createdAt) >= new Date(startDate).setHours(0, 0, 0, 0)) &&
         (!endDate || new Date(order.createdAt) <= new Date(endDate).setHours(23, 59, 59, 999))
 
+      // Format size and paperGSM for search (same as displayed in table)
+      const displaySize = order.size?.size || `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`
+      const displayPaperGSM = `${order.orderdata?.paper1GSM || "N/A"} x ${order.orderdata?.paper2GSM || "N/A"} x ${order.orderdata?.paper3GSM || "N/A"}`
+
       const matchesSearch = searchQuery
         ? order.orderNo?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.companyName?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.party?.partyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.date?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.orderdata?.ply?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.length?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.height?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.width?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.paper1GSM?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.paper2GSM?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.orderdata?.paper3GSM?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        displaySize.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        displayPaperGSM.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.gsm?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.deckalCalculation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.orderdata?.deckal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -248,20 +256,19 @@ const AdminManagerSalesView = () => {
           case "party":
             value = order.party?.partyName
             break
-          case "date":
-            value = order.date
+          case "orderDate":
+            value = formatDate(order.createdAt) || "N/A"
             break
           case "ply":
             value = order.orderdata?.ply
             break
-          case "length":
-            value = order.orderdata?.length
+          case "size":
+            // Format size same as displayed in table
+            value = order.size?.size || `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`
             break
-          case "height":
-            value = order.orderdata?.height
-            break
-          case "width":
-            value = order.orderdata?.width
+          case "paperGSM":
+            // Format paper GSM same as displayed in table
+            value = `${order.orderdata?.paper1GSM || "N/A"} x ${order.orderdata?.paper2GSM || "N/A"} x ${order.orderdata?.paper3GSM || "N/A"}`
             break
           case "gsm":
             value = order.gsm
@@ -368,20 +375,19 @@ const AdminManagerSalesView = () => {
         case "party":
           value = order.party?.partyName
           break
-        case "date":
-          value = order.date
+        case "orderDate":
+          value = formatDate(order.createdAt) || "N/A"
           break
         case "ply":
           value = order.orderdata?.ply
           break
-        case "length":
-          value = order.orderdata?.length
+        case "size":
+          // Format size same as displayed in table: "length x width x height"
+          value = order.size?.size || `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`
           break
-        case "height":
-          value = order.orderdata?.height
-          break
-        case "width":
-          value = order.orderdata?.width
+        case "paperGSM":
+          // Format paper GSM same as displayed in table: "paper1GSM x paper2GSM x paper3GSM"
+          value = `${order.orderdata?.paper1GSM || "N/A"} x ${order.orderdata?.paper2GSM || "N/A"} x ${order.orderdata?.paper3GSM || "N/A"}`
           break
         case "gsm":
           value = order.gsm
@@ -390,7 +396,7 @@ const AdminManagerSalesView = () => {
           value = order.deckalCalculation
           break
         case "deckal":
-          value = order.orderdata.deckal
+          value = order.orderdata?.deckal
           break
         case "noOfPieces":
           value = order.noOfPieces
@@ -457,7 +463,6 @@ const AdminManagerSalesView = () => {
     if (error) {
       toast.error(error);
     }
-
   }, [error, dispatch]);
 
   if (loading) return <Loader />
@@ -563,8 +568,6 @@ const AdminManagerSalesView = () => {
           pagination={pagination}
           renderExpandedRow={canViewGlobal && !canStatus ? renderExpandedRow : undefined}
           renderRow={(row: any) => {
-            // console.log("DEBUG : row:", row);
-
             return (<>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
@@ -596,7 +599,7 @@ const AdminManagerSalesView = () => {
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.orderdata?.length || "N/A"} x {row.orderdata?.width || "N/A"} x {row.orderdata?.height || "N/A"}
+                  {row.size?.size || `${row.orderdata?.length || "N/A"} x ${row.orderdata?.width || "N/A"} x ${row.orderdata?.height || "N/A"}`}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -622,6 +625,20 @@ const AdminManagerSalesView = () => {
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
                   {row.noOfPieces || "N/A"}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.orderdata?.length && row.orderdata?.height
+                    ? Number(row.orderdata.length) + Number(row.orderdata.height)
+                    : "N/A"}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.noOfPieces
+                    ? Number(row.noOfPieces) * 2
+                    : "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -670,13 +687,13 @@ const AdminManagerSalesView = () => {
                 </Typography>
               </TableCell>
               <TableCell>
-                <StatusCell row={row} />
+                {row.status}
+                {/* <StatusCell row={row} /> */}
               </TableCell>
               {canCreate && (
                 <TableCell>
                   <ThemeButton
                     onClick={() => handleRepeatOrder(row)}
-                  // size="small"
                   >
                     Repeat Order
                   </ThemeButton>

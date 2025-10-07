@@ -15,10 +15,11 @@ import LeadManagementPage from "./admin/party-call";
 import CustomerData from "@/component/dashboardPages/CustomerData";
 import Request from "@/services/axios";
 import Loader from "@/component/common_component/loader";
+import InactivePartiesData from "@/component/dashboardPages/InactivePartiesData";
 
 const IndexPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const {user} = useAppSelector(state=>state.auth)
+  const { user } = useAppSelector(state => state.auth)
   const { companies } = useAppSelector((state) => state.company);
   const { staffList } = useAppSelector((state) => state.staff);
 
@@ -297,6 +298,11 @@ const IndexPage: React.FC = () => {
           />
         </Box>
       </Box>
+
+      <InactivePartiesData
+        activeTab={companyTab}
+        companyName={companyName}
+      />
 
       {/* TaskData Table */}
       {loading ? <Loader /> : <>

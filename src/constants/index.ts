@@ -229,29 +229,29 @@ export const QualityPermissionsArray = {
   },
 }
 
-export const companyOptions = ["Sakshi Creation", "Quality Packaging"] 
-export const StaticCompanyOptions = ["Sakshi Creation", "Quality Packaging"] 
+export const companyOptions = ["Sakshi Creation", "Quality Packaging"]
+export const StaticCompanyOptions = ["Sakshi Creation", "Quality Packaging"]
 export const printerTypeOption = [
   { label: "Offset", value: 'Offset' },
   { label: "Screen Printing", value: "Screen Printing" },
   { label: "Other", value: "Other" }]
 
 export const ORDER_STATUSES = [
-    "Paper cutting",
-    "Printer",
-    "Lamination",
-    "Corogation",
-    "Pasting",
-    "Rotery",
-    "Sloting/rs4",
-    "Printing",
-    "Manual pasting",
-    "Pinning",
-    "Kanthan",
-    "Puching",
-    "Pending",
-    "In Progress",
-    "On Hold",
-    "Canceled",
-    "Completed",
+  "Pending",
+  "In Progress",
+  "Paper cutting",
+  "Printer",
+  "Lamination",
+  "Corogation",
+  "Pasting",
+  "Rotery",
+  "Sloting/rs4",
+  "Printing",
+  "Manual pasting",
+  "Pinning",
+  "Puching",
+  "Kanthan",
+  "Completed",
+  "On Hold",
+  "Canceled",
 ];
