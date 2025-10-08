@@ -1,8 +1,9 @@
 // utils/generateInvoicePDF.ts
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoImage1 from "../../public/images/Sakshi Creation Mini Logo (1).png"; // Center logo
-import logoImage2 from "../../public/images/sakshilogo1.png"; // Left logo
+import logoImage1 from "../../public/images/centerlogo.png"; // Center logo
+import logoImage2 from "../../public/images/leftlogo.png"; // Left logo
+import watermark from "../../public/images/watermark.png"; // Left logo
 
 interface InvoiceFormData {
   orderNumber: string;
@@ -62,7 +63,7 @@ export const generateInvoicePDF = async (formData: InvoiceFormData) => {
 
     try {
       // Compress logo before adding
-      const compressedLogo = await compressImage(logoImage1.src, 600);
+      const compressedLogo = await compressImage(watermark.src, 600);
 
       const gState = doc.GState ? new doc.GState({ opacity: 0.08 }) : null;
       if (gState) doc.setGState(gState);
@@ -86,16 +87,16 @@ export const generateInvoicePDF = async (formData: InvoiceFormData) => {
 
   // === HEADER ===
   const leftLogoWidth = 65; // increased size
-  const leftLogoHeight = 35;
-  const centerLogoWidth = 25;
-  const centerLogoHeight = 25;
+  const leftLogoHeight = 60;
+  const centerLogoWidth = 50;
+  const centerLogoHeight = 50;
 
   // Left logo
-  doc.addImage(compressedLogo2, "PNG", 10, 10, leftLogoWidth, leftLogoHeight, undefined, "FAST");
+  doc.addImage(compressedLogo2, "PNG", 10, 5, leftLogoWidth, leftLogoHeight, undefined, "FAST");
 
   // Center logo
   const centerX = pageWidth / 2 - centerLogoWidth / 2;
-  doc.addImage(compressedLogo1, "PNG", centerX, 12, centerLogoWidth, centerLogoHeight, undefined, "FAST");
+  doc.addImage(compressedLogo1, "PNG", centerX, 6, centerLogoWidth, centerLogoHeight, undefined, "FAST");
 
   // Right section (right aligned)
   const rightMargin = 10;
