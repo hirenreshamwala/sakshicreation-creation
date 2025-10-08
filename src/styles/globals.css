@@ -71,3 +71,11 @@ input[type="password"] {
 .login-page .MuiInputBase-input {
   text-transform: none !important;
 }
+
+.MuiTableCell-root {
+  font-size: 12px !important;
+}
+
+.MuiTypography-root {
+  font-size: 12px !important;
+}

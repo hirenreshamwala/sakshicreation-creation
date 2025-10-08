@@ -18,6 +18,7 @@ import {
     List,
     ListItem,
     ListItemText,
+    Switch,
 } from "@mui/material";
 import moment from "moment";
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -54,6 +55,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         paper2: [],
         paper3: []
     });
+    const [isPrinterLamination, setIsPrinterLamination] = useState(row.isPrinterLamination || false);
     const [paperRequirements, setPaperRequirements] = useState({
         paper1: 0,
         paper2: 0,
@@ -80,7 +82,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             paper1: [],
             paper2: [],
             paper3: []
-        }
+        },
+        isPrinterLamination: row.isPrinterLamination || false
     });
     const [initialFormData, setInitialFormData] = useState(formData);
 
@@ -189,7 +192,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 paper1: [],
                 paper2: [],
                 paper3: []
-            }
+            },
+            isPrinterLamination: row.isPrinterLamination || false
         };
 
         // Set all states synchronously
@@ -202,6 +206,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             paper3: paper3Req
         });
 
+        setIsPrinterLamination(row.isPrinterLamination || false);
         setIsInitialUnitSet(!!row.unitNo);
         setIsCompleted(row.status === "Completed");
         setIsActualNoOfPiecesUpdated(!!row.actualNoOfPieces);
@@ -396,7 +401,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
         return matchingPapers.map((item) => {
             // Calculate how much is already allocated to this paper
-             const allocatedKg = (item.allocations || [])
+            const allocatedKg = (item.allocations || [])
                 .reduce((sum, a) => sum + (a.allocatedKg || 0), 0);
             console.log(item, 'jhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjh', item._id)
 
@@ -458,6 +463,54 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         toast.info("Paper removed from selection");
     }, []);
 
+    const renderPrinterLaminationToggle = () => {
+        return (
+            <Card sx={{ mt: 2, border: '1px solid #e0e0e0' }}>
+                <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-start' }}>
+                        <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                                🖨️ Printer Lamination Required?
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {isPrinterLamination
+                                    ? "Printer and binder assignment will be required"
+                                    : "No printer/binder assignment needed"
+                                }
+                            </Typography>
+                        </Box>
+                        <Switch
+                            checked={isPrinterLamination}
+                            onChange={(e) => {
+                                const value = e.target.checked;
+                                setIsPrinterLamination(value);
+                                setFormData(prev => ({ ...prev, isPrinterLamination: value }));
+
+                                // Reset dropdown states when toggling off
+                                if (!value) {
+                                    setShowPrinterDropdown(false);
+                                    setShowBinderDropdown(false);
+                                    setSelectedPrinter("");
+                                    setSelectedBinder("");
+                                }
+                            }}
+                            color="primary"
+                            disabled={isCompleted}
+                        />
+                    </Box>
+
+                    {isPrinterLamination && (
+                        <Chip
+                            label="Printer & Binder Assignment Required"
+                            color="primary"
+                            variant="filled"
+                            sx={{ mt: 1 }}
+                        />
+                    )}
+                </CardContent>
+            </Card>
+        );
+    };
     const handleFormChange = useCallback((field: string, value: string) => {
         if (field === "startDate") {
             if (formData.startDate) {
@@ -855,6 +908,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 printer: formData.printer,
                 binder: formData.binder,
                 selectedPapers: newActuals1,
+                isPrinterLamination: formData.isPrinterLamination,
                 actualTotalKantan: {
                     reel: reel.toString(),
                     inch: inch.toString(),
@@ -1249,103 +1303,117 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     {/* Paper Selection Section */}
                     {renderPaperSelection()}
 
+                    {renderPrinterLaminationToggle()}
+
                     <Stack direction="row" spacing={2}>
-                        {row.printer && (
-                            <TextField
-                                label="Assigned Printer"
-                                value={`${row.printer.firstName} ${row.printer.lastName}`}
-                                variant="outlined"
-                                size="small"
-                                sx={{ minWidth: 100, mt: 10 }}
-                                InputProps={{
-                                    readOnly: true,
-                                }}
-                            />
-                        )}
-                        {row.binder && (
-                            <TextField
-                                label="Assigned Binder"
-                                value={`${row.binder.firstName} ${row.binder.lastName}`}
-                                variant="outlined"
-                                size="small"
-                                sx={{ minWidth: 100 }}
-                                InputProps={{
-                                    readOnly: true,
-                                }}
-                            />
-                        )}
-                        {showPrinterDropdown && (
+                        {/* Show printer/binder assignment only when printer lamination is required */}
+                        {isPrinterLamination && (
                             <>
-                                <TextField
-                                    select
-                                    label="Select Printer"
-                                    value={selectedPrinter}
-                                    onChange={(e) => setSelectedPrinter(e.target.value)}
-                                    variant="outlined"
-                                    size="small"
-                                    sx={{ minWidth: 100, mt: 2 }}
-                                    disabled={isCompleted || staffLoading}
-                                >
-                                    {staffLoading ? (
-                                        <MenuItem value="" disabled>
-                                            Loading printers...
-                                        </MenuItem>
-                                    ) : printers.length === 0 ? (
-                                        <MenuItem value="" disabled>
-                                            No printers available
-                                        </MenuItem>
-                                    ) : (
-                                        printers.map((printer) => (
-                                            <MenuItem key={printer.id} value={printer.id}>
-                                                {printer.name}
-                                            </MenuItem>
-                                        ))
-                                    )}
-                                </TextField>
-                                <ThemeButton
-                                    type="button"
-                                    onClick={handleAssignPrinter}
-                                    disabled={isCompleted || !selectedPrinter || staffLoading}
-                                >
-                                    Assign Printer
-                                </ThemeButton>
-                            </>
-                        )}
-                        {showBinderDropdown && (
-                            <>
-                                <TextField
-                                    select
-                                    label="Select Binder"
-                                    value={selectedBinder}
-                                    onChange={(e) => setSelectedBinder(e.target.value)}
-                                    variant="outlined"
-                                    size="small"
-                                    sx={{ minWidth: 100, mt: 2 }}
-                                    disabled={isCompleted || staffLoading}
-                                >
-                                    {staffLoading ? (
-                                        <MenuItem value="" disabled>
-                                            Loading binders...
-                                        </MenuItem>
-                                    ) : binders.length === 0 ? (
-                                        <MenuItem value="" disabled>
-                                            No binders available
-                                        </MenuItem>
-                                    ) : (
-                                        binders.map((binder) => (
-                                            <MenuItem key={binder.id} value={binder.id}>
-                                                {binder.name}
-                                            </MenuItem>
-                                        ))
-                                    )}
-                                </TextField>
-                                <ThemeButton
-                                    type="button"
-                                    onClick={handleAssignBinder}
-                                    disabled={isCompleted || !selectedBinder || staffLoading}
-                                >
-                                    Assign Binder
-                                </ThemeButton>
+                                {/* Show assigned printer if exists */}
+                                {row.printer && (
+                                    <TextField
+                                        label="Assigned Printer"
+                                        value={`${row.printer.firstName} ${row.printer.lastName}`}
+                                        variant="outlined"
+                                        size="small"
+                                        sx={{ minWidth: 100 }}
+                                        InputProps={{
+                                            readOnly: true,
+                                        }}
+                                    />
+                                )}
+
+                                {/* Show assigned binder if exists */}
+                                {row.binder && (
+                                    <TextField
+                                        label="Assigned Binder"
+                                        value={`${row.binder.firstName} ${row.binder.lastName}`}
+                                        variant="outlined"
+                                        size="small"
+                                        sx={{ minWidth: 100 }}
+                                        InputProps={{
+                                            readOnly: true,
+                                        }}
+                                    />
+                                )}
+
+                                {/* Show printer dropdown when needed */}
+                                {showPrinterDropdown && (
+                                    <>
+                                        <TextField
+                                            select
+                                            label="Select Printer"
+                                            value={selectedPrinter}
+                                            onChange={(e) => setSelectedPrinter(e.target.value)}
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ minWidth: 100 }}
+                                            disabled={isCompleted || staffLoading}
+                                        >
+                                            {staffLoading ? (
+                                                <MenuItem value="" disabled>
+                                                    Loading printers...
+                                                </MenuItem>
+                                            ) : printers.length === 0 ? (
+                                                <MenuItem value="" disabled>
+                                                    No printers available
+                                                </MenuItem>
+                                            ) : (
+                                                printers.map((printer) => (
+                                                    <MenuItem key={printer.id} value={printer.id}>
+                                                        {printer.name}
+                                                    </MenuItem>
+                                                ))
+                                            )}
+                                        </TextField>
+                                        <ThemeButton
+                                            type="button"
+                                            onClick={handleAssignPrinter}
+                                            disabled={isCompleted || !selectedPrinter || staffLoading}
+                                        >
+                                            Assign Printer
+                                        </ThemeButton>
+                                    </>
+                                )}
+
+                                {/* Show binder dropdown when needed */}
+                                {showBinderDropdown && (
+                                    <>
+                                        <TextField
+                                            select
+                                            label="Select Binder"
+                                            value={selectedBinder}
+                                            onChange={(e) => setSelectedBinder(e.target.value)}
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ minWidth: 100 }}
+                                            disabled={isCompleted || staffLoading}
+                                        >
+                                            {staffLoading ? (
+                                                <MenuItem value="" disabled>
+                                                    Loading binders...
+                                                </MenuItem>
+                                            ) : binders.length === 0 ? (
+                                                <MenuItem value="" disabled>
+                                                    No binders available
+                                                </MenuItem>
+                                            ) : (
+                                                binders.map((binder) => (
+                                                    <MenuItem key={binder.id} value={binder.id}>
+                                                        {binder.name}
+                                                    </MenuItem>
+                                                ))
+                                            )}
+                                        </TextField>
+                                        <ThemeButton
+                                            type="button"
+                                            onClick={handleAssignBinder}
+                                            disabled={isCompleted || !selectedBinder || staffLoading}
+                                        >
+                                            Assign Binder
+                                        </ThemeButton>
+                                    </>
+                                )}
                             </>
                         )}
                     </Stack>

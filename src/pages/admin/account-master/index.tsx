@@ -106,7 +106,7 @@ const IndexPage: React.FC = memo(() => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = hasSakshi && hasQP;
-  const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p, c ,companyName } = router.query
+  const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p, c, companyName } = router.query
 
   // Company tabs configuration
   const companyTabs = useMemo(() => {
@@ -115,6 +115,7 @@ const IndexPage: React.FC = memo(() => {
     if (hasQP) tabs.push({ id: 'qp', name: 'QP', companyId: getCompanyWisePermission(6) });
     return tabs;
   }, [user, hasSakshi, hasQP]);
+
 
   // Selected company based on permissions
   const selectedCompanyId = hasBothCompanies
@@ -182,7 +183,7 @@ const IndexPage: React.FC = memo(() => {
   };
 
   useEffect(() => {
-    if (c) setCompanyTab(c === "Quality Packaging" ? 1 : 0)
+    if (c) setCompanyTab(c === "Quality Packaging" || c === "QP" ? 1 : 0)
   }, [c])
 
   useEffect(() => {

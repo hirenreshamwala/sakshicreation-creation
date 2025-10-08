@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import Loader from "../common_component/loader";
 import { StatusCell } from "./StatusCell";
 import Request from "@/services/axios";
+import { getUserData } from "@/utills/utills";
 
 const columns = [
     { id: "select", label: "Select" },
@@ -42,6 +43,17 @@ const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]
     }
 };
 
+export const driverService = {
+    backToFactory: async (driverId, factoryPhotos) => {
+        const BaseURL = process.env.NEXT_PUBLIC_API_URL;
+        const response = await Request.post(`${BaseURL}/api/factoryReturn/create`, {
+            driverId,
+            factoryPhotos,
+        });
+        return response.data;
+    },
+};
+
 const DriverView = () => {
     const [selectAll, setSelectAll] = useState(false);
     const [billPhotos, setBillPhotos] = useState<File[]>([]);
@@ -57,10 +69,13 @@ const DriverView = () => {
     const [currentDispatchOrder, setCurrentDispatchOrder] = useState<any>(null);
     const [currentDeliveredOrder, setCurrentDeliveredOrder] = useState<any>(null);
     const [selectionType, setSelectionType] = useState<"completed" | "loading" | null>(null);
+    const [factoryModalOpen, setFactoryModalOpen] = useState(false);
+    const [factoryPhotos, setFactoryPhotos] = useState<File[]>([]);
+
 
     const dispatch = useAppDispatch();
     const { companies } = useAppSelector((state) => state.company);
-    const { user } = useAppSelector((state) => state.auth)
+    const user = getUserData()
     const { orders, loading, totalCount, pagination } = useAppSelector((state) => state.qpOrders);
 
     // Filter only driver-relevant orders
@@ -74,9 +89,9 @@ const DriverView = () => {
                 order.deliveryStatus === "not_started";
 
             const driverMatch =
-                !order.driver || 
-                order.driver === user?.id || 
-                order.driver?._id === user?.id; 
+                !order.driver ||
+                order.driver === user?.id ||
+                order.driver?._id === user?.id;
 
             return deliveryMatch && driverMatch;
         });
@@ -126,6 +141,10 @@ const DriverView = () => {
     }, [driverOrders, startDate, endDate, searchQuery, filters]);
 
     const canSelectOrder = (order: any) => {
+        if (user?.isDisptach && order.status === "Completed" && (!order.deliveryStatus || order.deliveryStatus === "not_started")) {
+            return false;
+        }
+
         if (selectedOrders.length === 0) return true;
         if (!selectionType) return true;
         switch (selectionType) {
@@ -138,6 +157,11 @@ const DriverView = () => {
     const isOrderDisabled = (order: any) => !canSelectOrder(order);
 
     const handleSelectOrder = (orderId: string, order: any) => {
+        if (user?.isDisptach && order.status === "Completed" && (!order.deliveryStatus || order.deliveryStatus === "not_started")) {
+            toast.error("You have ongoing dispatch. Complete deliveries before selecting new orders.");
+            return;
+        }
+
         if (selectedOrders.length === 0) {
             if (order.status === "Completed" && (!order.deliveryStatus || order.deliveryStatus === "not_started")) setSelectionType("completed");
             else if (order.deliveryStatus === "loading") setSelectionType("loading");
@@ -155,6 +179,11 @@ const DriverView = () => {
     };
 
     const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (user?.isDisptach) {
+            toast.error("You have ongoing dispatch. Complete deliveries before selecting new orders.");
+            return;
+        }
+
         if (event.target.checked) {
             const selectableOrders = !selectionType
                 ? filteredOrders.map((o: any) => o._id)
@@ -169,9 +198,24 @@ const DriverView = () => {
     };
 
     const handleLoadOrders = async () => {
-        if (selectedOrders.length === 0) return toast.warning("Please select at least one order to load");
+        console.log("DEBUG : handleLoadOrders : user:", user);
+
+        if (user?.isDisptach) {
+            toast.error("You are currently on delivery. Complete all deliveries before loading new orders.");
+            return;
+        }
+
+        if (selectedOrders.length === 0) {
+            return toast.warning("Please select at least one order to load");
+        }
+
         try {
-            await dispatch(bulkUpdateQPOrderStatusThunk({ orderIds: selectedOrders, deliveryStatus: "loading" })).unwrap();
+            await dispatch(
+                bulkUpdateQPOrderStatusThunk({
+                    orderIds: selectedOrders,
+                    deliveryStatus: "loading",
+                })
+            ).unwrap();
             toast.success("Orders loaded successfully");
             setSelectedOrders([]);
             setSelectAll(false);
@@ -182,16 +226,17 @@ const DriverView = () => {
         }
     };
 
+
     const handleDeliverySubmit = async () => {
         if (selectedOrders.length === 0) return toast.warning("Please select orders for delivery");
         if (billPhotos.length === 0) return toast.warning("Please upload bill photos");
         try {
             const uploadedPhotos = await uploadFilesToServer(billPhotos, "bill-photos");
             const imageUrls = uploadedPhotos.map((p) => p.path);
-            await dispatch(bulkUpdateQPOrderStatusThunk({ 
-                orderIds: selectedOrders, 
-                deliveryStatus: "in_transit", 
-                billPhotos: imageUrls 
+            await dispatch(bulkUpdateQPOrderStatusThunk({
+                orderIds: selectedOrders,
+                deliveryStatus: "in_transit",
+                billPhotos: imageUrls
             })).unwrap();
             toast.success("Orders marked as in transit successfully");
             setSelectedOrders([]);
@@ -211,13 +256,32 @@ const DriverView = () => {
         try {
             const uploadedPhotos = await uploadFilesToServer(dispatchPhotos, "dispatch-photos");
             const imageUrls = uploadedPhotos.map((p) => p.path);
-            await dispatch(bulkUpdateQPOrderStatusThunk({ 
-                orderIds: [currentDispatchOrder._id], 
-                deliveryStatus: "in_transit", 
-                dispatchPhotos: imageUrls,
-                dispatchTime: new Date().toISOString()
-            })).unwrap();
+
+            const response = await dispatch(
+                bulkUpdateQPOrderStatusThunk({
+                    orderIds: [currentDispatchOrder._id],
+                    deliveryStatus: "in_transit",
+                    dispatchPhotos: imageUrls,
+                    dispatchTime: new Date().toISOString(),
+                })
+            ).unwrap();
+
             toast.success("Order dispatched successfully");
+
+            // 🟢 Update localStorage (isDisptach = true)
+            const updatedDriver = response?.data?.[0]?.driver;
+            console.log("DEBUG : handleDispatchSubmit : updatedDriver:", updatedDriver);
+
+            console.log("DEBUG : handleDispatchSubmit : response:", response);
+
+            if (updatedDriver) {
+                const storedUser = JSON.parse(localStorage.getItem("user"));
+                const updatedUser = { ...storedUser, isDisptach: updatedDriver.isDisptach };
+                console.log("DEBUG : handleDispatchSubmit : updatedDriver.isDisptach: ispe true hoga ", updatedDriver.isDisptach);
+
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+            }
+
             setDispatchModalOpen(false);
             setDispatchPhotos([]);
             setCurrentDispatchOrder(null);
@@ -230,22 +294,71 @@ const DriverView = () => {
     const handleDeliveredSubmit = async () => {
         if (!currentDeliveredOrder) return;
         if (billPhotos.length === 0) return toast.warning("Please upload delivery photos");
+
         try {
             const uploadedPhotos = await uploadFilesToServer(billPhotos, "delivery-photos");
             const imageUrls = uploadedPhotos.map((p) => p.path);
-            await dispatch(bulkUpdateQPOrderStatusThunk({ 
-                orderIds: [currentDeliveredOrder._id], 
-                deliveryStatus: "delivered", 
-                billPhotos: imageUrls,
-                deliveryTime: new Date().toISOString()
-            })).unwrap();
+
+            const response = await dispatch(
+                bulkUpdateQPOrderStatusThunk({
+                    orderIds: [currentDeliveredOrder._id],
+                    deliveryStatus: "delivered",
+                    billPhotos: imageUrls,
+                    deliveryTime: new Date().toISOString(),
+                })
+            ).unwrap();
+
             toast.success("Order marked as delivered successfully");
+
+            // 🟡 Update localStorage (isDisptach = false when all delivered)
+            const updatedDriver = response?.data?.[0]?.driver;
+            console.log("DEBUG : handleDeliveredSubmit : updatedDriver:", updatedDriver);
+
+            console.log("DEBUG : handleDeliveredSubmit : response:", response);
+
+            if (updatedDriver) {
+                const storedUser = JSON.parse(localStorage.getItem("user"));
+                const updatedUser = { ...storedUser, isDisptach: updatedDriver.isDisptach };
+                console.log("DEBUG : handleDeliveredSubmit : updatedDriver.isDisptach: deliver dipstach need to be false at last order", updatedDriver.isDisptach);
+
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+            }
+
             setDeliveredModalOpen(false);
             setBillPhotos([]);
             setCurrentDeliveredOrder(null);
             refreshData();
         } catch {
             toast.error("Failed to mark order as delivered");
+        }
+    };
+
+    const handleBackToFactorySubmit = async () => {
+        if (factoryPhotos.length === 0) return toast.warning("Please upload factory photos");
+
+        try {
+            const uploadedPhotos = await uploadFilesToServer(factoryPhotos, "factory-photos");
+            const imageUrls = uploadedPhotos.map((p) => p.path);
+
+            const response = await driverService.backToFactory(user?.id, imageUrls);
+
+            if (response?.success) {
+                toast.success("Back to factory recorded successfully");
+
+                // 🟡 Update localStorage: set isDisptach = false
+                const storedUser = JSON.parse(localStorage.getItem("user"));
+                const updatedUser = { ...storedUser, isDisptach: false };
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+
+                setFactoryModalOpen(false);
+                setFactoryPhotos([]);
+                refreshData();
+            } else {
+                toast.error(response?.message || "Failed to record back to factory");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to record back to factory");
         }
     };
 
@@ -275,8 +388,23 @@ const DriverView = () => {
             {/* Action Buttons */}
             {selectedOrders.length > 0 && (
                 <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-                    {selectionType === "completed" && <ThemeButton onClick={handleLoadOrders}>Load Selected Orders ({selectedOrders.length})</ThemeButton>}
+                    {selectionType === "completed" && (
+                        <ThemeButton
+                            onClick={handleLoadOrders}
+                            disabled={user?.isDisptach} // 🚫 disable when already dispatched
+                            title={user?.isDisptach ? "You have ongoing dispatch. Complete all deliveries before loading new orders." : ""}
+                        >
+                            {user?.isDisptach ? "Dispatch In Progress" : `Load Selected Orders (${selectedOrders.length})`}
+                        </ThemeButton>
+                    )}
                     {selectionType === "loading" && <ThemeButton onClick={() => setDeliveryModalOpen(true)}>Mark as In Transit ({selectedOrders.length})</ThemeButton>}
+                </Box>
+            )}
+            {user?.isDisptach && filteredOrders.every(o => o.deliveryStatus !== "in_transit" && o.deliveryStatus !== "loading") && (
+                <Box sx={{ mt: 3 }}>
+                    <ThemeButton onClick={() => setFactoryModalOpen(true)}>
+                        Back to Factory
+                    </ThemeButton>
                 </Box>
             )}
 
@@ -299,7 +427,7 @@ const DriverView = () => {
                         </>
                     )}
                     renderRow={(row: any) => {
-                        const isDisabled = isOrderDisabled(row);
+                        const isDisabled = isOrderDisabled(row) || row.deliveryStatus === "delivered"; // disable if delivered
                         const isSelected = selectedOrders.includes(row._id);
                         return (
                             <>
@@ -307,7 +435,12 @@ const DriverView = () => {
                                     <Checkbox
                                         checked={isSelected}
                                         onChange={() => handleSelectOrder(row._id, row)}
-                                        disabled={(isDisabled && !isSelected) || row.deliveryStatus === "in_transit" || row.deliveryStatus === "loading"}
+                                        disabled={
+                                            isDisabled ||
+                                            row.deliveryStatus === "in_transit" ||
+                                            row.deliveryStatus === "loading" ||
+                                            (user?.isDisptach && row.status === "Completed" && (!row.deliveryStatus || row.deliveryStatus === "not_started"))
+                                        }
                                     />
                                 </TableCell>
                                 <TableCell>{row.orderNo}</TableCell>
@@ -316,7 +449,16 @@ const DriverView = () => {
                                 <TableCell>{`${row.party?.address?.area?.area}`}</TableCell>
                                 <TableCell>{row.noOfPieces}</TableCell>
                                 <TableCell><StatusCell row={row} /></TableCell>
-                                <TableCell>{row.deliveryStatus === 'loading' ? "Loading" : row.deliveryStatus === 'delivered' ? "Delivered" : row.deliveryStatus === "in_transit" ? "Dispatched" : "Not Started"}</TableCell>
+                                <TableCell>
+                                    {row.deliveryStatus === 'loading'
+                                        ? "Loading"
+                                        : row.deliveryStatus === 'delivered'
+                                            ? "Delivered"
+                                            : row.deliveryStatus === "in_transit"
+                                                ? "Dispatched"
+                                                : "Not Started"
+                                    }
+                                </TableCell>
                                 <TableCell>
                                     {row.deliveryStatus === "loading" && row.status === "Completed" && (
                                         <ThemeButton onClick={() => { setCurrentDispatchOrder(row); setDispatchModalOpen(true); }}>Mark as Dispatched</ThemeButton>
@@ -328,6 +470,8 @@ const DriverView = () => {
                             </>
                         );
                     }}
+
+
                 />
             </Box>
 
@@ -389,6 +533,68 @@ const DriverView = () => {
                     <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 2 }}>
                         <ThemeButton onClick={() => setDeliveredModalOpen(false)}>Cancel</ThemeButton>
                         <ThemeButton onClick={handleDeliveredSubmit} disabled={billPhotos.length === 0}>Mark as Delivered</ThemeButton>
+                    </Box>
+                </Box>
+            </Modal>
+
+            <Modal open={factoryModalOpen} onClose={() => setFactoryModalOpen(false)}>
+                <Box
+                    sx={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: 500,
+                        bgcolor: "background.paper",
+                        p: 3,
+                        borderRadius: 2,
+                    }}
+                >
+                    <Typography variant="h6" mb={2}>
+                        Upload Factory Arrival Photos
+                    </Typography>
+
+                    <input
+                        type="file"
+                        id="factory-photos"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => {
+                            if (e.target.files) setFactoryPhotos(Array.from(e.target.files));
+                        }}
+                        style={{ display: "none" }}
+                    />
+                    <label htmlFor="factory-photos">
+                        <Button
+                            variant="outlined"
+                            component="span"
+                            startIcon={<FiUpload />}
+                            sx={{ mb: 2 }}
+                        >
+                            Upload Photos
+                        </Button>
+                    </label>
+
+                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                        {factoryPhotos.map((photo, i) => (
+                            <Chip
+                                key={i}
+                                label={`Photo ${i + 1}`}
+                                onDelete={() =>
+                                    setFactoryPhotos((prev) => prev.filter((_, idx) => idx !== i))
+                                }
+                            />
+                        ))}
+                    </Box>
+
+                    <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 2 }}>
+                        <ThemeButton onClick={() => setFactoryModalOpen(false)}>Cancel</ThemeButton>
+                        <ThemeButton
+                            onClick={handleBackToFactorySubmit}
+                            disabled={factoryPhotos.length === 0}
+                        >
+                            Submit
+                        </ThemeButton>
                     </Box>
                 </Box>
             </Modal>

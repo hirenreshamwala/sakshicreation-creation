@@ -1,8 +1,9 @@
 // utils/generateInvoicePDF.ts
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoImage1 from "../../public/images/Sakshi Creation Mini Logo (1).png"; // Adjust path
-import logoImage2 from "../../public/images/sakshilogo1.png"; // Adjust path
+import logoImage1 from "../../public/images/centerlogo.png"; // Center logo
+import logoImage2 from "../../public/images/leftlogo.png"; // Left logo
+import watermark from "../../public/images/watermark.png"; // Left logo
 
 interface InvoiceFormData {
   orderNumber: string;
@@ -23,20 +24,118 @@ interface InvoiceFormData {
   applyGST: boolean;
   gstPercentage?: number;
   daysAfterConfirmation?: number;
+  quotation?: boolean;
 }
 
-export const generateInvoicePDF = (formData: InvoiceFormData) => {
-  const doc = new jsPDF();
+export const generateInvoicePDF = async (formData: InvoiceFormData) => {
+  const doc = new jsPDF("p", "mm", "a4");
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Utility: compress image (reduce size, keep transparency)
+  const compressImage = async (imgSrc: string, maxWidth = 600): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject("No canvas context");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL("image/png");
+        resolve(compressed);
+      };
+      img.onerror = reject;
+      img.src = imgSrc;
+    });
+  };
+
+  // === Step 1: Add Watermark ===
+  const applyWatermark = async () => {
+    const imgWidth = 140;
+    const imgHeight = 140;
+    const imgX = (pageWidth - imgWidth) / 2;
+    const imgY = (pageHeight - imgHeight) / 2;
+
+    try {
+      // Compress logo before adding
+      const compressedLogo = await compressImage(watermark.src, 600);
+
+      const gState = doc.GState ? new doc.GState({ opacity: 0.08 }) : null;
+      if (gState) doc.setGState(gState);
+
+      doc.addImage(compressedLogo, "JPEG", imgX, imgY, imgWidth, imgHeight, undefined, "FAST");
+
+      if (gState) {
+        const reset = new doc.GState({ opacity: 1 });
+        doc.setGState(reset);
+      }
+    } catch (error) {
+      console.error("Watermark error:", error);
+    }
+  };
+
+  await applyWatermark();
+
+  // Compress logos
+  const compressedLogo1 = await compressImage(logoImage1.src, 400);
+  const compressedLogo2 = await compressImage(logoImage2.src, 500);
+
+  // === HEADER ===
+  const leftLogoWidth = 65; // increased size
+  const leftLogoHeight = 60;
+  const centerLogoWidth = 50;
+  const centerLogoHeight = 50;
+
+  // Left logo
+  doc.addImage(compressedLogo2, "PNG", 10, 5, leftLogoWidth, leftLogoHeight, undefined, "FAST");
+
+  // Center logo
+  const centerX = pageWidth / 2 - centerLogoWidth / 2;
+  doc.addImage(compressedLogo1, "PNG", centerX, 6, centerLogoWidth, centerLogoHeight, undefined, "FAST");
+
+  // Right section (right aligned)
+  const rightMargin = 10;
+  let y = 12;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  doc.text("GSTIN NO. 24ABSPJ7399E1Z4", pageWidth - rightMargin, y + 3, { align: "right" });
+
+  y += 6;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text("110, 1st Floor, Shree Krishna Market,", pageWidth - rightMargin, y + 3, { align: "right" });
+  doc.text("Ring Road, Surat - 2.", pageWidth - rightMargin, y + 8, { align: "right" });
+  doc.text("sakshicreation3600@gmail.com", pageWidth - rightMargin, y + 13, { align: "right" });
+
+  y += 16;
+  doc.setFont("helvetica", "bold");
+  doc.text("ANY QUERY : Ph.: 0261-4017971", pageWidth - rightMargin, y + 3, { align: "right" });
+
+  y += 5;
+  doc.setFont("helvetica", "bold");
+  doc.text("FOR FOLDER & BOOKLET : 93775 03600", pageWidth - rightMargin, y + 3, { align: "right" });
+
+  y += 5;
+  doc.setFont("helvetica", "bold");
+  doc.text("FOR STATIONARY : 93750 47330", pageWidth - rightMargin, y + 3, { align: "right" });
+
+  // Header Text (Centered below logos)
+  const HEADER_Y = 55;
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text(`${formData.quotation ? "QUOTATION" : "PERFORMA INVOICE"}`, pageWidth / 2, HEADER_Y, { align: "center" });
+  doc.setLineWidth(0.5);
+  doc.line(10, HEADER_Y + 2, 200, HEADER_Y + 2);
 
   // Define dynamic height constants
-  const PAGE_WIDTH = 210; // A4 page width in mm
-  const LOGO_Y = 10; // Y position for logos
-  const LOGO_X_LEFT = 10; // X position for first logo (left)
-  const LOGO_WIDTH = 30; // Width of logos
-  const LOGO_HEIGHT = 30; // Height of logos
-  const LOGO_WIDTH1 = 60; // Width of second logo
-  const LOGO_HEIGHT1 = 25; // Height of second logo
-  const HEADER_Y = LOGO_Y + LOGO_HEIGHT  + 10; // Y position for "PERFORMA INVOICE"
   const LINE_HEIGHT = 6; // Height of each line of text
   const INVOICE_DETAILS_Y = HEADER_Y + 12; // Y position for invoice details
   const ADDRESS_Y = INVOICE_DETAILS_Y + 6; // Y position for address
@@ -133,51 +232,13 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
     return finalResult.trim() + " Only";
   };
 
-  // Add Logos to PDF
-  try {
-    // First logo (left side)
-    doc.addImage(logoImage1.src, "JPEG", LOGO_X_LEFT, LOGO_Y , LOGO_WIDTH, LOGO_HEIGHT, undefined,
-      "FAST");
-    // Second logo (centered)
-    const LOGO_X_CENTER = (PAGE_WIDTH - LOGO_WIDTH - 35) / 2;
-    doc.addImage(logoImage2.src, "JPEG", LOGO_X_CENTER, LOGO_Y, LOGO_WIDTH1, LOGO_HEIGHT1, undefined,
-      "FAST");
-  } catch (error) {
-    console.error("Error loading logos:", error);
-  }
-
-  // Header Section
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text(`${formData.quotation ? "QUOTATION" : "PERFORMA INVOICE"}`, PAGE_WIDTH / 2, HEADER_Y, { align: "center" });
-  doc.setLineWidth(0.5);
-  doc.line(10, HEADER_Y + 2, 200, HEADER_Y + 2);
-
-  // Add company details on the right side
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("M : 93750 47330", 200, 10, { align: "right" });
-
-  doc.setFont("helvetica", "normal");
-  const companyAddress = [
-    "109-110, Shree Krishna Market,",
-    "Nr. Rajhans Imperia, Ring Road,",
-    "Surat - 395 002.",
-    "Ph.: 0261-4017971",
-    "sakshicreation3600@gmail.com",
-  ];
-
-  let companyAddressY = 20;
-  companyAddress.forEach((line) => {
-    doc.text(line, 200, companyAddressY, { align: "right" });
-    companyAddressY += 5;
-  });
-
   // Invoice Details (Left)
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text(`${formData.quotation ? "Quotation" : "Proforma Invoice"} No: ${formData.orderNumber || "N/A"}`, 20, INVOICE_DETAILS_Y);
   doc.text(`Invoice Date: ${new Date().toLocaleDateString("en-GB")}`, 20, INVOICE_DETAILS_Y + LINE_HEIGHT);
+
+  // Party Details (Right)
   doc.text(`Party Name: ${formData.partyName || "N/A"}`, 120, INVOICE_DETAILS_Y);
 
   // Address
@@ -196,12 +257,13 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
 
   // Days After Confirmation
   const daysY = mobileY + LINE_HEIGHT;
+  let tableStartY = daysY + SPACING_BEFORE_TABLE;
   if (formData.daysAfterConfirmation !== undefined) {
     doc.text(`Delivery date - ${formData.daysAfterConfirmation} Days After Confirmation`, 120, daysY);
+    tableStartY += LINE_HEIGHT;
   }
 
   // Item Table
-  const tableStartY = daysY + (formData.daysAfterConfirmation !== undefined ? LINE_HEIGHT : 0) + SPACING_BEFORE_TABLE;
   const tableColumn = [
     "Sr. No.",
     "Item Name",
@@ -242,15 +304,15 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
       {
         content: `Total Invoice Value (in Words): INR ${formatAmountInWords(totalAmount)}`,
         colSpan: 4,
-        styles: { fillColor: [220, 220, 220], fontStyle: "bold" },
+        styles: { fillColor: false, fontStyle: "bold" },
       },
       {
         content: "Total",
-        styles: { fillColor: [220, 220, 220], fontStyle: "bold" },
+        styles: { fillColor: false, fontStyle: "bold" },
       },
       {
         content: totalAmount.toFixed(2),
-        styles: { fillColor: [220, 220, 220], fontStyle: "bold" },
+        styles: { fillColor: false, fontStyle: "bold" },
       },
     ],
   ];
@@ -261,11 +323,22 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
     body: [...tableRows, ...additionalRows],
     theme: "grid",
     margin: { left: 10, right: 10 },
-    styles: { fontSize: 9, halign: "center", cellPadding: 3 },
+    styles: { 
+      fontSize: 9, 
+      halign: "center", 
+      cellPadding: 3,
+      fillColor: false // ✅ Yeh line add karein - data cells ka background transparent hoga
+    },
     headStyles: {
-      fillColor: [22, 160, 133],
+      fillColor: [74, 102, 117], // ✅ Header green rahega
       textColor: [255, 255, 255],
       fontStyle: "bold",
+    },
+    bodyStyles: {
+      fillColor: false, // ✅ Body cells ka background transparent hoga
+    },
+    alternateRowStyles: {
+      fillColor: false, // ✅ Alternate rows ka bhi background transparent hoga
     },
     columnStyles: {
       0: { cellWidth: 15 },
@@ -284,8 +357,31 @@ export const generateInvoicePDF = (formData: InvoiceFormData) => {
   doc.setLineWidth(0.5);
   doc.line(165, finalY + 35, 190, finalY + 35);
 
+  // === TOP & BOTTOM LINES ===
+  const topBlueHeight = 6;
+  const topPinkHeight = 2;
+  const topGap = 1.5;
+  const bottomBlueHeight = 6;
+  const bottomPinkHeight = 2;
+  const bottomGap = 1.5;
+
+  // Top bars
+  doc.setFillColor("#4a6775");
+  doc.rect(0, 0, pageWidth, topBlueHeight, "F");
+  doc.setFillColor("#e22b88");
+  doc.rect(0, topBlueHeight + topGap, pageWidth, topPinkHeight, "F");
+
+  // Bottom bars
+  const blueY = pageHeight - bottomBlueHeight;
+  doc.setFillColor("#4a6775");
+  doc.rect(0, blueY, pageWidth, bottomBlueHeight, "F");
+  const pinkY = blueY - bottomGap - bottomPinkHeight;
+  doc.setFillColor("#e22b88");
+  doc.rect(0, pinkY, pageWidth, bottomPinkHeight, "F");
+
   // Save PDF
+  const invoiceType = formData.quotation ? "Quotation" : "Proforma_Invoice";
   doc.save(
-    `Proforma_Invoice_${formData.orderNumber || "N/A"}_${new Date().toISOString().split("T")[0]}.pdf`
+    `${invoiceType}_${formData.orderNumber || "N/A"}_${new Date().toISOString().split("T")[0]}.pdf`
   );
 };

@@ -772,10 +772,14 @@ console.log(hasReference,'hasReference')
                 <Box sx={{ width: '50%' }}>
                   <Autocomplete
                     freeSolo
-                    options={referenceOptions.map(option => option.partyName)}
+                    options={referenceOptions.map(option =>
+                      `${option.partyName} - ${option.address?.unitNo || ""}, ${option.address?.marketName?.marketName || ""}`
+                    )}
                     value={formik.values.reference}
                     onChange={(event, newValue) => {
-                      formik.setFieldValue("reference", newValue || "");
+                      // Extract just the party name when an option is selected
+                      const selectedPartyName = newValue ? newValue.split(" - ")[0] : "";
+                      formik.setFieldValue("reference", selectedPartyName);
                     }}
                     onInputChange={(event, newInputValue) => {
                       formik.setFieldValue("reference", newInputValue);

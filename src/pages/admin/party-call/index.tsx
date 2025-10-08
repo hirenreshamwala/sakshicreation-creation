@@ -183,7 +183,7 @@ const LeadManagementPage: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    if (c) setCompanyTab(c === "Quality Packaging" ? 1 : 0)
+    if (c) setCompanyTab(c === "Quality Packaging" || c === "QP"  ? 1 : 0)
     if (st) setStartDate(new Date(st as string));
     if (e) setEndDate(new Date(e as string));
     if (s) {

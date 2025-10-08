@@ -452,7 +452,7 @@ const BasicTable = <T extends { id: string }>({
         }}
       >
         {title && (
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <Typography variant="h1" sx={{ fontWeight: 600 }}>
             {title}
           </Typography>
         )}
@@ -549,11 +549,39 @@ const BasicTable = <T extends { id: string }>({
                   borderRadius: 2,
                   p: 1,
                   color: "#667085",
+                  display: "flex",
+                  alignItems: "center",
                 }}
                 title="Download as Excel"
               >
-                <FiDownload size={18} /><Typography size={12} ml={2}>Download excle</Typography>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="16"
+                  width="16"
+                  viewBox="0 0 384 512"
+                  // style={{ marginRight: "8px" }}
+                >
+                  <path
+                    fill="#667085"
+                    d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
+       10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
+       0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
+       8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
+       405.5 192 373 192 373c-6.4 14.8-10 20-36.6 
+       68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 
+       0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 
+       .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 
+       6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 
+       6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 
+       10.6-6.3H274c9.5-.1 15.2 10.4 10.1 
+       18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
+       12.5 2.5 17 7l97.9 98c4.5 4.5 7 
+       10.6 7 16.9z"
+                  />
+                </svg>
+                {/* <Typography fontSize={12}>Download excel</Typography>  */}
               </IconButton>
+
             )}
           </Box>
         </Box>
@@ -567,34 +595,34 @@ const BasicTable = <T extends { id: string }>({
                 {tableHeader.map((col) => (
                   <Tooltip title={col.label} arrow>
 
-                  <TableCell
-                    key={col.id}
-                    align={col.align || "left"}
-                    sx={{
-                      background: "#EAECF0",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#667085",
-                      borderBottom: "none",
-                      whiteSpace: "nowrap",
-                      padding: "10px 10px",
-                      minWidth: "80px",
-                      maxWidth: "150px",
-                      overflow: "hidden",          // 👈 required
-                      textOverflow: "ellipsis",
-                    }}
+                    <TableCell
+                      key={col.id}
+                      align={col.align || "left"}
+                      sx={{
+                        background: "#EAECF0",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#667085",
+                        borderBottom: "none",
+                        whiteSpace: "nowrap",
+                        padding: "10px 10px",
+                        minWidth: "80px",
+                        maxWidth: "150px",
+                        overflow: "hidden",          // 👈 required
+                        textOverflow: "ellipsis",
+                      }}
                     >
-                    {col.id === "checkbox" ? (
-                      <Checkbox
-                      checked={selectedRows.length === rowData.length && rowData.length > 0}
-                      onChange={onSelectAll}
-                        disabled={!onSelectAll}
+                      {col.id === "checkbox" ? (
+                        <Checkbox
+                          checked={selectedRows.length === rowData.length && rowData.length > 0}
+                          onChange={onSelectAll}
+                          disabled={!onSelectAll}
                         />
                       ) : (
                         col.label
-                    )}
-                  </TableCell>
-                        </Tooltip>
+                      )}
+                    </TableCell>
+                  </Tooltip>
                 ))}
                 {/* Add header for expand column if needed */}
                 {renderExpandedRow && (

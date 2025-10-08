@@ -11,7 +11,7 @@ const AllOrdersPage = () => {
 
   if (['admin', 'manager', 'sales staff'].includes(roleName)) {
     return <AdminManagerSalesView />;
-  } else if (roleName === 'operator') {
+  } else if (['operator', 'cutting'].includes(roleName)) {
     return <OperatorView />;
   }  else if (roleName === 'driver') {
     return <DriverView />;

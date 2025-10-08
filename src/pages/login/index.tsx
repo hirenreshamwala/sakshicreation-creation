@@ -176,9 +176,10 @@ const LoginPage: React.FC = () => {
           alignItems: 'center',
         }}
       >
-        <Typography
-          variant="h4"
+        <Box
+          // variant="h1"
           sx={{
+            fontSize: 26,
             mb: 4,
             color: 'rgba(140, 82, 255, 0.8)',
             fontWeight: 700,
@@ -186,7 +187,7 @@ const LoginPage: React.FC = () => {
           }}
         >
           Login
-        </Typography>
+        </Box>
         <Box component="form" onSubmit={handleLogin} sx={{ width: '100%' }}>
           <TextField
             type="email"
