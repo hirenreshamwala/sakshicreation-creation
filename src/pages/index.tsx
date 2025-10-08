@@ -65,8 +65,8 @@ const IndexPage: React.FC = () => {
 
   // Fetch companies and staff on mount
   useEffect(() => {
-    if (!companies.length && user.id) dispatch(getAllCompaniesThunk(true));
-    if (!staffList.length && user.id) dispatch(getAllStaffThunk());
+    if (!companies.length && user?.id) dispatch(getAllCompaniesThunk(true));
+    if (!staffList.length && user?.id) dispatch(getAllStaffThunk());
   }, []);
 
   // Date helper
@@ -135,7 +135,7 @@ const IndexPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (startDate && endDate && apiEndpoint && user.id) {
+    if (startDate && endDate && apiEndpoint && user?.id) {
       fetchData();
     }
   }, [startDate, endDate, apiEndpoint, companyTab]);

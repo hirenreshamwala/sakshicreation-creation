@@ -162,7 +162,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const storedUser = authService.getUser();
 
     if (token && !user && !loading && storedUser?.id) {
-      dispatch(fetchUserThunk({ token, userId: storedUser.id }));
+      dispatch(fetchUserThunk({ token, userId: storeduser?.id }));
     }
 
     if (!token || (!user && !loading)) {

@@ -250,7 +250,7 @@ const AssignTaskPage: React.FC = () => {
         reason: r
       }));
     } else if (canViewOwn && user?.id) {
-      dispatch(getAssignTaskByStaffIdThunk(user.id));
+      dispatch(getAssignTaskByStaffIdThunk(user?.id));
     }
 
     return () => {

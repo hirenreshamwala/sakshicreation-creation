@@ -316,7 +316,7 @@ const IndexPage: React.FC = memo(() => {
         partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
       }));
     }
-    else if (canViewOwn && user?.id) dispatch(getAccountMasterByStaffIdThunk(user.id));
+    else if (canViewOwn && user?.id) dispatch(getAccountMasterByStaffIdThunk(user?.id));
 
     return () => {
       dispatch(clearError());
@@ -608,7 +608,7 @@ const IndexPage: React.FC = memo(() => {
               partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
             }));
           } else if (canViewOwn && user?.id) {
-            dispatch(getAccountMasterByStaffIdThunk(user.id));
+            dispatch(getAccountMasterByStaffIdThunk(user?.id));
           }
         }}
         isRequestMode={isRequestMode}
@@ -634,7 +634,7 @@ const IndexPage: React.FC = memo(() => {
               partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
             }));
           } else if (canViewOwn && user?.id) {
-            dispatch(getAccountMasterByStaffIdThunk(user.id));
+            dispatch(getAccountMasterByStaffIdThunk(user?.id));
           }
         }}
       /> : null}
@@ -657,7 +657,7 @@ const IndexPage: React.FC = memo(() => {
               partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
             }));
           } else if (canViewOwn && user?.id) {
-            dispatch(getAccountMasterByStaffIdThunk(user.id));
+            dispatch(getAccountMasterByStaffIdThunk(user?.id));
           }
         }}
       /> : null}

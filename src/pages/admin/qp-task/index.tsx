@@ -34,7 +34,7 @@ const OrdersList: React.FC = () => {
 
 
 
-  // Filter orders where printer._id matches user.id
+  // Filter orders where printer._id matches user?.id
   const filteredOrders = orders.filter((order: Order) => {
   if (printer) {
     return order.printer?._id === user?.id;

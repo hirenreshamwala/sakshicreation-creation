@@ -74,8 +74,8 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
             dispatch(getAllQPOrdersThunk())
             dispatch(getAllComplainsThunk())
         } else if (canViewOwn && user?.id) {
-            dispatch(getQPOrdersByStaffIdThunk(user.id))
-            dispatch(getComplainsByStaffThunk(user.id))
+            dispatch(getQPOrdersByStaffIdThunk(user?.id))
+            dispatch(getComplainsByStaffThunk(user?.id))
         }
     }
 

@@ -42,7 +42,7 @@ const QpInventoryPage = () => {
         } else if (permissions?.inventory?.view_own) {
             return inventory?.filter(
                 (item) =>
-                    item.forCompany?._id === user.id
+                    item.forCompany?._id === user?.id
             );
         }
         return [];

@@ -102,7 +102,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
             const complainData: Complaint = {
                 ...values,
                 company: company._id,
-                createdBy: user.id,
+                createdBy: user?.id,
                 assignTo: filteredStaffIds,
                 scorder: company.companyName === "Sakshi Creation" ? values.orderId || null : null,
                 qporder: company.companyName !== "Sakshi Creation" ? values.orderId || null : null,
@@ -132,8 +132,8 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
             if (!orders.length) dispatch(getAllOrdersThunk());
             if (!qporders.length) dispatch(getAllQPOrdersThunk({ limit: 100 }));
         } else if (canViewOwn && user?.id) {
-            if (!orders.length) dispatch(getOrdersByStaffIdThunk(user.id));
-            if (!qporders.length) dispatch(getQPOrdersByStaffIdThunk(user.id));
+            if (!orders.length) dispatch(getOrdersByStaffIdThunk(user?.id));
+            if (!qporders.length) dispatch(getQPOrdersByStaffIdThunk(user?.id));
         }
     }, [canViewGlobal, canViewOwn, user?.id]);
 

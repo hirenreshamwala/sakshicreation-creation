@@ -213,7 +213,7 @@ const LeadManagementPage: React.FC = () => {
         reason: r,
       }));
     } else if (canViewOwn && user?.id) {
-      dispatch(getLeadsByStaffIdThunk(user.id));
+      dispatch(getLeadsByStaffIdThunk(user?.id));
     }
 
     return () => {
@@ -482,7 +482,7 @@ const LeadManagementPage: React.FC = () => {
           reason: r,
         }));
       } else if (canViewOwn && user?.id) {
-        dispatch(getLeadsByStaffIdThunk(user.id));
+        dispatch(getLeadsByStaffIdThunk(user?.id));
       }
     });
   };

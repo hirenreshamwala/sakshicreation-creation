@@ -150,7 +150,7 @@ const OperatorView = () => {
     if (canViewGlobal) {
       dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate: st, endDate: ed }))
     } else if (canViewOwn && user?.id) {
-      dispatch(getQPOrdersByStaffIdThunk(user.id))
+      dispatch(getQPOrdersByStaffIdThunk(user?.id))
     }
   };
 
