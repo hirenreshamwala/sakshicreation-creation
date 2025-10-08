@@ -311,9 +311,9 @@ const DriverView = () => {
                                     />
                                 </TableCell>
                                 <TableCell>{row.orderNo}</TableCell>
-                                <TableCell>{`${row.party?.partyName} - ${row.party?.address.unitNo} - ${row.party?.address.marketName.marketName} - ${row.party?.address.area.area}`}</TableCell>
-                                <TableCell>{`${row.party?.address.marketName.marketName}`}</TableCell>
-                                <TableCell>{`${row.party?.address.area.area}`}</TableCell>
+                                <TableCell>{`${row.party?.partyName} - ${row.party?.address?.unitNo} - ${row.party?.address?.marketName?.marketName} - ${row.party?.address?.area?.area}`}</TableCell>
+                                <TableCell>{`${row.party?.address?.marketName?.marketName}`}</TableCell>
+                                <TableCell>{`${row.party?.address?.area?.area}`}</TableCell>
                                 <TableCell>{row.noOfPieces}</TableCell>
                                 <TableCell><StatusCell row={row} /></TableCell>
                                 <TableCell>{row.deliveryStatus === 'loading' ? "Loading" : row.deliveryStatus === 'delivered' ? "Delivered" : row.deliveryStatus === "in_transit" ? "Dispatched" : "Not Started"}</TableCell>
