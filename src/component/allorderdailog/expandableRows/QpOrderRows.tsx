@@ -32,30 +32,29 @@ import { ExpandedRowFormProps, Remark, PaperAllocationsResult, PaperAllocation, 
 
 export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
     const dispatch = useAppDispatch();
-    const { allInventory, error } = useAppSelector(state => state.inventory);
-    const { staffList, loading: staffLoading } = useAppSelector((state) => state.staff);
-    const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
-    const [isCompleted, setIsCompleted] = useState(row.status === "Completed");
-    const [remarkModalOpen, setRemarkModalOpen] = useState(false);
-    const [remarkType, setRemarkType] = useState<"startDate" | "onHold" | "canceled" | null>(null);
-    const [tempStartDate, setTempStartDate] = useState("");
     const [remarkText, setRemarkText] = useState("");
-    const [viewRemarksOpen, setViewRemarksOpen] = useState(false);
-    const [isActualNoOfPiecesUpdated, setIsActualNoOfPiecesUpdated] = useState(!!row.actualNoOfPieces);
-    const [selectedPrinter, setSelectedPrinter] = useState<string>("");
-    const [selectedBinder, setSelectedBinder] = useState<string>("");
+    const [tempStartDate, setTempStartDate] = useState("");
     const [isInitialized, setIsInitialized] = useState(false);
+    const [remarkModalOpen, setRemarkModalOpen] = useState(false);
+    const [viewRemarksOpen, setViewRemarksOpen] = useState(false);
+    const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
+    const [selectedBinder, setSelectedBinder] = useState<string>("");
+    const [selectedPrinter, setSelectedPrinter] = useState<string>("");
+    const { allInventory, error } = useAppSelector(state => state.inventory);
+    const [isCompleted, setIsCompleted] = useState(row.status === "Completed");
     const [isPaperSelectionRequired, setIsPaperSelectionRequired] = useState(false);
+    const { staffList, loading: staffLoading } = useAppSelector((state) => state.staff);
+    const [remarkType, setRemarkType] = useState<"startDate" | "onHold" | "canceled" | null>(null);
+    const [isPrinterLamination, setIsPrinterLamination] = useState(row.isPrinterLamination || false);
+    const [isActualNoOfPiecesUpdated, setIsActualNoOfPiecesUpdated] = useState(!!row.actualNoOfPieces);
     const [showPrinterDropdown, setShowPrinterDropdown] = useState(row.status === "Printer" && !row.printer);
     const [showBinderDropdown, setShowBinderDropdown] = useState(row.status === "Lamination" && !row.binder);
     const [availablePapers, setAvailablePapers] = useState<InventoryPaper[]>([]);
-    const [actualPapers, setActualPapers] = useState({})
     const [paperSelections, setPaperSelections] = useState({
         paper1: [],
         paper2: [],
         paper3: []
     });
-    const [isPrinterLamination, setIsPrinterLamination] = useState(row.isPrinterLamination || false);
     const [paperRequirements, setPaperRequirements] = useState({
         paper1: 0,
         paper2: 0,
@@ -94,7 +93,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     // Improved helper function to safely extract inventory IDs from selected papers
     const extractInventoryIds = useCallback((selectedPapers: any) => {
-        console.log('Extracting from selectedPapers:', selectedPapers);
 
         const result = {
             paper1: [] as string[],
@@ -103,7 +101,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         };
 
         if (!selectedPapers) {
-            console.log('No selectedPapers provided');
             return result;
         }
 
@@ -116,27 +113,21 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 const ids = paperData
                     .filter((alloc: any) => alloc && (alloc.inventoryId || alloc._id || alloc.paperId))
                     .map((alloc: any) => alloc.inventoryId || alloc._id || alloc.paperId);
-                console.log('Extracted from array:', ids);
                 return ids;
             } else if (typeof paperData === 'string') {
                 // Single ObjectId as string
-                console.log('Extracted from string:', [paperData]);
                 return [paperData];
             } else if (paperData._id) {
                 // Single ObjectId as object
-                console.log('Extracted from object with _id:', [paperData._id]);
                 return [paperData._id];
             } else if (paperData.inventoryId) {
                 // Single allocation object
-                console.log('Extracted from object with inventoryId:', [paperData.inventoryId]);
                 return [paperData.inventoryId];
             } else if (paperData.paperId) {
                 // Single allocation object with paperId
-                console.log('Extracted from object with paperId:', [paperData.paperId]);
                 return [paperData.paperId];
             }
 
-            console.log('No valid data found in paperData');
             return [];
         };
 
@@ -145,19 +136,13 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         result.paper2 = extractIds(selectedPapers?.paper2);
         result.paper3 = extractIds(selectedPapers?.paper3);
 
-        console.log('Final extracted paper selections:', result);
         return result;
     }, []);
 
     // Initialize everything in one effect to avoid timing issues
     useEffect(() => {
-        console.log('=== INITIALIZING FORM ===');
-        console.log('Row data:', row);
-        console.log('Row selectedPapers:', row.selectedPapers);
-
         // First, extract paper selections
         const initialSelections = extractInventoryIds(row.selectedPapers);
-        console.log('Initial paper selections extracted:', initialSelections);
 
         // Calculate paper requirements
         let paper1Req = 0;
@@ -169,7 +154,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             paper2Req = parseFloat(row.actualPaperKG?.paper2?.totalKg > 0 ? row.actualPaperKG?.paper2?.totalKg : row.paperKG?.paper2?.totalKg || 0);
             paper3Req = parseFloat(row.actualPaperKG?.paper3?.totalKg > 0 ? row.actualPaperKG?.paper3?.totalKg : row.paperKG?.paper3?.totalKg || 0);
         }
-        console.log('Paper requirements calculated:', { paper1Req, paper2Req, paper3Req });
 
         const newFormData = {
             _id: row._id,
@@ -216,7 +200,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setSelectedBinder(row.binder?._id || "");
 
         setIsInitialized(true);
-        console.log('=== FORM INITIALIZATION COMPLETE ===');
     }, [row, extractInventoryIds]);
 
     // Filter available papers from inventory
@@ -227,7 +210,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 item.type === 'inward' &&
                 [undefined, null].includes(item.qpOrder)
             );
-            console.log('Available papers filtered:', papers.length);
             setAvailablePapers(papers);
         }
     }, [allInventory, row.orderdata]);
@@ -247,17 +229,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     // Debug effect to track state changes
     useEffect(() => {
         if (isInitialized) {
-            console.log('=== CURRENT STATE ===');
-            console.log('paperSelections:', paperSelections);
-            console.log('paperRequirements:', paperRequirements);
-            console.log('availablePapers:', availablePapers.length);
 
             // Check if selected papers exist in available papers
             Object.entries(paperSelections).forEach(([paperType, paperIds]) => {
                 if (paperIds.length > 0) {
                     const foundPapers = paperIds.map(id => availablePapers.find(p => p._id === id));
                     const foundCount = foundPapers.filter(Boolean).length;
-                    console.log(`${paperType}: ${foundCount}/${paperIds.length} papers found in inventory`);
                 }
             });
         }
@@ -267,7 +244,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const printers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "printer");
     const binders = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "binder");
 
-    // Calculate all paper allocations at once to avoid circular dependency
     // Calculate all paper allocations at once to avoid circular dependency
     const calculateAllPaperAllocations = useCallback((): PaperAllocationsResult => {
         // Create a map to track available quantities for each paper
@@ -381,33 +357,14 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 item.deckal === deckal &&
                 Number(item.gsm) === Number(gsm)
         );
-        console.log(matchingPapers.map((item) => {
-            // Calculate how much is already allocated to this paper
-            const allocatedKg = (item.allocations || [])
-                .reduce((sum, a) => sum + (a.allocatedKg || 0), 0);
-            console.log(item, 'jhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjh', item._id)
-
-            // Available KG = total KG - allocated KG
-            const availableKg = Math.max(0, item.kg - allocatedKg);
-            return {
-                value: item._id,
-                label: `${item.kg} (${availableKg.toFixed(2)} KG available)`,
-                kg: item.kg,
-                usedKg: allocatedKg,
-                availableKg,
-                isSufficient: availableKg >= requiredKg,
-            };
-        }).filter(option => option.availableKg > 0), 'aaaaaaaaaaaaaaaaaaaaaaaaaa')
 
         return matchingPapers.map((item) => {
             // Calculate how much is already allocated to this paper
             const allocatedKg = (item.allocations || [])
                 .reduce((sum, a) => sum + (a.allocatedKg || 0), 0);
-            console.log(item, 'jhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjh', item._id)
 
             // Available KG = total KG - allocated KG
             const availableKg = Math.max(0, item.kg - allocatedKg);
-            console.log()
             return {
                 value: item._id,
                 label: `${item.kg} (${availableKg.toFixed(2)} KG available)`,
@@ -511,6 +468,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             </Card>
         );
     };
+    
     const handleFormChange = useCallback((field: string, value: string) => {
         if (field === "startDate") {
             if (formData.startDate) {
@@ -758,21 +716,16 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [remarkText, remarkType, tempStartDate]);
 
     // Helper function to calculate allocations for a paper type
-    // Helper function to calculate allocations for a paper type
     const calculatePaperAllocations = useCallback((paperType: keyof typeof paperSelections, requiredKg: number) => {
-        console.log(requiredKg, "requiredKg");
         const papers = paperSelections[paperType]
             .map(paperId => availablePapers.find(p => p._id === paperId))
             .filter(Boolean) as InventoryPaper[];
 
-        console.log(papers, 'papers');
         let remainingRequired = requiredKg;
-        console.log(remainingRequired, "remainingRequired");
         const allocations: PaperAllocation[] = [];
 
         // If there's no requirement, return empty allocations
         if (requiredKg <= 0) {
-            console.log('inside if ');
             return allocations;
         }
 
@@ -781,13 +734,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             (b.kg - (getAllocatedQuantity(b._id) || 0)) - (a.kg - (getAllocatedQuantity(a._id) || 0))
         );
 
-        console.log(sortedPapers, 'sortedPapers');
-
         // Greedy allocation: use as much as possible from each paper
         for (const paper of sortedPapers) {
             // If we've already met the requirement, don't allocate from remaining papers
             if (remainingRequired <= 0) {
-                console.log('Requirement already met, skipping remaining papers');
                 // Add remaining papers with 0 allocation
                 allocations.push({
                     paperId: paper._id,
@@ -797,7 +747,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }
 
             const availableKg = paper.kg - (getAllocatedQuantity(paper._id) || 0);
-            console.log(availableKg, 'availableKg');
             if (availableKg <= 0) {
                 // Add paper with 0 allocation if it's not available
                 allocations.push({
@@ -809,7 +758,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
             // Allocate as much as possible from this paper
             const allocatedKg = Math.min(availableKg, remainingRequired);
-            console.log(allocatedKg, 'allocatedKg');
 
             allocations.push({
                 paperId: paper._id,
@@ -819,7 +767,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             remainingRequired -= allocatedKg;
         }
 
-        console.log(allocations, 'allocations');
         return allocations;
     }, [paperSelections, availablePapers, getAllocatedQuantity]);
 
@@ -877,7 +824,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 paper3: paper3Allocations
             };
 
-            const newActuals1: typeof actualPapers = { paper1: [], paper2: [], paper3: [] };
+            const newActuals1 = { paper1: [], paper2: [], paper3: [] };
 
             (["paper1", "paper2", "paper3"] as const).forEach(pt => {
                 paperSelections[pt].forEach(paperId => {
@@ -887,9 +834,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     }
                 });
             });
-
-            // Debug log to verify the data being sent
-            console.log("Sending selectedPapers:", newActuals1);
 
             const updateData = {
                 unitNo: formData.unitNo,
@@ -965,8 +909,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         toast.info("Changes cancelled");
     }, [initialFormData, row.printer, row.binder, extractInventoryIds]);
 
-    { console.log(paperSelections, 'paperSelections') }
-
     // Render individual paper type selection
     const renderPaperTypeSelection = (paperType: keyof typeof paperSelections, paperInfo: any) => {
         const requirement = paperRequirements[paperType];
@@ -975,10 +917,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         const allocations = allAllocations[paperType].allocations;
         const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedKg, 0);
         const isSufficient = allAllocations[paperType].isSufficient;
-        // useEffect(()=>{
-        //     setActualPapers({})
-
-        // },[formData.selectedPapers])
 
         return (
             <Grid item xs={12} md={4} key={paperType}>
@@ -1008,7 +946,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     )}
                     onChange={(e, newValue) => {
                         if (newValue) {
-                            console.log(paperType, newValue.value, 'paperType, newValue.value')
                             addPaperToSelection(paperType, newValue.value);
                         }
                     }}
@@ -1093,25 +1030,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             </Grid>
         );
     };
-    useEffect(() => {
-        const newActuals: typeof actualPapers = { paper1: [], paper2: [], paper3: [] };
 
-        (["paper1", "paper2", "paper3"] as const).forEach(pt => {
-            paperSelections[pt].forEach(paperId => {
-                const allocation = allAllocations[pt]?.allocations?.find(a => a.paperId === paperId);
-                if (allocation) {
-                    newActuals[pt].push({ paperId, allocatedKg: allocation.allocatedKg });
-                }
-            });
-        });
-
-        setActualPapers(newActuals);
-    }, [paperSelections, allAllocations, formData, paperRequirements, paperSelections, availablePapers]);
-    console.log(actualPapers, 'suighduisghduiswgh')
     // Render paper selection section
     const renderPaperSelection = () => {
         if (!row.actualPaperKG && !row.paperKG) {
-            console.log('No paper KG data found');
             return null;
         }
 
@@ -1119,11 +1041,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         const hasPaperRequirements = paperRequirements?.paper1 > 0 || paperRequirements?.paper2 > 0 || paperRequirements?.paper3 > 0;
 
         if (!hasPaperRequirements) {
-            console.log('No paper requirements');
             return null;
         }
-
-        console.log('Rendering paper selection with requirements:', paperRequirements);
 
         return (
             <Card sx={{ mt: 2, border: '1px solid #e0e0e0' }}>
@@ -1173,26 +1092,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     return (
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
-            {/* Debug Info - Remove in production */}
-            {/* <Box sx={{ p: 1, backgroundColor: '#ffeaa7', mb: 2, borderRadius: 1 }}>
-                <Typography variant="subtitle2">Debug Info:</Typography>
-                <Typography variant="body2">
-                    Paper Selections: {JSON.stringify(paperSelections)}
-                </Typography>
-                <Typography variant="body2">
-                    Available Papers: {availablePapers.length}
-                </Typography>
-                <Typography variant="body2">
-                    Row Selected Papers: {JSON.stringify(row.selectedPapers)}
-                </Typography>
-                <Typography variant="body2">
-                    Paper Requirements: {JSON.stringify(paperRequirements)}
-                </Typography>
-                <Typography variant="body2">
-                    Is Initialized: {isInitialized ? 'Yes' : 'No'}
-                </Typography>
-            </Box> */}
-
             <form onSubmit={handleSubmit}>
                 <Stack spacing={2}>
                     <Stack direction="row" spacing={2}>
