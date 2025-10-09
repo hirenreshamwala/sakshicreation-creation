@@ -98,7 +98,7 @@ export const orderService = {
   async getAllOrders(filters): Promise<ApiResponse<Order[]>> {
     try {
       const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
-        Endpoint.GET_ALL_QP_ORDER,filters
+        Endpoint.GET_ALL_QP_ORDER, filters
       );
 
       return {
@@ -192,7 +192,7 @@ export const orderService = {
       );
     }
   },
-   async driverStatusUpdate(
+  async driverStatusUpdate(
     id: string,
     data: StatusUpdateData
   ): Promise<ApiResponse<Order>> {
@@ -219,7 +219,7 @@ export const orderService = {
     data: BulkStatusUpdateData
   ): Promise<ApiResponse<Order[]>> {
     try {
-      console.log(data,'service data')
+      console.log(data, 'service data')
       const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
         Endpoint.UPDATE_QP_ORDER_BULK_STATUS,
         data
@@ -254,6 +254,26 @@ export const orderService = {
       console.error("Service: Delete order error:", error);
       throw new Error(
         error.response?.data?.message || "Failed to delete order"
+      );
+    }
+  },
+
+  async removeLoadingOrder(orderId: string): Promise<ApiResponse<Order>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
+        Endpoint.REMOVE_LOADING_ORDER,
+        { orderId }
+      );
+
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Remove loading order error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to remove loading order"
       );
     }
   },
