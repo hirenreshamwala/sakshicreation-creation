@@ -887,14 +887,14 @@ console.log(hasReference,'hasReference')
                   <ThemeSelect
                     label="Land Mark"
                     options={getUniqueOptions(
-                      getFilteredData(markets, formik.values?.address?.landMark, "landMark"),
+                      getFilteredData(markets, formik.values?.address?.area, "area"),
                       "landmark",
                       "_id"
                     )}
                     value={getSelectedOption(
                       formik.values?.address?.landMark,
                       getUniqueOptions(
-                        getFilteredData(markets, formik.values?.address?.landMark, "landMark"),
+                        getFilteredData(markets, formik.values?.address?.area, "area"),
                         "landmark",
                         "_id"
                       )
