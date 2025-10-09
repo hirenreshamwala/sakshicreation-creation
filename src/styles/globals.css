@@ -28,6 +28,7 @@ body {
 /* ✅ Uppercase everywhere */
 * {
   text-transform: uppercase;
+  font-size: 13px !important;
 }
 
 /* ✅ Inputs default to uppercase */
@@ -72,10 +73,13 @@ input[type="password"] {
   text-transform: none !important;
 }
 
-.MuiTableCell-root {
+/* .MuiTableCell-root {
   font-size: 12px !important;
 }
 
 .MuiTypography-root {
   font-size: 12px !important;
 }
+.MuiButton-root {
+  font-size: 12px !important;
+} */
