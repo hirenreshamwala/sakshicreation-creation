@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { authService } from "@/services/auth.service";
 import DateRangePicker from "@/component/daterangepicker";
 import { FiSearch, FiUpload } from "react-icons/fi";
-import { bulkUpdateQPOrderStatusThunk, getAllQPOrdersThunk } from "@/store/slices/qpOrderSlice";
+import { bulkUpdateQPOrderStatusThunk, getAllQPOrdersThunk, removeLoadingOrderThunk } from "@/store/slices/qpOrderSlice";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { toast } from "react-toastify";
 import Loader from "../common_component/loader";
@@ -82,15 +82,15 @@ const DriverView = () => {
     const driverOrders = useMemo(() => {
         return orders.filter((order: any) => {
             const deliveryMatch =
-                order.status === "Completed" ||
-                order.deliveryStatus === "loading" ||
-                order.deliveryStatus === "in_transit" ||
-                !order.deliveryStatus ||
-                order.deliveryStatus === "not_started";
+                order?.status === "Completed" ||
+                order?.deliveryStatus === "loading" ||
+                order?.deliveryStatus === "in_transit" ||
+                !order?.deliveryStatus ||
+                order?.deliveryStatus === "not_started";
 
             const driverMatch =
-                !order.driver ||
-                order.driver === user?.id ||
+                !order?.driver ||
+                order?.driver === user?.id ||
                 order.driver?._id === user?.id;
 
             return deliveryMatch && driverMatch;
@@ -105,8 +105,8 @@ const DriverView = () => {
             case "orderNo": return order.orderNo || "N/A";
             case "party": return order.party?.partyName || "N/A";
             case "noOfBox": return order.noOfPieces?.toString() || "N/A";
-            case "status": return order.status || "N/A";
-            case "deliveryStatus": return order.deliveryStatus || "not_started";
+            case "status": return order?.status || "N/A";
+            case "deliveryStatus": return order?.deliveryStatus || "not_started";
             default: return "N/A";
         }
     };
@@ -121,7 +121,7 @@ const DriverView = () => {
     };
 
     const filteredOrders = useMemo(() => {
-        return driverOrders.filter((item) => item.status === "Completed")?.filter((order: any) => {
+        return driverOrders.filter((item) => item?.status === "Completed")?.filter((order: any) => {
             const matchesDateRange =
                 (!startDate || new Date(order.createdAt) >= new Date(startDate).setHours(0, 0, 0, 0)) &&
                 (!endDate || new Date(order.createdAt) <= new Date(endDate).setHours(23, 59, 59, 999));
@@ -141,15 +141,15 @@ const DriverView = () => {
     }, [driverOrders, startDate, endDate, searchQuery, filters]);
 
     const canSelectOrder = (order: any) => {
-        if (user?.isDisptach && order.status === "Completed" && (!order.deliveryStatus || order.deliveryStatus === "not_started")) {
+        if (user?.isDisptach && order?.status === "Completed" && (!order?.deliveryStatus || order?.deliveryStatus === "not_started")) {
             return false;
         }
 
         if (selectedOrders.length === 0) return true;
         if (!selectionType) return true;
         switch (selectionType) {
-            case "completed": return order.status === "Completed" && (!order.deliveryStatus || order.deliveryStatus === "not_started");
-            case "loading": return order.deliveryStatus === "loading";
+            case "completed": return order?.status === "Completed" && (!order?.deliveryStatus || order?.deliveryStatus === "not_started");
+            case "loading": return order?.deliveryStatus === "loading";
             default: return true;
         }
     };
@@ -157,14 +157,14 @@ const DriverView = () => {
     const isOrderDisabled = (order: any) => !canSelectOrder(order);
 
     const handleSelectOrder = (orderId: string, order: any) => {
-        if (user?.isDisptach && order.status === "Completed" && (!order.deliveryStatus || order.deliveryStatus === "not_started")) {
+        if (user?.isDisptach && order?.status === "Completed" && (!order?.deliveryStatus || order?.deliveryStatus === "not_started")) {
             toast.error("You have ongoing dispatch. Complete deliveries before selecting new orders.");
             return;
         }
 
         if (selectedOrders.length === 0) {
-            if (order.status === "Completed" && (!order.deliveryStatus || order.deliveryStatus === "not_started")) setSelectionType("completed");
-            else if (order.deliveryStatus === "loading") setSelectionType("loading");
+            if (order?.status === "Completed" && (!order?.deliveryStatus || order?.deliveryStatus === "not_started")) setSelectionType("completed");
+            else if (order?.deliveryStatus === "loading") setSelectionType("loading");
         }
 
         setSelectedOrders((prev) => {
@@ -362,6 +362,19 @@ const DriverView = () => {
         }
     };
 
+    const handleRemoveLoading = async (orderId: string) => {
+        console.log("DEBUG : handleRemoveLoading : orderId:", orderId);
+
+        try {
+            const result = await dispatch(removeLoadingOrderThunk(orderId)).unwrap();
+            toast.success("Order removed from loading successfully");
+            if (result) refreshData();
+        } catch (err: any) {
+            toast.error(err || "Failed to remove loading");
+        }
+    };
+
+
     useEffect(() => { if (!companies.length) dispatch(getAllCompaniesThunk(true)); }, []);
     useEffect(() => {
         const token = authService.getToken();
@@ -375,8 +388,10 @@ const DriverView = () => {
         <>
             {/* Table Filters */}
             <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
-                <DateRangePicker startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
-                <ThemeButton onClick={() => { setStartDate(null); setEndDate(null); }}>Clear Date Range</ThemeButton>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                    <DateRangePicker startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
+                    <ThemeButton onClick={() => { setStartDate(null); setEndDate(null); }}>Clear Date Range</ThemeButton>
+                </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <Box sx={{ display: "flex", alignItems: "center", border: "1px solid #D0D5DD", borderRadius: 2, px: 1.5, width: 200, height: 35 }}>
                         <IconButton size="small" sx={{ color: "#98A2B3" }}><FiSearch /></IconButton>
@@ -400,7 +415,7 @@ const DriverView = () => {
                     {selectionType === "loading" && <ThemeButton onClick={() => setDeliveryModalOpen(true)}>Mark as In Transit ({selectedOrders.length})</ThemeButton>}
                 </Box>
             )}
-            {user?.isDisptach && filteredOrders.every(o => o.deliveryStatus !== "in_transit" && o.deliveryStatus !== "loading") && (
+            {user?.isDisptach && filteredOrders.every(o => o?.deliveryStatus !== "in_transit" && o?.deliveryStatus !== "loading") && (
                 <Box sx={{ mt: 3 }}>
                     <ThemeButton onClick={() => setFactoryModalOpen(true)}>
                         Back to Factory
@@ -427,7 +442,7 @@ const DriverView = () => {
                         </>
                     )}
                     renderRow={(row: any) => {
-                        const isDisabled = isOrderDisabled(row) || row.deliveryStatus === "delivered"; // disable if delivered
+                        const isDisabled = isOrderDisabled(row) || row?.deliveryStatus === "delivered"; // disable if delivered
                         const isSelected = selectedOrders.includes(row._id);
                         return (
                             <>
@@ -437,9 +452,9 @@ const DriverView = () => {
                                         onChange={() => handleSelectOrder(row._id, row)}
                                         disabled={
                                             isDisabled ||
-                                            row.deliveryStatus === "in_transit" ||
-                                            row.deliveryStatus === "loading" ||
-                                            (user?.isDisptach && row.status === "Completed" && (!row.deliveryStatus || row.deliveryStatus === "not_started"))
+                                            row?.deliveryStatus === "in_transit" ||
+                                            row?.deliveryStatus === "loading" ||
+                                            (user?.isDisptach && row?.status === "Completed" && (!row?.deliveryStatus || row?.deliveryStatus === "not_started"))
                                         }
                                     />
                                 </TableCell>
@@ -450,20 +465,61 @@ const DriverView = () => {
                                 <TableCell>{row.noOfPieces}</TableCell>
                                 <TableCell><StatusCell row={row} /></TableCell>
                                 <TableCell>
-                                    {row.deliveryStatus === 'loading'
-                                        ? "Loading"
-                                        : row.deliveryStatus === 'delivered'
-                                            ? "Delivered"
-                                            : row.deliveryStatus === "in_transit"
-                                                ? "Dispatched"
-                                                : "Not Started"
-                                    }
+                                    <Chip
+                                        label={
+                                            row?.deliveryStatus === "loading"
+                                                ? "Loading"
+                                                : row?.deliveryStatus === "delivered"
+                                                    ? "Delivered"
+                                                    : row?.deliveryStatus === "in_transit"
+                                                        ? "Dispatched"
+                                                        : "Not Started"
+                                        }
+                                        sx={{
+                                            bgcolor:
+                                                row?.deliveryStatus === "delivered"
+                                                    ? "#2e7d32" // green
+                                                    : row?.deliveryStatus === "loading"
+                                                        ? "#fbc02d" // yellow
+                                                        : row?.deliveryStatus === "in_transit"
+                                                            ? "#1976d2" // blue
+                                                            : "#d32f2f", // red
+                                            color:
+                                                row?.deliveryStatus === "loading" ? "#000" : "#fff",
+                                            fontWeight: 600,
+                                            textTransform: "capitalize",
+                                            px: 1,
+                                            borderRadius: "6px",
+                                        }}
+                                    />
                                 </TableCell>
+
                                 <TableCell>
-                                    {row.deliveryStatus === "loading" && row.status === "Completed" && (
-                                        <ThemeButton onClick={() => { setCurrentDispatchOrder(row); setDispatchModalOpen(true); }}>Mark as Dispatched</ThemeButton>
+                                    {row?.deliveryStatus === "loading" && row?.status === "Completed" && (
+                                        <>
+                                            <ThemeButton
+                                                onClick={() => {
+                                                    setCurrentDispatchOrder(row);
+                                                    setDispatchModalOpen(true);
+                                                }}
+                                                sx={{ mr: 1, }}
+                                            >
+                                                Mark as Dispatched
+                                            </ThemeButton>
+
+                                            {/* Remove Loading visible only when not yet dispatched */}
+                                            {!user?.isDisptach && (
+                                                <ThemeButton
+                                                    color="error"
+                                                    onClick={() => handleRemoveLoading(row._id)}
+                                                >
+                                                    Remove Loading
+                                                </ThemeButton>
+                                            )}
+                                        </>
                                     )}
-                                    {row.deliveryStatus === "in_transit" && (
+
+                                    {row?.deliveryStatus === "in_transit" && (
                                         <ThemeButton onClick={() => { setCurrentDeliveredOrder(row); setDeliveredModalOpen(true); }}>Mark as Delivered</ThemeButton>
                                     )}
                                 </TableCell>
