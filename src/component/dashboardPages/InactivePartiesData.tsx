@@ -38,7 +38,7 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
     // Inactive parties data fetch karein
     const fetchInactiveData = async () => {
         const endpoint = getInactiveEndpoint();
-        if (!endpoint || !user.id) return;
+        if (!endpoint || !user?.id) return;
 
         setLoading(true);
         try {
@@ -59,7 +59,7 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
     };
 
     useEffect(() => {
-        if (user.id) {
+        if (user?.id) {
             fetchInactiveData();
         }
     }, [activeTab, companyName]);

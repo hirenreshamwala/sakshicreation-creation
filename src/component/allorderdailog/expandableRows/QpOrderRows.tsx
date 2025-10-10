@@ -17,8 +17,7 @@ import {
     IconButton,
     List,
     ListItem,
-    ListItemText,
-    Switch,
+    ListItemText
 } from "@mui/material";
 import moment from "moment";
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -29,6 +28,7 @@ import ViewRemark from "./ViewRemark";
 import RemarkModal from "./RemarkModal";
 import RemoveIcon from '@mui/icons-material/Remove';
 import { ExpandedRowFormProps, Remark, PaperAllocationsResult, PaperAllocation, PaperOption, InventoryPaper } from "@/constants/interface";
+import PaperSelection from "./PaperSelection";
 
 export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
     const dispatch = useAppDispatch();
@@ -38,17 +38,14 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [remarkModalOpen, setRemarkModalOpen] = useState(false);
     const [viewRemarksOpen, setViewRemarksOpen] = useState(false);
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
-    const [selectedBinder, setSelectedBinder] = useState<string>("");
-    const [selectedPrinter, setSelectedPrinter] = useState<string>("");
-    const { allInventory, error } = useAppSelector(state => state.inventory);
+    const [selectedBinder, setSelectedBinder] = useState(null);
+    const [selectedPrinter, setSelectedPrinter] = useState(null);
+    const { allInventory } = useAppSelector(state => state.inventory);
     const [isCompleted, setIsCompleted] = useState(row.status === "Completed");
     const [isPaperSelectionRequired, setIsPaperSelectionRequired] = useState(false);
     const { staffList, loading: staffLoading } = useAppSelector((state) => state.staff);
     const [remarkType, setRemarkType] = useState<"startDate" | "onHold" | "canceled" | null>(null);
-    const [isPrinterLamination, setIsPrinterLamination] = useState(row.isPrinterLamination || false);
     const [isActualNoOfPiecesUpdated, setIsActualNoOfPiecesUpdated] = useState(!!row.actualNoOfPieces);
-    const [showPrinterDropdown, setShowPrinterDropdown] = useState(row.status === "Printer" && !row.printer);
-    const [showBinderDropdown, setShowBinderDropdown] = useState(row.status === "Lamination" && !row.binder);
     const [availablePapers, setAvailablePapers] = useState<InventoryPaper[]>([]);
     const [paperSelections, setPaperSelections] = useState({
         paper1: [],
@@ -82,27 +79,23 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             paper2: [],
             paper3: []
         },
-        isPrinterLamination: row.isPrinterLamination || false
     });
     const [initialFormData, setInitialFormData] = useState(formData);
 
     useEffect(() => {
         if (!staffList.length) dispatch(getAllStaffThunk());
         if (!allInventory.length) dispatch(getAllInventoryThunk());
-    }, [dispatch, staffList.length, allInventory.length]);
+    }, []);
 
     // Improved helper function to safely extract inventory IDs from selected papers
     const extractInventoryIds = useCallback((selectedPapers: any) => {
-
         const result = {
             paper1: [] as string[],
             paper2: [] as string[],
             paper3: [] as string[]
         };
 
-        if (!selectedPapers) {
-            return result;
-        }
+        if (!selectedPapers) return result;
 
         // Helper function to extract IDs from different formats
         const extractIds = (paperData: any): string[] => {
@@ -114,19 +107,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     .filter((alloc: any) => alloc && (alloc.inventoryId || alloc._id || alloc.paperId))
                     .map((alloc: any) => alloc.inventoryId || alloc._id || alloc.paperId);
                 return ids;
-            } else if (typeof paperData === 'string') {
-                // Single ObjectId as string
-                return [paperData];
-            } else if (paperData._id) {
-                // Single ObjectId as object
-                return [paperData._id];
-            } else if (paperData.inventoryId) {
-                // Single allocation object
-                return [paperData.inventoryId];
-            } else if (paperData.paperId) {
-                // Single allocation object with paperId
-                return [paperData.paperId];
             }
+            else if (typeof paperData === 'string') return [paperData];
+            else if (paperData._id) return [paperData._id];
+            else if (paperData.inventoryId) return [paperData.inventoryId];
+            else if (paperData.paperId) return [paperData.paperId];
 
             return [];
         };
@@ -141,10 +126,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     // Initialize everything in one effect to avoid timing issues
     useEffect(() => {
-        // First, extract paper selections
-        const initialSelections = extractInventoryIds(row.selectedPapers);
+        const initialSelections:any = extractInventoryIds(row.selectedPapers);
 
-        // Calculate paper requirements
         let paper1Req = 0;
         let paper2Req = 0;
         let paper3Req = 0;
@@ -177,10 +160,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 paper2: [],
                 paper3: []
             },
-            isPrinterLamination: row.isPrinterLamination || false
         };
 
-        // Set all states synchronously
         setFormData(newFormData);
         setInitialFormData(newFormData);
         setPaperSelections(initialSelections);
@@ -189,23 +170,15 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             paper2: paper2Req,
             paper3: paper3Req
         });
-
-        setIsPrinterLamination(row.isPrinterLamination || false);
         setIsInitialUnitSet(!!row.unitNo);
         setIsCompleted(row.status === "Completed");
         setIsActualNoOfPiecesUpdated(!!row.actualNoOfPieces);
-        setShowPrinterDropdown(row.status === "Printer" && !row.printer);
-        setShowBinderDropdown(row.status === "Lamination" && !row.binder);
-        setSelectedPrinter(row.printer?._id || "");
-        setSelectedBinder(row.binder?._id || "");
-
         setIsInitialized(true);
     }, [row, extractInventoryIds]);
 
-    // Filter available papers from inventory
     useEffect(() => {
         if (allInventory.length > 0 && row.orderdata) {
-            const papers = allInventory.filter((item: InventoryPaper) =>
+            const papers:any = allInventory.filter((item: any) =>
                 item.inventoryType === 'paper' &&
                 item.type === 'inward' &&
                 [undefined, null].includes(item.qpOrder)
@@ -214,23 +187,17 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         }
     }, [allInventory, row.orderdata]);
 
-    // Check if paper selection is required when status changes to "In Progress"
     useEffect(() => {
         if (formData.status === "In Progress" && row.status === "Pending") {
             const hasPaperRequirements = paperRequirements?.paper1 > 0 || paperRequirements?.paper2 > 0 || paperRequirements?.paper3 > 0;
             setIsPaperSelectionRequired(hasPaperRequirements);
 
-            if (hasPaperRequirements) {
-                toast.info("Please select papers from inventory before proceeding");
-            }
+            if (hasPaperRequirements) toast.info("Please select papers from inventory before proceeding");
         }
     }, [formData.status, row.status, paperRequirements]);
 
-    // Debug effect to track state changes
     useEffect(() => {
         if (isInitialized) {
-
-            // Check if selected papers exist in available papers
             Object.entries(paperSelections).forEach(([paperType, paperIds]) => {
                 if (paperIds.length > 0) {
                     const foundPapers = paperIds.map(id => availablePapers.find(p => p._id === id));
@@ -358,10 +325,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 Number(item.gsm) === Number(gsm)
         );
 
-        return matchingPapers.map((item) => {
+        return matchingPapers.map((item:any) => {
             // Calculate how much is already allocated to this paper
             const allocatedKg = (item.allocations || [])
-                .reduce((sum, a) => sum + (a.allocatedKg || 0), 0);
+                .reduce((sum:any, a:any) => sum + (a.allocatedKg || 0), 0);
 
             // Available KG = total KG - allocated KG
             const availableKg = Math.max(0, item.kg - allocatedKg);
@@ -397,7 +364,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [isPaperSelectionRequired, paperRequirements, isPaperSelectionValid]);
 
     // Add a paper to a paper type
-    const addPaperToSelection = useCallback((paperType: keyof typeof paperSelections, paperId: string) => {
+    const addPaperToSelection = useCallback((paperType: keyof typeof paperSelections, paperId: any) => {
         // Check if paper is already selected for this paper type
         if (paperSelections[paperType].includes(paperId)) {
             toast.info("This paper is already selected for this paper type");
@@ -420,55 +387,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         toast.info("Paper removed from selection");
     }, []);
 
-    const renderPrinterLaminationToggle = () => {
-        return (
-            <Card sx={{ mt: 2, border: '1px solid #e0e0e0' }}>
-                <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-start' }}>
-                        <Box>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                                🖨️ Printer Lamination Required?
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {isPrinterLamination
-                                    ? "Printer and binder assignment will be required"
-                                    : "No printer/binder assignment needed"
-                                }
-                            </Typography>
-                        </Box>
-                        <Switch
-                            checked={isPrinterLamination}
-                            onChange={(e) => {
-                                const value = e.target.checked;
-                                setIsPrinterLamination(value);
-                                setFormData(prev => ({ ...prev, isPrinterLamination: value }));
-
-                                // Reset dropdown states when toggling off
-                                if (!value) {
-                                    setShowPrinterDropdown(false);
-                                    setShowBinderDropdown(false);
-                                    setSelectedPrinter("");
-                                    setSelectedBinder("");
-                                }
-                            }}
-                            color="primary"
-                            disabled={isCompleted}
-                        />
-                    </Box>
-
-                    {isPrinterLamination && (
-                        <Chip
-                            label="Printer & Binder Assignment Required"
-                            color="primary"
-                            variant="filled"
-                            sx={{ mt: 1 }}
-                        />
-                    )}
-                </CardContent>
-            </Card>
-        );
-    };
-    
     const handleFormChange = useCallback((field: string, value: string) => {
         if (field === "startDate") {
             if (formData.startDate) {
@@ -490,13 +408,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 }
                 const currentDate = new Date().toISOString().split("T")[0];
                 setFormData((prev) => ({ ...prev, status: value, deliveryDate: currentDate }));
-                setShowPrinterDropdown(false);
-                setShowBinderDropdown(false);
                 return;
             }
 
             if (value === "In Progress" && row.status === "Pending") {
-                // Check if paper selection is required and valid
                 const hasPaperRequirements = paperRequirements?.paper1 > 0 || paperRequirements?.paper2 > 0 || paperRequirements?.paper3 > 0;
 
                 if (hasPaperRequirements && !arePaperSelectionsValid()) {
@@ -508,28 +423,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             if (value === "On Hold") {
                 setRemarkType("onHold");
                 setRemarkModalOpen(true);
-                setShowPrinterDropdown(false);
-                setShowBinderDropdown(false);
                 return;
             }
             if (value === "Canceled") {
                 setRemarkType("canceled");
                 setRemarkModalOpen(true);
-                setShowPrinterDropdown(false);
-                setShowBinderDropdown(false);
                 return;
-            }
-            if (value === "Printer" && !row.printer) {
-                setShowPrinterDropdown(true);
-                setShowBinderDropdown(false);
-            } else if (value === "Lamination" && !row.binder) {
-                setShowPrinterDropdown(false);
-                setShowBinderDropdown(true);
-            } else {
-                setShowPrinterDropdown(false);
-                setShowBinderDropdown(false);
-                setSelectedPrinter(formData.printer || "");
-                setSelectedBinder(formData.binder || "");
             }
         }
 
@@ -539,9 +438,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             setIsInitialUnitSet(true);
 
             // Auto-change status to In Progress if paper selection is not required
-            if (formData.status === "Pending" && !isPaperSelectionRequired) {
+            if (formData.status === "Pending" && !isPaperSelectionRequired)
                 setFormData((prev) => ({ ...prev, status: "In Progress" }));
-            }
             return;
         }
 
@@ -549,110 +447,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
         setFormData((prev) => ({ ...prev, [field]: value }));
     }, [formData, row.status, isInitialUnitSet, isPaperSelectionRequired, paperRequirements, arePaperSelectionsValid, row.printer, row.binder]);
-
-    const handleAssignPrinter = useCallback(async () => {
-        if (!selectedPrinter) {
-            toast.error("Please select a printer before assigning");
-            return;
-        }
-
-        const selectedPrinterData = printers.find((printer) => printer.id === selectedPrinter);
-        if (!selectedPrinterData) {
-            toast.error("Invalid printer selected");
-            return;
-        }
-
-        const now = new Date().toISOString();
-        const remarkText = `Assigned to printer: ${selectedPrinterData.name} (ID: ${selectedPrinter})`;
-
-        try {
-            const updateData = {
-                ...formData,
-                printer: selectedPrinter,
-                remarks: [
-                    ...formData.remarks,
-                    {
-                        type: "Printer Assigned",
-                        text: remarkText,
-                        date: now,
-                        assignedPrinterId: selectedPrinter,
-                    },
-                ],
-            };
-
-            await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
-            setFormData((prev) => ({
-                ...prev,
-                printer: selectedPrinter,
-                remarks: [
-                    ...prev.remarks,
-                    {
-                        type: "Printer Assigned",
-                        text: remarkText,
-                        date: now,
-                        assignedPrinterId: selectedPrinter,
-                    },
-                ],
-            }));
-            setShowPrinterDropdown(false);
-            toast.success("Printer assigned successfully");
-        } catch (err: any) {
-            console.error("ExpandedRowForm: Assign printer failed:", err);
-            toast.error(err?.message || "Failed to assign printer");
-        }
-    }, [selectedPrinter, printers, formData, dispatch]);
-
-    const handleAssignBinder = useCallback(async () => {
-        if (!selectedBinder) {
-            toast.error("Please select a binder before assigning");
-            return;
-        }
-
-        const selectedBinderData = binders.find((binder) => binder.id === selectedBinder);
-        if (!selectedBinderData) {
-            toast.error("Invalid binder selected");
-            return;
-        }
-
-        const now = new Date().toISOString();
-        const remarkText = `Assigned to binder: ${selectedBinderData.name} (ID: ${selectedBinder})`;
-
-        try {
-            const updateData = {
-                ...formData,
-                binder: selectedBinder,
-                remarks: [
-                    ...formData.remarks,
-                    {
-                        type: "Binder Assigned",
-                        text: remarkText,
-                        date: now,
-                        assignedBinderId: selectedBinder,
-                    },
-                ],
-            };
-
-            await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
-            setFormData((prev) => ({
-                ...prev,
-                binder: selectedBinder,
-                remarks: [
-                    ...prev.remarks,
-                    {
-                        type: "Binder Assigned",
-                        text: remarkText,
-                        date: now,
-                        assignedBinderId: selectedBinder,
-                    },
-                ],
-            }));
-            setShowBinderDropdown(false);
-            toast.success("Binder assigned successfully");
-        } catch (err: any) {
-            console.error("ExpandedRowForm: Assign binder failed:", err);
-            toast.error(err?.message || "Failed to assign binder");
-        }
-    }, [selectedBinder, binders, formData, dispatch]);
 
     const handleRemarkSubmit = useCallback(() => {
         const now = new Date().toISOString();
@@ -724,10 +518,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         let remainingRequired = requiredKg;
         const allocations: PaperAllocation[] = [];
 
-        // If there's no requirement, return empty allocations
-        if (requiredKg <= 0) {
-            return allocations;
-        }
+        if (requiredKg <= 0) return allocations;
 
         // Sort papers by available quantity (descending) to use larger papers first
         const sortedPapers = [...papers].sort((a, b) =>
@@ -770,7 +561,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         return allocations;
     }, [paperSelections, availablePapers, getAllocatedQuantity]);
 
-    const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    const handleSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData._id) {
@@ -778,7 +569,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             return;
         }
 
-        // Validate paper selections when changing to In Progress
         if (formData.status === "In Progress" && row.status === "Pending") {
             if (isPaperSelectionRequired && !arePaperSelectionsValid()) {
                 toast.error("Please select valid papers from inventory before submitting");
@@ -827,8 +617,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             const newActuals1 = { paper1: [], paper2: [], paper3: [] };
 
             (["paper1", "paper2", "paper3"] as const).forEach(pt => {
-                paperSelections[pt].forEach(paperId => {
-                    const allocation = allAllocations[pt]?.allocations?.find(a => a.paperId === paperId);
+                paperSelections[pt].forEach((paperId:any) => {
+                    const allocation:any = allAllocations[pt]?.allocations?.find(a => a.paperId === paperId);
                     if (allocation) {
                         newActuals1[pt].push({ paperId, allocatedKg: allocation.allocatedKg });
                     }
@@ -849,10 +639,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 factoryRemark: formData.factoryRemark,
                 status: formData.status,
                 remarks: formData.remarks,
-                printer: formData.printer,
-                binder: formData.binder,
+                printer: selectedPrinter,
+                binder: selectedBinder,
                 selectedPapers: newActuals1,
-                isPrinterLamination: formData.isPrinterLamination,
                 actualTotalKantan: {
                     reel: reel.toString(),
                     inch: inch.toString(),
@@ -877,34 +666,27 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 actualTotalKg: totalKgss?.toFixed(2).toString(),
             };
 
-            // Update the order
             await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
 
-            // Refresh inventory data
             dispatch(getAllInventoryThunk());
 
             setInitialFormData({ ...formData, selectedPapers: selectedPapersForApi });
-            if (formData.status === "Completed") {
-                setIsCompleted(true);
-            }
+            if (formData.status === "Completed") setIsCompleted(true);
+
             toast.success("Order updated successfully");
         } catch (err: any) {
             console.error("ExpandedRowForm: Update failed:", err);
             toast.error(err?.message || "Failed to update order");
         }
-    }, [formData, row, paperRequirements, calculatePaperAllocations, isPaperSelectionRequired, arePaperSelectionsValid, dispatch]);
+    }
 
     const handleCancel = useCallback(() => {
         setFormData(initialFormData);
         setIsInitialUnitSet(!!initialFormData.unitNo);
         setIsActualNoOfPiecesUpdated(!!initialFormData.actualNoOfPieces);
-        setShowPrinterDropdown(initialFormData.status === "Printer" && !row.printer);
-        setShowBinderDropdown(initialFormData.status === "Lamination" && !row.binder);
-        setSelectedPrinter(initialFormData.printer || "");
-        setSelectedBinder(initialFormData.binder || "");
 
         // Reset paper selections to initial values
-        const initialSelections = extractInventoryIds(initialFormData.selectedPapers);
+        const initialSelections:any = extractInventoryIds(initialFormData.selectedPapers);
         setPaperSelections(initialSelections);
         toast.info("Changes cancelled");
     }, [initialFormData, row.printer, row.binder, extractInventoryIds]);
@@ -951,7 +733,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     }}
                     disabled={isCompleted}
                 />
-
 
                 <List dense sx={{ mt: 1, maxHeight: 200, overflow: 'auto', border: '1px solid #f0f0f0', borderRadius: 1 }}>
                     {paperSelections[paperType].length === 0 ? (
@@ -1033,16 +814,14 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     // Render paper selection section
     const renderPaperSelection = () => {
-        if (!row.actualPaperKG && !row.paperKG) {
+        if (!row.actualPaperKG && !row.paperKG)
             return null;
-        }
 
         const paperData = row.actualPaperKG || row.paperKG;
         const hasPaperRequirements = paperRequirements?.paper1 > 0 || paperRequirements?.paper2 > 0 || paperRequirements?.paper3 > 0;
 
-        if (!hasPaperRequirements) {
+        if (!hasPaperRequirements)
             return null;
-        }
 
         return (
             <Card sx={{ mt: 2, border: '1px solid #e0e0e0' }}>
@@ -1074,7 +853,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
                                 const requirement = paperRequirements[paperType as keyof typeof paperRequirements];
                                 const allocations = allAllocations[paperType as keyof typeof allAllocations];
-                                const totalAllocated = allocations.allocations.reduce((sum, a) => sum + a.allocatedKg, 0);
+                                const totalAllocated = allocations.allocations.reduce((sum:any, a:any) => sum + a.allocatedKg, 0);
 
                                 return (
                                     <Typography key={paperType} variant="body2" sx={{ mt: 0.5 }}>
@@ -1199,123 +978,19 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         </TextField>
                     </Stack>
 
-                    {/* Paper Selection Section */}
                     {renderPaperSelection()}
 
-                    {renderPrinterLaminationToggle()}
-
-                    <Stack direction="row" spacing={2}>
-                        {/* Show printer/binder assignment only when printer lamination is required */}
-                        {isPrinterLamination && (
-                            <>
-                                {/* Show assigned printer if exists */}
-                                {row.printer && (
-                                    <TextField
-                                        label="Assigned Printer"
-                                        value={`${row.printer.firstName} ${row.printer.lastName}`}
-                                        variant="outlined"
-                                        size="small"
-                                        sx={{ minWidth: 100 }}
-                                        InputProps={{
-                                            readOnly: true,
-                                        }}
-                                    />
-                                )}
-
-                                {/* Show assigned binder if exists */}
-                                {row.binder && (
-                                    <TextField
-                                        label="Assigned Binder"
-                                        value={`${row.binder.firstName} ${row.binder.lastName}`}
-                                        variant="outlined"
-                                        size="small"
-                                        sx={{ minWidth: 100 }}
-                                        InputProps={{
-                                            readOnly: true,
-                                        }}
-                                    />
-                                )}
-
-                                {/* Show printer dropdown when needed */}
-                                {showPrinterDropdown && (
-                                    <>
-                                        <TextField
-                                            select
-                                            label="Select Printer"
-                                            value={selectedPrinter}
-                                            onChange={(e) => setSelectedPrinter(e.target.value)}
-                                            variant="outlined"
-                                            size="small"
-                                            sx={{ minWidth: 100 }}
-                                            disabled={isCompleted || staffLoading}
-                                        >
-                                            {staffLoading ? (
-                                                <MenuItem value="" disabled>
-                                                    Loading printers...
-                                                </MenuItem>
-                                            ) : printers.length === 0 ? (
-                                                <MenuItem value="" disabled>
-                                                    No printers available
-                                                </MenuItem>
-                                            ) : (
-                                                printers.map((printer) => (
-                                                    <MenuItem key={printer.id} value={printer.id}>
-                                                        {printer.name}
-                                                    </MenuItem>
-                                                ))
-                                            )}
-                                        </TextField>
-                                        <ThemeButton
-                                            type="button"
-                                            onClick={handleAssignPrinter}
-                                            disabled={isCompleted || !selectedPrinter || staffLoading}
-                                        >
-                                            Assign Printer
-                                        </ThemeButton>
-                                    </>
-                                )}
-
-                                {/* Show binder dropdown when needed */}
-                                {showBinderDropdown && (
-                                    <>
-                                        <TextField
-                                            select
-                                            label="Select Binder"
-                                            value={selectedBinder}
-                                            onChange={(e) => setSelectedBinder(e.target.value)}
-                                            variant="outlined"
-                                            size="small"
-                                            sx={{ minWidth: 100 }}
-                                            disabled={isCompleted || staffLoading}
-                                        >
-                                            {staffLoading ? (
-                                                <MenuItem value="" disabled>
-                                                    Loading binders...
-                                                </MenuItem>
-                                            ) : binders.length === 0 ? (
-                                                <MenuItem value="" disabled>
-                                                    No binders available
-                                                </MenuItem>
-                                            ) : (
-                                                binders.map((binder) => (
-                                                    <MenuItem key={binder.id} value={binder.id}>
-                                                        {binder.name}
-                                                    </MenuItem>
-                                                ))
-                                            )}
-                                        </TextField>
-                                        <ThemeButton
-                                            type="button"
-                                            onClick={handleAssignBinder}
-                                            disabled={isCompleted || !selectedBinder || staffLoading}
-                                        >
-                                            Assign Binder
-                                        </ThemeButton>
-                                    </>
-                                )}
-                            </>
-                        )}
-                    </Stack>
+                    <PaperSelection
+                        setSelectedPrinter={setSelectedPrinter}
+                        setSelectedBinder={setSelectedBinder}
+                        isCompleted={isCompleted}
+                        selectedPrinter={selectedPrinter}
+                        printers={printers}
+                        staffLoading={staffLoading}
+                        selectedBinder={selectedBinder}
+                        binders={binders}
+                        data={row}
+                    />
 
                     <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
                         <TextField
