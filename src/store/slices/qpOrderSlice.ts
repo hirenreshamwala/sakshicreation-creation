@@ -37,6 +37,10 @@ interface Order {
   remarks: string;
   filePaths: string[];
   status: "Pending" | "Processing" | "Completed" | "Cancelled";
+  deliveryStatus?: "not_started" | "loading" | "in_transit" | "delivered" | "cancelled";
+  driver?: any; // You can create a proper Driver interface
+  loadingStartDate?: string | null;
+  loadingEndDate?: string | null;
   createdBy: {
     _id: string;
     name: string;
@@ -389,6 +393,28 @@ export const bulkUpdateQPOrderStatusThunk = createAsyncThunk(
   }
 );
 
+export const removeLoadingOrderThunk = createAsyncThunk(
+  "qpOrder/removeLoading",
+  async (orderId: string, { rejectWithValue }) => {
+    try {
+      const response = await orderService.removeLoadingOrder(orderId);
+
+      if (response.success) {
+        // Return both the updated order and orderId
+        return {
+          updatedOrder: response.data,
+          orderId: orderId
+        };
+      } else {
+        return rejectWithValue(response.message || "Failed to remove loading order");
+      }
+    } catch (error: any) {
+      console.error("Redux: Remove loading order error:", error);
+      return rejectWithValue(error.message || "Failed to remove loading order");
+    }
+  }
+);
+
 const qpOrderSlice = createSlice({
   name: "qpOrder",
   initialState,
@@ -697,6 +723,40 @@ const qpOrderSlice = createSlice({
         }
       )
       .addCase(bulkUpdateQPOrderStatusThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(removeLoadingOrderThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        removeLoadingOrderThunk.fulfilled,
+        (state, action: PayloadAction<{ updatedOrder: Order; orderId: string }>) => {
+          state.loading = false;
+
+          const { updatedOrder, orderId } = action.payload;
+
+          // Update the order in the orders array
+          const index = state.orders.findIndex(
+            (order) => order._id === orderId
+          );
+
+          if (index !== -1) {
+            // Replace the entire order with the updated one from API
+            state.orders[index] = updatedOrder;
+          }
+
+          // Also update singleOrder if it's the current one
+          if (state.singleOrder && state.singleOrder._id === orderId) {
+            state.singleOrder = updatedOrder;
+          }
+
+          state.successMessage = "Order removed from loading successfully";
+          state.error = null;
+        }
+      )
+      .addCase(removeLoadingOrderThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

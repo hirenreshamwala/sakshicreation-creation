@@ -1,7 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Box, Button, Popover, List, ListItem, ListItemText, TextField } from "@mui/material";
+import {
+  Box,
+  Button,
+  Popover,
+  List,
+  ListItem,
+  ListItemText,
+  TextField,
+  Card,
+  CardContent,
+  Typography,
+  Divider,
+  Paper,
+  Stack,
+  alpha
+} from "@mui/material";
 import { useAppDispatch, useAppSelector } from "@/store";
 import TabComponent from "@/component/Dialog/TabComponent";
 import FilterDropdown from "@/component/fillter";
@@ -16,6 +31,10 @@ import CustomerData from "@/component/dashboardPages/CustomerData";
 import Request from "@/services/axios";
 import Loader from "@/component/common_component/loader";
 import InactivePartiesData from "@/component/dashboardPages/InactivePartiesData";
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import PeopleIcon from '@mui/icons-material/People';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import StoreIcon from '@mui/icons-material/Store';
 
 const IndexPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -206,11 +225,95 @@ const IndexPage: React.FC = () => {
       ? `${customStartDate} to ${customEndDate}`
       : presets.find((p) => p.value === selectedPreset)?.label || "Select Date Range";
 
+  // Data sections configuration
+  const dataSections = [
+    {
+      title: "Tasks",
+      icon: <AssignmentIcon color="primary" />,
+      component: <TaskData
+        activeTab={companyTab}
+        startDate={startDate}
+        endDate={endDate}
+        staffFilter={staffFilter}
+        data={filteredData}
+        loading={loading}
+        companyName={companyName}
+      />
+    },
+    {
+      title: "Leads",
+      icon: <PeopleIcon color="primary" />,
+      component: <LeadData
+        activeTab={companyTab}
+        startDate={startDate}
+        endDate={endDate}
+        staffFilter={staffFilter}
+        data={filteredData}
+        loading={loading}
+        companyName={companyName}
+      />
+    },
+    {
+      title: "Visits",
+      icon: <CalendarTodayIcon color="primary" />,
+      component: <VisitData
+        activeTab={companyTab}
+        startDate={startDate}
+        endDate={endDate}
+        staffFilter={staffFilter}
+        data={filteredData}
+        loading={loading}
+        companyName={companyName}
+      />
+    },
+    {
+      title: "Customers",
+      icon: <StoreIcon color="primary" />,
+      component: <CustomerData
+        activeTab={companyTab}
+        startDate={startDate}
+        endDate={endDate}
+        staffFilter={staffFilter}
+        data={filteredData}
+        loading={loading}
+        companyName={companyName}
+      />
+    }
+  ];
+
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{
+      p: { xs: 2, md: 3 },
+      bgcolor: alpha('#f0f4f8', 0.7),
+      minHeight: '100vh',
+      backgroundImage: 'linear-gradient(to bottom right, #f8fafc, #e2e8f0)'
+    }}>
+      {/* Header */}
+      {/* <Box sx={{ mb: 4 }}>
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          fontWeight={600}
+          color="#1e293b"
+          sx={{ mb: 1 }}
+        >
+          Dashboard
+        </Typography>
+        <Typography variant="body1" color="#64748b">
+          {companyName} Performance Overview
+        </Typography>
+      </Box> */}
+
       {/* Tabs */}
-      {/* {loading && <Loader />} */}
-      {hasBothCompanies && <TabComponent activeTab={companyTab} setActiveTab={setCompanyTab} />}
+      {hasBothCompanies && (
+        <TabComponent activeTab={companyTab} setActiveTab={setCompanyTab} />
+      )}
+
+      {/* Inactive Parties */}
+      <InactivePartiesData
+        activeTab={companyTab}
+        companyName={companyName}
+      />
 
       {/* Date Picker and Filter in a single row */}
       <Box
@@ -299,50 +402,50 @@ const IndexPage: React.FC = () => {
         </Box>
       </Box>
 
-      <InactivePartiesData
-        activeTab={companyTab}
-        companyName={companyName}
-      />
-
-      {/* TaskData Table */}
-      {loading ? <Loader /> : <>
-        <TaskData
-          activeTab={companyTab}
-          startDate={startDate}
-          endDate={endDate}
-          staffFilter={staffFilter}
-          data={filteredData}
-          loading={loading}
-          companyName={companyName}
-        />
-        <LeadData
-          activeTab={companyTab}
-          startDate={startDate}
-          endDate={endDate}
-          staffFilter={staffFilter}
-          data={filteredData}
-          loading={loading}
-          companyName={companyName}
-        />
-        <VisitData
-          activeTab={companyTab}
-          startDate={startDate}
-          endDate={endDate}
-          staffFilter={staffFilter}
-          data={filteredData}
-          loading={loading}
-          companyName={companyName}
-        />
-        <CustomerData
-          activeTab={companyTab}
-          startDate={startDate}
-          endDate={endDate}
-          staffFilter={staffFilter}
-          data={filteredData}
-          loading={loading}
-          companyName={companyName}
-        />
-      </>}
+      {/* Data Sections */}
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <Loader />
+        </Box>
+      ) : (
+        <Stack spacing={3}>
+          {dataSections.map((section, index) => (
+            <Card
+              key={index}
+              elevation={0}
+              sx={{
+                borderRadius: 2,
+                overflow: 'hidden',
+                border: '1px solid #e2e8f0',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <Box
+                sx={{
+                  p: 2,
+                  bgcolor: '#f8fafc',
+                  borderBottom: '1px solid #e2e8f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5
+                }}
+              >
+                {section.icon}
+                <Typography variant="h6" component="h2" fontWeight={600} color="#1e293b">
+                  {section.title}
+                </Typography>
+              </Box>
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                {section.component}
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
+      )}
     </Box>
   );
 };

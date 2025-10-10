@@ -184,6 +184,7 @@ const Endpoint = {
   DELETE_QP_ORDER: `${BaseURL}/api/qporder/delete`,
   GET_ALL_QP_ORDER: `${BaseURL}/api/qporder/getall`,
   GET_QP_ORDER_BY_STAFF_ID: `${BaseURL}/api/qporder/getbystaff`,
+  REMOVE_LOADING_ORDER: `${BaseURL}/api/qporder/remove-loading`,
 
   CREATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/create`,
   UPDATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/update`,
