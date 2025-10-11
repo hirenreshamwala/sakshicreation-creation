@@ -629,8 +629,8 @@ const AdminManagerSalesView = () => {
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.orderdata?.length && row.orderdata?.height
-                    ? Number(row.orderdata.length) + Number(row.orderdata.height)
+                  {row.orderdata?.length && row.orderdata?.width
+                    ? Number(row.orderdata.length) + Number(row.orderdata.width) + 2
                     : "N/A"}
                 </Typography>
               </TableCell>

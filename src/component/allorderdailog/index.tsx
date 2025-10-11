@@ -76,7 +76,8 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
       dispatch(clearOrderError())
       dispatch(clearOrderSuccessMessage())
       setGstNotApplicable(false)
-      setSelectedCompany("")
+      setSelectedCompany(company)
+      // setSelectedCompany("")
     }
   }, [open, dispatch])
 
@@ -106,16 +107,20 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
 
   // Auto-fill form when account master data is loaded
   useEffect(() => {
-    if (singleAccountMaster && singleAccountMaster.accountMaster) {
+    if (
+      sakshiFormData.partyName &&
+      singleAccountMaster &&
+      singleAccountMaster.accountMaster
+    ) {
       const accountData = singleAccountMaster.accountMaster
       setSakshiFormData((prev) => ({
         ...prev,
-        personName: accountData.party?.contactPerson || "",
-        whatsapp: accountData.party?.personWhatsAppNo || "",
+        personName: accountData.party?.ownerName || "",
+        whatsapp: accountData.party?.ownerWhatsAppNo || "",
         gst: accountData.party?.GSTNo || "",
       }))
     }
-  }, [singleAccountMaster])
+  }, [singleAccountMaster, sakshiFormData.partyName])
 
   const handleSakshiChange = (field: string, value: any) => setSakshiFormData((prev) => ({ ...prev, [field]: value }))
 
@@ -134,11 +139,12 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
     const partyId = newValue ? newValue.value : ""
     handleSakshiChange("partyName", partyId)
 
-    if (selectedCompany && partyId) {
+    if (sakshiFormData.companyName && partyId) {
       try {
         await dispatch(
           getAccountMasterByCompanyAndPartyThunk({
-            companyId: selectedCompany,
+            // companyId: selectedCompany,
+            companyId: sakshiFormData.companyName,
             partyId: partyId,
           })
         ).unwrap()
@@ -153,7 +159,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
   const handleUploadError = (error: string) => toast.error(error)
 
   const handleSakshiSubmit = async () => {
-    if ( !sakshiFormData.partyName || !sakshiFormData.itemName || !sakshiFormData.qty) {
+    if (!sakshiFormData.partyName || !sakshiFormData.itemName || !sakshiFormData.qty) {
       toast.error("Please fill all required fields")
       return
     }
@@ -240,6 +246,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
   }
 
 
+  console.log("DEBUG : singleAccountMaster:", singleAccountMaster);
   const renderSakshiForm = () => (
     <>
       <Stack direction="row" spacing={2} mb={2}>
@@ -249,7 +256,8 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
           fullWidth
           value={sakshiFormData.personName}
           onChange={(e) => handleSakshiChange("personName", e.target.value)}
-          disabled={!!singleAccountMaster}
+          disabled
+
           sx={{
             "& .MuiInputBase-input": {
               backgroundColor: singleAccountMaster ? "#f5f5f5" : "transparent",
@@ -262,7 +270,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
           fullWidth
           value={sakshiFormData.whatsapp}
           onChange={(e) => handleSakshiChange("whatsapp", e.target.value)}
-          disabled={!!singleAccountMaster}
+          disabled
           sx={{
             "& .MuiInputBase-input": {
               backgroundColor: singleAccountMaster ? "#f5f5f5" : "transparent",
@@ -397,7 +405,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
           />
         </Box>
       </Stack>
-      
+
       {sakshiFormData.number === 'Yes' ? (
         <Stack direction="row" spacing={2}>
           <ThemeInput
@@ -449,7 +457,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         <Box mb={2}>
           <CompanySelect
             name="companyName"
-            value={company}
+            value={sakshiFormData.companyName}
             onChange={handleCompanyChange}
             hasParties={true}
             required

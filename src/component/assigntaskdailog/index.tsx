@@ -237,13 +237,27 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   }, [open, companyOptions, partyOptions]);
 
   const staffOptions = useMemo(() => {
+    const reason = (formik.values.reasonForVisit || "").trim().toLowerCase();
+
+    // If reason contains "delivery" → show Drivers
+    if (reason.includes("delivery")) {
+      return staffList
+        .filter((staff) => staff.role?.roleName === "Driver")
+        .map((staff) => ({
+          label: `${staff.firstName} ${staff.lastName}`,
+          value: staff._id,
+        }));
+    }
+
+    // Otherwise → show Sales Staff
     return staffList
       .filter((staff) => staff.role?.roleName === "Sales Staff")
       .map((staff) => ({
         label: `${staff.firstName} ${staff.lastName}`,
         value: staff._id,
       }));
-  }, [staffList]);
+  }, [staffList, formik.values.reasonForVisit]);
+
 
   const reasonOptions = useMemo(
     () => [

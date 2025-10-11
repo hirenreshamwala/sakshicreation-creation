@@ -438,9 +438,6 @@ const OperatorView = () => {
           </Box>
           <FilterDropdown
             filterOptions={["Deckal"]}
-            // filterOptions={columns
-            //   .filter((col) => col.id !== "action")
-            //   .map((col) => col.label)}
             uniqueValues={selectedFilterField ? getUniqueValues : []}
             onFiltersChange={(newFilters) => {
               const idBasedFilters: { [key: string]: string[] } = {}
@@ -519,8 +516,8 @@ const OperatorView = () => {
               </TableCell>
               <TableCell>
                 <Typography>
-                  {row.orderdata?.length && row.orderdata?.height
-                    ? Number(row.orderdata.length) + Number(row.orderdata.height)
+                  {row.orderdata?.length && row.orderdata?.width
+                    ? Number(row.orderdata.length) + Number(row.orderdata.width) + 2
                     : "N/A"}
                 </Typography>
               </TableCell>
