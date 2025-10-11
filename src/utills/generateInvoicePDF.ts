@@ -131,7 +131,7 @@ export const generateInvoicePDF = async (formData: InvoiceFormData) => {
   const HEADER_Y = 55;
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text(`${formData.quotation ? "QUOTATION" : "PERFORMA INVOICE"}`, pageWidth / 2, HEADER_Y, { align: "center" });
+  doc.text(`${formData.quotation ? "QUOTATION" : "PROFORMA INVOICE"}`, pageWidth / 2, HEADER_Y, { align: "center" });
   doc.setLineWidth(0.5);
   doc.line(10, HEADER_Y + 2, 200, HEADER_Y + 2);
 
@@ -263,6 +263,37 @@ export const generateInvoicePDF = async (formData: InvoiceFormData) => {
     tableStartY += LINE_HEIGHT;
   }
 
+
+  // Calculate amounts correctly for both quotation and proforma invoice
+  const quantity = Number(formData.quantity) || 0;
+  const unitPrice = Number(formData.unitPrice) || 0;
+  
+  // Calculate total based on quantity and unitPrice
+  const calculatedTotal = quantity * unitPrice;
+  
+  // Use provided total if available and valid, otherwise use calculated total
+  const subtotal = (formData.total && formData.total > 0) ? formData.total : calculatedTotal;
+  
+  // Calculate GST values
+  const gstPercentage = formData.applyGST ? (Number(formData.gstPercentage) || 18) : 0;
+  const gstAmount = formData.applyGST ? subtotal * (gstPercentage / 100) : 0;
+  
+  // Use provided finalAmount if available and valid, otherwise calculate it
+  const totalAmount = (formData.finalAmount && formData.finalAmount > 0) 
+    ? formData.finalAmount 
+    : subtotal + gstAmount;
+
+  console.log("DEBUG : generateInvoicePDF : formData:", formData);
+  console.log("DEBUG : generateInvoicePDF : calculated values:", {
+    quantity,
+    unitPrice,
+    calculatedTotal,
+    subtotal,
+    gstPercentage,
+    gstAmount,
+    totalAmount
+  });
+
   // Item Table
   const tableColumn = [
     "Sr. No.",
@@ -283,11 +314,15 @@ export const generateInvoicePDF = async (formData: InvoiceFormData) => {
     ],
   ];
 
-  // Calculate GST values
-  const gstPercentage = formData.applyGST ? formData.gstPercentage || 18 : 0;
-  const gstAmount = formData.applyGST ? formData.total * (gstPercentage / 100) : 0;
-  const subtotal = formData.total || 0;
-  const totalAmount = formData.finalAmount || 0;
+  // // Calculate GST values
+  // const gstPercentage = formData.applyGST ? formData.gstPercentage || 18 : 0;
+  // console.log("DEBUG : generateInvoicePDF : formData:", formData);
+
+  // const gstAmount = formData.applyGST ? formData.total * (gstPercentage / 100) : 0;
+  // const subtotal = formData.total || 0;
+  // const totalAmount = formData.finalAmount || 0;
+  // console.log("DEBUG : generateInvoicePDF : totalAmount:", totalAmount);
+
 
   const additionalRows = [
     [
@@ -323,9 +358,9 @@ export const generateInvoicePDF = async (formData: InvoiceFormData) => {
     body: [...tableRows, ...additionalRows],
     theme: "grid",
     margin: { left: 10, right: 10 },
-    styles: { 
-      fontSize: 9, 
-      halign: "center", 
+    styles: {
+      fontSize: 9,
+      halign: "center",
       cellPadding: 3,
       fillColor: false // ✅ Yeh line add karein - data cells ka background transparent hoga
     },
@@ -350,14 +385,98 @@ export const generateInvoicePDF = async (formData: InvoiceFormData) => {
     },
   });
 
-  const finalY = (doc as any).lastAutoTable.finalY;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("Authorised By", 190, finalY + 40, { align: "right" });
-  doc.setLineWidth(0.5);
-  doc.line(165, finalY + 35, 190, finalY + 35);
+  const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY : tableStartY + 40;
 
-  // === TOP & BOTTOM LINES ===
+  // === Signature Block (perfected: both elements right-aligned, perfectly stacked with tight spacing for a cohesive unit) ===
+  const signRightX = pageWidth - 10; // Right-aligned position
+  const signatureGap = 8; // Tight spacing between signature and label
+  const signatureY = finalY + 15; // Start signature block higher for better flow
+  doc.setFont("times", "italic");
+  doc.setFontSize(13); // Elegant size
+  doc.setTextColor(0, 0, 0); // Solid black
+  const signatureText = "Sakshi";
+  doc.text(signatureText, signRightX, signatureY, { align: "right" }); // Right-aligned for consistency
+
+  // Label directly below, same alignment
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(0, 0, 0);
+  const labelY = signatureY + signatureGap;
+  doc.text("Authorised By", signRightX, labelY, { align: "right" });
+
+  // Add a horizontal line above the "Authorised By" label
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(0, 0, 0);
+  const lineY = labelY - 5; // Position the line just above the label
+  const lineLength = 25; // Length of the line (adjust as needed)
+  doc.line(signRightX - lineLength, lineY, signRightX, lineY);
+
+  // === Terms & Conditions block (adjusted to start after the tight signature block) ===
+  const termsX = 10;
+  const termsY = labelY + 8; // Minimal space after label
+  const termsWidth = pageWidth - 20;
+  const termsPadding = 4;
+  const termsInnerWidth = termsWidth - termsPadding * 2;
+  const termsBoxHeight = 50;
+
+  // Box border for terms
+  doc.setDrawColor(120);
+  doc.setLineWidth(0.3);
+  doc.rect(termsX, termsY, termsWidth, termsBoxHeight, "S");
+
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+  doc.text("Terms & Conditions:", termsX + termsPadding, termsY + termsPadding);
+
+  // Terms content
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(0, 0, 0);
+
+  const termsList = [
+    "1. Goods once sold will not be taken back unless agreed in writing.",
+    "2. Delivery dates are approximate and commence from the date of confirmation of order.",
+    "3. Any discrepancy in the invoice should be reported within 7 days from the date of receipt.",
+    "4. Payment should be made as per agreed terms; late payments may attract interest.",
+    "5. Goods remain the property of Sakshi Creations until payment is received in full.",
+    "6. Any disputes will be subject to Surat jurisdiction only.",
+  ];
+
+  const lineHeightTerms = 4.5;
+  let currentTermY = termsY + termsPadding + 8;
+  let totalLinesUsed = 0;
+  const availableHeight = termsBoxHeight - (termsPadding * 2 + 8);
+  const maxTotalLines = Math.floor(availableHeight / lineHeightTerms);
+
+  for (const term of termsList) {
+    const wrappedTerm = doc.splitTextToSize(term, termsInnerWidth);
+    const linesForThisTerm = wrappedTerm.length;
+
+    if (totalLinesUsed + linesForThisTerm > maxTotalLines) {
+      break;
+    }
+
+    for (let j = 0; j < linesForThisTerm; j++) {
+      if (totalLinesUsed < maxTotalLines) {
+        doc.text(wrappedTerm[j], termsX + termsPadding, currentTermY);
+        currentTermY += lineHeightTerms;
+        totalLinesUsed++;
+      }
+    }
+  }
+
+  if (totalLinesUsed >= maxTotalLines) {
+    doc.setFont("helvetica", "italic");
+    doc.text("... (continued on next page)", termsX + termsPadding, currentTermY);
+  }
+
+  // Reset colors
+  doc.setDrawColor(0);
+  doc.setTextColor(0, 0, 0);
+
+  // === TOP & BOTTOM LINES (unchanged) ===
   const topBlueHeight = 6;
   const topPinkHeight = 2;
   const topGap = 1.5;
@@ -382,6 +501,6 @@ export const generateInvoicePDF = async (formData: InvoiceFormData) => {
   // Save PDF
   const invoiceType = formData.quotation ? "Quotation" : "Proforma_Invoice";
   doc.save(
-    `${invoiceType}_${formData.orderNumber || "N/A"}_${new Date().toISOString().split("T")[0]}.pdf`
+    `${invoiceType}_${formData.orderNumber || "N_A"}_${new Date().toISOString().split("T")[0]}.pdf`
   );
 };

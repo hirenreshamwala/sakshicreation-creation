@@ -135,15 +135,16 @@ export const approvePartyThunk = createAsyncThunk(
 
 export const searchPartiesThunk = createAsyncThunk(
   "accountMasters/searchParties",
-  async (query: string, { rejectWithValue }) => {
+  async ({ query, companyId }: { query: string; companyId: string }, { rejectWithValue }) => {
     try {
-      const response = await accountMasterService.searchParties(query);
+      const response = await accountMasterService.searchParties(query, companyId);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to search parties");
     }
   }
 );
+
 
 interface AccountMasterByCompanyParty {
   accountMaster: {

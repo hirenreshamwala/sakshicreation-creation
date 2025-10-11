@@ -67,7 +67,7 @@ interface AddNewPartyDialogProps {
   accountId?: string;
   refreshData?: () => void;
   isRequestMode?: boolean;
-  company:any;
+  company: any;
   isBulkUpload?: boolean; // New prop to handle bulk upload mode
 }
 
@@ -136,19 +136,20 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   }, []);
 
   const debouncedSearch = useCallback(
-    debounce((query: string) => {
-      if (query.length >= 2) {
-        dispatch(searchPartiesThunk(query));
+    debounce((query: string, companyId: string) => {
+      if (query.length >= 2 && companyId) {
+        dispatch(searchPartiesThunk({ query, companyId }));
       } else {
         dispatch(clearSuggestions());
       }
     }, 300),
     [dispatch]
   );
+
   const debouncedReferenceSearch = useCallback(
-    debounce((query: string) => {
-      if (query.length >= 2) {
-        dispatch(searchPartiesThunk(query));
+    debounce((query: string, companyId: string) => {
+      if (query.length >= 2 && companyId) {
+        dispatch(searchPartiesThunk({ query, companyId }));
       } else {
         dispatch(clearSuggestions());
       }
@@ -168,7 +169,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
 
   const formik = useFormik<FormData>({
     initialValues: {
-      companyName:company?._id,
+      companyName: company?._id,
       partyName: "",
       ownerName: "",
       ownerMobileNo: "",
@@ -431,16 +432,27 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     }));
   };
 
+  const filteredReferenceOptions = React.useMemo(() => {
+    return referenceOptions.filter(option => option.partyName !== formik.values.partyName);
+  }, [referenceOptions, formik.values.partyName]);
 
-console.log(hasReference,'hasReference')
+  const handleDialogClose = () => {
+    formik.resetForm();
+    setInputValue("");
+    setFile(null);
+    setSkippedRecords([]);
+    setHasReference("no");
+    dispatch(clearSuggestions());
+    onClose();
+  };
+
+
+  console.log(hasReference, 'hasReference')
   return (
     <CustomDialog
       open={open}
       maxWidth="xl"
-      onClose={() => {
-        onClose()
-        setSkippedRecords([])
-      }}
+      onClose={handleDialogClose}
       title={
         isEditMode
           ? "Edit Party"
@@ -487,7 +499,13 @@ console.log(hasReference,'hasReference')
                   const value = e.target.value.toUpperCase()
                   formik.setFieldValue("partyName", value)
                   setInputValue(value)
-                  debouncedSearch(value)
+
+                  // Company selected होने पर ही search करें
+                  if (formik.values.companyName) {
+                    debouncedSearch(value, formik.values.companyName)
+                  } else {
+                    dispatch(clearSuggestions());
+                  }
                 }}
                 error={formik.touched.partyName && Boolean(formik.errors.partyName)}
                 helperText={formik.touched.partyName && formik.errors.partyName}
@@ -772,18 +790,23 @@ console.log(hasReference,'hasReference')
                 <Box sx={{ width: '50%' }}>
                   <Autocomplete
                     freeSolo
-                    options={referenceOptions.map(option =>
+                    options={filteredReferenceOptions.map(option =>
                       `${option.partyName} - ${option.address?.unitNo || ""}, ${option.address?.marketName?.marketName || ""}`
                     )}
                     value={formik.values.reference}
                     onChange={(event, newValue) => {
-                      // Extract just the party name when an option is selected
                       const selectedPartyName = newValue ? newValue.split(" - ")[0] : "";
                       formik.setFieldValue("reference", selectedPartyName);
                     }}
                     onInputChange={(event, newInputValue) => {
                       formik.setFieldValue("reference", newInputValue);
-                      debouncedReferenceSearch(newInputValue);
+
+                      // Company selected होने पर ही search करें
+                      if (formik.values.companyName) {
+                        debouncedReferenceSearch(newInputValue, formik.values.companyName);
+                      } else {
+                        dispatch(clearSuggestions());
+                      }
                     }}
                     renderInput={(params) => (
                       <TextField
