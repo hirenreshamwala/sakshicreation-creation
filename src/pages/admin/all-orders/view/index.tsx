@@ -618,41 +618,36 @@ const ViewOrderPage = () => {
           <Typography variant="h6" fontWeight={600} mb={2}>
             Quotation Proof
           </Typography>
-          {singleOrder?.quotation.length ? <>
+          {singleOrder?.quotation.length ?
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <Button
+                variant="contained"
+                onClick={() => setQuotationHistoryDialog(true)}
+                sx={{ flex: 1 }}
+              >
+                View Quotation History
+              </Button>
 
-            <Button
-              variant="contained"
-              onClick={() => setQuotationHistoryDialog(true)}
-              sx={{
-
-                mb: 2
-              }}
-            >
-              View Quotation History
-            </Button>
-            <ThemeButton
-              fullWidth
-              sx={{
-                background: "#2196F3",
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: 16,
-                borderRadius: 2,
-                py: 1.2,
-                mb: 2,
-                "&:hover": { background: "#1976D2" },
-              }}
-              onClick={handleDownloadInvoice}
-            >
-              <MdDownload style={{ marginRight: "8px" }} />
-              Download Quotation
-            </ThemeButton></> : null}
-          {!hasQuotationProof ? (
-            <>
               <ThemeButton
-                fullWidth
                 sx={{
-                  mb: 2,
+                  flex: 1,
+                  background: "#2196F3",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: 16,
+                  borderRadius: 2,
+                  py: 1.2,
+                  "&:hover": { background: "#1976D2" },
+                }}
+                onClick={handleDownloadInvoice}
+              >
+                <MdDownload style={{ marginRight: "8px" }} />
+                Download Quotation
+              </ThemeButton>
+
+              <ThemeButton
+                sx={{
+                  flex: 1,
                   background: "#667085",
                   color: "#fff",
                   fontWeight: 600,
@@ -664,6 +659,10 @@ const ViewOrderPage = () => {
               >
                 Generate Quotation
               </ThemeButton>
+            </Box>
+            : null}
+          {!hasQuotationProof ? (
+            <>
               <FileUpload
                 ref={quotationProofUploadRef}
                 folder="quotation_proofs"
