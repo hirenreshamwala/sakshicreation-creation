@@ -216,14 +216,22 @@ export const accountMasterService = {
       throw new Error(error.response?.data?.message || "Failed to approve party");
     }
   },
-  async searchParties(query: string): Promise<ApiResponse<PartySuggestion[]>> {
-    try {
-      const response: AxiosResponse<ApiResponse<PartySuggestion[]>> = await Request.get(
-        `${Endpoint.SEARCH_PARTIES}?q=${encodeURIComponent(query)}`,
-      );
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || "Failed to search parties");
+  async searchParties(query: string, companyId?: string): Promise<ApiResponse<PartySuggestion[]>> {
+  try {
+    const params: any = { q: query };
+    
+    // Add companyId to params if provided
+    if (companyId) {
+      params.companyId = companyId;
     }
-  },
+
+    const response: AxiosResponse<ApiResponse<PartySuggestion[]>> = await Request.get(
+      `${Endpoint.SEARCH_PARTIES}`,
+      { params }
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to search parties");
+  }
+},
 };

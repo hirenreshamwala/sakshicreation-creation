@@ -233,16 +233,36 @@ const ViewOrderPage = () => {
   }, [dispatch, orderId])
   const handleDownloadInvoice = () => {
     try {
-      const fullAddress = [
-        singleOrder?.party?.address?.unitNo || "",
-        // singleOrder?.party?.address?.streetAddress || "",
-        singleOrder?.party?.address?.marketName || "",
-        singleOrder?.party?.address?.landMark || "",
-        singleOrder?.party?.address?.area || "",
-        singleOrder?.party?.address?.pincode || "",
-      ]
-        .filter((part) => part.trim() !== "")
-        .join(", ");
+      // Get the latest quotation
+      const latestQuotation = singleOrder?.quotation?.[singleOrder?.quotation?.length - 1];
+
+      // Debug log
+      console.log("Latest Quotation:", latestQuotation);
+      console.log("Single Order:", singleOrder);
+
+      // Calculate amounts based on latest quotation
+      const quantity = Number(singleOrder?.qty) || 0;
+      const unitPrice = Number(latestQuotation?.unitPrice) || 0;
+      const subtotal = quantity * unitPrice;
+
+      // GST settings from latest quotation
+      // Agar quotation mein gst value hai (0 se bada) toh applyGST = true, warna false
+      const gstValue = Number(latestQuotation?.gst) || 0;
+      const applyGST = gstValue > 0;
+      const gstPercentage = gstValue;
+
+      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0;
+      const totalAmount = subtotal + gstAmount;
+
+      console.log("Calculated amounts:", {
+        quantity,
+        unitPrice,
+        subtotal,
+        applyGST,
+        gstPercentage,
+        gstAmount,
+        totalAmount
+      });
 
       const formData = {
         quotation: true,
@@ -251,19 +271,23 @@ const ViewOrderPage = () => {
         remarks: singleOrder?.remarks || "",
         ownerMobileNo: singleOrder?.party?.ownerMobileNo || "",
         partyName: singleOrder?.party?.partyName || "N/A",
-        addressName: `${singleOrder?.party?.address?.unitNo} ${markets?.find((item) => item._id === singleOrder?.party?.address?.marketName)?.marketName} ${markets?.find((item) => item._id === singleOrder?.party?.address?.landMark)?.landmark} 
-              ${markets?.find((item) => item._id === singleOrder?.party?.address?.area)?.area} ${markets?.find((item) => item._id === singleOrder?.party?.address?.pincode)?.pincode}`,
+        addressName: `${singleOrder?.party?.address?.unitNo || ""} ${markets?.find((item) => item._id === singleOrder?.party?.address?.marketName)?.marketName || ""
+          } ${markets?.find((item) => item._id === singleOrder?.party?.address?.landMark)?.landmark || ""
+          } ${markets?.find((item) => item._id === singleOrder?.party?.address?.area)?.area || ""
+          } ${markets?.find((item) => item._id === singleOrder?.party?.address?.pincode)?.pincode || ""
+          }`.trim(),
         GSTNo: singleOrder?.party?.GSTNo || "N/A",
         servicePerformance: singleOrder?.productItem?.itemName || "N/A",
-        quantity: singleOrder?.qty || 0,
-        unitPrice: singleOrder?.quotation[singleOrder?.quotation?.length - 1]?.unitPrice || 0,
-        total: singleOrder?.total || 0,
-        finalAmount: singleOrder?.finalAmount || 0,
-        applyGST: singleOrder?.applyGST || false,
-        gstPercentage: singleOrder?.gstPercentage || 18,
+        quantity: quantity,
+        unitPrice: unitPrice,
+        total: subtotal, // Use calculated subtotal
+        finalAmount: totalAmount, // Use calculated total
+        applyGST: applyGST,
+        gstPercentage: gstPercentage,
         daysAfterConfirmation: singleOrder?.daysAfterConfirmation || 0,
       };
 
+      console.log("Final FormData for PDF:", formData);
       generateInvoicePDF(formData);
       toast.success("Quotation downloaded successfully");
     } catch (error) {
