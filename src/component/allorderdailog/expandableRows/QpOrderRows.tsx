@@ -47,7 +47,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [remarkType, setRemarkType] = useState<"startDate" | "onHold" | "canceled" | null>(null);
     const [isActualNoOfPiecesUpdated, setIsActualNoOfPiecesUpdated] = useState(!!row.actualNoOfPieces);
     const [availablePapers, setAvailablePapers] = useState<InventoryPaper[]>([]);
-    const [newAllocations,setNewAllocations] = useState(null)
+    const [newAllocations, setNewAllocations] = useState(null)
     const [paperSelections, setPaperSelections] = useState({
         paper1: [],
         paper2: [],
@@ -214,34 +214,24 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     // Calculate all paper allocations at once to avoid circular dependency
     const calculateAllPaperAllocations = useCallback((): PaperAllocationsResult => {
-        console.log("🟢 Starting paper allocation calculation");
-        console.log("Available Papers:", availablePapers);
-        console.log("Paper Selections:", paperSelections);
-        console.log("Paper Requirements:", paperRequirements);
 
         // Create a map to track available quantities for each paper
         const paperQuantities: Record<string, number> = {};
         availablePapers.forEach(paper => {
             paperQuantities[paper._id] = Number(paper.kg) - (paper.allocations.length ? paper.allocations.reduce((sum, item) => sum + item.allocatedKg, 0) : 0); // -----------------------
         });
-        console.log("Initial paper quantities map:", paperQuantities);
 
         // Function to calculate allocations for a single paper type
         const calculateForType = (paperType: keyof typeof paperSelections, requiredKg: number) => {
-            console.log(`\n🔹 Calculating allocations for paper type: ${paperType}`);
-            console.log("Required KG:", requiredKg);
 
             const papers = paperSelections[paperType]
                 .map(paperId => availablePapers.find(p => p._id === paperId))
                 .filter(Boolean) as InventoryPaper[];
 
-            console.log("Selected papers for allocation:", papers);
-
             let remainingRequired = requiredKg;
             const allocations: PaperAllocation[] = [];
 
             if (requiredKg <= 0) {
-                console.log(`No requirement for ${paperType}, returning empty allocations`);
                 return {
                     allocations: [],
                     remainingRequired: 0,
@@ -251,10 +241,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
             // Greedy allocation
             for (const paper of papers) {
-                console.log(`Allocating from paper: ${paper._id} | Available KG: ${paperQuantities[paper._id]} | Remaining Required: ${remainingRequired}`);
 
                 if (remainingRequired <= 0) {
-                    console.log(`Requirement already met, setting allocation 0 for remaining papers`);
                     allocations.push({
                         paperId: paper._id,
                         allocatedKg: 0
@@ -264,7 +252,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
                 const availableKg = paperQuantities[paper._id] || 0;
                 if (availableKg <= 0) {
-                    console.log(`Paper ${paper._id} has 0 KG available, skipping allocation`);
                     allocations.push({
                         paperId: paper._id,
                         allocatedKg: 0
@@ -273,7 +260,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 }
 
                 const allocatedKg = Math.min(availableKg, remainingRequired);
-                console.log(`Allocating ${allocatedKg} KG from paper ${paper._id}`);
 
                 allocations.push({
                     paperId: paper._id,
@@ -282,11 +268,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 paperQuantities[paper._id] -= allocatedKg;
                 remainingRequired -= allocatedKg;
 
-                console.log(`After allocation: Remaining Required: ${remainingRequired}, Updated paperQuantities:`, paperQuantities);
             }
-
-            console.log(`✅ Finished allocation for ${paperType}:`, allocations);
-            console.log(`Remaining required KG for ${paperType}:`, remainingRequired);
 
             return {
                 allocations,
@@ -305,11 +287,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         [...paper1Result.allocations, ...paper2Result.allocations, ...paper3Result.allocations].forEach(allocation => {
             paperAllocationsMap[allocation.paperId] = (paperAllocationsMap[allocation.paperId] || 0) + allocation.allocatedKg;
         });
-
-        console.log("\n📊 Final Paper Allocations Map:", paperAllocationsMap);
-        console.log("Paper1 Result:", paper1Result);
-        console.log("Paper2 Result:", paper2Result);
-        console.log("Paper3 Result:", paper3Result);
 
         return {
             paper1: paper1Result,
@@ -336,45 +313,117 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         requiredKg: number,
         paperType: keyof typeof paperSelections
     ): PaperOption[] => {
+
+        // 1️⃣ Filter available papers matching GSM and Deckal
         const matchingPapers = availablePapers.filter(
             (item: InventoryPaper) =>
-                item.deckal === deckal &&
-                Number(item.gsm) === Number(gsm)
+                item.deckal === deckal && Number(item.gsm) === Number(gsm)
         );
 
-        return matchingPapers.map((item: any) => {
-            // Calculate how much is already allocated to this paper
-            let allocatedKg = (item.allocations || [])
-                .reduce((sum: any, a: any) => sum + (a.allocatedKg || 0), 0);
+        return matchingPapers
+            .map((item: any) => {
+                // 2️⃣ Base allocated quantity (from DB or previous orders)
+                let allocatedKg = (item.allocations || []).reduce(
+                    (sum: number, a: any) => sum + (a.allocatedKg || 0),
+                    0
+                );
 
-                if(paperType === 'paper2' && row.paperKG.paper1.gsm === row.paperKG.paper2.gsm)
-                {
-                    // allocatedKg
-                    newAllocations.paper1.filter((items)=>item._id === items.paperId)
-                }
-                if(paperType === 'paper3' && row.paperKG.paper1.gsm === row.paperKG.paper3.gsm  && row.paperKG.paper2.gsm !== row.paperKG.paper3.gsm)
-                {
-                    
-                }
-                if(paperType === 'paper3' && row.paperKG.paper1.gsm === row.paperKG.paper3.gsm  && row.paperKG.paper2.gsm === row.paperKG.paper3.gsm)
-                {
-                    
-                }
-                
+                // 🟠 Dynamic adjustment based on ongoing (UI) allocations
+                const gsm1 = Number(row.paperKG.paper1.gsm);
+                const gsm2 = Number(row.paperKG.paper2.gsm);
+                const gsm3 = Number(row.paperKG.paper3.gsm);
 
+                // === 📄 PAPER 2 LOGIC ===
+                if (paperType === "paper2") {
+                    // Case: paper2 same GSM as paper1
+                    if (gsm1 === gsm2) {
+                        const paper1Allocations =
+                            newAllocations?.paper1?.filter((a: any) => a.paperId === item._id) ||
+                            [];
+                        const totalPaper1Alloc = paper1Allocations.reduce(
+                            (sum: number, a: any) => sum + (a.allocatedKg || 0),
+                            0
+                        );
+                        allocatedKg += totalPaper1Alloc;
+                    }
+                }
 
-            // Available KG = total KG - allocated KG
-            const availableKg = Math.max(0, item.kg - allocatedKg);
-            return {
-                value: item._id,
-                label: `${availableKg.toFixed(2)} KG`,
-                kg: item.kg,
-                usedKg: allocatedKg,
-                availableKg,
-                isSufficient: availableKg >= requiredKg,
-            };
-        }).filter(option => option.availableKg > 0); // Only show papers with available quantity
-    }, [availablePapers, getAllocatedQuantity]);
+                // === 📄 PAPER 3 LOGIC ===
+                if (paperType === "paper3") {
+                    const sameAsPaper1 = gsm3 === gsm1;
+                    const sameAsPaper2 = gsm3 === gsm2;
+                    const diffFromPaper1 = gsm3 !== gsm1;
+                    const diffFromPaper2 = gsm3 !== gsm2;
+
+                    // Case 1️⃣: Same GSM as Paper1 only
+                    if (sameAsPaper1 && diffFromPaper2) {
+                        const paper1Allocations =
+                            newAllocations?.paper1?.filter((a: any) => a.paperId === item._id) ||
+                            [];
+                        const totalPaper1Alloc = paper1Allocations.reduce(
+                            (sum: number, a: any) => sum + (a.allocatedKg || 0),
+                            0
+                        );
+                        allocatedKg += totalPaper1Alloc;
+                    }
+
+                    // Case 2️⃣: Same GSM as Paper2 only
+                    if (sameAsPaper2 && diffFromPaper1) {
+                        const paper2Allocations =
+                            newAllocations?.paper2?.filter((a: any) => a.paperId === item._id) ||
+                            [];
+                        const totalPaper2Alloc = paper2Allocations.reduce(
+                            (sum: number, a: any) => sum + (a.allocatedKg || 0),
+                            0
+                        );
+                        allocatedKg += totalPaper2Alloc;
+                    }
+
+                    // Case 3️⃣: Same GSM as both Paper1 and Paper2
+                    if (sameAsPaper1 && sameAsPaper2) {
+                        const paper1Allocations =
+                            newAllocations?.paper1?.filter((a: any) => a.paperId === item._id) ||
+                            [];
+                        const paper2Allocations =
+                            newAllocations?.paper2?.filter((a: any) => a.paperId === item._id) ||
+                            [];
+                        const totalAlloc = [...paper1Allocations, ...paper2Allocations].reduce(
+                            (sum: number, a: any) => sum + (a.allocatedKg || 0),
+                            0
+                        );
+                        allocatedKg += totalAlloc;
+                    }
+
+                    // 🆕 Case 4️⃣: Paper2 and Paper3 same GSM, Paper1 different
+                    if (gsm2 === gsm3 && gsm1 !== gsm3) {
+                        const paper2Allocations =
+                            newAllocations?.paper2?.filter((a: any) => a.paperId === item._id) ||
+                            [];
+                        const totalPaper2Alloc = paper2Allocations.reduce(
+                            (sum: number, a: any) => sum + (a.allocatedKg || 0),
+                            0
+                        );
+                        allocatedKg += totalPaper2Alloc;
+                    }
+                }
+
+                // 3️⃣ Compute remaining available KG
+                const availableKg = Math.max(0, Number(item.kg) - allocatedKg);
+
+                return {
+                    value: item._id,
+                    label: `${availableKg.toFixed(2)} KG`,
+                    kg: item.kg,
+                    usedKg: allocatedKg,
+                    availableKg,
+                    isSufficient: availableKg >= requiredKg,
+                };
+            })
+            // Only show papers with availability > 0
+            .filter(option => option.availableKg > 0);
+    },
+        [availablePapers, newAllocations, row.paperKG]);
+
 
     // Check if paper selection is valid for a paper type
     const isPaperSelectionValid = useCallback((paperType: keyof typeof paperSelections) => {
@@ -606,7 +655,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         
         setNewAllocations(newActuals1)
     }, [paperSelections])
-    console.log(newAllocations, 'newActuals1newActuals1newActuals1newActuals1newActuals1newActuals1')
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
