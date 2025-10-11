@@ -247,11 +247,16 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
           label: `${staff.firstName} ${staff.lastName}`,
           value: staff._id,
         }));
+    } else if (reason.includes("payment")) {
+      return staffList
+        .filter((staff) => staff.role?.roleName === "Driver" || staff.role?.roleName === "Sales Staff")
+        .map((staff) => ({
+          label: `${staff.firstName} ${staff.lastName}`,
+          value: staff._id,
+        }));
     }
-
-    // Otherwise → show Sales Staff
     return staffList
-      .filter((staff) => staff.role?.roleName === "Sales Staff")
+      // .filter((staff) => staff.role?.roleName === "Sales Staff")
       .map((staff) => ({
         label: `${staff.firstName} ${staff.lastName}`,
         value: staff._id,
