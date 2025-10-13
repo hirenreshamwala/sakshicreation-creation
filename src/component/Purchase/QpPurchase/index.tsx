@@ -72,7 +72,7 @@ const QpPurchasePage = () => {
 
     return (
         <>
-            <Box sx={{ display: 'flex', justifyContent: 'end', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'end', alignItems: 'center' }}>
                 <ThemeButton onClick={() => router.push('/admin/purchase/add-purchase?type=1')}>
                     + Add New Purchase
                 </ThemeButton>

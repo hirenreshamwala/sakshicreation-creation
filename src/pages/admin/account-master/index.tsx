@@ -106,13 +106,13 @@ const IndexPage: React.FC = memo(() => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = hasSakshi && hasQP;
-  const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p, c, companyName } = router.query
+  const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p, c, companyName } = router.query;
 
   // Company tabs configuration
   const companyTabs = useMemo(() => {
     const tabs = [];
-    if (hasSakshi) tabs.push({ id: 'sakshi', name: 'Sakshi', companyId: getCompanyWisePermission(5) });
-    if (hasQP) tabs.push({ id: 'qp', name: 'QP', companyId: getCompanyWisePermission(6) });
+    if (hasSakshi) tabs.push({ id: "sakshi", name: "Sakshi", companyId: getCompanyWisePermission(5) });
+    if (hasQP) tabs.push({ id: "qp", name: "QP", companyId: getCompanyWisePermission(6) });
     return tabs;
   }, [user, hasSakshi, hasQP]);
 
@@ -124,15 +124,12 @@ const IndexPage: React.FC = memo(() => {
       ? getCompanyWisePermission(5)
       : getCompanyWisePermission(6);
 
-  // Calculate counts for Approved and Pending tabs
-  const approvedCount = accountMasters.filter((account) =>
-    account.party?.statusApproval === "APPROVED" &&
-    account.companyName?._id === selectedCompanyId
+  const approvedCount = accountMasters.filter(
+    (account) => account.party?.statusApproval === "APPROVED" && account.companyName?._id === selectedCompanyId
   ).length;
 
-  const pendingCount = accountMasters.filter((account) =>
-    account.party?.statusApproval === "PENDING" &&
-    account.companyName?._id === selectedCompanyId
+  const pendingCount = accountMasters.filter(
+    (account) => account.party?.statusApproval === "PENDING" && account.companyName?._id === selectedCompanyId
   ).length;
 
   // Update tabLabels to include counts
@@ -191,8 +188,8 @@ const IndexPage: React.FC = memo(() => {
   }, [error, dispatch]);
 
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true))
-  }, [])
+    if (!companies.length) dispatch(getAllCompaniesThunk(true));
+  }, [dispatch]);
 
   const handleAddNew = () => {
     setEditId(null);
@@ -213,9 +210,7 @@ const IndexPage: React.FC = memo(() => {
     setOpen(true);
   };
   const handleSelectRow = (id: string) =>
-    setSelectedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
-    );
+    setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]));
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) setSelectedRows(formattedRows.map((row) => row.id));
@@ -308,16 +303,16 @@ const IndexPage: React.FC = memo(() => {
 
   useEffect(() => {
     if (canViewGlobal && router.isReady) {
-      console.log('jhdvbfgjkbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhbhg')
-      dispatch(getAllAccountMastersThunk({
-        companyName,
-        staffId: si,
-        startDate: st,
-        endDate: e,
-        partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
-      }));
-    }
-    else if (canViewOwn && user?.id) dispatch(getAccountMasterByStaffIdThunk(user?.id));
+      dispatch(
+        getAllAccountMastersThunk({
+          companyName,
+          staffId: si,
+          startDate: st,
+          endDate: e,
+          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+        })
+      );
+    } else if (canViewOwn && user?.id) dispatch(getAccountMasterByStaffIdThunk(user?.id));
 
     return () => {
       dispatch(clearError());
@@ -338,10 +333,9 @@ const IndexPage: React.FC = memo(() => {
     return statusMatch && companyMatch;
   });
 
-  console.log(accountMasters.length, 'xdvsfjhusegfuighuigh')
   const excelData = useMemo(() => {
     return filteredAccountMasters.map((account) => ({
-      "id": account._id,
+      id: account._id,
       "Company Name": account.companyName?.name || "N/A",
       "Party Name": account.party?.partyName || "N/A",
       "Owner Name": account.party?.ownerName || "N/A",
@@ -358,23 +352,21 @@ const IndexPage: React.FC = memo(() => {
       "Contact For Payment Email": account.party?.contactForPaymentEmail || "N/A",
       "GST No.": account.party?.gstNo || "N/A",
       "Party Tag": account.party?.partyTag || "New",
-      "Reference": account.party?.reference ? "Yes" : "No",
+      Reference: account.party?.reference ? "Yes" : "No",
       "Unit No.": account.party?.address?.unitNo || "N/A",
       "Market Name": account.party?.address?.marketName?.marketName || "N/A",
-      "Area": account.party?.address?.area?.area || "N/A",
-      // "Street Address": account.party?.address?.streetAddress || "N/A",
+      Area: account.party?.address?.area?.area || "N/A",
       "Land Mark": account.party?.address?.landMark || "N/A",
       "Pin Code": account.party?.address?.pinCode || "N/A",
       "Reason to Visit": account.reasonToVisit || "N/A",
-      "Created By": account.createdBy && typeof account.createdBy === "object"
-        ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
-        : "Unknown",
+      "Created By":
+        account.createdBy && typeof account.createdBy === "object"
+          ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
+          : "Unknown",
     }));
   }, [filteredAccountMasters]);
 
   const formattedRows: RowData[] = filteredAccountMasters.map((account) => {
-    console.log("DEBUG : account:", account);
-
     return {
       id: account._id,
       partyId: account.party?._id || "",
@@ -383,7 +375,7 @@ const IndexPage: React.FC = memo(() => {
         name: account.companyName?.name || "N/A",
         avatar: account.companyName?.avatar,
       },
-      createdDate: moment(account.createdAt).format('DD-MM-YYYY'),
+      createdDate: moment(account.createdAt).format("DD-MM-YYYY"),
       party: account.party?.partyName || "N/A",
       contactPerson: account.party?.contactPerson || "N/A",
       partyTag: account.party?.partyTag || "New",
@@ -406,88 +398,75 @@ const IndexPage: React.FC = memo(() => {
       statusApproval: account.party?.statusApproval === "APPROVED" ? "Approved" : "Pending",
     };
   });
-  console.log("DEBUG : filteredAccountMasters:", filteredAccountMasters);
 
-  console.log("DEBUG : formattedRows:", formattedRows);
+  const partyIds = selectedRows
+    .map((accountId) => {
+      const account = accountMasters.find((acc) => acc._id === accountId);
+      return account?.party?._id || "";
+    })
+    .filter(Boolean);
 
-  const partyIds = selectedRows.map((accountId) => {
-    const account = accountMasters.find((acc) => acc._id === accountId);
-    return account?.party?._id || "";
-  }).filter(Boolean);
-
-  const selectedParties = selectedRows.map((accountId) => {
-    const account = accountMasters.find((acc) => acc._id === accountId);
-    return {
-      partyId: account?.party?._id || "",
-      companyId: account?.companyName?._id || ""
-    };
-  }).filter(p => p.partyId && p.companyId);
+  const selectedParties = selectedRows
+    .map((accountId) => {
+      const account = accountMasters.find((acc) => acc._id === accountId);
+      return {
+        partyId: account?.party?._id || "",
+        companyId: account?.companyName?._id || "",
+      };
+    })
+    .filter((p) => p.partyId && p.companyId);
 
   return (
     <>
       {/* Company Tabs - Only show if user has both companies */}
       {hasBothCompanies && (
         <Box sx={{ mb: 2 }}>
-          <TabComponent
-            activeTab={companyTab}
-            setActiveTab={setCompanyTab}
-          />
+          <TabComponent activeTab={companyTab} setActiveTab={setCompanyTab} />
         </Box>
       )}
 
       {/* Show current company name when user has only one permission */}
       {!hasBothCompanies && selectedCompanyId && (
-        <Box sx={{ mb: 2, p: 2, backgroundColor: 'primary.light', color: 'primary.contrastText', borderRadius: 1 }}>
-          <Typography variant="h6">
-            Showing data for: {hasSakshi ? 'Sakshi' : 'QP'}
-          </Typography>
+        <Box sx={{ mb: 2, p: 2, backgroundColor: "primary.light", color: "primary.contrastText", borderRadius: 1 }}>
+          <Typography variant="h6">Showing data for: {hasSakshi ? "Sakshi" : "QP"}</Typography>
         </Box>
       )}
 
+      {/* Buttons and Approved/Pending Tabs in the same row using flex */}
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          gap: 3,
           mb: 2,
-          gap: 2,
+          flexWrap: "wrap",
+          justifyContent: "space-between",
         }}
       >
-        <Box />
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {(canViewGlobal) && (
-            <ThemeButton onClick={handleAddNew}>+ Add New Party</ThemeButton>
-          )}
-          {(canViewOwn) && (
-            <ThemeButton onClick={handleAddNewRequest}>+ Add New Party Request</ThemeButton>
-          )}
+        <Box sx={{ flex: "0 1 auto", minWidth: 200 }}>
+          <TabComponent activeTab={statusTab} setActiveTab={setStatusTab} tabList={tabLabelsWithCount} align="left" />
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+          {canViewGlobal && <ThemeButton onClick={handleAddNew}>+ Add New Party</ThemeButton>}
+          {canViewOwn && <ThemeButton onClick={handleAddNewRequest}>+ Add New Party Request</ThemeButton>}
           <ThemeButton onClick={handleBulkUploadClick} startIcon={<CloudUploadIcon />}>
             Bulk Upload
           </ThemeButton>
-          <ThemeButton
-            onClick={() => setOpenAssignLeadDialog(true)}
-            disabled={selectedRows.length === 0}
-          >
+          <ThemeButton onClick={() => setOpenAssignLeadDialog(true)} disabled={selectedRows.length === 0}>
             Create Party Call for Selected
           </ThemeButton>
-          <ThemeButton
-            onClick={() => setOpenBulkAssignTask(true)}
-            disabled={selectedRows.length === 0}
-          >
+          <ThemeButton onClick={() => setOpenBulkAssignTask(true)} disabled={selectedRows.length === 0}>
             Assign Task for Selected
           </ThemeButton>
         </Box>
       </Box>
 
-      <TabComponent activeTab={statusTab} setActiveTab={setStatusTab} tabList={tabLabelsWithCount} align="left" />
-
-
-
       {loading ? (
         <Loader />
       ) : formattedRows.length === 0 ? (
         <Typography sx={{ mt: 2 }}>
-          No account masters found for {hasBothCompanies ? companyTabs[companyTab]?.name : (hasSakshi ? 'Sakshi' : 'QP')} - {tabLabelsWithCount[statusTab]}.
+          No account masters found for {hasBothCompanies ? companyTabs[companyTab]?.name : hasSakshi ? "Sakshi" : "QP"} -{" "}
+          {tabLabelsWithCount[statusTab]}.
         </Typography>
       ) : (
         <BasicTable
@@ -510,7 +489,7 @@ const IndexPage: React.FC = memo(() => {
               </TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.createdDate}</TableCell>
               <TableCell
-                sx={{ cursor: 'pointer', fontWeight: 500, fontSize: 14 }}
+                sx={{ cursor: "pointer", fontWeight: 500, fontSize: 14 }}
                 onClick={() => router.push(`/admin/account-master/view-company/${row.id}`)}
               >
                 {row.party}
@@ -539,9 +518,7 @@ const IndexPage: React.FC = memo(() => {
               <TableCell sx={{ fontSize: 14 }}>{row.area?.area}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>
                 <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>
-                  {row.remarks && row.remarks.length > 10
-                    ? `${row.remarks.substring(0, 10)}...`
-                    : row.remarks}
+                  {row.remarks && row.remarks.length > 10 ? `${row.remarks.substring(0, 10)}...` : row.remarks}
                 </Typography>
               </TableCell>
               <TableCell sx={{ fontSize: 14 }}>
@@ -550,22 +527,12 @@ const IndexPage: React.FC = memo(() => {
                   color={row.statusType}
                   variant="outlined"
                   sx={{
-                    background:
-                      row.statusType === "success"
-                        ? "#ECFDF3"
-                        : row.statusType === "error"
-                          ? "#FEF3F2"
-                          : "#F2F4F7",
-                    color:
-                      row.statusType === "success"
-                        ? "#12B76A"
-                        : row.statusType === "error"
-                          ? "#F04438"
-                          : "#667085",
+                    background: row.statusType === "success" ? "#ECFDF3" : row.statusType === "error" ? "#FEF3F2" : "#F2F4F7",
+                    color: row.statusType === "success" ? "#12B76A" : row.statusType === "error" ? "#F04438" : "#667085",
                     fontWeight: 600,
                     fontSize: 13,
                     height: 28,
-                    border: 'none',
+                    border: "none",
                   }}
                 />
               </TableCell>
@@ -582,7 +549,7 @@ const IndexPage: React.FC = memo(() => {
                     <DeleteIcon />
                   </IconButton>
                 )}
-                {row.statusApproval === 'Pending' && canViewGlobal && (
+                {row.statusApproval === "Pending" && canViewGlobal && (
                   <IconButton onClick={() => handleApprove(row.partyId)}>
                     <CheckCircleIcon color="success" />
                   </IconButton>

@@ -84,7 +84,7 @@ const SakshiPurchasePage = () => {
 
   return (
     <>
-      <Box sx={{ display: 'flex', justifyContent: 'end', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'end', alignItems: 'center' }}>
         <ThemeButton onClick={() => router.push('/admin/purchase/add-purchase')}>
           + Add New Purchase
         </ThemeButton>
