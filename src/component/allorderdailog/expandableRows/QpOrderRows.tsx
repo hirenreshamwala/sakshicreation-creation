@@ -40,6 +40,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
     const [selectedBinder, setSelectedBinder] = useState(null);
     const [selectedPrinter, setSelectedPrinter] = useState(null);
+    const [selectedDesigner, setSelectedDesigner] = useState(null);
     const { allInventory } = useAppSelector(state => state.inventory);
     const [isCompleted, setIsCompleted] = useState(row.status === "Completed");
     const [isPaperSelectionRequired, setIsPaperSelectionRequired] = useState(false);
@@ -126,7 +127,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     // Initialize everything in one effect to avoid timing issues
     useEffect(() => {
-        const initialSelections:any = extractInventoryIds(row.selectedPapers);
+        const initialSelections: any = extractInventoryIds(row.selectedPapers);
 
         let paper1Req = 0;
         let paper2Req = 0;
@@ -178,7 +179,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     useEffect(() => {
         if (allInventory.length > 0 && row.orderdata) {
-            const papers:any = allInventory.filter((item: any) =>
+            const papers: any = allInventory.filter((item: any) =>
                 item.inventoryType === 'paper' &&
                 item.type === 'inward' &&
                 [undefined, null].includes(item.qpOrder)
@@ -208,6 +209,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [paperSelections, paperRequirements, availablePapers, isInitialized]);
 
     // Filter staff with role "printer" or "binder" (case-insensitive)
+    const designers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "designer");
     const printers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "printer");
     const binders = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "binder");
 
@@ -325,10 +327,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 Number(item.gsm) === Number(gsm)
         );
 
-        return matchingPapers.map((item:any) => {
+        return matchingPapers.map((item: any) => {
             // Calculate how much is already allocated to this paper
             const allocatedKg = (item.allocations || [])
-                .reduce((sum:any, a:any) => sum + (a.allocatedKg || 0), 0);
+                .reduce((sum: any, a: any) => sum + (a.allocatedKg || 0), 0);
 
             // Available KG = total KG - allocated KG
             const availableKg = Math.max(0, item.kg - allocatedKg);
@@ -561,7 +563,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         return allocations;
     }, [paperSelections, availablePapers, getAllocatedQuantity]);
 
-    const handleSubmit = async(e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData._id) {
@@ -617,8 +619,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             const newActuals1 = { paper1: [], paper2: [], paper3: [] };
 
             (["paper1", "paper2", "paper3"] as const).forEach(pt => {
-                paperSelections[pt].forEach((paperId:any) => {
-                    const allocation:any = allAllocations[pt]?.allocations?.find(a => a.paperId === paperId);
+                paperSelections[pt].forEach((paperId: any) => {
+                    const allocation: any = allAllocations[pt]?.allocations?.find(a => a.paperId === paperId);
                     if (allocation) {
                         newActuals1[pt].push({ paperId, allocatedKg: allocation.allocatedKg });
                     }
@@ -639,6 +641,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 factoryRemark: formData.factoryRemark,
                 status: formData.status,
                 remarks: formData.remarks,
+                designer: selectedDesigner,
                 printer: selectedPrinter,
                 binder: selectedBinder,
                 selectedPapers: newActuals1,
@@ -666,6 +669,17 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 actualTotalKg: totalKgss?.toFixed(2).toString(),
             };
 
+            const rowPapers = row.selectedPapers
+            const updatePapers = updateData.selectedPapers
+
+            if (selectedDesigner && row.status === 'In Progress') {
+                updateData.status = 'Designer'
+            }
+            // If no designer but papers are selected, use the original paper cutting status
+            else if (rowPapers.paper1.length === 0 && rowPapers.paper2.length === 0 && rowPapers.paper3.length === 0 && row.status === 'In Progress' && updatePapers.paper1.length > 0 && updatePapers.paper2.length > 0 && updatePapers.paper3.length > 0) {
+                updateData.status = 'Paper cutting & Corrugation'
+            }
+
             await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
 
             dispatch(getAllInventoryThunk());
@@ -686,7 +700,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setIsActualNoOfPiecesUpdated(!!initialFormData.actualNoOfPieces);
 
         // Reset paper selections to initial values
-        const initialSelections:any = extractInventoryIds(initialFormData.selectedPapers);
+        const initialSelections: any = extractInventoryIds(initialFormData.selectedPapers);
         setPaperSelections(initialSelections);
         toast.info("Changes cancelled");
     }, [initialFormData, row.printer, row.binder, extractInventoryIds]);
@@ -853,7 +867,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
                                 const requirement = paperRequirements[paperType as keyof typeof paperRequirements];
                                 const allocations = allAllocations[paperType as keyof typeof allAllocations];
-                                const totalAllocated = allocations.allocations.reduce((sum:any, a:any) => sum + a.allocatedKg, 0);
+                                const totalAllocated = allocations.allocations.reduce((sum: any, a: any) => sum + a.allocatedKg, 0);
 
                                 return (
                                     <Typography key={paperType} variant="body2" sx={{ mt: 0.5 }}>
@@ -983,12 +997,15 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     <PaperSelection
                         setSelectedPrinter={setSelectedPrinter}
                         setSelectedBinder={setSelectedBinder}
+                        setSelectedDesigner={setSelectedDesigner}
                         isCompleted={isCompleted}
                         selectedPrinter={selectedPrinter}
                         printers={printers}
                         staffLoading={staffLoading}
                         selectedBinder={selectedBinder}
+                        selectedDesigner={selectedDesigner}
                         binders={binders}
+                        designers={designers}
                         data={row}
                     />
 
