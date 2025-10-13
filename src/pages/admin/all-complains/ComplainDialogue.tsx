@@ -39,7 +39,6 @@ interface ComplainDialogProps {
     refreshData?: () => void;
     editData?: Complaint | null;
 }
-// Dynamic Validation Schema
 const getValidationSchema = (isEdit: boolean, status: string) => {
     return Yup.object({
         subject: Yup.string()

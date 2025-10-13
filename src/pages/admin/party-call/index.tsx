@@ -679,7 +679,7 @@ const LeadManagementPage: React.FC = () => {
       <TabComponent activeTab={tab} setActiveTab={setTab} tabList={tabLabels} align="left" />
       <Box
         sx={{
-          maxHeight: "70vh",
+          maxHeight: "110vh",
           overflowY: "auto",
           px: 2,
           py: 2,

@@ -20,6 +20,7 @@ import AddQPOrderDialog from "./QpOrderDialog"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { StaticCompanyOptions } from "@/constants"
 import { getAllInventoryThunk } from "@/store/slices/inventorySlice"
+import { Label } from "@mui/icons-material"
 
 type OrderRow = {
   _id: string;
@@ -39,6 +40,9 @@ type OrderRow = {
   ply?: {
     ply: string;
   };
+  uom?:{
+    uom:string
+  }
   deckalCalculation?: string;
   deckal?: string;
   gsm?: string;
@@ -122,6 +126,7 @@ const AdminManagerSalesView = () => {
     { id: "orderDate", label: "Order Date" },
     { id: "ply", label: "Ply" },
     { id: "size", label: "Size" },
+    {id:"uom",label:"Unit of Mesurment"},
     { id: "paperGSM", label: "Paper GSM" },
     { id: "gsm", label: "GSM" },
     { id: "deckalCalculation", label: "Cal Deckal" },
@@ -225,6 +230,7 @@ const AdminManagerSalesView = () => {
         order.date?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.orderdata?.ply?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         displaySize.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.uom?.uom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         displayPaperGSM.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.gsm?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.deckalCalculation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -265,6 +271,9 @@ const AdminManagerSalesView = () => {
           case "size":
             // Format size same as displayed in table
             value = order.size?.size || `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`
+            break
+          case "uom":
+            value = order.orderdata?.uom
             break
           case "paperGSM":
             // Format paper GSM same as displayed in table
@@ -328,6 +337,7 @@ const AdminManagerSalesView = () => {
       "Party Name": order.party?.partyName || "N/A",
       "Order Date": formatDate(order.createdAt) || "N/A",
       Ply: order.orderdata?.ply || "N/A",
+      "Unit of Measurement": order.orderdata?.uom || "N/A",
       Size: order.size?.size || `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`,
       "Paper GSM": `${order.orderdata?.paper1GSM || "N/A"} x ${order.orderdata?.paper2GSM || "N/A"} x ${order.orderdata?.paper3GSM || "N/A"}`,
       GSM: order.gsm || "N/A",
@@ -354,7 +364,7 @@ const AdminManagerSalesView = () => {
       "Dye Remark": order.dyeRemark || "N/A",
       "Godown Remark": order.godownRemark || "N/A",
       "Factory Remark": order.factoryRemark || "N/A",
-      "Actual no of piece": order.actualNoOfPieces || "N/A",
+      "Actual no of piece": "N/A",
     }));
   }, [filteredOrders]);
 
@@ -384,6 +394,9 @@ const AdminManagerSalesView = () => {
         case "size":
           // Format size same as displayed in table: "length x width x height"
           value = order.size?.size || `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`
+          break
+        case "uom":
+          value = order.uom?.uom
           break
         case "paperGSM":
           // Format paper GSM same as displayed in table: "paper1GSM x paper2GSM x paper3GSM"
@@ -600,6 +613,11 @@ const AdminManagerSalesView = () => {
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
                   {row.size?.size || `${row.orderdata?.length || "N/A"} x ${row.orderdata?.width || "N/A"} x ${row.orderdata?.height || "N/A"}`}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.orderdata?.uom|| "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
