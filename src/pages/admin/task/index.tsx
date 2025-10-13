@@ -78,14 +78,11 @@ const Index = () => {
             order.bookletBinderStatus !== STATUS.DONE
         );
       case "admin":
-        return orders; // Admin sees all tasks
+        return orders; 
       default:
         return [];
     }
   };
-
-  // const designerStatus = orders[0]?.designerStatus;
-  // console.log("🚀 ~ Index ~ orders?.designerStatus:", orders?.designerStatus)
 
   // Get role name in lowercase for consistent comparison
   const role = user?.role?.roleName?.toLowerCase();

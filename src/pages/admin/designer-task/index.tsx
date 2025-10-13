@@ -37,7 +37,6 @@ const getDesignerStatusColor = (status: string) => {
   }
 };
 
-
 const StatusBadge = ({ status }: { status: string }) => {
   const { bg, color } = getDesignerStatusColor(status);
   return (
@@ -78,7 +77,7 @@ interface DesignerTaskProps {
   }>;
 }
 
-const DesignerTask : React.FC<DesignerTaskProps> = ({ tasks }) => {
+const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
   const dispatch = useAppDispatch();
   const { orders, loading } = useAppSelector((state) => state.orders);
   const router = useRouter();
@@ -94,9 +93,6 @@ const DesignerTask : React.FC<DesignerTaskProps> = ({ tasks }) => {
     router.push(`/admin/designer-task//view?id=${orderId}`);
   };
 
-
- 
-
   // Transform orders data for table
   const rowData = tasks.map((order) => ({
     id: order._id,
@@ -110,12 +106,17 @@ const DesignerTask : React.FC<DesignerTaskProps> = ({ tasks }) => {
 
   const renderRow = (row: (typeof rowData)[number], index: number) => (
     <>
-      <TableCell onClick={() => handleRowClick(row.id)}  sx={{ 
-        cursor: 'pointer',
-        '&:hover': {
-          backgroundColor: 'rgba(0, 0, 0, 0.04)'
-        }
-      }} >{row.party}</TableCell>
+      <TableCell
+        onClick={() => handleRowClick(row.id)}
+        sx={{
+          cursor: "pointer",
+          "&:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.04)",
+          },
+        }}
+      >
+        {row.party}
+      </TableCell>
       <TableCell>{row.date}</TableCell>
       <TableCell>{row.size}</TableCell>
       <TableCell>{row.itemName}</TableCell>
