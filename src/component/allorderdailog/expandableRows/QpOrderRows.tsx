@@ -47,7 +47,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [remarkType, setRemarkType] = useState<"startDate" | "onHold" | "canceled" | null>(null);
     const [isActualNoOfPiecesUpdated, setIsActualNoOfPiecesUpdated] = useState(!!row.actualNoOfPieces);
     const [availablePapers, setAvailablePapers] = useState<InventoryPaper[]>([]);
-    const [newAllocations,setNewAllocations] = useState(null)
+    const [newAllocations, setNewAllocations] = useState(null)
     const [paperSelections, setPaperSelections] = useState({
         paper1: [],
         paper2: [],
@@ -347,20 +347,17 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             let allocatedKg = (item.allocations || [])
                 .reduce((sum: any, a: any) => sum + (a.allocatedKg || 0), 0);
 
-                if(paperType === 'paper2' && row.paperKG.paper1.gsm === row.paperKG.paper2.gsm)
-                {
-                    // allocatedKg
-                    newAllocations.paper1.filter((items)=>item._id === items.paperId)
-                }
-                if(paperType === 'paper3' && row.paperKG.paper1.gsm === row.paperKG.paper3.gsm  && row.paperKG.paper2.gsm !== row.paperKG.paper3.gsm)
-                {
-                    
-                }
-                if(paperType === 'paper3' && row.paperKG.paper1.gsm === row.paperKG.paper3.gsm  && row.paperKG.paper2.gsm === row.paperKG.paper3.gsm)
-                {
-                    
-                }
-                
+            if (paperType === 'paper2' && row.paperKG.paper1.gsm === row.paperKG.paper2.gsm) {
+                // allocatedKg
+                newAllocations.paper1.filter((items) => item._id === items.paperId)
+            }
+            if (paperType === 'paper3' && row.paperKG.paper1.gsm === row.paperKG.paper3.gsm && row.paperKG.paper2.gsm !== row.paperKG.paper3.gsm) {
+
+            }
+            if (paperType === 'paper3' && row.paperKG.paper1.gsm === row.paperKG.paper3.gsm && row.paperKG.paper2.gsm === row.paperKG.paper3.gsm) {
+
+            }
+
 
 
             // Available KG = total KG - allocated KG
@@ -603,14 +600,19 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 }
             });
         });
-        
+
         setNewAllocations(newActuals1)
     }, [paperSelections])
     console.log(newAllocations, 'newActuals1newActuals1newActuals1newActuals1newActuals1newActuals1')
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+const currentDate = moment().startOf('day');
+    const selectedDeliveryDate = moment(formData.deliveryDate);
+    if (selectedDeliveryDate.isBefore(currentDate)) {
+        toast.error("Delivery date cannot be before the current date");
+        return;
+    }
         if (!formData._id) {
             toast.error("Cannot submit: Invalid order ID");
             return;
@@ -959,6 +961,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             size="small"
                             sx={{ minWidth: 100 }}
                             InputLabelProps={{ shrink: true }}
+                            inputProps={{
+                                min: moment().format("YYYY-MM-DD"), // Restrict to today or future dates
+                            }}
                             disabled={isCompleted}
                         />
                         <TextField
