@@ -8,16 +8,6 @@ import {
     MenuItem,
     Stack,
     TextField,
-    Typography,
-    Card,
-    CardContent,
-    Grid,
-    Autocomplete,
-    Chip,
-    IconButton,
-    List,
-    ListItem,
-    ListItemText
 } from "@mui/material";
 import moment from "moment";
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -26,9 +16,9 @@ import { calculateKantan, calculatePaperKg } from "@/utills/qpCalculations";
 import { ORDER_STATUSES } from "@/constants";
 import ViewRemark from "./ViewRemark";
 import RemarkModal from "./RemarkModal";
-import RemoveIcon from '@mui/icons-material/Remove';
 import { ExpandedRowFormProps, Remark, PaperAllocationsResult, PaperAllocation, PaperOption, InventoryPaper } from "@/constants/interface";
 import PaperSelection from "./PaperSelection";
+import PaperAssign from "./PaperAssign";
 
 export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
     const dispatch = useAppDispatch();
@@ -57,6 +47,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         paper1: 0,
         paper2: 0,
         paper3: 0
+    });
+    const [paperUsageSummary, setPaperUsageSummary] = useState<Record<string, string[]>>({
+        paper1: [],
+        paper2: [],
+        paper3: [],
     });
     const [formData, setFormData] = useState({
         _id: row._id,
@@ -133,10 +128,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         let paper2Req = 0;
         let paper3Req = 0;
 
-        if (row.actualPaperKG) {
-            paper1Req = parseFloat(row.actualPaperKG?.paper1?.totalKg > 0 ? row.actualPaperKG?.paper1?.totalKg : row.paperKG?.paper1?.totalKg || 0);
-            paper2Req = parseFloat(row.actualPaperKG?.paper2?.totalKg > 0 ? row.actualPaperKG?.paper2?.totalKg : row.paperKG?.paper2?.totalKg || 0);
-            paper3Req = parseFloat(row.actualPaperKG?.paper3?.totalKg > 0 ? row.actualPaperKG?.paper3?.totalKg : row.paperKG?.paper3?.totalKg || 0);
+        if (row.paperKG) {
+            paper1Req = parseFloat(row.paperKG?.paper1?.totalKg > 0 ? row.paperKG?.paper1?.totalKg : row.paperKG?.paper1?.totalKg || 0);
+            paper2Req = parseFloat(row.paperKG?.paper2?.totalKg > 0 ? row.paperKG?.paper2?.totalKg : row.paperKG?.paper2?.totalKg || 0);
+            paper3Req = parseFloat(row.paperKG?.paper3?.totalKg > 0 ? row.paperKG?.paper3?.totalKg : row.paperKG?.paper3?.totalKg || 0);
         }
 
         const newFormData = {
@@ -218,7 +213,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         // Create a map to track available quantities for each paper
         const paperQuantities: Record<string, number> = {};
         availablePapers.forEach(paper => {
-            paperQuantities[paper._id] = Number(paper.kg) - (paper.allocations.length ? paper.allocations.reduce((sum, item) => sum + item.allocatedKg, 0) : 0); // -----------------------
+            paperQuantities[paper._id] = Number(paper.kg) - (paper.allocations.length ? paper.allocations?.filter((item) => item.qpOrder !== row._id)?.reduce((sum, item) => sum + item.allocatedKg, 0) : 0); // -----------------------
         });
 
         // Function to calculate allocations for a single paper type
@@ -306,125 +301,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         return allAllocations.paperAllocationsMap[paperId] || 0;
     }, [allAllocations]);
 
-    // Get all available papers for a specific requirement
-    const getAllAvailablePapersForRequirement = useCallback((
-        gsm: string,
-        deckal: string,
-        requiredKg: number,
-        paperType: keyof typeof paperSelections
-    ): PaperOption[] => {
-
-        // 1️⃣ Filter available papers matching GSM and Deckal
-        const matchingPapers = availablePapers.filter(
-            (item: InventoryPaper) =>
-                item.deckal === deckal && Number(item.gsm) === Number(gsm)
-        );
-
-        return matchingPapers
-            .map((item: any) => {
-                // 2️⃣ Base allocated quantity (from DB or previous orders)
-                let allocatedKg = (item.allocations || []).reduce(
-                    (sum: number, a: any) => sum + (a.allocatedKg || 0),
-                    0
-                );
-
-                // 🟠 Dynamic adjustment based on ongoing (UI) allocations
-                const gsm1 = Number(row.paperKG.paper1.gsm);
-                const gsm2 = Number(row.paperKG.paper2.gsm);
-                const gsm3 = Number(row.paperKG.paper3.gsm);
-
-                // === 📄 PAPER 2 LOGIC ===
-                if (paperType === "paper2") {
-                    // Case: paper2 same GSM as paper1
-                    if (gsm1 === gsm2) {
-                        const paper1Allocations =
-                            newAllocations?.paper1?.filter((a: any) => a.paperId === item._id) ||
-                            [];
-                        const totalPaper1Alloc = paper1Allocations.reduce(
-                            (sum: number, a: any) => sum + (a.allocatedKg || 0),
-                            0
-                        );
-                        allocatedKg += totalPaper1Alloc;
-                    }
-                }
-
-                // === 📄 PAPER 3 LOGIC ===
-                if (paperType === "paper3") {
-                    const sameAsPaper1 = gsm3 === gsm1;
-                    const sameAsPaper2 = gsm3 === gsm2;
-                    const diffFromPaper1 = gsm3 !== gsm1;
-                    const diffFromPaper2 = gsm3 !== gsm2;
-
-                    // Case 1️⃣: Same GSM as Paper1 only
-                    if (sameAsPaper1 && diffFromPaper2) {
-                        const paper1Allocations =
-                            newAllocations?.paper1?.filter((a: any) => a.paperId === item._id) ||
-                            [];
-                        const totalPaper1Alloc = paper1Allocations.reduce(
-                            (sum: number, a: any) => sum + (a.allocatedKg || 0),
-                            0
-                        );
-                        allocatedKg += totalPaper1Alloc;
-                    }
-
-                    // Case 2️⃣: Same GSM as Paper2 only
-                    if (sameAsPaper2 && diffFromPaper1) {
-                        const paper2Allocations =
-                            newAllocations?.paper2?.filter((a: any) => a.paperId === item._id) ||
-                            [];
-                        const totalPaper2Alloc = paper2Allocations.reduce(
-                            (sum: number, a: any) => sum + (a.allocatedKg || 0),
-                            0
-                        );
-                        allocatedKg += totalPaper2Alloc;
-                    }
-
-                    // Case 3️⃣: Same GSM as both Paper1 and Paper2
-                    if (sameAsPaper1 && sameAsPaper2) {
-                        const paper1Allocations =
-                            newAllocations?.paper1?.filter((a: any) => a.paperId === item._id) ||
-                            [];
-                        const paper2Allocations =
-                            newAllocations?.paper2?.filter((a: any) => a.paperId === item._id) ||
-                            [];
-                        const totalAlloc = [...paper1Allocations, ...paper2Allocations].reduce(
-                            (sum: number, a: any) => sum + (a.allocatedKg || 0),
-                            0
-                        );
-                        allocatedKg += totalAlloc;
-                    }
-
-                    // 🆕 Case 4️⃣: Paper2 and Paper3 same GSM, Paper1 different
-                    if (gsm2 === gsm3 && gsm1 !== gsm3) {
-                        const paper2Allocations =
-                            newAllocations?.paper2?.filter((a: any) => a.paperId === item._id) ||
-                            [];
-                        const totalPaper2Alloc = paper2Allocations.reduce(
-                            (sum: number, a: any) => sum + (a.allocatedKg || 0),
-                            0
-                        );
-                        allocatedKg += totalPaper2Alloc;
-                    }
-                }
-
-                // 3️⃣ Compute remaining available KG
-                const availableKg = Math.max(0, Number(item.kg) - allocatedKg);
-
-                return {
-                    value: item._id,
-                    label: `${availableKg.toFixed(2)} KG`,
-                    kg: item.kg,
-                    usedKg: allocatedKg,
-                    availableKg,
-                    isSufficient: availableKg >= requiredKg,
-                };
-            })
-            // Only show papers with availability > 0
-            .filter(option => option.availableKg > 0);
-    },
-        [availablePapers, newAllocations, row.paperKG]);
-
-
     // Check if paper selection is valid for a paper type
     const isPaperSelectionValid = useCallback((paperType: keyof typeof paperSelections) => {
         const requirement = paperRequirements[paperType];
@@ -444,30 +320,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             return isPaperSelectionValid(paperType as keyof typeof paperSelections);
         });
     }, [isPaperSelectionRequired, paperRequirements, isPaperSelectionValid]);
-
-    // Add a paper to a paper type
-    const addPaperToSelection = useCallback((paperType: keyof typeof paperSelections, paperId: any) => {
-        // Check if paper is already selected for this paper type
-        if (paperSelections[paperType].includes(paperId)) {
-            toast.info("This paper is already selected for this paper type");
-            return;
-        }
-
-        setPaperSelections(prev => ({
-            ...prev,
-            [paperType]: [...prev[paperType], paperId]
-        }));
-        toast.success("Paper added to selection");
-    }, [paperSelections]);
-
-    // Remove a paper from a paper type
-    const removePaperFromSelection = useCallback((paperType: keyof typeof paperSelections, paperId: string) => {
-        setPaperSelections(prev => ({
-            ...prev,
-            [paperType]: prev[paperType].filter(id => id !== paperId)
-        }));
-        toast.info("Paper removed from selection");
-    }, []);
 
     const handleFormChange = useCallback((field: string, value: string) => {
         if (field === "startDate") {
@@ -652,7 +504,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 }
             });
         });
-        
+
         setNewAllocations(newActuals1)
     }, [paperSelections])
 
@@ -737,6 +589,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 printer: selectedPrinter,
                 binder: selectedBinder,
                 selectedPapers: newActuals1,
+                paperUsageSummary,
                 actualTotalKantan: {
                     reel: reel.toString(),
                     inch: inch.toString(),
@@ -786,182 +639,49 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         toast.info("Changes cancelled");
     }, [initialFormData, row.printer, row.binder, extractInventoryIds]);
 
-    // Render individual paper type selection
-    const renderPaperTypeSelection = (paperType: keyof typeof paperSelections, paperInfo: any) => {
-        const requirement = paperRequirements[paperType];
-        if (requirement <= 0) return null;
+   useEffect(() => {
+    const summaries: Record<string, string[]> = { paper1: [], paper2: [], paper3: [] };
 
-        const allocations = allAllocations[paperType].allocations;
-        const totalAllocated = allocations.reduce((sum, a) => sum + a.allocatedKg, 0);
-        const isSufficient = allAllocations[paperType].isSufficient;
+    ["paper1", "paper2", "paper3"].forEach((type) => {
+        const allocations = allAllocations[type]?.allocations || [];
+        const selections = paperSelections[type] || [];
 
-        return (
-            <Grid item xs={12} md={4} key={paperType}>
-                <Typography variant="subtitle1" gutterBottom>
-                    {paperType.toUpperCase()} ({paperInfo.gsm} GSM) - Required: {requirement.toFixed(2)} KG
-                    <span style={{ marginLeft: '8px', color: isSufficient ? 'green' : 'red' }}>
-                        ({isSufficient ? '✓' : '✗'} {totalAllocated.toFixed(2)} KG allocated)
-                    </span>
-                </Typography>
+        selections.forEach((paperId) => {
+            const paper = availablePapers.find((p) => p._id === paperId);
+            const alloc = allocations.find((a) => a.paperId === paperId);
+            if (!paper || !alloc) return;
 
-                <Autocomplete
-                    size="small"
-                    fullWidth
-                    options={getAllAvailablePapersForRequirement(
-                        paperInfo.gsm,
-                        paperInfo.deckal,
-                        requirement,
-                        paperType
-                    )}
-                    getOptionLabel={(option) => option.label}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            label="Available Papers"
-                            placeholder="Select a paper to add"
-                        />
-                    )}
-                    onChange={(e, newValue) => {
-                        if (newValue) {
-                            addPaperToSelection(paperType, newValue.value);
-                        }
-                    }}
-                    disabled={isCompleted}
-                />
+            // Base used KG = allocated in this order
+            let usedKg = alloc.allocatedKg || 0;
 
-                <List dense sx={{ mt: 1, maxHeight: 200, overflow: 'auto', border: '1px solid #f0f0f0', borderRadius: 1 }}>
-                    {paperSelections[paperType].length === 0 ? (
-                        <ListItem>
-                            <ListItemText
-                                primary="No papers selected"
-                                sx={{ textAlign: 'center', color: 'text.secondary' }}
-                            />
-                        </ListItem>
-                    ) : (
-                        paperSelections[paperType].map((paperId, index) => {
-                            const paper = availablePapers.find(p => p._id === paperId);
-                            if (!paper) {
-                                console.warn(`Paper with ID ${paperId} not found in available papers`);
-                                return null;
-                            }
+            // Adjust used KG if GSM matches other papers
+            const gsm1 = Number(row.paperKG.paper1.gsm);
+            const gsm2 = Number(row.paperKG.paper2.gsm);
+            const gsm3 = Number(row.paperKG.paper3.gsm);
 
-                            const allocation = allocations.find(a => a.paperId === paperId);
-                            const allocatedQuantity = allocation?.allocatedKg || 0;
-                            const remainingQuantity = paper.kg - allocatedQuantity;
+            if (type === "paper2" && gsm1 === gsm2) {
+                const relatedAlloc = newAllocations.paper1?.find(x => x.paperId === paperId);
+                if (relatedAlloc) usedKg += relatedAlloc.allocatedKg;
+            }
 
-                            return (
-                                <ListItem key={`${paperType}-${paperId}-${index}`} divider>
-                                    <ListItemText
-                                        primary={paper.paperName}
-                                        secondary={
-                                            <span>
-                                                {Number(paper?.kg) - (paper?.allocations?.length ? paper?.allocations?.reduce((sum, item) => sum + item?.allocatedKg, 0) : 0)} KG total
-                                                <br />
-                                            </span>
-                                        }
-                                    />
-                                    {allocatedQuantity > 0 && (
-                                        <Chip
-                                            label={`Will use: ${allocatedQuantity.toFixed(2)} KG`}
-                                            size="small"
-                                            color="primary"
-                                            variant="outlined"
-                                            sx={{ mr: 1 }}
-                                        />
-                                    )}
-                                    {allocatedQuantity === 0 && (
-                                        <Chip
-                                            label="Not used"
-                                            size="small"
-                                            color="default"
-                                            variant="outlined"
-                                            sx={{ mr: 1 }}
-                                        />
-                                    )}
-                                    <IconButton
-                                        edge="end"
-                                        onClick={() => removePaperFromSelection(paperType, paperId)}
-                                        disabled={isCompleted}
-                                        size="small"
-                                    >
-                                        <RemoveIcon />
-                                    </IconButton>
-                                </ListItem>
-                            );
-                        })
-                    )}
-                </List>
+            if (type === "paper3") {
+                if (gsm3 === gsm1) {
+                    const related1 = newAllocations.paper1?.find(x => x.paperId === paperId);
+                    if (related1) usedKg += related1.allocatedKg;
+                }
+                if (gsm3 === gsm2) {
+                    const related2 = newAllocations.paper2?.find(x => x.paperId === paperId);
+                    if (related2) usedKg += related2.allocatedKg;
+                }
+            }
 
-                <Box sx={{ mt: 1 }}>
-                    <Typography variant="body2">
-                        Total Allocated: {totalAllocated.toFixed(2)} KG
-                    </Typography>
-                    {!isSufficient && (
-                        <Typography variant="body2" color="error">
-                            Insufficient allocation (Required: {requirement.toFixed(2)} KG, Shortage: {(requirement - totalAllocated).toFixed(2)} KG)
-                        </Typography>
-                    )}
-                </Box>
-            </Grid>
-        );
-    };
+            summaries[type].push(`${usedKg.toFixed(2)} KG used from ${paper.kg.toFixed(0)} KG roll`);
+        });
+    });
 
-    // Render paper selection section
-    const renderPaperSelection = () => {
-        if (!row.actualPaperKG && !row.paperKG)
-            return null;
+    setPaperUsageSummary(summaries);
+}, [paperSelections, allAllocations, availablePapers, newAllocations, row.paperKG]);
 
-        const paperData = row.actualPaperKG || row.paperKG;
-        const hasPaperRequirements = paperRequirements?.paper1 > 0 || paperRequirements?.paper2 > 0 || paperRequirements?.paper3 > 0;
-
-        if (!hasPaperRequirements)
-            return null;
-
-        return (
-            <Card sx={{ mt: 2, border: '1px solid #e0e0e0' }}>
-                <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                        📄 Select Papers from Inventory {isPaperSelectionRequired && "(*Required)"}
-                    </Typography>
-
-                    {isPaperSelectionRequired && (
-                        <Typography variant="body2" color="warning.main" sx={{ mb: 2 }}>
-                            ⚠️ Paper selection is required before changing status to "In Progress"
-                        </Typography>
-                    )}
-
-                    <Grid container spacing={2}>
-                        {paperRequirements?.paper1 > 0 && renderPaperTypeSelection("paper1", paperData?.paper1)}
-                        {paperRequirements?.paper2 > 0 && renderPaperTypeSelection("paper2", paperData?.paper2)}
-                        {paperRequirements?.paper3 > 0 && renderPaperTypeSelection("paper3", paperData?.paper3)}
-                    </Grid>
-
-                    {/* Show allocation summary */}
-                    {(paperSelections?.paper1?.length > 0 || paperSelections?.paper2?.length > 0 || paperSelections?.paper3?.length > 0) && (
-                        <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                                📋 Paper Allocation Summary:
-                            </Typography>
-                            {Object.entries(paperSelections).map(([paperType, paperIds]) => {
-                                if (paperIds.length === 0) return null;
-
-                                const requirement = paperRequirements[paperType as keyof typeof paperRequirements];
-                                const allocations = allAllocations[paperType as keyof typeof allAllocations];
-                                const totalAllocated = allocations.allocations.reduce((sum: any, a: any) => sum + a.allocatedKg, 0);
-
-                                return (
-                                    <Typography key={paperType} variant="body2" sx={{ mt: 0.5 }}>
-                                        • {paperType.toUpperCase()}: {totalAllocated.toFixed(2)} KG allocated (Required: {requirement.toFixed(2)} KG)
-                                        {allocations.remainingRequired > 0 && ` ⚠️ Shortage: ${allocations.remainingRequired.toFixed(2)} KG`}
-                                    </Typography>
-                                );
-                            })}
-                        </Box>
-                    )}
-                </CardContent>
-            </Card>
-        );
-    };
 
     return (
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
@@ -1071,8 +791,17 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             ))}
                         </TextField>
                     </Stack>
-
-                    {renderPaperSelection()}
+                    <PaperAssign
+                        row={row}
+                        isCompleted={isCompleted}
+                        paperRequirements={paperRequirements}
+                        allAllocations={allAllocations}
+                        paperSelections={paperSelections}
+                        isPaperSelectionRequired={isPaperSelectionRequired}
+                        newAllocations={newAllocations}
+                        availablePapers={availablePapers}
+                        setPaperSelections={setPaperSelections}
+                    />
 
                     <PaperSelection
                         setSelectedPrinter={setSelectedPrinter}
