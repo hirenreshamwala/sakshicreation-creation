@@ -323,7 +323,45 @@ const AllOrdersPage = () => {
   }
 
   const handleProformaDownload = (row: OrderRow) => {
-    toast.info(`Downloading proforma for order ${row.orderNumber}`)
+    try {
+      const latestQuotation = row?.quotation?.[row?.quotation?.length - 1]
+      const quantity = Number(row?.qty) || 0
+      const unitPrice = Number(latestQuotation?.unitPrice) || 0
+      const subtotal = quantity * unitPrice
+      const gstValue = Number(latestQuotation?.gst) || 0
+      const applyGST = gstValue > 0
+      const gstPercentage = gstValue
+      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0
+      const totalAmount = subtotal + gstAmount
+
+      const formData = {
+        orderNumber: row?.orderNumber || "N/A",
+        companyName: row?.companyName?.companyName || "N/A",
+        remarks: row?.remarks || "",
+        ownerMobileNo: row?.party?.ownerMobileNo || "",
+        partyName: row?.party?.partyName || "N/A",
+        addressName: `${row?.party?.address?.unitNo || ""} ${
+          markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || ""
+        } ${markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || ""} ${
+          markets?.find((item) => item._id === row?.party?.address?.area)?.area || ""
+        } ${markets?.find((item) => item._id === row?.party?.address?.pincode)?.pincode || ""}`.trim(),
+        GSTNo: row?.party?.GSTNo || "N/A",
+        servicePerformance: row?.productItem?.itemName || "N/A",
+        quantity: quantity,
+        unitPrice: unitPrice,
+        total: subtotal,
+        finalAmount: totalAmount,
+        applyGST: applyGST,
+        gstPercentage: gstPercentage,
+        daysAfterConfirmation: row?.daysAfterConfirmation || 0,
+      }
+
+      generateInvoicePDF(formData)
+      toast.success("Proforma downloaded successfully")
+    } catch (error) {
+      console.error("Error downloading Proforma:", error)
+      toast.error("Failed to download Proforma")
+    }
   }
 
   const StatusBadge = ({ row }: { row: OrderRow }) => {
