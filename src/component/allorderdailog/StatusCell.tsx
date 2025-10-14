@@ -349,32 +349,74 @@ export const StatusCell = ({ row }: { row: any }) => {
     );
   };
 
+  const handleBoxFounded = async () => {
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "Do you want to mark Box as Founded?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, mark as founded!",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await dispatch(updateQPOrderThunk({ 
+        id: row._id, 
+        data: { isBoxFound: true } 
+      })).unwrap();
+      toast.success("Box marked as founded successfully");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to mark box as founded");
+    }
+  }
+};
+
   const renderKanthanTimer = () => {
-    if (row.status !== "Kanthan") return null;
-    return (
-      <Box sx={{ mt: 1, p: 1, backgroundColor: '#F3F4F6', borderRadius: 1 }}>
-        <Typography variant="body2" sx={{ fontSize: '0.7rem', fontWeight: 'bold', mb: 0.5 }}>
-          Kanthan Timer
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {!row.kantanStart ? (
-            <ThemeButton size="small" onClick={handleStart}>
-              Start
-            </ThemeButton>
-          ) : !row.kantanEnd ? (
-            <>
-              <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{formatTime(elapsed)}</Typography>
-              <ThemeButton size="small" onClick={handleFinish}>
-                Finish
+  if (row.status !== "Kanthan") return null;
+
+  return (
+    <Box sx={{ mt: 1, p: 1, backgroundColor: '#F3F4F6', borderRadius: 1 }}>
+      <Typography variant="body2" sx={{ fontSize: '0.7rem', fontWeight: 'bold', mb: 0.5 }}>
+        Kanthan Timer
+      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {/* ✅ NAYA: Pehle Box Founded button */}
+        {!row.isBoxFound ? (
+          <ThemeButton size="small" onClick={handleBoxFounded}>
+            Box Founded
+          </ThemeButton>
+        ) : (
+          /* ✅ Box founded hone ke baad hi timer controls dikhe */
+          <>
+            {!row.kantanStart ? (
+              <ThemeButton size="small" onClick={handleStart}>
+                Start
               </ThemeButton>
-            </>
-          ) : (
-            <Typography sx={{ color: '#10B981', fontSize: '0.8rem' }}>Completed</Typography>
-          )}
-        </Box>
+            ) : !row.kantanEnd ? (
+              <>
+                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{formatTime(elapsed)}</Typography>
+                <ThemeButton size="small" onClick={handleFinish}>
+                  Finish
+                </ThemeButton>
+              </>
+            ) : (
+              <Typography sx={{ color: '#10B981', fontSize: '0.8rem' }}>Completed</Typography>
+            )}
+          </>
+        )}
       </Box>
-    );
-  };
+      
+      {/* ✅ Box founded status show karo */}
+      {row.isBoxFound && (
+        <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#10B981', mt: 1 }}>
+          ✅ Box Founded
+        </Typography>
+      )}
+    </Box>
+  );
+};
 
   const renderNextProcesses = () => {
     const isDesignComplete = row.designer ? row.designDone : true;
