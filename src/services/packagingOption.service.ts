@@ -5,10 +5,19 @@ import Request from './axios';
 export interface PackagingOption {
   _id: string;
   ply: string;
+  uom: string;
   length: string;
   width: string;
   height: string;
+  deckal: string;
+  paper1GSM: string;
+  paper2GSM: string;
+  paper3GSM: string;
   name: string;
+  party?: {
+    _id: string;
+    partyName: string;
+  };
   createdAt: string;
   updatedAt: string;
 }

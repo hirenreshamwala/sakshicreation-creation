@@ -399,7 +399,7 @@ const AllOrdersPage = () => {
             uniqueValues={selectedFilterField ?
               getUniqueValues :
               []}
-            onFiltersChange={(newFilters) => {
+          onFiltersChange={(newFilters) => {
               const idBasedFilters: { [key: string]: string[] } = {};
 
               Object.entries(newFilters).forEach(([label, values]) => {
