@@ -303,7 +303,7 @@ const QualityPackagingPage = () => {
 
     <>
 
-      <Box mb={3}>
+      <Box mb={1}>
         <ThemeTabs
           value={tab}
           onChange={(_, v) => setTab(v as number)}

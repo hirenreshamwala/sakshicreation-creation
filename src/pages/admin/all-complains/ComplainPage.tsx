@@ -156,7 +156,7 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
         .filter((complaint) => complaint.company?._id === company?._id)
         .map((complaint, index) => ({
             id: complaint?._id,
-            orderid: complaint.qporder?.orderNo ? `QP-${complaint.qporder.orderNo}` : complaint.scorder?.orderNumber || "N/A",
+            orderid: complaint.qporder?.orderNo? `QP-${complaint.qporder.orderNo}` : complaint.scorder?.orderNumber || "N/A",
             partyName: complaint?.party?.partyName,
             subject: complaint.subject,
             status: complaint.status,

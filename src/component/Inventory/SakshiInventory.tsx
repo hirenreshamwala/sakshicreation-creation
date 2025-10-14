@@ -52,6 +52,14 @@ const styles = {
     marginLeft: 8,
     cursor: 'pointer',
   },
+  tabsContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 3,
+    mb: 3,
+    mt: 2,
+    flexWrap: 'wrap',
+  },
 } satisfies Record<string, SxProps<Theme>>;
 
 interface AggregatedInventory {
@@ -71,7 +79,7 @@ interface AggregatedInventory {
 
 const SakshiInventoryPage = () => {
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth)
+  const { user } = useAppSelector((state) => state.auth);
   const { inventory, summary, loading, error } = useAppSelector(state => state.inventory);
   const { materials } = useAppSelector(state => state.materials);
   const { vendors } = useAppSelector(state => state.vendors);
@@ -89,8 +97,7 @@ const SakshiInventoryPage = () => {
       return inventory;
     } else if (permissions?.inventory?.view_own) {
       return inventory?.filter(
-        (item) =>
-          item.forCompany?._id === user?.id
+        (item) => item.forCompany?._id === user?.id
       );
     }
     return [];
@@ -260,23 +267,26 @@ const SakshiInventoryPage = () => {
 
   return (
     <>
-      <Box mb={3}>
-        <ThemeTabs
-          value={activeMainTab}
-          onChange={handleMainTabChange}
-          tabs={mainTabs}
-        />
+      {/* Main and Ward Tabs in a single row using flex */}
+      <Box sx={styles.tabsContainer}>
+        <Box sx={{ flex: '0 1 auto', minWidth: 200 }}>
+          <ThemeTabs
+            value={activeMainTab}
+            onChange={handleMainTabChange}
+            tabs={mainTabs}
+          />
+        </Box>
+        <Box sx={{ flex: '0 1 auto', minWidth: 150 }}>
+          <ThemeTabs
+            value={activeWardTab}
+            onChange={handleWardTabChange}
+            tabs={wardTabs}
+          />
+        </Box>
       </Box>
 
       {activeMainTab === InventoryCategory.FACTORY ? (
         <>
-          <Box py={2}>
-            <ThemeTabs
-              value={activeWardTab}
-              onChange={handleWardTabChange}
-              tabs={wardTabs}
-            />
-          </Box>
           <BasicTable
             tableHeader={[
               { id: 'material', label: 'MATERIAL' },
@@ -306,14 +316,6 @@ const SakshiInventoryPage = () => {
         </>
       ) : (
         <>
-          <Box py={2}>
-            <ThemeTabs
-              value={activeWardTab}
-              onChange={handleWardTabChange}
-              tabs={wardTabs}
-            />
-          </Box>
-
           {!showDetails ? (
             <>
               <Box sx={styles.filterContainer}>

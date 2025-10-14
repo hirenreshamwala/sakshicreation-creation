@@ -525,17 +525,22 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             </Box>
 
             <Box display="flex" gap={2} mb={1}>
-              <ThemeInput
-                labelName="Owner Name"
-                placeholder="Owner Name"
-                fullWidth
-                name="ownerName"
-                value={formik.values.ownerName}
-                onChange={(e) => formik.setFieldValue("ownerName", e.target.value.toUpperCase())}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.errors.ownerName)}
-                helperText={formik.touched.ownerName && formik.errors.ownerName}
-              />
+             <ThemeInput
+  labelName="Owner Name"
+  placeholder="Owner Name"
+  fullWidth
+  name="ownerName"
+  value={formik.values.ownerName}
+  onChange={(e) => {
+    // Allow only letters and spaces
+    const onlyText = e.target.value.replace(/[^a-zA-Z\s]/g, "").toUpperCase();
+    formik.setFieldValue("ownerName", onlyText);
+  }}
+  onBlur={formik.handleBlur}
+  error={Boolean(formik.errors.ownerName)}
+  helperText={formik.touched.ownerName && formik.errors.ownerName}
+/>
+
               <ThemeInput
                 labelName="Owner WhatsApp No."
                 placeholder="xxxxx-xxxxx"
@@ -589,17 +594,22 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             </Box>
 
             <Box display="flex" gap={2} mb={1}>
-              <ThemeInput
-                labelName="Contact Person"
-                placeholder="Contact Person"
-                fullWidth
-                name="contactPerson"
-                value={formik.values.contactPerson}
-                onChange={(e) => formik.setFieldValue("contactPerson", e.target.value.toUpperCase())}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.errors.contactPerson)}
-                helperText={formik.touched.contactPerson && formik.errors.contactPerson}
-              />
+            <ThemeInput
+  labelName="Contact Person"
+  placeholder="Contact Person"
+  fullWidth
+  name="contactPerson"
+  value={formik.values.contactPerson}
+  onChange={(e) => {
+    // Allow only letters and spaces
+    const onlyText = e.target.value.replace(/[^a-zA-Z\s]/g, "").toUpperCase();
+    formik.setFieldValue("contactPerson", onlyText);
+  }}
+  onBlur={formik.handleBlur}
+  error={Boolean(formik.errors.contactPerson)}
+  helperText={formik.touched.contactPerson && formik.errors.contactPerson}
+/>
+
               <ThemeInput
                 labelName="Person WhatsApp No."
                 placeholder="xxxxx-xxxxx"
@@ -652,18 +662,23 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             </Box>
 
             <Box display="flex" gap={2} mb={1}>
-              <ThemeInput
-                labelName="Contact For Payment"
-                placeholder="Contact Name"
-                fullWidth
-                sx={{ mb: 2 }}
-                name="contactForPayment"
-                value={formik.values.contactForPayment}
-                onChange={(e) => formik.setFieldValue("contactForPayment", e.target.value.toUpperCase())}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.errors.contactForPayment)}
-                helperText={formik.touched.contactForPayment && formik.errors.contactForPayment}
-              />
+             <ThemeInput
+  labelName="Contact For Payment"
+  placeholder="Contact Name"
+  fullWidth
+  sx={{ mb: 2 }}
+  name="contactForPayment"
+  value={formik.values.contactForPayment}
+  onChange={(e) => {
+    // Allow only letters and spaces
+    const onlyText = e.target.value.replace(/[^a-zA-Z\s]/g, "").toUpperCase();
+    formik.setFieldValue("contactForPayment", onlyText);
+  }}
+  onBlur={formik.handleBlur}
+  error={Boolean(formik.errors.contactForPayment)}
+  helperText={formik.touched.contactForPayment && formik.errors.contactForPayment}
+/>
+
               <ThemeInput
                 labelName="Contact WhatsApp No."
                 placeholder="xxxxx-xxxxx"

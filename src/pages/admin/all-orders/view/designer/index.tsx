@@ -603,7 +603,49 @@ const ViewOrderDesigner = () => {
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false)
   const [newSelectedDesigner, setNewSelectedDesigner] = useState<any>(null)
   const isEditingDisabled = singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0;
+const handleUpdateDesigner = async () => {
+    if (!selectedStaff) {
+      toast.error("Please select a designer");
+      return;
+    }
+    if (!orderId || typeof orderId !== "string") {
+      toast.error("Order ID not found");
+      return;
+    }
 
+    setLoading(true);
+    try {
+      const updateData = {
+        designer: selectedStaff.value,
+        designerStatus: "Pending",
+        designerRemarks: singleOrder?.designer
+          ? `Reassigned from ${singleOrder.designer.name || "previous designer"} to ${selectedStaff.label}`
+          : `Assigned to ${selectedStaff.label}`,
+        reassignHistory: singleOrder?.designer
+          ? [
+              ...(singleOrder?.reassignHistory || []),
+              {
+                fromDesigner: singleOrder.designer._id,
+                fromDesignerName: singleOrder.designer.name,
+                toDesigner: selectedStaff.value,
+                toDesignerName: selectedStaff.label,
+                reassignedAt: new Date().toISOString(),
+                reason: "Manual reassignment via Update Designer",
+              },
+            ]
+          : singleOrder?.reassignHistory || [],
+      };
+
+      await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap();
+      toast.success("Designer updated successfully");
+      await dispatch(getOrderByIdThunk(orderId)).unwrap();
+    } catch (err) {
+      toast.error("Failed to update designer");
+      console.error("Failed to update designer:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     const fetchOrderData = async () => {
       if (orderId && typeof orderId === "string") {
@@ -1393,16 +1435,36 @@ const ViewOrderDesigner = () => {
                 InputProps={{ readOnly: true }}
               />
             </Box>
-            <Box flex={1} minWidth={240}>
-              <RoleStaffSelect
-                label="Select Designers"
-                name="designerRole"
-                value={selectedStaff}
-                onChange={handleStaffChange}
-                onStaffChange={handleStaffChange}
-                roleFilter="Designer"
-                showStaff={true}
-              />
+           <Box flex={1} minWidth={240} display="flex" alignItems="center" gap={2}>
+              <Box flex={1}>
+                <RoleStaffSelect
+                  label="Select Designers"
+                  name="designerRole"
+                  value={selectedStaff}
+                  onChange={handleStaffChange}
+                  onStaffChange={handleStaffChange}
+                  roleFilter="Designer"
+                  showStaff={true}
+                />
+              </Box>
+              <ThemeButton
+                onClick={handleUpdateDesigner}
+                disabled={loading || !selectedStaff || isEditingDisabled}
+                sx={{
+                  background: selectedStaff && !isEditingDisabled ? "#1976D2" : "#ccc",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  borderRadius: 2,
+                  py: 1,
+                  px: 2,
+                  "&:hover": {
+                    background: selectedStaff && !isEditingDisabled ? "#1565C0" : "#ccc",
+                  },
+                }}
+              >
+                {loading ? "Updating..." : "Update Designer"}
+              </ThemeButton>
             </Box>
           </Box>
           {canAssignToDesigner && (

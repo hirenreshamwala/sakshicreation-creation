@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react"
-import { Avatar, Box, IconButton, TableCell, Typography } from "@mui/material"
+import { Avatar, Box, IconButton, TableCell, Typography, Button } from "@mui/material"
 import BasicTable from "@/component/common_component/Table/themetable"
 import { FaChevronRight } from "react-icons/fa6"
 import { useRouter } from "next/router"
@@ -20,6 +20,7 @@ import Loader from "@/component/common_component/loader"
 import { toast } from "react-toastify"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import AddSakhiOrderDialog from "@/component/allorderdailog"
+import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 
 const columns = [
   { id: "orderNumber", label: "Order No." },
@@ -31,6 +32,7 @@ const columns = [
   { id: "remarks", label: "Remarks" },
   { id: "orderedBy", label: "Ordered By" },
   { id: "orderStatus", label: "Order Status" },
+  { id: "actions", label: "Actions" },
 ]
 
 type OrderRow = {
@@ -41,11 +43,20 @@ type OrderRow = {
   }
   party: {
     partyName: string
+    ownerMobileNo?: string
+    address?: {
+      unitNo?: string
+      marketName?: string
+      landMark?: string
+      area?: string
+      pincode?: string
+    }
+    GSTNo?: string
   }
   productItem: {
     itemName: string
   }
-  size?: string
+  size?: { size: string }
   createdAt: string
   remarks: string
   createdBy: {
@@ -63,6 +74,9 @@ type OrderRow = {
   printer?: { _id: string }
   binder?: { _id: string }
   bookletBinder?: { _id: string }
+  quotation?: Array<{ unitPrice: number; gst: number }>
+  qty?: number
+  daysAfterConfirmation?: number
 }
 
 const AllOrdersPage = () => {
@@ -73,12 +87,11 @@ const AllOrdersPage = () => {
 
   const { companies } = useAppSelector((state) => state.company)
   const { user } = useAppSelector((state) => state.auth)
+  const { markets } = useAppSelector((state) => state.markets)
   const userData = getUserData()
 
   // Filter state
   const { companyName, c, staffId, startDate: st, endDate: ed, party } = router.query
-  console.log("DEBUG : AllOrdersPage : c:", c);
-
   const [activeTab, setActiveTab] = useState(c === "Quality Packaging" ? 1 : 0);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
   const [selectedFilterValues, setSelectedFilterValues] = useState<string[] | null>(null)
@@ -262,9 +275,56 @@ const AllOrdersPage = () => {
   };
 
   const handleRowClick = (row: OrderRow) => {
-    const route = getRouteByStatus(row);
-    router.push(route);
-  };
+    const route = getRouteByStatus(row)
+    router.push(route)
+  }
+
+  const handleDownloadInvoice = (row: OrderRow) => {
+    try {
+      const latestQuotation = row?.quotation?.[row?.quotation?.length - 1]
+      const quantity = Number(row?.qty) || 0
+      const unitPrice = Number(latestQuotation?.unitPrice) || 0
+      const subtotal = quantity * unitPrice
+      const gstValue = Number(latestQuotation?.gst) || 0
+      const applyGST = gstValue > 0
+      const gstPercentage = gstValue
+      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0
+      const totalAmount = subtotal + gstAmount
+
+      const formData = {
+        quotation: true,
+        orderNumber: row?.orderNumber || "N/A",
+        companyName: row?.companyName?.companyName || "N/A",
+        remarks: row?.remarks || "",
+        ownerMobileNo: row?.party?.ownerMobileNo || "",
+        partyName: row?.party?.partyName || "N/A",
+        addressName: `${row?.party?.address?.unitNo || ""} ${
+          markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || ""
+        } ${markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || ""} ${
+          markets?.find((item) => item._id === row?.party?.address?.area)?.area || ""
+        } ${markets?.find((item) => item._id === row?.party?.address?.pincode)?.pincode || ""}`.trim(),
+        GSTNo: row?.party?.GSTNo || "N/A",
+        servicePerformance: row?.productItem?.itemName || "N/A",
+        quantity: quantity,
+        unitPrice: unitPrice,
+        total: subtotal,
+        finalAmount: totalAmount,
+        applyGST: applyGST,
+        gstPercentage: gstPercentage,
+        daysAfterConfirmation: row?.daysAfterConfirmation || 0,
+      }
+
+      generateInvoicePDF(formData)
+      toast.success("Quotation downloaded successfully")
+    } catch (error) {
+      console.error("Error downloading Quotation:", error)
+      toast.error("Failed to download Quotation")
+    }
+  }
+
+  const handleProformaDownload = (row: OrderRow) => {
+    toast.info(`Downloading proforma for order ${row.orderNumber}`)
+  }
 
   const StatusBadge = ({ row }: { row: OrderRow }) => {
     const { text, isHold } = getDisplayStatus(row);
@@ -399,7 +459,7 @@ const AllOrdersPage = () => {
             uniqueValues={selectedFilterField ?
               getUniqueValues :
               []}
-            onFiltersChange={(newFilters) => {
+          onFiltersChange={(newFilters) => {
               const idBasedFilters: { [key: string]: string[] } = {};
 
               Object.entries(newFilters).forEach(([label, values]) => {
@@ -515,6 +575,27 @@ const AllOrdersPage = () => {
                       marginLeft: 8,
                     }}
                   />
+                </Box>
+              </TableCell>
+              <TableCell>
+                <Box display="flex" gap={1}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleDownloadInvoice(row)}
+                    disabled={!row.quotation || row.quotation.length === 0}
+                    sx={{ fontSize: "12px", textTransform: "none" }}
+                  >
+                    Quotation
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleProformaDownload(row)}
+                    sx={{ fontSize: "12px", textTransform: "none" }}
+                  >
+                    Proforma
+                  </Button>
                 </Box>
               </TableCell>
             </>

@@ -48,6 +48,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [remarkType, setRemarkType] = useState<"startDate" | "onHold" | "canceled" | null>(null);
     const [isActualNoOfPiecesUpdated, setIsActualNoOfPiecesUpdated] = useState(!!row.actualNoOfPieces);
     const [availablePapers, setAvailablePapers] = useState<InventoryPaper[]>([]);
+    const [newAllocations, setNewAllocations] = useState(null)
     const [paperSelections, setPaperSelections] = useState({
         paper1: [],
         paper2: [],
@@ -215,23 +216,34 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     // Calculate all paper allocations at once to avoid circular dependency
     const calculateAllPaperAllocations = useCallback((): PaperAllocationsResult => {
+        console.log("🟢 Starting paper allocation calculation");
+        console.log("Available Papers:", availablePapers);
+        console.log("Paper Selections:", paperSelections);
+        console.log("Paper Requirements:", paperRequirements);
+
         // Create a map to track available quantities for each paper
         const paperQuantities: Record<string, number> = {};
         availablePapers.forEach(paper => {
-            paperQuantities[paper._id] = paper.kg;
+            paperQuantities[paper._id] = Number(paper.kg) - (paper.allocations.length ? paper.allocations.reduce((sum, item) => sum + item.allocatedKg, 0) : 0); // -----------------------
         });
+        console.log("Initial paper quantities map:", paperQuantities);
 
         // Function to calculate allocations for a single paper type
         const calculateForType = (paperType: keyof typeof paperSelections, requiredKg: number) => {
+            console.log(`\n🔹 Calculating allocations for paper type: ${paperType}`);
+            console.log("Required KG:", requiredKg);
+
             const papers = paperSelections[paperType]
                 .map(paperId => availablePapers.find(p => p._id === paperId))
                 .filter(Boolean) as InventoryPaper[];
 
+            console.log("Selected papers for allocation:", papers);
+
             let remainingRequired = requiredKg;
             const allocations: PaperAllocation[] = [];
 
-            // If there's no requirement, return empty allocations
             if (requiredKg <= 0) {
+                console.log(`No requirement for ${paperType}, returning empty allocations`);
                 return {
                     allocations: [],
                     remainingRequired: 0,
@@ -239,16 +251,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 };
             }
 
-            // Sort papers by available quantity (descending) to use larger papers first
-            const sortedPapers = [...papers].sort((a, b) =>
-                (paperQuantities[b._id] || 0) - (paperQuantities[a._id] || 0)
-            );
+            // Greedy allocation
+            for (const paper of papers) {
+                console.log(`Allocating from paper: ${paper._id} | Available KG: ${paperQuantities[paper._id]} | Remaining Required: ${remainingRequired}`);
 
-            // Greedy allocation: use as much as possible from each paper
-            for (const paper of sortedPapers) {
-                // If we've already met the requirement, don't allocate from remaining papers
                 if (remainingRequired <= 0) {
-                    // Add remaining papers with 0 allocation
+                    console.log(`Requirement already met, setting allocation 0 for remaining papers`);
                     allocations.push({
                         paperId: paper._id,
                         allocatedKg: 0
@@ -258,7 +266,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
                 const availableKg = paperQuantities[paper._id] || 0;
                 if (availableKg <= 0) {
-                    // Add paper with 0 allocation if it's not available
+                    console.log(`Paper ${paper._id} has 0 KG available, skipping allocation`);
                     allocations.push({
                         paperId: paper._id,
                         allocatedKg: 0
@@ -266,17 +274,21 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     continue;
                 }
 
-                // Allocate as much as possible from this paper
                 const allocatedKg = Math.min(availableKg, remainingRequired);
+                console.log(`Allocating ${allocatedKg} KG from paper ${paper._id}`);
 
                 allocations.push({
                     paperId: paper._id,
                     allocatedKg: allocatedKg
                 });
-
                 paperQuantities[paper._id] -= allocatedKg;
                 remainingRequired -= allocatedKg;
+
+                console.log(`After allocation: Remaining Required: ${remainingRequired}, Updated paperQuantities:`, paperQuantities);
             }
+
+            console.log(`✅ Finished allocation for ${paperType}:`, allocations);
+            console.log(`Remaining required KG for ${paperType}:`, remainingRequired);
 
             return {
                 allocations,
@@ -286,15 +298,20 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         };
 
         // Calculate allocations for all paper types
-        const paper1Result = calculateForType("paper1", paperRequirements?.paper1);
-        const paper2Result = calculateForType("paper2", paperRequirements?.paper2);
-        const paper3Result = calculateForType("paper3", paperRequirements?.paper3);
+        const paper1Result = calculateForType("paper1", paperRequirements?.paper1 || 0);
+        const paper2Result = calculateForType("paper2", paperRequirements?.paper2 || 0);
+        const paper3Result = calculateForType("paper3", paperRequirements?.paper3 || 0);
 
         // Build the paper allocations map
         const paperAllocationsMap: Record<string, number> = {};
         [...paper1Result.allocations, ...paper2Result.allocations, ...paper3Result.allocations].forEach(allocation => {
             paperAllocationsMap[allocation.paperId] = (paperAllocationsMap[allocation.paperId] || 0) + allocation.allocatedKg;
         });
+
+        console.log("\n📊 Final Paper Allocations Map:", paperAllocationsMap);
+        console.log("Paper1 Result:", paper1Result);
+        console.log("Paper2 Result:", paper2Result);
+        console.log("Paper3 Result:", paper3Result);
 
         return {
             paper1: paper1Result,
@@ -329,14 +346,27 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
         return matchingPapers.map((item: any) => {
             // Calculate how much is already allocated to this paper
-            const allocatedKg = (item.allocations || [])
+            let allocatedKg = (item.allocations || [])
                 .reduce((sum: any, a: any) => sum + (a.allocatedKg || 0), 0);
+
+            if (paperType === 'paper2' && row.paperKG.paper1.gsm === row.paperKG.paper2.gsm) {
+                // allocatedKg
+                newAllocations.paper1.filter((items) => item._id === items.paperId)
+            }
+            if (paperType === 'paper3' && row.paperKG.paper1.gsm === row.paperKG.paper3.gsm && row.paperKG.paper2.gsm !== row.paperKG.paper3.gsm) {
+
+            }
+            if (paperType === 'paper3' && row.paperKG.paper1.gsm === row.paperKG.paper3.gsm && row.paperKG.paper2.gsm === row.paperKG.paper3.gsm) {
+
+            }
+
+
 
             // Available KG = total KG - allocated KG
             const availableKg = Math.max(0, item.kg - allocatedKg);
             return {
                 value: item._id,
-                label: `${item.kg} (${availableKg.toFixed(2)} KG available)`,
+                label: `${availableKg.toFixed(2)} KG`,
                 kg: item.kg,
                 usedKg: allocatedKg,
                 availableKg,
@@ -523,12 +553,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         if (requiredKg <= 0) return allocations;
 
         // Sort papers by available quantity (descending) to use larger papers first
-        const sortedPapers = [...papers].sort((a, b) =>
-            (b.kg - (getAllocatedQuantity(b._id) || 0)) - (a.kg - (getAllocatedQuantity(a._id) || 0))
-        );
+        // const sortedPapers = papers
 
         // Greedy allocation: use as much as possible from each paper
-        for (const paper of sortedPapers) {
+        for (const paper of papers) {
             // If we've already met the requirement, don't allocate from remaining papers
             if (remainingRequired <= 0) {
                 // Add remaining papers with 0 allocation
@@ -563,9 +591,30 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         return allocations;
     }, [paperSelections, availablePapers, getAllocatedQuantity]);
 
+    useEffect(() => {
+        const newActuals1 = { paper1: [], paper2: [], paper3: [] };
+
+        (["paper1", "paper2", "paper3"] as const).forEach(pt => {
+            paperSelections[pt].forEach((paperId: any) => {
+                const allocation: any = allAllocations[pt]?.allocations?.find(a => a.paperId === paperId);
+                if (allocation) {
+                    newActuals1[pt].push({ paperId, allocatedKg: allocation.allocatedKg });
+                }
+            });
+        });
+
+        setNewAllocations(newActuals1)
+    }, [paperSelections])
+    console.log(newAllocations, 'newActuals1newActuals1newActuals1newActuals1newActuals1newActuals1')
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+        const currentDate = moment().startOf('day');
+        const selectedDeliveryDate = moment(formData.deliveryDate);
+        if (selectedDeliveryDate.isBefore(currentDate)) {
+            toast.error("Delivery date cannot be before the current date");
+            return;
+        }
         if (!formData._id) {
             toast.error("Cannot submit: Invalid order ID");
             return;
@@ -774,9 +823,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                                         primary={paper.paperName}
                                         secondary={
                                             <span>
-                                                {paper.kg.toFixed(2)} KG total, {remainingQuantity.toFixed(2)} KG remaining
+                                                {Number(paper?.kg) - (paper?.allocations?.length ? paper?.allocations?.reduce((sum, item) => sum + item?.allocatedKg, 0) : 0)} KG total
                                                 <br />
-                                                Mill: {paper.paperMillName}
                                             </span>
                                         }
                                     />
@@ -927,6 +975,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             size="small"
                             sx={{ minWidth: 100 }}
                             InputLabelProps={{ shrink: true }}
+                            inputProps={{
+                                min: moment().format("YYYY-MM-DD"), // Restrict to today or future dates
+                            }}
                             disabled={isCompleted}
                         />
                         <TextField

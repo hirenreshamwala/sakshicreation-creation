@@ -1,6 +1,6 @@
 "use client"
 import { useRef, useState, useEffect } from "react"
-import { Box, Typography, Paper, Button, CircularProgress, Alert, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, List, ListItem, Chip, Divider } from "@mui/material"
+import { Box, Typography, Paper, Button, CircularProgress, Alert, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, List, ListItem, Chip, Divider, Table, TableContainer, TableHead, TableRow, TableCell, TableBody } from "@mui/material"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import StepperProgress from "@/component/common_component/stepperprogress"
@@ -16,6 +16,7 @@ import AddNewQuotation from "@/component/PerformanceInvoice/AddQuotationDialog"
 import { MdDownload } from "react-icons/md"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
+import Image from "next/image"
 
 const activeStep = 0
 
@@ -46,11 +47,14 @@ const ViewOrderPage = () => {
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([])
   const [quotationHistoryDialog, setQuotationHistoryDialog] = useState(false)
   const [uploadedQuotationProofs, setUploadedQuotationProofs] = useState<any[]>([])
+  const [previewDialog, setPreviewDialog] = useState(false)
+  const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
   const router = useRouter()
   const dispatch = useAppDispatch()
   const { markets } = useAppSelector((state) => state.markets);
   const { id: orderId } = router.query
   const { singleOrder } = useAppSelector((state: any) => state.orders)
+  console.log("object", singleOrder)
   const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
 
   console.log(singleOrder, 'singleOrder?.quotationProof')
@@ -190,23 +194,24 @@ const ViewOrderPage = () => {
     }
   }
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+    const date = new Date(dateString)
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
 
-  // Function to get status color
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'final': return 'success';
-      case 'revised': return 'warning';
-      case 'canceled': return 'error';
-      default: return 'default';
+      case 'final': return 'success'
+      case 'revised': return 'warning'
+      case 'canceled': return 'error'
+      // case 'pending': return 'info'
+      default: return 'default'
     }
-  };
+  }
+
   const handleNextStep = () => {
     if (!orderId || typeof orderId !== "string") {
-      toast.error("Order ID not found");
-      return;
+      toast.error("Order ID not found")
+      return
     }
     router.push(`/admin/all-orders/view/designer?id=${orderId}`);
   }
@@ -233,36 +238,15 @@ const ViewOrderPage = () => {
   }, [dispatch, orderId])
   const handleDownloadInvoice = () => {
     try {
-      // Get the latest quotation
-      const latestQuotation = singleOrder?.quotation?.[singleOrder?.quotation?.length - 1];
-
-      // Debug log
-      console.log("Latest Quotation:", latestQuotation);
-      console.log("Single Order:", singleOrder);
-
-      // Calculate amounts based on latest quotation
-      const quantity = Number(singleOrder?.qty) || 0;
-      const unitPrice = Number(latestQuotation?.unitPrice) || 0;
-      const subtotal = quantity * unitPrice;
-
-      // GST settings from latest quotation
-      // Agar quotation mein gst value hai (0 se bada) toh applyGST = true, warna false
-      const gstValue = Number(latestQuotation?.gst) || 0;
-      const applyGST = gstValue > 0;
-      const gstPercentage = gstValue;
-
-      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0;
-      const totalAmount = subtotal + gstAmount;
-
-      console.log("Calculated amounts:", {
-        quantity,
-        unitPrice,
-        subtotal,
-        applyGST,
-        gstPercentage,
-        gstAmount,
-        totalAmount
-      });
+      const latestQuotation = singleOrder?.quotation?.[singleOrder?.quotation?.length - 1]
+      const quantity = Number(singleOrder?.qty) || 0
+      const unitPrice = Number(latestQuotation?.unitPrice) || 0
+      const subtotal = quantity * unitPrice
+      const gstValue = Number(latestQuotation?.gst) || 0
+      const applyGST = gstValue > 0
+      const gstPercentage = gstValue
+      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0
+      const totalAmount = subtotal + gstAmount
 
       const formData = {
         quotation: true,
@@ -287,14 +271,23 @@ const ViewOrderPage = () => {
         daysAfterConfirmation: singleOrder?.daysAfterConfirmation || 0,
       };
 
-      console.log("Final FormData for PDF:", formData);
-      generateInvoicePDF(formData);
-      toast.success("Quotation downloaded successfully");
+      generateInvoicePDF(formData)
+      toast.success("Quotation downloaded successfully")
     } catch (error) {
-      console.error("Error downloading Quotation:", error);
-      toast.error("Failed to download Quotation");
+      console.error("Error downloading Quotation:", error)
+      toast.error("Failed to download Quotation")
     }
-  };
+  }
+
+  const handlePreviewQuotation = (quotation: any) => {
+    setSelectedQuotation(quotation)
+    setPreviewDialog(true)
+  }
+
+  const handleClosePreviewDialog = () => {
+    setPreviewDialog(false)
+    setSelectedQuotation(null)
+  }
 
   useEffect(() => {
     if (singleOrder) {
@@ -814,11 +807,21 @@ const ViewOrderPage = () => {
                       <Typography variant="subtitle1" fontWeight={600}>
                         Quotation - {index + 1}
                       </Typography>
-                      <Chip
-                        label={singleOrder?.quotationProof === "" ? "Pending" : index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled"}
-                        color={getStatusColor(singleOrder?.quotationProof === "" ? "Pending" : index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled") as any}
-                        size="small"
-                      />
+                      <Box display="flex" gap={1}>
+                        <Chip
+                          label={singleOrder?.quotationProof === "" ? "Pending" : index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled"}
+                          color={getStatusColor(singleOrder?.quotationProof === "" ? "Pending" : index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled") as any}
+                          size="small"
+                        />
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handlePreviewQuotation(item)}
+                          sx={{ textTransform: 'none' }}
+                        >
+                          Preview
+                        </Button>
+                      </Box>
                     </Box>
 
                     <Typography variant="body2" color="textSecondary">
@@ -850,6 +853,212 @@ const ViewOrderPage = () => {
           </List>
         </DialogContent>
       </Dialog>
+      {/* ===== Replace the existing preview Dialog with this block ===== */}
+      <Dialog open={previewDialog} onClose={handleClosePreviewDialog} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" fontWeight={600}>
+              Quotation Preview
+            </Typography>
+            <Button onClick={handleClosePreviewDialog}>X</Button>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent>
+          <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+            {/* ===== HEADER ===== */}
+            {/* ===== Improved header with space before address ===== */}
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={2}
+              flexDirection={{ xs: "column", md: "row" }}
+              gap={2}
+            >
+              {/* Left: logos + quotation */}
+              <Box display="flex" alignItems="center" gap={15}>
+                {/* Left small logo */}
+                <Box sx={{ width: 140, height: 180, position: "relative" }}>
+                  <Image
+                    src={singleOrder?.companyName?.logo || "/images/leftlogo.png"}
+                    alt="Company Logo"
+                    fill
+                    style={{ objectFit: "contain" }}
+                    priority
+                  />
+                </Box>
+
+                {/* Center logo + QUOTATION (keeps compact and centered) */}
+                <Box display="flex" flexDirection="column" alignItems="flex-start" sx={{ ml: 0, pt: 0 }}>
+                  <Box sx={{ width: 220, height: 220, position: "relative", mb: 0 }}>
+                    <Image
+                      src={singleOrder?.companyName?.centerLogo || "/images/centerlogo.png"}
+                      alt="Center logo"
+                      fill
+                    />
+                  </Box>
+
+                  <Typography
+                    variant="h5"
+                    fontWeight={800}
+                    sx={{
+                      ml:8,
+                      fontSize: { lg: 25 },
+                    }}
+                  >
+                    QUOTATION
+                  </Typography>
+                </Box>
+
+              </Box>
+
+              {/* Right: GST + address — add left padding to create space in front of address */}
+              <Box
+                display="flex"
+                flexDirection="column"
+                alignItems={{ xs: "center", md: "flex-end" }}
+                sx={{
+                  // Add left space (adjust 4 -> bigger or smaller as needed)
+                  pl: { xs: 0, md: 4 },
+                  textAlign: { xs: "center", md: "right" },
+                  minWidth: 180,
+                }}
+              >
+                <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+                  GSTIN: 24ABSPJ7399E1Z4
+                </Typography>
+
+                {/* Address block — this has extra left space on md+ screens */}
+                <Box sx={{ pl: { xs: 0, md: 4 } }}>
+                  <Typography variant="body2">110, 1st Floor, Shree Krishna Market, Ring Road, Surat - 2</Typography>
+                  <Typography variant="body2">sakshicreation3600@gmail.com</Typography>
+                  <Typography variant="body2">ANY QUERY:Ph:</Typography>
+                  <Typography variant="body2">FOR FOLDER & BOOKLET:</Typography>
+                  <Typography variant="body2">FOR STATIONARY:</Typography>
+                </Box>
+              </Box>
+            </Box>
+
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* ===== BASIC INFO ===== */}
+            <Box display="flex" justifyContent="space-between" mb={2}>
+              <Box>
+                <Typography><strong>Quotation No:</strong> {singleOrder?.orderNumber || "N/A"}</Typography>
+                <Typography><strong>Invoice Date:</strong> {new Date().toLocaleDateString()}</Typography>
+              </Box>
+              <Box textAlign="right">
+                <Typography><strong>Party Name:</strong> {singleOrder?.party?.partyName || "N/A"}</Typography>
+                <Typography>
+                  <strong>Address:</strong>{" "}
+                  {singleOrder?.party?.addressText || (
+                    `${singleOrder?.party?.address?.unitNo || ""} ${markets?.find((item) => item._id === singleOrder?.party?.address?.marketName)?.marketName || ""
+                      } ${markets?.find((item) => item._id === singleOrder?.party?.address?.landMark)?.landmark || ""
+                      } ${markets?.find((item) => item._id === singleOrder?.party?.address?.area)?.area || ""
+                      } ${markets?.find((item) => item._id === singleOrder?.party?.address?.pincode)?.pincode || ""
+                      }`.trim()
+                  )}
+                </Typography>
+                <Typography><strong>GSTIN:</strong> {singleOrder?.party?.GSTNo || "N/A"}</Typography>
+                <Typography><strong>Mobile No:</strong> {singleOrder?.party?.GSTNo || "N/A"}</Typography>
+                <Typography><strong>Delivery Date:</strong> {singleOrder?.party?.GSTNo || "N/A"}</Typography>
+              </Box>
+            </Box>
+
+            {/* ===== ITEM TABLE ===== */}
+            <TableContainer sx={{ border: "1px solid #E0E0E0", borderRadius: 1, mb: 2 }}>
+              <Table>
+                <TableHead sx={{ backgroundColor: "#F9FAFB" }}>
+                  <TableRow>
+                    <TableCell><strong>Sr. No.</strong></TableCell>
+                    <TableCell><strong>Item Name</strong></TableCell>
+                    <TableCell><strong>Description</strong></TableCell>
+                    <TableCell align="center"><strong>Qty</strong></TableCell>
+                    <TableCell align="right"><strong>Unit Price</strong></TableCell>
+                    <TableCell align="right"><strong>Value</strong></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>1</TableCell>
+                    <TableCell>{singleOrder?.productItem?.itemName || "N/A"}</TableCell>
+                    <TableCell>{singleOrder?.remarks || "-"}</TableCell>
+                    <TableCell align="center">{Number(singleOrder?.qty || 0)}</TableCell>
+                    <TableCell align="right">₹{Number(selectedQuotation?.unitPrice || 0).toFixed(2)}</TableCell>
+                    <TableCell align="right">₹{(Number(selectedQuotation?.unitPrice || 0) * Number(singleOrder?.qty || 0)).toFixed(2)}</TableCell>
+                  </TableRow>
+
+                  <TableRow>
+                    <TableCell colSpan={5} align="right"><strong>Subtotal</strong></TableCell>
+                    <TableCell align="right">₹{(Number(selectedQuotation?.unitPrice || 0) * Number(singleOrder?.qty || 0)).toFixed(2)}</TableCell>
+                  </TableRow>
+
+                  {Number(selectedQuotation?.gst || 0) > 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="right"><strong>GST ({selectedQuotation?.gst}%)</strong></TableCell>
+                      <TableCell align="right">₹{(Number(selectedQuotation?.unitPrice || 0) * Number(singleOrder?.qty || 0) * (Number(selectedQuotation?.gst) / 100)).toFixed(2)}</TableCell>
+                    </TableRow>
+                  )}
+
+                  <TableRow sx={{ backgroundColor: "#F9FAFB" }}>
+                    {/* Words cell spans 4 columns and will wrap if long */}
+                    <TableCell colSpan={4} align="left" sx={{ whiteSpace: "normal", py: 1 }}>
+                      <Typography variant="body2" fontStyle="italic">
+                        <strong>Total Invoice Value (in Words):</strong>{" "}
+                        INR {(
+                          Number(selectedQuotation?.unitPrice || 0) *
+                          Number(singleOrder?.qty || 0) *
+                          (1 + (Number(selectedQuotation?.gst || 0) / 100))
+                        ).toLocaleString("en-IN", { maximumFractionDigits: 2 })}{" "}
+                        Only
+                      </Typography>
+                    </TableCell>
+
+                    {/* "Total" label */}
+                    <TableCell colSpan={1} align="right" sx={{ verticalAlign: "middle" }}>
+                      <strong>Total</strong>
+                    </TableCell>
+
+                    {/* Numeric total */}
+                    <TableCell align="right" sx={{ verticalAlign: "middle" }}>
+                      <strong>
+                        ₹{(
+                          Number(selectedQuotation?.unitPrice || 0) *
+                          Number(singleOrder?.qty || 0) *
+                          (1 + (Number(selectedQuotation?.gst || 0) / 100))
+                        ).toFixed(2)}
+                      </strong>
+                    </TableCell>
+                  </TableRow>
+
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="h6" fontWeight={600} mb={1}>Terms & Conditions:</Typography>
+            <Typography variant="body2" component="div">
+              <ol style={{ marginLeft: 16 }}>
+                <li>Goods once sold will not be taken back unless agreed in writing.</li>
+                <li>Delivery dates are approximate and commence from order confirmation.</li>
+                <li>Any discrepancy should be reported within 7 days of receipt.</li>
+                <li>Payment should be made as per agreed terms; late payments may attract interest.</li>
+                <li>Goods remain property of Sakshi Creations until payment is received.</li>
+                <li>All disputes subject to Surat jurisdiction only.</li>
+              </ol>
+            </Typography>
+
+            <Box mt={4} textAlign="right">
+              {/* <Typography variant="body1" fontWeight={600}>For Sakshi Creation</Typography> */}
+              <Typography variant="body2" mt={4}>Authorised Signatory</Typography>
+            </Box>
+          </Paper>
+        </DialogContent>
+      </Dialog>
+
       <AddNewQuotation
         open={quoteDialog}
         onClose={() => setQuoteDialog(false)}

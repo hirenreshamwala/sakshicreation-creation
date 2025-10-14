@@ -51,7 +51,7 @@ const QpInventoryPage = () => {
     useEffect(() => {
         dispatch(getAllInventoryThunk());
     }, []);
-    console.log(inventory,'inventory')
+    console.log(inventory, 'inventory')
 
     useEffect(() => {
         if (error) {
@@ -170,28 +170,40 @@ const QpInventoryPage = () => {
 
     return (
         <>
-            <Box mb={3}>
-                <ThemeTabs
-                    value={activeMainTab}
-                    onChange={handleMainTabChange}
-                    tabs={mainTabs}
-                />
-            </Box>
-            <Box mb={3}>
-                <ThemeTabs
-                    value={activeWardTab}
-                    onChange={handleWardTabChange}
-                    tabs={wardTabs}
-                />
+            <Box
+                sx={{
+                    mt: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2, // space between tabs
+                    flexWrap: "wrap", // ensures wrapping on small screens
+                }}
+            >
+                <Box>
+                    <ThemeTabs
+                        value={activeMainTab}
+                        onChange={handleMainTabChange}
+                        tabs={mainTabs}
+                    />
+                </Box>
+
+                <Box>
+                    <ThemeTabs
+                        value={activeWardTab}
+                        onChange={handleWardTabChange}
+                        tabs={wardTabs}
+                    />
+                </Box>
+
+                <Box>
+                    <ThemeTabs
+                        value={activeMaterialTab}
+                        onChange={handleMaterialTabChange}
+                        tabs={materialTabs}
+                    />
+                </Box>
             </Box>
 
-            <Box py={2}>
-                <ThemeTabs
-                    value={activeMaterialTab}
-                    onChange={handleMaterialTabChange}
-                    tabs={materialTabs}
-                />
-            </Box>
 
             <BasicTable
                 tableHeader={tableConfigs[activeMaterialTab].header}
