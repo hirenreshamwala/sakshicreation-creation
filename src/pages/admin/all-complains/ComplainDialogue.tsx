@@ -6,6 +6,9 @@ import {
     DialogActions,
     Button,
     Stack,
+    Box,
+    Typography,
+    IconButton,
 } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getAllOrdersThunk, getOrdersByStaffIdThunk } from "@/store/slices/orderSlice";
@@ -17,6 +20,7 @@ import { toast } from "react-toastify";
 import { StaticCompanyOptions } from "@/constants";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 interface Complaint {
     _id?: string;
@@ -30,6 +34,16 @@ interface Complaint {
     response?: string;
     createdBy?: string;
     assignTo?: string[];
+    party?: {
+        _id: string;
+        partyName: string;
+        address?: {
+            marketName?: { marketName: string };
+            area?: { area: string };
+        };
+    };
+    files?: (File | string)[];
+    filePaths?: string[]; // Add filePaths to handle backend response
 }
 
 interface ComplainDialogProps {
@@ -66,6 +80,18 @@ const getValidationSchema = (isEdit: boolean, status: string) => {
                         .notRequired()
                         .max(500, "Response must not exceed 500 characters"),
             }),
+        files: Yup.array()
+            .of(
+                Yup.mixed()
+                    .test("fileSize", "File size must be less than 25MB", (value) => {
+                        return !value || (value instanceof File && value.size <= 25 * 1024 * 1024);
+                    })
+                    .test("fileType", "Only PDF, PNG, JPG, and JPEG files are allowed", (value) => {
+                        return !value || (value instanceof File && ["application/pdf", "image/png", "image/jpeg", "image/jpg"].includes(value.type));
+                    })
+            )
+            .max(25, "You can upload a maximum of 25 files")
+            .notRequired(),
     });
 };
 
@@ -86,33 +112,73 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
 
     const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
     const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
-    // Formik initialization
+
+    // Normalize editData to use files instead of filePaths
+    const normalizedEditData = editData
+        ? {
+              ...editData,
+              files: editData.filePaths || editData.files || [],
+          }
+        : null;
+
     const formik = useFormik({
         initialValues: {
-            subject: editData ? editData?.subject : "",
-            details: editData ? editData?.details : "",
-            orderId: editData ? editData.scorder?._id || editData.qporder?._id : "",
-            party: editData ? editData?.party : "",
-            status: editData ? editData?.status : "Pending",
-            response: editData ? editData?.response : "",
+            subject: normalizedEditData?.subject || "",
+            details: normalizedEditData?.details || "",
+            orderId: normalizedEditData
+                ? normalizedEditData.scorder?._id || normalizedEditData.qporder?._id || ""
+                : "",
+            party: normalizedEditData?.party?._id || "",
+            status: normalizedEditData?.status || "Pending",
+            response: normalizedEditData?.response || "",
+            files: normalizedEditData?.files || [],
         },
-        validationSchema: (values) => getValidationSchema(!!editData, values?.status),
+        validationSchema: (values) => getValidationSchema(!!normalizedEditData, values?.status),
         onSubmit: async (values) => {
-            const complainData: Complaint = {
-                ...values,
-                company: company._id,
-                createdBy: user?.id,
-                assignTo: filteredStaffIds,
-                scorder: company.companyName === "Sakshi Creation" ? values.orderId || null : null,
-                qporder: company.companyName !== "Sakshi Creation" ? values.orderId || null : null,
-            };
+            const formData = new FormData();
+            formData.append("subject", values.subject);
+            formData.append("details", values.details);
+            formData.append("company", company._id);
+            formData.append("createdBy", user?.id || "");
+            formData.append("party", values.party);
+            if (values.orderId) {
+                if (company.companyName === StaticCompanyOptions[0]) {
+                    formData.append("scorder", values.orderId);
+                } else {
+                    formData.append("qporder", values.orderId);
+                }
+            }
+            if (normalizedEditData) {
+                formData.append("status", values.status || "Pending");
+                formData.append("response", values.response || "");
+            }
+            filteredStaffIds.forEach((id) => formData.append("assignTo", id));
+
+            // Append new files
+            (values.files || [])
+                .filter((file): file is File => file instanceof File)
+                .forEach((file) => formData.append("files", file));
+
+            // Append files to remove
+            if (normalizedEditData?._id) {
+                const existingUrls = (normalizedEditData.files || []).filter(
+                    (file): file is string => typeof file === "string"
+                );
+                const keptUrls = (values.files || []).filter(
+                    (file): file is string => typeof file === "string"
+                );
+                const filesToRemove = existingUrls.filter((url) => !keptUrls.includes(url));
+                if (filesToRemove.length) {
+                    formData.append("filesToRemove", JSON.stringify(filesToRemove));
+                }
+            }
 
             try {
-                if (editData?._id) {
-                    await dispatch(updateComplainThunk({ id: editData._id, payload: complainData }));
+                if (normalizedEditData?._id) {
+                    await dispatch(updateComplainThunk({ id: normalizedEditData._id, payload: formData }));
                     toast.success("Complaint updated successfully!");
                 } else {
-                    await dispatch(createComplainThunk(complainData));
+                    await dispatch(createComplainThunk(formData));
                     toast.success("Complaint created successfully!");
                 }
 
@@ -134,7 +200,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
             if (!orders.length) dispatch(getOrdersByStaffIdThunk(user?.id));
             if (!qporders.length) dispatch(getQPOrdersByStaffIdThunk(user?.id));
         }
-    }, [canViewGlobal, canViewOwn, user?.id]);
+    }, [canViewGlobal, canViewOwn, user?.id, dispatch]);
 
     const filteredStaffIds = staffList
         ?.filter((staff: any) => {
@@ -149,7 +215,26 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
         onClose();
     };
 
-    // Prepare order options for dropdown - filtered by selected party
+    // Prepare party options
+    const partyOptions = (company.companyName === StaticCompanyOptions[0] ? orders : qporders)
+        ?.filter((order: any) =>
+            (order.createdBy?._id === user?.id || order.createdBy === user?.id) &&
+            order?.party?._id
+        )
+        ?.reduce((unique: any[], order: any) => {
+            if (order.party && !unique.find(item => item.value === order.party._id)) {
+                unique.push({
+                    value: order.party._id,
+                    label: `${order.party.partyName} - ${order.party.address?.marketName?.marketName || ''} - ${order.party.address?.area?.area || ''}`.trim() || "Party",
+                });
+            }
+            return unique;
+        }, []) || [];
+
+    // Find selected party option
+    const selectedPartyOption = partyOptions.find(opt => opt.value === formik.values.party) || null;
+
+    // Prepare order options - filtered by selected party
     const orderOptions = (company.companyName === StaticCompanyOptions[0] ? orders : qporders)
         ?.filter((order: any) =>
             (order.createdBy?._id === user?.id || order.createdBy === user?.id) &&
@@ -160,18 +245,8 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
             label: order.orderNumber || `QP-${order.orderNo}` || "Order",
         })) || [];
 
-    // Prepare party options - unique parties from orders
-    const partyOptions = (company.companyName === StaticCompanyOptions[0] ? orders : qporders)
-        ?.filter((order: any) => order.createdBy?._id === user?.id || order.createdBy === user?.id)
-        ?.reduce((unique: any[], order: any) => {
-            if (order.party && !unique.find(item => item.value === order.party._id)) {
-                unique.push({
-                    value: order.party._id,
-                    label: `${order.party.partyName} - ${order.party.address?.marketName?.marketName || ''} - ${order.party.address?.area?.area || ''}`.trim() || "Party",
-                });
-            }
-            return unique;
-        }, []) || [];
+    // Find selected order option
+    const selectedOrderOption = orderOptions.find(opt => opt.value === formik.values.orderId) || null;
 
     // Reset orderId when party changes
     useEffect(() => {
@@ -183,7 +258,22 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
                 formik.setFieldValue("orderId", "");
             }
         }
-    }, [formik.values.party]);
+    }, [formik.values.party, formik.values.orderId, orders, qporders, company.companyName]);
+
+    // Handle file selection
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newFiles = Array.from(event.target.files || []);
+        const currentFiles = formik.values.files || [];
+        const updatedFiles = [...currentFiles, ...newFiles].slice(0, 5); // Limit to 5 files
+        formik.setFieldValue("files", updatedFiles);
+        event.target.value = ""; // Reset input to allow re-uploading same file
+    };
+
+    // Handle file removal
+    const handleRemoveFile = (index: number) => {
+        const updatedFiles = (formik.values.files || []).filter((_, i) => i !== index);
+        formik.setFieldValue("files", updatedFiles);
+    };
 
     return (
         <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
@@ -203,8 +293,11 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
                         <ThemeSelect
                             label="Party"
                             options={partyOptions}
-                            value={partyOptions.find(opt => opt.value === formik.values.party) || null}
-                            onChange={(e, newValue) => formik.setFieldValue("party", newValue?.value || "")}
+                            value={selectedPartyOption}
+                            onChange={(e, newValue) => {
+                                formik.setFieldValue("party", newValue?.value || "");
+                                formik.setFieldValue("orderId", ""); // Reset order when party changes
+                            }}
                             onBlur={formik.handleBlur}
                             error={formik.touched.party && Boolean(formik.errors.party)}
                             helperText={formik.touched.party && formik.errors.party}
@@ -212,11 +305,12 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
                         />
                     </Stack>
 
+                    {/* Order and Subject Inputs */}
                     <Stack direction="row" spacing={2} mb={2}>
                         <ThemeSelect
                             label="Related Order"
-                            options={orderOptions.slice(0, 5)} // ✅ only first 5 orders
-                            value={orderOptions.find(opt => opt.value === formik.values.orderId) || null}
+                            options={orderOptions}
+                            value={selectedOrderOption}
                             onChange={(e, newValue) => formik.setFieldValue("orderId", newValue?.value || "")}
                             onBlur={formik.handleBlur}
                             error={formik.touched.orderId && Boolean(formik.errors.orderId)}
@@ -251,7 +345,52 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
                         sx={{ mb: 2 }}
                     />
 
-                    {/* Status and Response - Show for edit mode */}
+                    {/* File Upload Input */}
+                    <Box mb={2}>
+                        <Button
+                            variant="contained"
+                            component="label"
+                            color="primary"
+                        >
+                            Upload Files
+                            <input
+                                type="file"
+                                hidden
+                                multiple
+                                accept=".pdf,.png,.jpg,.jpeg"
+                                onChange={handleFileChange}
+                            />
+                        </Button>
+                        {formik.touched.files && formik.errors.files && (
+                            <Typography color="error" variant="caption">
+                                {formik.errors.files}
+                            </Typography>
+                        )}
+                        <Box mt={1}>
+                            {(formik.values.files || []).map((file, index) => (
+                                <Stack
+                                    key={index}
+                                    direction="row"
+                                    alignItems="center"
+                                    spacing={1}
+                                    mt={1}
+                                >
+                                    <Typography variant="body2">
+                                        {typeof file === "string" ? file.split('/').pop() : file.name}
+                                    </Typography>
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleRemoveFile(index)}
+                                    >
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </Stack>
+                            ))}
+                        </Box>
+                    </Box>
+
+                    {/* Status and Response Inputs (Edit Mode) */}
                     {editData && (
                         <>
                             <ThemeSelect
