@@ -16,7 +16,7 @@ import { calculateKantan, calculatePaperKg } from "@/utills/qpCalculations";
 import { ORDER_STATUSES } from "@/constants";
 import ViewRemark from "./ViewRemark";
 import RemarkModal from "./RemarkModal";
-import { ExpandedRowFormProps, Remark, PaperAllocationsResult, PaperAllocation, PaperOption, InventoryPaper } from "@/constants/interface";
+import { ExpandedRowFormProps, Remark, PaperAllocationsResult, PaperAllocation, InventoryPaper } from "@/constants/interface";
 import PaperSelection from "./PaperSelection";
 import PaperAssign from "./PaperAssign";
 
@@ -24,7 +24,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const dispatch = useAppDispatch();
     const [remarkText, setRemarkText] = useState("");
     const [tempStartDate, setTempStartDate] = useState("");
-    const [isInitialized, setIsInitialized] = useState(false);
+    // const [isInitialized, setIsInitialized] = useState(false);
     const [remarkModalOpen, setRemarkModalOpen] = useState(false);
     const [viewRemarksOpen, setViewRemarksOpen] = useState(false);
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
@@ -35,15 +35,15 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [isPaperSelectionRequired, setIsPaperSelectionRequired] = useState(false);
     const { staffList, loading: staffLoading } = useAppSelector((state) => state.staff);
     const [remarkType, setRemarkType] = useState<"startDate" | "onHold" | "canceled" | null>(null);
-    const [isActualNoOfPiecesUpdated, setIsActualNoOfPiecesUpdated] = useState(!!row.actualNoOfPieces);
+    // const [isActualNoOfPiecesUpdated, setIsActualNoOfPiecesUpdated] = useState(!!row.actualNoOfPieces);
     const [availablePapers, setAvailablePapers] = useState<InventoryPaper[]>([]);
-    const [newAllocations, setNewAllocations] = useState(null)
-    const [paperSelections, setPaperSelections] = useState({
+    const [newAllocations, setNewAllocations] = useState<any>(null)
+    const [paperSelections, setPaperSelections] = useState<any>({
         paper1: [],
         paper2: [],
         paper3: []
     });
-    const [paperRequirements, setPaperRequirements] = useState({
+    const [paperRequirements, setPaperRequirements] = useState<any>({
         paper1: 0,
         paper2: 0,
         paper3: 0
@@ -168,8 +168,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         });
         setIsInitialUnitSet(!!row.unitNo);
         setIsCompleted(row.status === "Completed");
-        setIsActualNoOfPiecesUpdated(!!row.actualNoOfPieces);
-        setIsInitialized(true);
+        // setIsActualNoOfPiecesUpdated(!!row.actualNoOfPieces);
+        // setIsInitialized(true);
     }, [row, extractInventoryIds]);
 
     useEffect(() => {
@@ -192,16 +192,16 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         }
     }, [formData.status, row.status, paperRequirements]);
 
-    useEffect(() => {
-        if (isInitialized) {
-            Object.entries(paperSelections).forEach(([paperType, paperIds]) => {
-                if (paperIds.length > 0) {
-                    const foundPapers = paperIds.map(id => availablePapers.find(p => p._id === id));
-                    const foundCount = foundPapers.filter(Boolean).length;
-                }
-            });
-        }
-    }, [paperSelections, paperRequirements, availablePapers, isInitialized]);
+    // useEffect(() => {
+    //     if (isInitialized) {
+    //         Object.entries(paperSelections).forEach(([paperType, paperIds]) => {
+    //             if (paperIds.length > 0) {
+    //                 const foundPapers:any = paperIds.map((id:any) => availablePapers.find(p => p._id === id));
+    //                 const foundCount = foundPapers.filter(Boolean).length;
+    //             }
+    //         });
+    //     }
+    // }, [paperSelections, paperRequirements, availablePapers, isInitialized]);
 
     // Filter staff with role "printer" or "binder" (case-insensitive)
     const printers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "printer");
@@ -212,15 +212,15 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
         // Create a map to track available quantities for each paper
         const paperQuantities: Record<string, number> = {};
-        availablePapers.forEach(paper => {
-            paperQuantities[paper._id] = Number(paper.kg) - (paper.allocations.length ? paper.allocations?.filter((item) => item.qpOrder !== row._id)?.reduce((sum, item) => sum + item.allocatedKg, 0) : 0); // -----------------------
+        availablePapers.forEach((paper:any) => {
+            paperQuantities[paper._id] = Number(paper.kg) - (paper.allocations.length ? paper.allocations?.filter((item:any) => item.qpOrder !== row._id)?.reduce((sum:any, item:any) => sum + item.allocatedKg, 0) : 0); // -----------------------
         });
 
         // Function to calculate allocations for a single paper type
         const calculateForType = (paperType: keyof typeof paperSelections, requiredKg: number) => {
 
             const papers = paperSelections[paperType]
-                .map(paperId => availablePapers.find(p => p._id === paperId))
+                .map((paperId:any) => availablePapers.find(p => p._id === paperId))
                 .filter(Boolean) as InventoryPaper[];
 
             let remainingRequired = requiredKg;
@@ -292,7 +292,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [paperSelections, paperRequirements, availablePapers]);
 
     // Memoize the allocations calculation
-    const allAllocations = useMemo(() => calculateAllPaperAllocations(), [
+    const allAllocations:any = useMemo(() => calculateAllPaperAllocations(), [
         calculateAllPaperAllocations
     ]);
 
@@ -377,7 +377,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             return;
         }
 
-        if (field === "actualNoOfPieces") setIsActualNoOfPiecesUpdated(true);
+        // if (field === "actualNoOfPieces") setIsActualNoOfPiecesUpdated(true);
 
         setFormData((prev) => ({ ...prev, [field]: value }));
     }, [formData, row.status, isInitialUnitSet, isPaperSelectionRequired, paperRequirements, arePaperSelectionsValid, row.printer, row.binder]);
@@ -446,7 +446,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     // Helper function to calculate allocations for a paper type
     const calculatePaperAllocations = useCallback((paperType: keyof typeof paperSelections, requiredKg: number) => {
         const papers = paperSelections[paperType]
-            .map(paperId => availablePapers.find(p => p._id === paperId))
+            .map((paperId:any) => availablePapers.find(p => p._id === paperId))
             .filter(Boolean) as InventoryPaper[];
 
         let remainingRequired = requiredKg;
@@ -494,11 +494,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [paperSelections, availablePapers, getAllocatedQuantity]);
 
     useEffect(() => {
-        const newActuals1 = { paper1: [], paper2: [], paper3: [] };
+        const newActuals1:any = { paper1: [], paper2: [], paper3: [] };
 
         (["paper1", "paper2", "paper3"] as const).forEach(pt => {
             paperSelections[pt].forEach((paperId: any) => {
-                const allocation: any = allAllocations[pt]?.allocations?.find(a => a.paperId === paperId);
+                const allocation: any = allAllocations[pt]?.allocations?.find((a:any) => a.paperId === paperId);
                 if (allocation) {
                     newActuals1[pt].push({ paperId, allocatedKg: allocation.allocatedKg });
                 }
@@ -561,11 +561,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 paper3: paper3Allocations
             };
 
-            const newActuals1 = { paper1: [], paper2: [], paper3: [] };
+            const newActuals1:any = { paper1: [], paper2: [], paper3: [] };
 
             (["paper1", "paper2", "paper3"] as const).forEach(pt => {
                 paperSelections[pt].forEach((paperId: any) => {
-                    const allocation: any = allAllocations[pt]?.allocations?.find(a => a.paperId === paperId);
+                    const allocation: any = allAllocations[pt]?.allocations?.find((a:any) => a.paperId === paperId);
                     if (allocation) {
                         newActuals1[pt].push({ paperId, allocatedKg: allocation.allocatedKg });
                     }
@@ -588,7 +588,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 remarks: formData.remarks,
                 printer: selectedPrinter,
                 binder: selectedBinder,
-                selectedPapers: newActuals1,
+                selectedPapers: row.selectedPapers.paper1.length ? row.selectedPapers : newActuals1,
                 paperUsageSummary,
                 actualTotalKantan: {
                     reel: reel.toString(),
@@ -631,7 +631,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const handleCancel = useCallback(() => {
         setFormData(initialFormData);
         setIsInitialUnitSet(!!initialFormData.unitNo);
-        setIsActualNoOfPiecesUpdated(!!initialFormData.actualNoOfPieces);
+        // setIsActualNoOfPiecesUpdated(!!initialFormData.actualNoOfPieces);
 
         // Reset paper selections to initial values
         const initialSelections: any = extractInventoryIds(initialFormData.selectedPapers);
@@ -639,48 +639,48 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         toast.info("Changes cancelled");
     }, [initialFormData, row.printer, row.binder, extractInventoryIds]);
 
-   useEffect(() => {
-    const summaries: Record<string, string[]> = { paper1: [], paper2: [], paper3: [] };
+    useEffect(() => {
+        const summaries: Record<string, string[]> = { paper1: [], paper2: [], paper3: [] };
 
-    ["paper1", "paper2", "paper3"].forEach((type) => {
-        const allocations = allAllocations[type]?.allocations || [];
-        const selections = paperSelections[type] || [];
+        ["paper1", "paper2", "paper3"].forEach((type) => {
+            const allocations = allAllocations[type]?.allocations || [];
+            const selections = paperSelections[type] || [];
 
-        selections.forEach((paperId) => {
-            const paper = availablePapers.find((p) => p._id === paperId);
-            const alloc = allocations.find((a) => a.paperId === paperId);
-            if (!paper || !alloc) return;
+            selections.forEach((paperId:any) => {
+                const paper = availablePapers.find((p) => p._id === paperId);
+                const alloc = allocations.find((a:any) => a.paperId === paperId);
+                if (!paper || !alloc) return;
 
-            // Base used KG = allocated in this order
-            let usedKg = alloc.allocatedKg || 0;
+                // Base used KG = allocated in this order
+                let usedKg = alloc.allocatedKg || 0;
 
-            // Adjust used KG if GSM matches other papers
-            const gsm1 = Number(row.paperKG.paper1.gsm);
-            const gsm2 = Number(row.paperKG.paper2.gsm);
-            const gsm3 = Number(row.paperKG.paper3.gsm);
+                // Adjust used KG if GSM matches other papers
+                const gsm1 = Number(row.paperKG.paper1.gsm);
+                const gsm2 = Number(row.paperKG.paper2.gsm);
+                const gsm3 = Number(row.paperKG.paper3.gsm);
 
-            if (type === "paper2" && gsm1 === gsm2) {
-                const relatedAlloc = newAllocations.paper1?.find(x => x.paperId === paperId);
-                if (relatedAlloc) usedKg += relatedAlloc.allocatedKg;
-            }
-
-            if (type === "paper3") {
-                if (gsm3 === gsm1) {
-                    const related1 = newAllocations.paper1?.find(x => x.paperId === paperId);
-                    if (related1) usedKg += related1.allocatedKg;
+                if (type === "paper2" && gsm1 === gsm2) {
+                    const relatedAlloc = newAllocations.paper1?.find((x:any) => x.paperId === paperId);
+                    if (relatedAlloc) usedKg += relatedAlloc.allocatedKg;
                 }
-                if (gsm3 === gsm2) {
-                    const related2 = newAllocations.paper2?.find(x => x.paperId === paperId);
-                    if (related2) usedKg += related2.allocatedKg;
-                }
-            }
 
-            summaries[type].push(`${usedKg.toFixed(2)} KG used from ${paper.kg.toFixed(0)} KG roll`);
+                if (type === "paper3") {
+                    if (gsm3 === gsm1) {
+                        const related1 = newAllocations.paper1?.find((x:any) => x.paperId === paperId);
+                        if (related1) usedKg += related1.allocatedKg;
+                    }
+                    if (gsm3 === gsm2) {
+                        const related2 = newAllocations.paper2?.find((x:any) => x.paperId === paperId);
+                        if (related2) usedKg += related2.allocatedKg;
+                    }
+                }
+
+                summaries[type].push(`${usedKg.toFixed(2)} KG used from ${paper.kg.toFixed(0)} KG roll`);
+            });
         });
-    });
 
-    setPaperUsageSummary(summaries);
-}, [paperSelections, allAllocations, availablePapers, newAllocations, row.paperKG]);
+        setPaperUsageSummary(summaries);
+    }, [paperSelections, allAllocations, availablePapers, newAllocations, row.paperKG]);
 
 
     return (
