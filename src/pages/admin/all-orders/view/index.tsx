@@ -56,7 +56,6 @@ const ViewOrderPage = () => {
   const { singleOrder } = useAppSelector((state: any) => state.orders)
   console.log("object", singleOrder)
   const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
-
   console.log(singleOrder, 'singleOrder?.quotationProof')
   const formik = useFormik<FormValues>({
     initialValues: {
@@ -623,7 +622,9 @@ const ViewOrderPage = () => {
                 fontSize: 16,
                 borderRadius: 2,
                 py: 1.2,
+
               }}
+              disabled={Boolean(singleOrder?.quotationProof)}
               onClick={() => setQuoteDialog(true)}
             >
               Generate Quotation
@@ -633,6 +634,7 @@ const ViewOrderPage = () => {
             {singleOrder?.quotation.length ? (
               <Button
                 variant="contained"
+
                 onClick={() => setQuotationHistoryDialog(true)}
                 sx={{ flex: 1 }}
               >

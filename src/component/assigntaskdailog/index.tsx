@@ -104,7 +104,17 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
         "Invalid time format (use HH:MM)"
       ),
       feedback: isEditMode
-        ? Yup.string().required("Feedback is required while editing")
+        ? Yup.string()
+          .required("Feedback is required while editing")
+          .test(
+            'min-words',
+            'Feedback must be at least 20 words',
+            (value) => {
+              if (!value) return false;
+              const wordCount = value.trim().split(/\s+/).length;
+              return wordCount >= 20;
+            }
+          )
         : Yup.string(),
       status: Yup.string().required("Status is required"),
       rescheduleDate: Yup.string().when("status", {

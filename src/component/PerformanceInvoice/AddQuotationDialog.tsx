@@ -158,11 +158,18 @@ const AddNewQuotation: React.FC<AddNewQuotationProps> = ({
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    formik.setFieldValue("applyGST", e.target.checked);
-    if (!e.target.checked) {
+    const checked = e.target.checked;
+    formik.setFieldValue("applyGST", checked);
+
+    if (checked) {
+      // अगर यूज़र ने पहले कुछ नहीं डाला तो 18 डाल दो
+      const current = formik.values.gstPercentage;
+      formik.setFieldValue("gstPercentage", current && current > 0 ? current : 18);
+    } else {
       formik.setFieldValue("gstPercentage", 0);
     }
   };
+
 
   // Reset form when dialog opens with last quotation totals
   useEffect(() => {

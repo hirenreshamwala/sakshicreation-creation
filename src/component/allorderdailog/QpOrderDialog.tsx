@@ -151,7 +151,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         partyId: partyId,
                     })
                 ).unwrap();
-                const partyOptions = packagingOptions.filter((opt: any) => opt.party._id === partyId);
+                const partyOptions = packagingOptions.filter((opt: any) => opt.party?._id === partyId);
                 if (partyOptions.length > 0) {
                     const lastOption = partyOptions[partyOptions.length - 1];
                     setQpFormData((prev) => ({
@@ -250,7 +250,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
             if (editData?._id) {
                 // Update existing order
-                await dispatch(updateQPOrderThunk({ id: editData._id, data: orderData })).unwrap();
+                await dispatch(updateQPOrderThunk({ id: editData?._id, data: orderData })).unwrap();
                 toast.success("Order updated successfully");
             } else {
                 // Create new order
@@ -313,7 +313,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
     const filteredPackagingOptions = useMemo(() => {
         return qpFormData.partyName
-            ? packagingOptions.filter((option: any) => option.party._id === qpFormData.partyName)
+            ? packagingOptions.filter((option: any) => option.party?._id === qpFormData.partyName)
             : packagingOptions;
     }, [qpFormData.partyName, packagingOptions]);
 
@@ -645,10 +645,10 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 </Stack>
                 <Stack direction="row" spacing={2} mb={2}>
                     <Autocomplete
-                        options={kantans.map((item: any) => ({ value: item._id, label: item.kantanName }))}
+                        options={kantans.map((item: any) => ({ value: item?._id, label: item.kantanName }))}
                         getOptionLabel={(option) => option.label}
                         value={kantans
-                            .map((item: any) => ({ value: item._id, label: item.kantanName }))
+                            .map((item: any) => ({ value: item?._id, label: item.kantanName }))
                             .find((item) => item.value === qpFormData.kantan) || null}
                         onChange={(_, val) => handleQpChange("kantan", val?.value || null)}
                         renderInput={(params) => <TextField {...params} label="Kantan" sx={{ width: 200, mt: 2 }} />}

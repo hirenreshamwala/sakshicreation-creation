@@ -568,6 +568,7 @@ const AdminManagerSalesView = () => {
       </Box>
       <Box py={2}>
         <BasicTable
+          id={true}
           showDatePicker={false}
           tableHeader={columns}
           showFillter={false}

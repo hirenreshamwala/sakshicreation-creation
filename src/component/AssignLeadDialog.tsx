@@ -22,7 +22,7 @@ interface AssignLeadDialogProps {
     lead?: Lead;
     partyIds?: string[];
     onSuccess?: () => void;
-    company?:any;
+    company?: any;
     type?: 'add' | 'edit';
 }
 
@@ -68,7 +68,19 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
                     }),
             otherwise: () => Yup.string().nullable(),
         }),
-        callFeedback: lead && type !== 'add' ? Yup.string().required('Call feedback is required') : Yup.string(),
+        callFeedback: lead && type !== 'add'
+            ? Yup.string()
+                .required('Call feedback is required')
+                .test(
+                    'min-words',
+                    'Call feedback must be at least 20 words',
+                    (value) => {
+                        if (!value) return false;
+                        const wordCount = value.trim().split(/\s+/).length;
+                        return wordCount >= 20;
+                    }
+                )
+            : Yup.string(),
         ...(partyIds
             ? {}
             : {
