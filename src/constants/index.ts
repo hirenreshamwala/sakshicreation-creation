@@ -239,10 +239,14 @@ export const printerTypeOption = [
 export const ORDER_STATUSES = [
   "Pending",
   "In Progress",
-  "Paper cutting",
-  "Printer",
-  "Lamination",
-  "Corogation",
+  "Designer",
+  "Paper cutting & Corrugation",
+  "Printer & Corrugation",
+  "Lamination & Corrugation",
+  // "Paper cutting",
+  // "Printer",
+  // "Lamination",
+  // "Corrugation",
   "Pasting",
   "Rotery",
   "Sloting/rs4",
@@ -254,4 +258,19 @@ export const ORDER_STATUSES = [
   "Completed",
   "On Hold",
   "Canceled",
+];
+
+export const processSteps = [
+  { key: "design", label: "Design", color: "#27657eff" },
+  { key: "paper_cutting", label: "Paper Cutting", color: "#EF4444" },
+  { key: "corrugation", label: "Corrugation", color: "#F59E0B" },
+  { key: "printer", label: "Printer", color: "#8B008B" },
+  { key: "lamination", label: "Lamination", color: "#FF69B4" },
+  { key: "pasting", label: "Pasting", color: "#10B981" },
+  { key: "rotary", label: "Rotary", color: "#3B82F6" },
+  { key: "slotting", label: "Slotting", color: "#8B5CF6" },
+  { key: "printing", label: "Printing", color: "#EC4899" },
+  { key: "manual_pasting", label: "Manual Pasting", color: "#06B6D4" },
+  { key: "pinning", label: "Pinning", color: "#84CC16" },
+  { key: "punching", label: "Punching", color: "#F97316" },
 ];

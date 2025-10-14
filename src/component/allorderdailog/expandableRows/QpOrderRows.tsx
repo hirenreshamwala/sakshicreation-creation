@@ -40,6 +40,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
     const [selectedBinder, setSelectedBinder] = useState(null);
     const [selectedPrinter, setSelectedPrinter] = useState(null);
+    const [selectedDesigner, setSelectedDesigner] = useState(null);
     const { allInventory } = useAppSelector(state => state.inventory);
     const [isCompleted, setIsCompleted] = useState(row.status === "Completed");
     const [isPaperSelectionRequired, setIsPaperSelectionRequired] = useState(false);
@@ -209,6 +210,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [paperSelections, paperRequirements, availablePapers, isInitialized]);
 
     // Filter staff with role "printer" or "binder" (case-insensitive)
+    const designers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "designer");
     const printers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "printer");
     const binders = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "binder");
 
@@ -607,12 +609,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-const currentDate = moment().startOf('day');
-    const selectedDeliveryDate = moment(formData.deliveryDate);
-    if (selectedDeliveryDate.isBefore(currentDate)) {
-        toast.error("Delivery date cannot be before the current date");
-        return;
-    }
+        const currentDate = moment().startOf('day');
+        const selectedDeliveryDate = moment(formData.deliveryDate);
+        if (selectedDeliveryDate.isBefore(currentDate)) {
+            toast.error("Delivery date cannot be before the current date");
+            return;
+        }
         if (!formData._id) {
             toast.error("Cannot submit: Invalid order ID");
             return;
@@ -688,6 +690,7 @@ const currentDate = moment().startOf('day');
                 factoryRemark: formData.factoryRemark,
                 status: formData.status,
                 remarks: formData.remarks,
+                designer: selectedDesigner,
                 printer: selectedPrinter,
                 binder: selectedBinder,
                 selectedPapers: newActuals1,
@@ -714,6 +717,17 @@ const currentDate = moment().startOf('day');
                 },
                 actualTotalKg: totalKgss?.toFixed(2).toString(),
             };
+
+            const rowPapers = row.selectedPapers
+            const updatePapers = updateData.selectedPapers
+
+            if (selectedDesigner && row.status === 'In Progress') {
+                updateData.status = 'Designer'
+            }
+            // If no designer but papers are selected, use the original paper cutting status
+            else if (rowPapers.paper1.length === 0 && rowPapers.paper2.length === 0 && rowPapers.paper3.length === 0 && row.status === 'In Progress' && updatePapers.paper1.length > 0 && updatePapers.paper2.length > 0 && updatePapers.paper3.length > 0) {
+                updateData.status = 'Paper cutting & Corrugation'
+            }
 
             await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
 
@@ -1034,12 +1048,15 @@ const currentDate = moment().startOf('day');
                     <PaperSelection
                         setSelectedPrinter={setSelectedPrinter}
                         setSelectedBinder={setSelectedBinder}
+                        setSelectedDesigner={setSelectedDesigner}
                         isCompleted={isCompleted}
                         selectedPrinter={selectedPrinter}
                         printers={printers}
                         staffLoading={staffLoading}
                         selectedBinder={selectedBinder}
+                        selectedDesigner={selectedDesigner}
                         binders={binders}
+                        designers={designers}
                         data={row}
                     />
 
