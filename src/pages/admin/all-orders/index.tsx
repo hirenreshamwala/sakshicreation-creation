@@ -21,6 +21,7 @@ import { toast } from "react-toastify"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import AddSakhiOrderDialog from "@/component/allorderdailog"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
+import ComplainDialogue from "../all-complains/ComplainDialogue"
 
 const columns = [
   { id: "orderNumber", label: "Order No." },
@@ -33,6 +34,7 @@ const columns = [
   { id: "orderedBy", label: "Ordered By" },
   { id: "orderStatus", label: "Order Status" },
   { id: "actions", label: "Actions" },
+  { id: "complain", label: "Complain" },
 ]
 
 type OrderRow = {
@@ -99,6 +101,9 @@ const AllOrdersPage = () => {
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
+  const [complainOpen, setComplainOpen] = useState(false);
+  const [selectedOrderForComplain, setSelectedOrderForComplain] = useState<OrderRow | null>(null);
+
 
   const canViewGlobal = userData?.role?.permissions?.all_orders?.view_global
   const canViewOwn = userData?.role?.permissions?.all_orders?.view_own
@@ -156,8 +161,13 @@ const AllOrdersPage = () => {
   useEffect(() => {
     if (c)
       setActiveTab(c === "Quality Packaging" || c === "QP" ? 1 : 0)
-    
+
   }, [c])
+
+  const handleComplainClick = (rowData: OrderRow) => {
+    setSelectedOrderForComplain(rowData);
+    setComplainOpen(true);
+  };
 
   // Filter orders based on search query, date range, and selected filters
   const filteredOrders = useMemo(() => {
@@ -221,7 +231,7 @@ const AllOrdersPage = () => {
     }
 
     if (canViewGlobal) {
-      dispatch(getAllOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party,c })); // Increase limit to fetch more orders
+      dispatch(getAllOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party, c })); // Increase limit to fetch more orders
     } else if (canViewOwn && userData?.id) {
       dispatch(getOrdersByStaffIdThunk(userData.id));
     }
@@ -231,7 +241,7 @@ const AllOrdersPage = () => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true))
   }, [])
 
-  
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -298,11 +308,9 @@ const AllOrdersPage = () => {
         remarks: row?.remarks || "",
         ownerMobileNo: row?.party?.ownerMobileNo || "",
         partyName: row?.party?.partyName || "N/A",
-        addressName: `${row?.party?.address?.unitNo || ""} ${
-          markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || ""
-        } ${markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || ""} ${
-          markets?.find((item) => item._id === row?.party?.address?.area)?.area || ""
-        } ${markets?.find((item) => item._id === row?.party?.address?.pincode)?.pincode || ""}`.trim(),
+        addressName: `${row?.party?.address?.unitNo || ""} ${markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || ""
+          } ${markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || ""} ${markets?.find((item) => item._id === row?.party?.address?.area)?.area || ""
+          } ${markets?.find((item) => item._id === row?.party?.address?.pincode)?.pincode || ""}`.trim(),
         GSTNo: row?.party?.GSTNo || "N/A",
         servicePerformance: row?.productItem?.itemName || "N/A",
         quantity: quantity,
@@ -340,11 +348,9 @@ const AllOrdersPage = () => {
         remarks: row?.remarks || "",
         ownerMobileNo: row?.party?.ownerMobileNo || "",
         partyName: row?.party?.partyName || "N/A",
-        addressName: `${row?.party?.address?.unitNo || ""} ${
-          markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || ""
-        } ${markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || ""} ${
-          markets?.find((item) => item._id === row?.party?.address?.area)?.area || ""
-        } ${markets?.find((item) => item._id === row?.party?.address?.pincode)?.pincode || ""}`.trim(),
+        addressName: `${row?.party?.address?.unitNo || ""} ${markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || ""
+          } ${markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || ""} ${markets?.find((item) => item._id === row?.party?.address?.area)?.area || ""
+          } ${markets?.find((item) => item._id === row?.party?.address?.pincode)?.pincode || ""}`.trim(),
         GSTNo: row?.party?.GSTNo || "N/A",
         servicePerformance: row?.productItem?.itemName || "N/A",
         quantity: quantity,
@@ -497,7 +503,7 @@ const AllOrdersPage = () => {
             uniqueValues={selectedFilterField ?
               getUniqueValues :
               []}
-          onFiltersChange={(newFilters) => {
+            onFiltersChange={(newFilters) => {
               const idBasedFilters: { [key: string]: string[] } = {};
 
               Object.entries(newFilters).forEach(([label, values]) => {
@@ -636,6 +642,13 @@ const AllOrdersPage = () => {
                   </Button>
                 </Box>
               </TableCell>
+              <TableCell>
+                <ThemeButton
+                  onClick={() => handleComplainClick(row)}
+                >
+                  Complain
+                </ThemeButton>
+              </TableCell>
             </>
           )}
         />
@@ -646,6 +659,21 @@ const AllOrdersPage = () => {
         open={open}
         onClose={() => setOpen(false)}
       /> : null}
+      {complainOpen && selectedOrderForComplain && (
+        <ComplainDialogue
+          company={{
+            _id: selectedOrderForComplain.companyName._id,
+            companyName: selectedOrderForComplain.companyName.companyName
+          }}
+          open={complainOpen}
+          onClose={() => {
+            setComplainOpen(false);
+            setSelectedOrderForComplain(null);
+          }}
+          selectedOrderData={selectedOrderForComplain} // Pass the selected order data
+          // refreshData={refreshData}
+        />
+      )}
     </>
   );
 

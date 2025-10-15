@@ -21,6 +21,7 @@ import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { StaticCompanyOptions } from "@/constants"
 import { getAllInventoryThunk } from "@/store/slices/inventorySlice"
 import { Label } from "@mui/icons-material"
+import ComplainDialogue from "@/pages/admin/all-complains/ComplainDialogue"
 
 type OrderRow = {
   _id: string;
@@ -40,8 +41,8 @@ type OrderRow = {
   ply?: {
     ply: string;
   };
-  uom?:{
-    uom:string
+  uom?: {
+    uom: string
   }
   deckalCalculation?: string;
   deckal?: string;
@@ -112,6 +113,8 @@ const AdminManagerSalesView = () => {
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({})
+  const [complainOpen, setComplainOpen] = useState(false);
+  const [selectedOrderForComplain, setSelectedOrderForComplain] = useState<OrderRow | null>(null);
 
   const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
@@ -126,7 +129,7 @@ const AdminManagerSalesView = () => {
     { id: "orderDate", label: "Order Date" },
     { id: "ply", label: "Ply" },
     { id: "size", label: "Size" },
-    {id:"uom",label:"Unit of Mesurment"},
+    { id: "uom", label: "Unit of Mesurment" },
     { id: "paperGSM", label: "Paper GSM" },
     { id: "gsm", label: "GSM" },
     { id: "deckalCalculation", label: "Cal Deckal" },
@@ -145,6 +148,7 @@ const AdminManagerSalesView = () => {
     { id: "salesRemark", label: "Sales Remarks" },
     { id: "status", label: "Status" },
     ...(canCreate ? [{ id: "repeatOrder", label: "Repeat Order" }] : []),
+    { id: "complain", label: "Complain" },
   ]
 
   const refreshData = () => {
@@ -158,6 +162,11 @@ const AdminManagerSalesView = () => {
   useEffect(() => {
     dispatch(getAllInventoryThunk());
   }, []);
+
+  const handleComplainClick = (rowData: OrderRow) => {
+    setSelectedOrderForComplain(rowData);
+    setComplainOpen(true);
+  };
 
   const handleRepeatOrder = (rowData: OrderRow) => {
     const repeatOrderData = {
@@ -618,7 +627,7 @@ const AdminManagerSalesView = () => {
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.orderdata?.uom|| "N/A"}
+                  {row.orderdata?.uom || "N/A"}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -718,6 +727,13 @@ const AdminManagerSalesView = () => {
                   </ThemeButton>
                 </TableCell>
               )}
+              <TableCell>
+                <ThemeButton
+                  onClick={() => handleComplainClick(row)}
+                >
+                  Complain
+                </ThemeButton>
+              </TableCell>
             </>);
           }}
         />
@@ -748,6 +764,21 @@ const AdminManagerSalesView = () => {
             />
           )}
         </>
+      )}
+      {complainOpen && selectedOrderForComplain && (
+        <ComplainDialogue
+          company={{
+            _id: selectedOrderForComplain.companyName._id,
+            companyName: selectedOrderForComplain.companyName.companyName
+          }}
+          open={complainOpen}
+          onClose={() => {
+            setComplainOpen(false);
+            setSelectedOrderForComplain(null);
+          }}
+          selectedOrderData={selectedOrderForComplain} // Pass the selected order data
+          refreshData={refreshData}
+        />
       )}
     </>
   );
