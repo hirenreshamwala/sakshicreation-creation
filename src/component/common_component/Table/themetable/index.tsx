@@ -32,6 +32,7 @@ interface Column {
 }
 
 interface BasicTableProps<T> {
+  id?: boolean | string;
   tableHeader: Column[];
   rowData: T[];
   renderRow: (row: T, index: number) => React.ReactNode;
@@ -73,6 +74,7 @@ const useDebounce = (value: string, delay: number) => {
 };
 
 const BasicTable = <T extends { id: string }>({
+  id,
   tableHeader,
   rowData,
   renderRow,
@@ -319,7 +321,7 @@ const BasicTable = <T extends { id: string }>({
         .filter((col) => col.id !== "checkbox" && col.id !== "action")
         .map((col) => col.label);
 
-    const array = filteredRows.map((row) => row.id);
+    const array = filteredRows.map((row) => id ? row.id : (row as any)._id);
     const data = excelData
       ? excelData?.filter((item) => array.includes(item.id))
       : filteredRows.map((row) => {

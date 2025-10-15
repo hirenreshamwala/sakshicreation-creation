@@ -334,36 +334,39 @@ const IndexPage: React.FC = memo(() => {
   });
 
   const excelData = useMemo(() => {
-    return filteredAccountMasters.map((account) => ({
-      id: account._id,
-      "Company Name": account.companyName?.name || "N/A",
-      "Party Name": account.party?.partyName || "N/A",
-      "Owner Name": account.party?.ownerName || "N/A",
-      "Owner WhatsApp No.": account.party?.ownerWhatsAppNo || "N/A",
-      "Owner Mobile No.": account.party?.ownerMobileNo || "N/A",
-      "Owner Email": account.party?.ownerEmail || "N/A",
-      "Contact Person": account.party?.contactPerson || "N/A",
-      "Contact Person WhatsApp No.": account.party?.contactPersonWhatsAppNo || "N/A",
-      "Contact Person Mobile No.": account.party?.contactPersonMobileNo || "N/A",
-      "Contact Person Email": account.party?.contactPersonEmail || "N/A",
-      "Contact For Payment": account.party?.contactForPayment || "N/A",
-      "Contact WhatsApp No.": account.party?.contactForPaymentWhatsAppNo || "N/A",
-      "Contact Mobile No.": account.party?.contactForPaymentMobileNo || "N/A",
-      "Contact For Payment Email": account.party?.contactForPaymentEmail || "N/A",
-      "GST No.": account.party?.gstNo || "N/A",
-      "Party Tag": account.party?.partyTag || "New",
-      Reference: account.party?.reference ? "Yes" : "No",
-      "Unit No.": account.party?.address?.unitNo || "N/A",
-      "Market Name": account.party?.address?.marketName?.marketName || "N/A",
-      Area: account.party?.address?.area?.area || "N/A",
-      "Land Mark": account.party?.address?.landMark || "N/A",
-      "Pin Code": account.party?.address?.pinCode || "N/A",
-      "Reason to Visit": account.reasonToVisit || "N/A",
-      "Created By":
-        account.createdBy && typeof account.createdBy === "object"
-          ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
-          : "Unknown",
-    }));
+    return filteredAccountMasters.map((account) => {
+    console.log("DEBUG : account:", account);
+    return ({
+        // "id": account._id,
+        "Company Name": account.companyName?.name || "N/A",
+        "Party Name": account.party?.partyName || "N/A",
+        "Owner Name": account.party?.ownerName || "N/A",
+        "Owner WhatsApp No.": account.party?.ownerWhatsAppNo || "N/A",
+        "Owner Mobile No.": account.party?.ownerMobileNo || "N/A",
+        "Owner Email": account.party?.ownerEmail || "N/A",
+        "Contact Person": account.party?.contactPerson || "N/A",
+        "Contact Person WhatsApp No.": account.party?.contactPersonWhatsAppNo || "N/A",
+        "Contact Person Mobile No.": account.party?.contactPersonMobileNo || "N/A",
+        "Contact Person Email": account.party?.contactPersonEmail || "N/A",
+        "Contact For Payment": account.party?.contactForPayment || "N/A",
+        "Contact WhatsApp No.": account.party?.contactForPaymentWhatsAppNo || "N/A",
+        "Contact Mobile No.": account.party?.contactForPaymentMobileNo || "N/A",
+        "Contact For Payment Email": account.party?.contactForPaymentEmail || "N/A",
+        "GST No.": account.party?.gstNo || "N/A",
+        "Party Tag": account.party?.partyTag || "New",
+        "Reference": account.party?.reference ? "Yes" : "No",
+        "Unit No.": account.party?.address?.unitNo || "N/A",
+        "Market Name": account.party?.address?.marketName?.marketName || "N/A",
+        "Area": account.party?.address?.area?.area || "N/A",
+        // "Street Address": account.party?.address?.streetAddress || "N/A",
+        "Land Mark": account.party?.address?.landMark?.landmark || "N/A",
+        "Pin Code": account.party?.address?.pincode?.pincode || "N/A",
+        "Reason to Visit": account.reasonToVisit || "N/A",
+        "Created By": account.createdBy && typeof account.createdBy === "object"
+            ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
+            : "Unknown",
+    });
+});
   }, [filteredAccountMasters]);
 
   const formattedRows: RowData[] = filteredAccountMasters.map((account) => {

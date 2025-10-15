@@ -74,7 +74,7 @@ interface AddNewPartyDialogProps {
 const validationSchema = Yup.object({
   companyName: Yup.string().required("Company Name is required"),
   partyName: Yup.string().required("Party Name is required"),
-  ownerMobileNo: Yup.string().matches(/^[0-9]{10}$/, "Owner Mobile No. must be 10 digits"),
+  ownerMobileNo: Yup.string().matches(/^[0-9]{10}$/, "Owner Mobile No. must be 10 digits").required("Owner Mobile No. is required"),
   ownerWhatsAppNo: Yup.string()
     .matches(/^[0-9]{10}$/, "Owner WhatsApp No. must be 10 digits")
     .required("Owner WhatsApp No. is required"),
@@ -525,22 +525,20 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             </Box>
 
             <Box display="flex" gap={2} mb={1}>
-             <ThemeInput
-  labelName="Owner Name"
-  placeholder="Owner Name"
-  fullWidth
-  name="ownerName"
-  value={formik.values.ownerName}
-  onChange={(e) => {
-    // Allow only letters and spaces
-    const onlyText = e.target.value.replace(/[^a-zA-Z\s]/g, "").toUpperCase();
-    formik.setFieldValue("ownerName", onlyText);
-  }}
-  onBlur={formik.handleBlur}
-  error={Boolean(formik.errors.ownerName)}
-  helperText={formik.touched.ownerName && formik.errors.ownerName}
-/>
-
+              <ThemeInput
+                labelName="Owner Name"
+                placeholder="Owner Name"
+                fullWidth
+                name="ownerName"
+                value={formik.values.ownerName}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^A-Za-z\s]/g, "").toUpperCase();
+                  formik.setFieldValue("ownerName", value);
+                }}
+                onBlur={formik.handleBlur}
+                error={Boolean(formik.errors.ownerName)}
+                helperText={formik.touched.ownerName && formik.errors.ownerName}
+              />
               <ThemeInput
                 labelName="Owner WhatsApp No."
                 placeholder="xxxxx-xxxxx"
@@ -579,6 +577,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 onBlur={formik.handleBlur}
                 error={Boolean(formik.errors.ownerMobileNo)}
                 helperText={formik.touched.ownerMobileNo && formik.errors.ownerMobileNo}
+                required
               />
               <ThemeInput
                 labelName="Owner Email"
@@ -594,22 +593,20 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             </Box>
 
             <Box display="flex" gap={2} mb={1}>
-            <ThemeInput
-  labelName="Contact Person"
-  placeholder="Contact Person"
-  fullWidth
-  name="contactPerson"
-  value={formik.values.contactPerson}
-  onChange={(e) => {
-    // Allow only letters and spaces
-    const onlyText = e.target.value.replace(/[^a-zA-Z\s]/g, "").toUpperCase();
-    formik.setFieldValue("contactPerson", onlyText);
-  }}
-  onBlur={formik.handleBlur}
-  error={Boolean(formik.errors.contactPerson)}
-  helperText={formik.touched.contactPerson && formik.errors.contactPerson}
-/>
-
+              <ThemeInput
+                labelName="Contact Person"
+                placeholder="Contact Person"
+                fullWidth
+                name="contactPerson"
+                value={formik.values.contactPerson}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^A-Za-z\s]/g, "").toUpperCase();
+                  formik.setFieldValue("contactPerson", value);
+                }}
+                onBlur={formik.handleBlur}
+                error={Boolean(formik.errors.contactPerson)}
+                helperText={formik.touched.contactPerson && formik.errors.contactPerson}
+              />
               <ThemeInput
                 labelName="Person WhatsApp No."
                 placeholder="xxxxx-xxxxx"
@@ -662,23 +659,22 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             </Box>
 
             <Box display="flex" gap={2} mb={1}>
-             <ThemeInput
-  labelName="Contact For Payment"
-  placeholder="Contact Name"
-  fullWidth
-  sx={{ mb: 2 }}
-  name="contactForPayment"
-  value={formik.values.contactForPayment}
-  onChange={(e) => {
-    // Allow only letters and spaces
-    const onlyText = e.target.value.replace(/[^a-zA-Z\s]/g, "").toUpperCase();
-    formik.setFieldValue("contactForPayment", onlyText);
-  }}
-  onBlur={formik.handleBlur}
-  error={Boolean(formik.errors.contactForPayment)}
-  helperText={formik.touched.contactForPayment && formik.errors.contactForPayment}
-/>
 
+              <ThemeInput
+                labelName="Contact For Payment"
+                placeholder="Contact Name"
+                fullWidth
+                sx={{ mb: 2 }}
+                name="contactForPayment"
+                value={formik.values.contactForPayment}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^A-Za-z\s]/g, "").toUpperCase();
+                  formik.setFieldValue("contactForPayment", value);
+                }}
+                onBlur={formik.handleBlur}
+                error={Boolean(formik.errors.contactForPayment)}
+                helperText={formik.touched.contactForPayment && formik.errors.contactForPayment}
+              />
               <ThemeInput
                 labelName="Contact WhatsApp No."
                 placeholder="xxxxx-xxxxx"

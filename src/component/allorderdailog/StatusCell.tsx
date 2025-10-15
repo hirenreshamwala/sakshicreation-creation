@@ -11,6 +11,7 @@ const statusOptions = ORDER_STATUSES
 
 
 // ✅ NAYA: Dynamic status calculate karne ka function
+// ✅ FIXED: Dynamic status calculate karne ka function
 const calculateDynamicStatus = (row: any, updatedData: any = {}) => {
   const paperCuttingDone = updatedData.paperCuttingDone !== undefined ? updatedData.paperCuttingDone : row.paperCuttingDone;
   const corrugationDone = updatedData.corrugationDone !== undefined ? updatedData.corrugationDone : row.corrugationDone;
@@ -19,27 +20,78 @@ const calculateDynamicStatus = (row: any, updatedData: any = {}) => {
   const pastingDone = updatedData.pastingDone !== undefined ? updatedData.pastingDone : row.pastingDone;
   const rotaryDone = updatedData.rotaryDone !== undefined ? updatedData.rotaryDone : row.rotaryDone;
   const slottingDone = updatedData.slottingDone !== undefined ? updatedData.slottingDone : row.slottingDone;
-  const printingDone = updatedData.printingDone !== undefined ? updatedData.printingDone : row.printingDone;
+  // const printingDone = updatedData.printingDone !== undefined ? updatedData.printingDone : row.printingDone;
   const manualPastingDone = updatedData.manualPastingDone !== undefined ? updatedData.manualPastingDone : row.manualPastingDone;
   const pinningDone = updatedData.pinningDone !== undefined ? updatedData.pinningDone : row.pinningDone;
   const punchingDone = updatedData.punchingDone !== undefined ? updatedData.punchingDone : row.punchingDone;
 
   const hasPrinter = !!row.printer;
   const hasBinder = !!row.binder;
+  const hasDesigner = !!row.designer;
 
-  if (row.designer && !row.designDone) return "Paper cutting & Corrugation";
-  if (!paperCuttingDone && !corrugationDone) return "Paper cutting & Corrugation";
-  if (paperCuttingDone && hasPrinter && !printerDone) return "Printer & Corrugation";
-  if (paperCuttingDone && printerDone && hasBinder && !laminationDone) return "Lamination & Corrugation";
-  if (paperCuttingDone && !hasPrinter && !hasBinder) return "Paper cutting & Corrugation";
-  if (paperCuttingDone && corrugationDone && (!hasPrinter || printerDone) && (!hasBinder || laminationDone) && !pastingDone) return "Pasting";
+  // Design stage
+  if (hasDesigner && !row.designDone) {
+    return "Paper cutting & Corrugation";
+  }
+
+  // Paper cutting & Corrugation stage
+  if (!paperCuttingDone || !corrugationDone) {
+    return "Paper cutting & Corrugation";
+  }
+
+  // Printer stage (if printer exists)
+  if (hasPrinter && !printerDone) {
+    return "Printer & Corrugation";
+  }
+
+  // Lamination stage (if binder exists)
+  if (hasBinder && !laminationDone) {
+    // Agar printer hai toh printerDone check karo, nahi toh direct lamination
+    if (hasPrinter) {
+      return printerDone ? "Lamination & Corrugation" : "Printer & Corrugation";
+    }
+    return "Lamination & Corrugation";
+  }
+
+  // ✅ YEH IMPORTANT FIX HAI:
+  // Jab printer aur binder dono NAHI hain, toh directly pasting par jao
+  if (!hasPrinter && !hasBinder) {
+    if (paperCuttingDone && corrugationDone && !pastingDone) {
+      return "Pasting";
+    }
+  }
+
+  // Agar printer aur binder hain, toh unke completion ke baad pasting
+  if (hasPrinter && hasBinder) {
+    if (paperCuttingDone && corrugationDone && printerDone && laminationDone && !pastingDone) {
+      return "Pasting";
+    }
+  }
+
+  // Agar sirf printer hai (binder nahi)
+  if (hasPrinter && !hasBinder) {
+    if (paperCuttingDone && corrugationDone && printerDone && !pastingDone) {
+      return "Pasting";
+    }
+  }
+
+  // Agar sirf binder hai (printer nahi)
+  if (!hasPrinter && hasBinder) {
+    if (paperCuttingDone && corrugationDone && laminationDone && !pastingDone) {
+      return "Pasting";
+    }
+  }
+
+  // Baaki processes
   if (pastingDone && !rotaryDone) return "Rotary";
   if (rotaryDone && !slottingDone) return "Slotting";
-  if (slottingDone && !printingDone) return "Printing";
-  if (printingDone && !manualPastingDone) return "Manual Pasting";
+  if (slottingDone && !manualPastingDone) return "Manual Pasting";
+  // if (printingDone && !manualPastingDone) return "Manual Pasting";
   if (manualPastingDone && !pinningDone) return "Pinning";
   if (pinningDone && !punchingDone) return "Punching";
   if (punchingDone) return "Kanthan";
+
+  // Default fallback
   return "Paper cutting & Corrugation";
 };
 
@@ -74,7 +126,7 @@ export const StatusCell = ({ row }: { row: any }) => {
   const getUserAllowedActions = () => {
     if (designer && isAssignedDesigner) {
       return { canDoDesign: true, canDoPaperCutting: false, canDoCorrugation: false, canDoPrinter: false, canDoLamination: false, canDoOtherProcesses: false, viewType: "designer" };
-    } else if (cutting) { 
+    } else if (cutting) {
       return { canDoDesign: false, canDoPaperCutting: true, canDoCorrugation: false, canDoPrinter: false, canDoLamination: false, canDoOtherProcesses: false, viewType: "cutting" };
     } else if (corrugation) {
       return { canDoDesign: false, canDoPaperCutting: false, canDoCorrugation: true, canDoPrinter: false, canDoLamination: false, canDoOtherProcesses: false, viewType: "corrugation" };
@@ -137,7 +189,7 @@ export const StatusCell = ({ row }: { row: any }) => {
           case "pasting": return row.pastingDone;
           case "rotary": return row.rotaryDone;
           case "slotting": return row.slottingDone;
-          case "printing": return row.printingDone;
+          // case "printing": return row.printingDone;
           case "manual_pasting": return row.manualPastingDone;
           case "pinning": return row.pinningDone;
           case "punching": return row.punchingDone;
@@ -205,9 +257,7 @@ export const StatusCell = ({ row }: { row: any }) => {
           case "slotting":
             updateData.slottingDone = true;
             break;
-          case "printing":
-            updateData.printingDone = true;
-            break;
+          // ✅ REMOVED: Printing case
           case "manual_pasting":
             updateData.manualPastingDone = true;
             break;
@@ -244,7 +294,7 @@ export const StatusCell = ({ row }: { row: any }) => {
       case "pasting": return !!row.pastingDone;
       case "rotary": return !!row.rotaryDone;
       case "slotting": return !!row.slottingDone;
-      case "printing": return !!row.printingDone;
+      // case "printing": return !!row.printingDone;
       case "manual_pasting": return !!row.manualPastingDone;
       case "pinning": return !!row.pinningDone;
       case "punching": return !!row.punchingDone;
@@ -350,73 +400,73 @@ export const StatusCell = ({ row }: { row: any }) => {
   };
 
   const handleBoxFounded = async () => {
-  const result = await Swal.fire({
-    title: "Are you sure?",
-    text: "Do you want to mark Box as Founded?",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "Yes, mark as founded!",
-  });
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to mark Box as Founded?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, mark as founded!",
+    });
 
-  if (result.isConfirmed) {
-    try {
-      await dispatch(updateQPOrderThunk({ 
-        id: row._id, 
-        data: { isBoxFound: true } 
-      })).unwrap();
-      toast.success("Box marked as founded successfully");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to mark box as founded");
+    if (result.isConfirmed) {
+      try {
+        await dispatch(updateQPOrderThunk({
+          id: row._id,
+          data: { isBoxFound: true }
+        })).unwrap();
+        toast.success("Box marked as founded successfully");
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to mark box as founded");
+      }
     }
-  }
-};
+  };
 
   const renderKanthanTimer = () => {
-  if (row.status !== "Kanthan") return null;
+    if (row.status !== "Kanthan") return null;
 
-  return (
-    <Box sx={{ mt: 1, p: 1, backgroundColor: '#F3F4F6', borderRadius: 1 }}>
-      <Typography variant="body2" sx={{ fontSize: '0.7rem', fontWeight: 'bold', mb: 0.5 }}>
-        Kanthan Timer
-      </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        {/* ✅ NAYA: Pehle Box Founded button */}
-        {!row.isBoxFound ? (
-          <ThemeButton size="small" onClick={handleBoxFounded}>
-            Box Founded
-          </ThemeButton>
-        ) : (
-          /* ✅ Box founded hone ke baad hi timer controls dikhe */
-          <>
-            {!row.kantanStart ? (
-              <ThemeButton size="small" onClick={handleStart}>
-                Start
-              </ThemeButton>
-            ) : !row.kantanEnd ? (
-              <>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{formatTime(elapsed)}</Typography>
-                <ThemeButton size="small" onClick={handleFinish}>
-                  Finish
+    return (
+      <Box sx={{ mt: 1, p: 1, backgroundColor: '#F3F4F6', borderRadius: 1 }}>
+        <Typography variant="body2" sx={{ fontSize: '0.7rem', fontWeight: 'bold', mb: 0.5 }}>
+          Kanthan Timer
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* ✅ NAYA: Pehle Box Founded button */}
+          {!row.isBoxFound ? (
+            <ThemeButton size="small" onClick={handleBoxFounded}>
+              Box Founded
+            </ThemeButton>
+          ) : (
+            /* ✅ Box founded hone ke baad hi timer controls dikhe */
+            <>
+              {!row.kantanStart ? (
+                <ThemeButton size="small" onClick={handleStart}>
+                  Start
                 </ThemeButton>
-              </>
-            ) : (
-              <Typography sx={{ color: '#10B981', fontSize: '0.8rem' }}>Completed</Typography>
-            )}
-          </>
+              ) : !row.kantanEnd ? (
+                <>
+                  <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{formatTime(elapsed)}</Typography>
+                  <ThemeButton size="small" onClick={handleFinish}>
+                    Finish
+                  </ThemeButton>
+                </>
+              ) : (
+                <Typography sx={{ color: '#10B981', fontSize: '0.8rem' }}>Completed</Typography>
+              )}
+            </>
+          )}
+        </Box>
+
+        {/* ✅ Box founded status show karo */}
+        {row.isBoxFound && (
+          <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#10B981', mt: 1 }}>
+            ✅ Box Founded
+          </Typography>
         )}
       </Box>
-      
-      {/* ✅ Box founded status show karo */}
-      {row.isBoxFound && (
-        <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#10B981', mt: 1 }}>
-          ✅ Box Founded
-        </Typography>
-      )}
-    </Box>
-  );
-};
+    );
+  };
 
   const renderNextProcesses = () => {
     const isDesignComplete = row.designer ? row.designDone : true;
@@ -499,7 +549,7 @@ export const StatusCell = ({ row }: { row: any }) => {
         <div>Design: {row.designDone ? '✅ Done' : '⏳ Pending'}</div>
         <div>Paper Cutting: {row.paperCuttingDone ? '✅ Done' : '⏳ Pending'} {!row.designDone && '(Waiting for Design)'}</div>
         <div>Corrugation: {row.corrugationDone ? '✅ Done' : '⏳ Pending'} {!row.designDone && '(Waiting for Design)'}</div>
-        {row.designDone && ( <div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Paper Cutting & Corrugation</div> )}
+        {row.designDone && (<div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Paper Cutting & Corrugation</div>)}
       </Box>
       <Box sx={{ mt: 2 }}>
         <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -510,7 +560,7 @@ export const StatusCell = ({ row }: { row: any }) => {
             .filter(step => step.key !== "design")
             .map(process => {
               const isDone = isProcessDone(process.key);
-              const canDo = row.designDone && canMarkProcessDone(process.key) && !isDone; 
+              const canDo = row.designDone && canMarkProcessDone(process.key) && !isDone;
               return (
                 <Tooltip
                   key={process.key}
@@ -573,12 +623,12 @@ export const StatusCell = ({ row }: { row: any }) => {
       )}
 
       <Box sx={{ mt: 1, fontSize: '0.7rem', color: '#6B7280' }}>
-        {row.designer && ( <div>Design: {row.designDone ? '✅ Done' : '⏳ Pending'}</div> )}
+        {row.designer && (<div>Design: {row.designDone ? '✅ Done' : '⏳ Pending'}</div>)}
         <div>Paper Cutting: {row.paperCuttingDone ? '✅ Done' : '⏳ Pending'}</div>
-        {row.printer && ( <div>Printer: {row.printerDone ? '✅ Done' : '⏳ Pending'}</div> )}
-        {row.binder && ( <div>Lamination: {row.laminationDone ? '✅ Done' : '⏳ Pending'}</div> )}
+        {row.printer && (<div>Printer: {row.printerDone ? '✅ Done' : '⏳ Pending'}</div>)}
+        {row.binder && (<div>Lamination: {row.laminationDone ? '✅ Done' : '⏳ Pending'}</div>)}
         <div>Corrugation: {row.corrugationDone ? '✅ Done' : '⏳ Pending'}</div>
-        {row.paperCuttingDone && row.corrugationDone && (!row.printer || row.printerDone) && (!row.binder || row.laminationDone) && (<div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Pasting</div> )}
+        {row.paperCuttingDone && row.corrugationDone && (!row.printer || row.printerDone) && (!row.binder || row.laminationDone) && (<div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Pasting</div>)}
       </Box>
 
       {(!row.designer || row.designDone) && renderNextProcesses()}
@@ -616,12 +666,12 @@ export const StatusCell = ({ row }: { row: any }) => {
         />
       )}
       <Box sx={{ mt: 1, fontSize: '0.7rem', color: '#6B7280' }}>
-        {row.designer && ( <div>Design: {row.designDone ? '✅ Done' : '⏳ Pending'}</div> )}
+        {row.designer && (<div>Design: {row.designDone ? '✅ Done' : '⏳ Pending'}</div>)}
         <div>Paper Cutting: {row.paperCuttingDone ? '✅ Done' : '⏳ Pending'}</div>
-        {row.printer && ( <div>Printer: {row.printerDone ? '✅ Done' : '⏳ Pending'}</div> )}
-        {row.binder && ( <div>Lamination: {row.laminationDone ? '✅ Done' : '⏳ Pending'}</div> )}
+        {row.printer && (<div>Printer: {row.printerDone ? '✅ Done' : '⏳ Pending'}</div>)}
+        {row.binder && (<div>Lamination: {row.laminationDone ? '✅ Done' : '⏳ Pending'}</div>)}
         <div>Corrugation: {row.corrugationDone ? '✅ Done' : '⏳ Pending'}</div>
-        {row.paperCuttingDone && row.corrugationDone && (!row.printer || row.printerDone) && (!row.binder || row.laminationDone) && ( <div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Pasting</div> )}
+        {row.paperCuttingDone && row.corrugationDone && (!row.printer || row.printerDone) && (!row.binder || row.laminationDone) && (<div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Pasting</div>)}
       </Box>
 
       {(!row.designer || row.designDone) && renderNextProcesses()}
@@ -661,7 +711,7 @@ export const StatusCell = ({ row }: { row: any }) => {
         <div>Paper Cutting: {row.paperCuttingDone ? '✅ Done' : '⏳ Pending'}</div>
         <div>Printer: {row.printerDone ? '✅ Done' : '⏳ Pending'}</div>
         <div>Corrugation: {row.corrugationDone ? '✅ Done' : '⏳ Pending'}</div>
-        {row.printerDone && row.binder && ( <div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Lamination</div> )}
+        {row.printerDone && row.binder && (<div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Lamination</div>)}
       </Box>
       {renderKanthanTimer()}
     </Box>
@@ -699,7 +749,7 @@ export const StatusCell = ({ row }: { row: any }) => {
         <div>Printer: {row.printerDone ? '✅ Done' : '⏳ Pending'}</div>
         <div>Lamination: {row.laminationDone ? '✅ Done' : '⏳ Pending'}</div>
         <div>Corrugation: {row.corrugationDone ? '✅ Done' : '⏳ Pending'}</div>
-        {row.laminationDone && row.corrugationDone && ( <div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Pasting</div> )}
+        {row.laminationDone && row.corrugationDone && (<div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Pasting</div>)}
       </Box>
       {renderKanthanTimer()}
     </Box>
@@ -734,12 +784,12 @@ export const StatusCell = ({ row }: { row: any }) => {
         />
       )}
       <Box sx={{ mt: 1, fontSize: '0.7rem', color: '#6B7280' }}>
-        {row.designer && ( <div>Design: {row.designDone ? '✅ Done' : '⏳ Pending'}</div> )}
+        {row.designer && (<div>Design: {row.designDone ? '✅ Done' : '⏳ Pending'}</div>)}
         <div>Paper Cutting: {row.paperCuttingDone ? '✅ Done' : '⏳ Pending'}</div>
         <div>Corrugation: {row.corrugationDone ? '✅ Done' : '⏳ Pending'}</div>
-        {row.printer && ( <div>Printer: {row.printerDone ? '✅ Done' : '⏳ Pending'}</div> )}
-        {row.binder && ( <div>Lamination: {row.laminationDone ? '✅ Done' : '⏳ Pending'}</div> )}
-        {row.paperCuttingDone && row.corrugationDone && (!row.printer || row.printerDone) && (!row.binder || row.laminationDone) && ( <div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Pasting</div> )}
+        {row.printer && (<div>Printer: {row.printerDone ? '✅ Done' : '⏳ Pending'}</div>)}
+        {row.binder && (<div>Lamination: {row.laminationDone ? '✅ Done' : '⏳ Pending'}</div>)}
+        {row.paperCuttingDone && row.corrugationDone && (!row.printer || row.printerDone) && (!row.binder || row.laminationDone) && (<div style={{ color: '#10B981', fontWeight: 'bold' }}>Ready for Pasting</div>)}
       </Box>
 
       {(!row.designer || row.designDone) && renderNextProcesses()}
@@ -855,12 +905,12 @@ export const StatusCell = ({ row }: { row: any }) => {
       {renderKanthanTimer()}
     </Box>
   );
-  if (userActions.viewType === "designer") { return renderDesignerView(); } 
+  if (userActions.viewType === "designer") { return renderDesignerView(); }
   else if (userActions.viewType === "cutting") { return renderCuttingView(); }
-  else if (userActions.viewType === "corrugation") { return renderCorrugationView(); } 
-  else if (userActions.viewType === "printer") { return renderPrinterView(); } 
-  else if (userActions.viewType === "binder") { return renderBinderView(); } 
-  else if (userActions.viewType === "operator") { return renderOperatorView(); } 
+  else if (userActions.viewType === "corrugation") { return renderCorrugationView(); }
+  else if (userActions.viewType === "printer") { return renderPrinterView(); }
+  else if (userActions.viewType === "binder") { return renderBinderView(); }
+  else if (userActions.viewType === "operator") { return renderOperatorView(); }
   else if (userActions.viewType === "admin") { return renderAdminView(); }
 
   return (
@@ -869,10 +919,10 @@ export const StatusCell = ({ row }: { row: any }) => {
         {row.status || "Pending"}
       </Typography>
       <Box sx={{ mt: 1, fontSize: '0.7rem', color: '#6B7280' }}>
-        {row.designer && ( <div>Design: {row.designDone ? '✅ Done' : '⏳ Pending'}</div> )}
+        {row.designer && (<div>Design: {row.designDone ? '✅ Done' : '⏳ Pending'}</div>)}
         <div>Paper Cutting: {row.paperCuttingDone ? '✅ Done' : '❌ Pending'}</div>
-        {row.printer && ( <div>Printer: {row.printerDone ? '✅ Done' : '❌ Pending'}</div> )}
-        {row.binder && ( <div>Lamination: {row.laminationDone ? '✅ Done' : '❌ Pending'}</div> )}
+        {row.printer && (<div>Printer: {row.printerDone ? '✅ Done' : '❌ Pending'}</div>)}
+        {row.binder && (<div>Lamination: {row.laminationDone ? '✅ Done' : '❌ Pending'}</div>)}
         <div>Corrugation: {row.corrugationDone ? '✅ Done' : '❌ Pending'}</div>
       </Box>
     </Box>

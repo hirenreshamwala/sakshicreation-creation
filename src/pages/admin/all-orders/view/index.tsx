@@ -56,7 +56,6 @@ const ViewOrderPage = () => {
   const { singleOrder } = useAppSelector((state: any) => state.orders)
   console.log("object", singleOrder)
   const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
-
   console.log(singleOrder, 'singleOrder?.quotationProof')
   const formik = useFormik<FormValues>({
     initialValues: {
@@ -611,16 +610,42 @@ const ViewOrderPage = () => {
           <Typography variant="h6" fontWeight={600} mb={2}>
             Quotation Proof
           </Typography>
-          {singleOrder?.quotation.length ? (
-            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            {/* Generate Quotation – हमेशा दिखेगा */}
+            <ThemeButton
+              sx={{
+                flex: 1,
+                background: "#667085",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 16,
+                borderRadius: 2,
+                py: 1.2,
+
+              }}
+              disabled={Boolean(singleOrder?.quotationProof)}
+              onClick={() => setQuoteDialog(true)}
+            >
+              Generate Quotation
+            </ThemeButton>
+
+            {/* View Quotation History – condition पर */}
+            {singleOrder?.quotation.length ? (
               <Button
                 variant="contained"
+
                 onClick={() => setQuotationHistoryDialog(true)}
                 sx={{ flex: 1 }}
               >
                 View Quotation History
               </Button>
+            ) : (
+              <Box sx={{ flex: 1 }} /> // खाली space लेगा layout न टूटे
+            )}
 
+            {/* Download Quotation – condition पर */}
+            {singleOrder?.quotation.length ? (
               <ThemeButton
                 sx={{
                   flex: 1,
@@ -637,23 +662,12 @@ const ViewOrderPage = () => {
                 <MdDownload style={{ marginRight: "8px" }} />
                 Download Quotation
               </ThemeButton>
+            ) : (
+              <Box sx={{ flex: 1 }} /> // layout balance के लिए
+            )}
+          </Box>
 
-              <ThemeButton
-                sx={{
-                  flex: 1,
-                  background: "#667085",
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  borderRadius: 2,
-                  py: 1.2,
-                }}
-                onClick={() => setQuoteDialog(true)}
-              >
-                Generate Quotation
-              </ThemeButton>
-            </Box>
-          ) : null}
+          {/* नीचे existing upload / next step वाला कोड जस का तस */}
           {!hasQuotationProof ? (
             <>
               <FileUpload
@@ -687,7 +701,6 @@ const ViewOrderPage = () => {
               >
                 {quotationProofLoading ? "Uploading..." : "Upload Quotation Proof"}
               </ThemeButton>
-
             </>
           ) : (
             <>
@@ -736,6 +749,7 @@ const ViewOrderPage = () => {
             </>
           )}
         </Box>
+
       </Paper>
 
       <ViewFilesDialog
