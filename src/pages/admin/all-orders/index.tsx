@@ -45,14 +45,15 @@ type OrderRow = {
     partyName: string
     ownerMobileNo?: string
     address?: {
-      unitNo?: string
-      marketName?: string
-      landMark?: string
-      area?: string
-      pincode?: string
-    }
-    GSTNo?: string
-  }
+      unitNo?: string;
+      marketName?: { marketName: string; _id: string } | string;
+      landMark?: string;
+      area?: { area: string; _id: string } | string;
+      pincode?: string;
+      streetAddress?: string;
+    };
+    GSTNo?: string;
+  };
   productItem: {
     itemName: string
   }
@@ -112,7 +113,7 @@ const AllOrdersPage = () => {
   // Get unique values for the selected filter field
   const getUniqueValues = useMemo(() => {
     if (!selectedFilterField) return [];
-    const columnId = columns.find(col => col.label === selectedFilterField)?.id;
+    const columnId = columns.find((col) => col.label === selectedFilterField)?.id;
     if (!columnId) return [];
 
     const values = orders.map((order) => {
@@ -135,7 +136,7 @@ const AllOrdersPage = () => {
           value = order.productItem?.itemName;
           break;
         case "size":
-          value = order.size.size;
+          value = order.size?.size;
           break;
         case "remarks":
           value = order.remarks;
@@ -156,7 +157,7 @@ const AllOrdersPage = () => {
   useEffect(() => {
     if (c)
       setActiveTab(c === "Quality Packaging" || c === "QP" ? 1 : 0)
-    
+
   }, [c])
 
   // Filter orders based on search query, date range, and selected filters
@@ -168,7 +169,7 @@ const AllOrdersPage = () => {
 
       const matchesSearch = searchQuery
         ? order.orderNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.comanyName?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.companyName?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.party?.partyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.productItem?.itemName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.remarks?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -194,7 +195,7 @@ const AllOrdersPage = () => {
             value = order.productItem?.itemName;
             break;
           case "size":
-            value = order.size.size;
+            value = order.size?.size;
             break;
           case "remarks":
             value = order.remarks;
@@ -221,7 +222,7 @@ const AllOrdersPage = () => {
     }
 
     if (canViewGlobal) {
-      dispatch(getAllOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party,c })); // Increase limit to fetch more orders
+      dispatch(getAllOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party, c })); // Increase limit to fetch more orders
     } else if (canViewOwn && userData?.id) {
       dispatch(getOrdersByStaffIdThunk(userData.id));
     }
@@ -231,7 +232,7 @@ const AllOrdersPage = () => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true))
   }, [])
 
-  
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -280,16 +281,22 @@ const AllOrdersPage = () => {
   }
 
   const handleDownloadInvoice = (row: OrderRow) => {
+    console.log("🚀 ~ handleDownloadInvoice ~ row:", row)
     try {
-      const latestQuotation = row?.quotation?.[row?.quotation?.length - 1]
-      const quantity = Number(row?.qty) || 0
-      const unitPrice = Number(latestQuotation?.unitPrice) || 0
-      const subtotal = quantity * unitPrice
-      const gstValue = Number(latestQuotation?.gst) || 0
-      const applyGST = gstValue > 0
-      const gstPercentage = gstValue
-      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0
-      const totalAmount = subtotal + gstAmount
+      if (!row?.party?.address) {
+        toast.error("Address data is missing");
+        return;
+      }
+
+      const latestQuotation = row?.quotation?.[row?.quotation?.length - 1];
+      const quantity = Number(row?.qty) || 0;
+      const unitPrice = Number(latestQuotation?.unitPrice) || 0;
+      const subtotal = quantity * unitPrice;
+      const gstValue = Number(latestQuotation?.gst) || 0;
+      const applyGST = gstValue > 0;
+      const gstPercentage = gstValue;
+      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0;
+      const totalAmount = subtotal + gstAmount;
 
       const formData = {
         quotation: true,
@@ -298,11 +305,22 @@ const AllOrdersPage = () => {
         remarks: row?.remarks || "",
         ownerMobileNo: row?.party?.ownerMobileNo || "",
         partyName: row?.party?.partyName || "N/A",
-        addressName: `${row?.party?.address?.unitNo || ""} ${
-          markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || ""
-        } ${markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || ""} ${
-          markets?.find((item) => item._id === row?.party?.address?.area)?.area || ""
-        } ${markets?.find((item) => item._id === row?.party?.address?.pincode)?.pincode || ""}`.trim(),
+        addressName: [
+          row?.party?.address?.unitNo || "",
+          typeof row?.party?.address?.marketName === "object"
+            ? row?.party?.address?.marketName?.marketName
+            : markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || "",
+          markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || "",
+          typeof row?.party?.address?.area === "object"
+            ? row?.party?.address?.area?.area
+            : markets?.find((item) => item._id === row?.party?.address?.area)?.area || "",
+          typeof row?.party?.address?.area === "object"
+            ? row?.party?.address?.pincode?.area
+            : markets?.find((item) => item._id === row?.party?.address?.pincode)?.area || "",
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .trim(),
         GSTNo: row?.party?.GSTNo || "N/A",
         servicePerformance: row?.productItem?.itemName || "N/A",
         quantity: quantity,
@@ -324,15 +342,20 @@ const AllOrdersPage = () => {
 
   const handleProformaDownload = (row: OrderRow) => {
     try {
-      const latestQuotation = row?.quotation?.[row?.quotation?.length - 1]
-      const quantity = Number(row?.qty) || 0
-      const unitPrice = Number(latestQuotation?.unitPrice) || 0
-      const subtotal = quantity * unitPrice
-      const gstValue = Number(latestQuotation?.gst) || 0
-      const applyGST = gstValue > 0
-      const gstPercentage = gstValue
-      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0
-      const totalAmount = subtotal + gstAmount
+      if (!row?.party?.address) {
+        toast.error("Address data is missing");
+        return;
+      }
+
+      const latestQuotation = row?.quotation?.[row?.quotation?.length - 1];
+      const quantity = Number(row?.qty) || 0;
+      const unitPrice = Number(latestQuotation?.unitPrice) || 0;
+      const subtotal = quantity * unitPrice;
+      const gstValue = Number(latestQuotation?.gst) || 0;
+      const applyGST = gstValue > 0;
+      const gstPercentage = gstValue;
+      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0;
+      const totalAmount = subtotal + gstAmount;
 
       const formData = {
         orderNumber: row?.orderNumber || "N/A",
@@ -340,11 +363,22 @@ const AllOrdersPage = () => {
         remarks: row?.remarks || "",
         ownerMobileNo: row?.party?.ownerMobileNo || "",
         partyName: row?.party?.partyName || "N/A",
-        addressName: `${row?.party?.address?.unitNo || ""} ${
-          markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || ""
-        } ${markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || ""} ${
-          markets?.find((item) => item._id === row?.party?.address?.area)?.area || ""
-        } ${markets?.find((item) => item._id === row?.party?.address?.pincode)?.pincode || ""}`.trim(),
+        addressName: [
+          row?.party?.address?.unitNo || "",
+          typeof row?.party?.address?.marketName === "object"
+            ? row?.party?.address?.marketName?.marketName
+            : markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || "",
+          markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || "",
+          typeof row?.party?.address?.area === "object"
+            ? row?.party?.address?.area?.area
+            : markets?.find((item) => item._id === row?.party?.address?.area)?.area || "",
+          typeof row?.party?.address?.area === "object"
+            ? row?.party?.address?.pincode?.pincode
+            : markets?.find((item) => item._id === row?.party?.address?.pincode)?.pincode || "",
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .trim(),
         GSTNo: row?.party?.GSTNo || "N/A",
         servicePerformance: row?.productItem?.itemName || "N/A",
         quantity: quantity,
@@ -497,11 +531,11 @@ const AllOrdersPage = () => {
             uniqueValues={selectedFilterField ?
               getUniqueValues :
               []}
-          onFiltersChange={(newFilters) => {
+            onFiltersChange={(newFilters) => {
               const idBasedFilters: { [key: string]: string[] } = {};
 
               Object.entries(newFilters).forEach(([label, values]) => {
-                const columnId = columns.find(col => col.label === label)?.id;
+                const columnId = columns.find((col) => col.label === label)?.id;
                 if (columnId) {
                   idBasedFilters[columnId] = values;
                 }
@@ -510,7 +544,7 @@ const AllOrdersPage = () => {
               setFilters(idBasedFilters);
             }}
             filters={Object.keys(filters).reduce((acc, columnId) => {
-              const columnLabel = columns.find(col => col.id === columnId)?.label;
+              const columnLabel = columns.find((col) => col.id === columnId)?.label;
               if (columnLabel) {
                 acc[columnLabel] = filters[columnId];
               }

@@ -134,7 +134,7 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
             } catch (error) {
                 toast.error(
                     'Error deleting complaint: ' +
-                        (error instanceof Error ? error.message : 'Unknown error')
+                    (error instanceof Error ? error.message : 'Unknown error')
                 );
                 Swal.fire({
                     title: 'Error!',
@@ -164,7 +164,7 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
             subject: complaint.subject,
             status: complaint.status,
             createdBy: `${complaint.createdBy.firstName} ${complaint.createdBy.lastName}`,
-            files: complaint.files || [], // Include files in the row data
+            files: complaint.files || [], 
         }));
 
     return (
@@ -197,25 +197,27 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
                         <TableCell>
                             {row.files.length > 0 ? (
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                    {row.files.slice(0, 3).map((file, idx) => (
-                                        <Link
-                                            key={idx}
-                                            href={file}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            sx={{ textDecoration: 'none', color: 'primary.main' }}
-                                        >
-                                            {file.endsWith('.pdf') ? (
-                                                <Typography variant="body2">PDF File {idx + 1}</Typography>
-                                            ) : (
-                                                <img
-                                                    src={file}
-                                                    alt={`File ${idx + 1}`}
-                                                    style={{ maxWidth: '50px', maxHeight: '50px', objectFit: 'contain' }}
-                                                />
-                                            )}
-                                        </Link>
-                                    ))}
+                                    {row.files.slice(0, 3).map((file, idx) => {
+                                        return (
+                                            <Link
+                                                key={idx}
+                                                href={file}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                sx={{ textDecoration: 'none', color: 'primary.main' }}
+                                            >
+                                                {file.endsWith('.pdf') ? (
+                                                    <Typography variant="body2">PDF File {idx + 1}</Typography>
+                                                ) : (
+                                                    <img
+                                                        src={file}
+                                                        alt={`File ${idx + 1}`}
+                                                        style={{ maxWidth: '50px', maxHeight: '50px', objectFit: 'contain' }}
+                                                    />
+                                                )}
+                                            </Link>
+                                        )
+                                    })}
                                     {row.files.length > 3 && (
                                         <Typography
                                             variant="body2"
