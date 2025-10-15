@@ -30,7 +30,7 @@ interface AddOrderDialogProps {
     editData?: any; // Adjust this type based on your OrderRow type if possible
 }
 
-const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData }) => {
+const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData, party }) => {
     const dispatch = useAppDispatch();
     const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
     const { kantans } = useAppSelector((state) => state.kantans);
@@ -38,6 +38,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     const { loading: orderLoading, error: orderError, successMessage } = useAppSelector((state) => state.orders);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    console.log(party, 'partypartypartypartypartypartypartypartypartypartyparty')
     const [qpFormData, setQpFormData] = useState({
         companyName: company,
         partyName: "",
@@ -68,6 +69,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         kantanDeckal: "",
         salesRemark: "",
     });
+
+    useEffect(() => {
+        if (party !== undefined && party !== null) {
+            setQpFormData((prev) => ({ ...prev, partyName: party }))
+            handlePartyChange("", party)
+        }
+    }, [party])
 
     useEffect(() => {
         if (open && editData) {
@@ -140,7 +148,10 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     const handleQpChange = (field: string, value: any) => setQpFormData((prev) => ({ ...prev, [field]: value }));
 
     const handlePartyChange = async (event: any, newValue: any) => {
-        const partyId = newValue ? newValue.value : "";
+        const partyId = typeof newValue === "object" && newValue !== null
+            ? newValue.value
+            : newValue;
+
         handleQpChange("partyName", partyId);
 
         if (company && partyId) {
@@ -200,7 +211,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 parseFloat(qpFormData.height),
                 parseFloat(qpFormData.deckal),
                 parseInt(qpFormData.ply),
-                parseInt(qpFormData.uom),
+                // parseInt(qpFormData.uom),
                 parseFloat(qpFormData.paper3GSM),
                 parseFloat(qpFormData.paper2GSM),
                 parseFloat(qpFormData.paper1GSM),
