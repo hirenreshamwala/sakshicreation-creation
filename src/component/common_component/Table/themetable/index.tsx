@@ -73,7 +73,17 @@ const useDebounce = (value: string, delay: number) => {
   return debouncedValue;
 };
 
-const BasicTable = <T extends { id: string }>({
+// Function to check if lastStatusChangeDate date is older than 3 days
+const isStatusChangeOlderThanThreeDays = (lastStatusChangeDate: string | Date | null): boolean => {
+  if (!lastStatusChangeDate) return false;
+
+  const statusChangeDate = moment(lastStatusChangeDate);
+  const threeDaysAgo = moment().subtract(3, 'days');
+
+  return statusChangeDate.isBefore(threeDaysAgo);
+};
+
+const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date }>({
   id,
   tableHeader,
   rowData,
@@ -116,6 +126,20 @@ const BasicTable = <T extends { id: string }>({
   const clearDateRange = useCallback(() => {
     setStartDate(null);
     setEndDate(null);
+  }, []);
+
+  const getRowBackgroundColor = useCallback((row: T): string => {
+    if (row.lastStatusChangeDate && isStatusChangeOlderThanThreeDays(row.lastStatusChangeDate))
+      return "#fdbbbbff";
+
+    return "transparent";
+  }, []);
+
+  const getRowHoverBackgroundColor = useCallback((row: T): string => {
+    if (row.lastStatusChangeDate && isStatusChangeOlderThanThreeDays(row.lastStatusChangeDate))
+      return "#fdbbbbff";
+
+    return "#F9FAFB";
   }, []);
 
   // Dynamically generate filter options from tableHeader, excluding "action" and "checkbox"
@@ -183,6 +207,9 @@ const BasicTable = <T extends { id: string }>({
         case "Driver":
           key = "driverEmail" as keyof T;
           break;
+        case "Last Status Change":
+          key = "lastStatusChangeDate" as keyof T;
+          break;
         default:
           key = col.id as keyof T;
       }
@@ -215,6 +242,11 @@ const BasicTable = <T extends { id: string }>({
       }
       if (key === "orderid") {
         return String(row[key] || "N/A");
+      }
+      if (key === "lastStatusChangeDate") {
+        const dateValue = row[key];
+        if (!dateValue) return "N/A";
+        return moment(dateValue).format('DD/MM/YYYY');
       }
       return String(row[key] || "N/A");
     });
@@ -284,6 +316,8 @@ const BasicTable = <T extends { id: string }>({
             }
           } else if (key === "orderid") {
             value = String(row[key] || "N/A");
+          } else if (key === "lastStatusChangeDate") {
+            value = row[key] ? moment(row[key] as string).format('DD/MM/YYYY') : "N/A";
           } else {
             value = row[key];
           }
@@ -333,6 +367,8 @@ const BasicTable = <T extends { id: string }>({
             let value = row[key];
             if (key === "company") {
               value = (row[key] as any)?.name || "N/A";
+            } else if (key === "lastStatusChangeDate") {
+              value = row[key] ? moment(row[key] as string).format('DD/MM/YYYY HH:mm') : "N/A";
             } else {
               value = value ?? "N/A";
             }
@@ -579,7 +615,7 @@ const BasicTable = <T extends { id: string }>({
                        18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
                        12.5 2.5 17 7l97.9 98c4.5 4.5 7 
                        10.6 7 16.9z"
-                                  />
+                  />
                 </svg>
                 {/* <Typography fontSize={12}>Download excel</Typography>  */}
               </IconButton>
@@ -653,6 +689,10 @@ const BasicTable = <T extends { id: string }>({
                           fontSize: "14px",
                           lineHeight: "1.2",
                         },
+                        backgroundColor: getRowBackgroundColor(row),
+                        "&:hover .MuiTableCell-root": {
+                          backgroundColor: getRowHoverBackgroundColor(row),
+                        },
                       }}
                     >
                       {tableHeader[0].id === "checkbox" && (
@@ -693,7 +733,7 @@ const BasicTable = <T extends { id: string }>({
                             borderBottom: "2px solid #F2F4F7",
                           }}
                         >
-                          <Collapse in={expandedRowId === row._id} timeout="auto" unmountOnExit>
+                          <Collapse in={expandedRowId === (row as any)._id} timeout="auto" unmountOnExit>
                             <Box sx={{ p: 2 }}>
                               {renderExpandedRow(row)}
                             </Box>

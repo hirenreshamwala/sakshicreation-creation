@@ -70,16 +70,8 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
         }),
         callFeedback: lead && type !== 'add'
             ? Yup.string()
-                .required('Call feedback is required')
-                .test(
-                    'min-words',
-                    'Call feedback must be at least 20 words',
-                    (value) => {
-                        if (!value) return false;
-                        const wordCount = value.trim().split(/\s+/).length;
-                        return wordCount >= 20;
-                    }
-                )
+      .required('Call feedback is required')
+      .min(20, 'Call feedback must be at least 20 characters')
             : Yup.string(),
         ...(partyIds
             ? {}
