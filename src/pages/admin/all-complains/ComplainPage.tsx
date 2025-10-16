@@ -1,18 +1,19 @@
 import ThemeButton from '@/component/common_component/themebutton';
 import DateRangePicker from '@/component/daterangepicker';
 import FilterDropdown from '@/component/fillter';
-import { Box, IconButton, InputBase, TableCell, Typography, Link } from '@mui/material';
+import { Box, IconButton, InputBase, TableCell, Typography, Link, Button } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import ComplainDialogue from './ComplainDialogue';
 import ComplainViewDialogue from './ComplainViewDialogue';
+import ViewFilesDialog from '@/component/reusablecomponents/ViewFilesDialog'; // Import ViewFilesDialog
 import { StaticCompanyOptions } from '@/constants';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { getAllCompaniesThunk } from '@/store/slices/compnaySlice';
 import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk } from '@/store/slices/qpOrderSlice';
 import { deleteComplainThunk, getAllComplainsThunk, getComplainsByStaffThunk } from '@/store/slices/complainSlice';
 import BasicTable from '@/component/common_component/Table/themetable';
-import { Delete, Edit, Visibility } from '@mui/icons-material';
+import { Delete, Edit, Visibility, AttachFile } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 
@@ -23,7 +24,7 @@ const columns = [
     { id: 'subject', label: 'SUBJECT' },
     { id: 'status', label: 'STATUS' },
     { id: 'createdBy', label: 'CREATED BY' },
-    { id: 'files', label: 'FILES' }, // New column for files
+    { id: 'files', label: 'FILES' },
     { id: 'actions', label: 'ACTION' },
 ];
 
@@ -55,17 +56,20 @@ interface Complaint {
         _id: string;
         partyName: string;
     };
+    filePaths?: string[]; // Use filePaths instead of files
     createdAt: string;
     updatedAt: string;
-    files: string[]; // Added files field
 }
 
 const ComplainPage = ({ company }: { company: { _id: string; companyName: string } }) => {
     const dispatch = useAppDispatch();
     const [open, setOpen] = useState(false);
     const [viewOpen, setViewOpen] = useState(false);
+    const [filesDialogOpen, setFilesDialogOpen] = useState(false); // State for files dialog
+    const [selectedFiles, setSelectedFiles] = useState<string[]>([]); // State for selected complaint files
+    const [selectedComplaintSubject, setSelectedComplaintSubject] = useState<string>(''); // State for complaint subject
     const [editData, setEditData] = useState<Complaint | null>(null);
-    console.log("editData",editData);
+    console.log("editData", editData);
     const [viewData, setViewData] = useState<Complaint | null>(null);
     const { companies } = useAppSelector((state) => state.company);
     const { user } = useAppSelector((state) => state.auth);
@@ -155,6 +159,23 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
         }
     };
 
+    // Handle view files
+    const handleViewFiles = (complaintId: string) => {
+        const complaint = complains.find((c) => c?._id === complaintId);
+        if (complaint) {
+            setSelectedFiles(complaint.filePaths || []);
+            setSelectedComplaintSubject(complaint.subject);
+            setFilesDialogOpen(true);
+        }
+    };
+
+    // Handle close files dialog
+    const handleCloseFilesDialog = () => {
+        setFilesDialogOpen(false);
+        setSelectedFiles([]);
+        setSelectedComplaintSubject('');
+    };
+
     const rows = complains
         .filter((complaint) => complaint.company?._id === company?._id)
         .map((complaint, index) => ({
@@ -164,7 +185,7 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
             subject: complaint.subject,
             status: complaint.status,
             createdBy: `${complaint.createdBy.firstName} ${complaint.createdBy.lastName}`,
-            files: complaint.files || [], 
+            filePaths: complaint.filePaths || [], // Use filePaths
         }));
 
     return (
@@ -195,41 +216,25 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
                         <TableCell>{row.status}</TableCell>
                         <TableCell>{row.createdBy}</TableCell>
                         <TableCell>
-                            {row.files.length > 0 ? (
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                    {row.files.slice(0, 3).map((file, idx) => {
-                                        return (
-                                            <Link
-                                                key={idx}
-                                                href={file}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                sx={{ textDecoration: 'none', color: 'primary.main' }}
-                                            >
-                                                {file.endsWith('.pdf') ? (
-                                                    <Typography variant="body2">PDF File {idx + 1}</Typography>
-                                                ) : (
-                                                    <img
-                                                        src={file}
-                                                        alt={`File ${idx + 1}`}
-                                                        style={{ maxWidth: '50px', maxHeight: '50px', objectFit: 'contain' }}
-                                                    />
-                                                )}
-                                            </Link>
-                                        )
-                                    })}
-                                    {row.files.length > 3 && (
-                                        <Typography
-                                            variant="body2"
-                                            sx={{ color: 'text.secondary', cursor: 'pointer' }}
-                                            onClick={() => handleView(row.id)}
-                                        >
-                                            +{row.files.length - 3} more
-                                        </Typography>
-                                    )}
-                                </Box>
+                            {/* Files Button */}
+                            {row.filePaths && row.filePaths.length > 0 ? (
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<AttachFile />}
+                                    onClick={() => handleViewFiles(row.id)}
+                                    sx={{
+                                        textTransform: 'none',
+                                        fontSize: '0.75rem',
+                                        py: 0.5,
+                                    }}
+                                >
+                                    View Files ({row.filePaths.length})
+                                </Button>
                             ) : (
-                                <Typography variant="body2">No Files</Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    No Files
+                                </Typography>
                             )}
                         </TableCell>
                         <TableCell>
@@ -273,6 +278,17 @@ const ComplainPage = ({ company }: { company: { _id: string; companyName: string
                     complaint={viewData}
                 />
             )}
+
+            {/* View Files Dialog */}
+            <ViewFilesDialog
+                open={filesDialogOpen}
+                onClose={handleCloseFilesDialog}
+                files={selectedFiles}
+                title={`Files - ${selectedComplaintSubject}`}
+                showDownload={true}
+                showView={true}
+                downloadEndpoint={`${process.env.NEXT_PUBLIC_API_URL}/api/filedownload/download`}
+            />
         </>
     );
 };

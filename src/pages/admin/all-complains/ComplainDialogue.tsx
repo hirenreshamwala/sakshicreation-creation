@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Dialog,
     DialogTitle,
@@ -8,19 +8,19 @@ import {
     Stack,
     Box,
     Typography,
-    IconButton,
 } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getAllOrdersThunk, getOrdersByStaffIdThunk } from "@/store/slices/orderSlice";
 import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk } from "@/store/slices/qpOrderSlice";
 import ThemeSelect from "@/component/common_component/themeselect";
 import ThemeInput from "@/component/common_component/themeinput";
+import FileUpload from "@/component/reusablecomponents/FileUpload";
+import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog";
 import { createComplainThunk, updateComplainThunk } from "@/store/slices/complainSlice";
 import { toast } from "react-toastify";
 import { StaticCompanyOptions } from "@/constants";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import DeleteIcon from "@mui/icons-material/Delete";
 
 interface Complaint {
     _id?: string;
@@ -28,22 +28,14 @@ interface Complaint {
     details: string;
     orderId?: string;
     company: string;
-    scorder?: string | null;
-    qporder?: string | null;
+    scorder?: any;
+    qporder?: any;
+    party?: any;
     status?: string;
     response?: string;
     createdBy?: string;
     assignTo?: string[];
-    party?: {
-        _id: string;
-        partyName: string;
-        address?: {
-            marketName?: { marketName: string };
-            area?: { area: string };
-        };
-    };
-    files?: (File | string)[];
-    filePaths?: string[]; // Add filePaths to handle backend response
+    filePaths?: string[];
 }
 
 interface ComplainDialogProps {
@@ -53,6 +45,7 @@ interface ComplainDialogProps {
     refreshData?: () => void;
     editData?: Complaint | null;
 }
+
 const getValidationSchema = (isEdit: boolean, status: string) => {
     return Yup.object({
         subject: Yup.string()
@@ -67,7 +60,7 @@ const getValidationSchema = (isEdit: boolean, status: string) => {
         orderId: Yup.string().required("Please select an order"),
         status: Yup.string().required("Status is required"),
         response: Yup.string()
-            .transform((value) => (value ? value.trim() : "")) // ✅ trim before validation
+            .transform((value) => (value ? value.trim() : ""))
             .when([], {
                 is: () => isEdit && status === "Completed",
                 then: (schema) =>
@@ -80,21 +73,8 @@ const getValidationSchema = (isEdit: boolean, status: string) => {
                         .notRequired()
                         .max(500, "Response must not exceed 500 characters"),
             }),
-        files: Yup.array()
-            .of(
-                Yup.mixed()
-                    .test("fileSize", "File size must be less than 25MB", (value) => {
-                        return !value || (value instanceof File && value.size <= 25 * 1024 * 1024);
-                    })
-                    .test("fileType", "Only PDF, PNG, JPG, and JPEG files are allowed", (value) => {
-                        return !value || (value instanceof File && ["application/pdf", "image/png", "image/jpeg", "image/jpg"].includes(value.type));
-                    })
-            )
-            .max(25, "You can upload a maximum of 25 files")
-            .notRequired(),
     });
 };
-
 
 const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     company,
@@ -110,75 +90,63 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     const { orders } = useAppSelector((state) => state.orders);
     const { orders: qporders } = useAppSelector((state) => state.qpOrders);
 
+    // File upload ref और states
+    const fileUploadRef = useRef<any>(null);
+    const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+    const [fileLoading, setFileLoading] = useState(false);
+    const [openFilesDialog, setOpenFilesDialog] = useState(false);
+    const [initialized, setInitialized] = useState(false);
+
     const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
     const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
 
-    // Normalize editData to use files instead of filePaths
-    const normalizedEditData = editData
-        ? {
-              ...editData,
-              files: editData.filePaths || editData.files || [],
-          }
-        : null;
-
+    // Formik initialization
     const formik = useFormik({
         initialValues: {
-            subject: normalizedEditData?.subject || "",
-            details: normalizedEditData?.details || "",
-            orderId: normalizedEditData
-                ? normalizedEditData.scorder?._id || normalizedEditData.qporder?._id || ""
-                : "",
-            party: normalizedEditData?.party?._id || "",
-            status: normalizedEditData?.status || "Pending",
-            response: normalizedEditData?.response || "",
-            files: normalizedEditData?.files || [],
+            subject: "",
+            details: "",
+            orderId: "",
+            party: "",
+            status: "Pending",
+            response: "",
         },
-        validationSchema: (values) => getValidationSchema(!!normalizedEditData, values?.status),
+        validationSchema: (values) => getValidationSchema(!!editData, values?.status),
         onSubmit: async (values) => {
-            const formData = new FormData();
-            formData.append("subject", values.subject);
-            formData.append("details", values.details);
-            formData.append("company", company._id);
-            formData.append("createdBy", user?.id || "");
-            formData.append("party", values.party);
-            if (values.orderId) {
-                if (company.companyName === StaticCompanyOptions[0]) {
-                    formData.append("scorder", values.orderId);
-                } else {
-                    formData.append("qporder", values.orderId);
-                }
-            }
-            if (normalizedEditData) {
-                formData.append("status", values.status || "Pending");
-                formData.append("response", values.response || "");
-            }
-            filteredStaffIds.forEach((id) => formData.append("assignTo", id));
-
-            // Append new files
-            (values.files || [])
-                .filter((file): file is File => file instanceof File)
-                .forEach((file) => formData.append("files", file));
-
-            // Append files to remove
-            if (normalizedEditData?._id) {
-                const existingUrls = (normalizedEditData.files || []).filter(
-                    (file): file is string => typeof file === "string"
-                );
-                const keptUrls = (values.files || []).filter(
-                    (file): file is string => typeof file === "string"
-                );
-                const filesToRemove = existingUrls.filter((url) => !keptUrls.includes(url));
-                if (filesToRemove.length) {
-                    formData.append("filesToRemove", JSON.stringify(filesToRemove));
-                }
-            }
-
+            setFileLoading(true);
+            
             try {
-                if (normalizedEditData?._id) {
-                    await dispatch(updateComplainThunk({ id: normalizedEditData._id, payload: formData }));
+                let newFilePaths: string[] = [];
+                
+                // File upload logic
+                if (fileUploadRef.current && typeof fileUploadRef.current.getSelectedFiles === "function") {
+                    const selectedFiles = fileUploadRef.current.getSelectedFiles() || [];
+                    if (selectedFiles.length > 0) {
+                        const uploadedFileResults = await fileUploadRef.current.uploadSelectedFiles();
+                        newFilePaths = uploadedFileResults.map((file: any) => 
+                            file.path || `/${file.folder}/${file.filename}`
+                        );
+                        setUploadedFiles((prev) => [...prev, ...newFilePaths]);
+                    }
+                }
+
+                const complainData: Complaint = {
+                    ...values,
+                    company: company._id,
+                    createdBy: user?.id,
+                    assignTo: filteredStaffIds,
+                    scorder: company.companyName === "Sakshi Creation" ? values.orderId || null : null,
+                    qporder: company.companyName !== "Sakshi Creation" ? values.orderId || null : null,
+                    filePaths: [
+                        ...(editData?.filePaths || []),
+                        ...newFilePaths
+                    ],
+                };
+
+                if (editData?._id) {
+                    await dispatch(updateComplainThunk({ id: editData._id, payload: complainData }));
                     toast.success("Complaint updated successfully!");
                 } else {
-                    await dispatch(createComplainThunk(formData));
+                    await dispatch(createComplainThunk(complainData));
                     toast.success("Complaint created successfully!");
                 }
 
@@ -187,20 +155,12 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
             } catch (error) {
                 console.error("Error saving complaint:", error);
                 toast.error("Failed to save complaint. Please try again.");
+            } finally {
+                setFileLoading(false);
             }
         },
         enableReinitialize: true
     });
-
-    useEffect(() => {
-        if (canViewGlobal) {
-            if (!orders.length) dispatch(getAllOrdersThunk());
-            if (!qporders.length) dispatch(getAllQPOrdersThunk({ limit: 100 }));
-        } else if (canViewOwn && user?.id) {
-            if (!orders.length) dispatch(getOrdersByStaffIdThunk(user?.id));
-            if (!qporders.length) dispatch(getQPOrdersByStaffIdThunk(user?.id));
-        }
-    }, [canViewGlobal, canViewOwn, user?.id, dispatch]);
 
     const filteredStaffIds = staffList
         ?.filter((staff: any) => {
@@ -212,241 +172,329 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
 
     const handleClose = () => {
         formik.resetForm();
+        setUploadedFiles([]);
+        setInitialized(false);
         onClose();
     };
 
-    // Prepare party options
+    // File handlers
+    const handleFilesSelected = (files: File[]) => {
+        console.log("Files selected:", files);
+    };
+
+    const handleUploadError = (error: string) => {
+        console.error("Upload error:", error);
+        toast.error(error);
+    };
+
+    // View Files Dialog handlers
+    const handleViewFiles = () => {
+        setOpenFilesDialog(true);
+    };
+
+    const handleCloseFilesDialog = () => {
+        setOpenFilesDialog(false);
+    };
+
+    // Edit mode में data set करें
+    useEffect(() => {
+        if (editData && open && !initialized) {
+            console.log("Edit Data:", editData);
+            
+            // Party set करें
+            const partyId = editData.party?._id || editData.party;
+            
+            // Order set करें
+            let orderId = "";
+            if (company.companyName === "Sakshi Creation") {
+                orderId = editData.scorder?._id || editData.scorder;
+            } else {
+                orderId = editData.qporder?._id || editData.qporder;
+            }
+
+            formik.setValues({
+                subject: editData.subject || "",
+                details: editData.details || "",
+                orderId: orderId || "",
+                party: partyId || "",
+                status: editData.status || "Pending",
+                response: editData.response || "",
+            });
+
+            // Files set करें
+            if (editData.filePaths && Array.isArray(editData.filePaths)) {
+                setUploadedFiles(editData.filePaths);
+            }
+
+            setInitialized(true);
+        }
+    }, [editData, open, initialized, company.companyName]);
+
+    // Orders और QPOrders fetch करें
+    useEffect(() => {
+        if (open) {
+            if (canViewGlobal) {
+                if (!orders.length) dispatch(getAllOrdersThunk());
+                if (!qporders.length) dispatch(getAllQPOrdersThunk({ limit: 100 }));
+            } else if (canViewOwn && user?.id) {
+                if (!orders.length) dispatch(getOrdersByStaffIdThunk(user?.id));
+                if (!qporders.length) dispatch(getQPOrdersByStaffIdThunk(user?.id));
+            }
+        }
+    }, [open, canViewGlobal, canViewOwn, user?.id]);
+
+    // Order options - party select होने के बाद filter करें
+    const orderOptions = (company.companyName === StaticCompanyOptions[0] ? orders : qporders)
+        ?.filter((order: any) => {
+            if (!formik.values.party) return false;
+            
+            const orderPartyId = order.party?._id || order.party;
+            return orderPartyId === formik.values.party;
+        })
+        ?.map((order: any) => ({
+            value: order._id,
+            label: order.orderNumber || `QP-${order.orderNo}` || `Order-${order._id}`,
+        })) || [];
+
+    // Party options - सभी available parties
     const partyOptions = (company.companyName === StaticCompanyOptions[0] ? orders : qporders)
-        ?.filter((order: any) =>
-            (order.createdBy?._id === user?.id || order.createdBy === user?.id) &&
-            order?.party?._id
-        )
         ?.reduce((unique: any[], order: any) => {
-            if (order.party && !unique.find(item => item.value === order.party._id)) {
-                unique.push({
-                    value: order.party._id,
-                    label: `${order.party.partyName} - ${order.party.address?.marketName?.marketName || ''} - ${order.party.address?.area?.area || ''}`.trim() || "Party",
-                });
+            if (order.party) {
+                const partyId = order.party._id || order.party;
+                const partyName = order.party.partyName || "Unknown Party";
+                const marketName = order.party.address?.marketName?.marketName || "";
+                const area = order.party.address?.area?.area || "";
+                
+                if (!unique.find(item => item.value === partyId)) {
+                    unique.push({
+                        value: partyId,
+                        label: `${partyName} - ${marketName} - ${area}`.trim() || partyName,
+                    });
+                }
             }
             return unique;
         }, []) || [];
 
-    // Find selected party option
-    const selectedPartyOption = partyOptions.find(opt => opt.value === formik.values.party) || null;
+    // Debug के लिए
+    useEffect(() => {
+        if (editData && open) {
+            console.log("Current Form Values:", formik.values);
+            console.log("Party Options:", partyOptions);
+            console.log("Order Options:", orderOptions);
+            console.log("Edit Data Party:", editData.party);
+            console.log("Edit Data Order:", editData.scorder || editData.qporder);
+        }
+    }, [formik.values, partyOptions, orderOptions, editData, open]);
 
-    // Prepare order options - filtered by selected party
-    const orderOptions = (company.companyName === StaticCompanyOptions[0] ? orders : qporders)
-        ?.filter((order: any) =>
-            (order.createdBy?._id === user?.id || order.createdBy === user?.id) &&
-            order?.party?._id === formik.values.party
-        )
-        ?.map((order: any) => ({
-            value: order._id,
-            label: order.orderNumber || `QP-${order.orderNo}` || "Order",
-        })) || [];
-
-    // Find selected order option
-    const selectedOrderOption = orderOptions.find(opt => opt.value === formik.values.orderId) || null;
-
-    // Reset orderId when party changes
+    // Party change पर order reset करें
     useEffect(() => {
         if (formik.values.party && formik.values.orderId) {
             const selectedOrder = (company.companyName === StaticCompanyOptions[0] ? orders : qporders)
-                ?.find((order: any) => order._id === formik.values.orderId);
+                ?.find((order: any) => {
+                    const orderId = order._id;
+                    const orderPartyId = order.party?._id || order.party;
+                    return orderId === formik.values.orderId && orderPartyId === formik.values.party;
+                });
 
-            if (selectedOrder && selectedOrder.party?._id !== formik.values.party) {
+            if (!selectedOrder) {
                 formik.setFieldValue("orderId", "");
             }
         }
-    }, [formik.values.party, formik.values.orderId, orders, qporders, company.companyName]);
-
-    // Handle file selection
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const newFiles = Array.from(event.target.files || []);
-        const currentFiles = formik.values.files || [];
-        const updatedFiles = [...currentFiles, ...newFiles].slice(0, 5); // Limit to 5 files
-        formik.setFieldValue("files", updatedFiles);
-        event.target.value = ""; // Reset input to allow re-uploading same file
-    };
-
-    // Handle file removal
-    const handleRemoveFile = (index: number) => {
-        const updatedFiles = (formik.values.files || []).filter((_, i) => i !== index);
-        formik.setFieldValue("files", updatedFiles);
-    };
+    }, [formik.values.party]);
 
     return (
-        <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-            <DialogTitle>{editData ? "Edit Complaint" : "Add Complaint"}</DialogTitle>
+        <>
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+                <DialogTitle>{editData ? "Edit Complaint" : "Add Complaint"}</DialogTitle>
 
-            <form onSubmit={formik.handleSubmit}>
-                <DialogContent dividers>
-                    {/* Company Dropdown */}
-                    <Stack direction="row" spacing={2} mb={2}>
-                        <ThemeSelect
-                            label="Company"
-                            options={companies.map((item) => ({ value: item._id, label: item.companyName }))}
-                            value={companies.map((item) => ({ value: item._id, label: item.companyName })).find(opt => opt.value === company._id) || null}
-                            disabled
-                            sx={{ mb: 2 }}
-                        />
-                        <ThemeSelect
-                            label="Party"
-                            options={partyOptions}
-                            value={selectedPartyOption}
-                            onChange={(e, newValue) => {
-                                formik.setFieldValue("party", newValue?.value || "");
-                                formik.setFieldValue("orderId", ""); // Reset order when party changes
-                            }}
-                            onBlur={formik.handleBlur}
-                            error={formik.touched.party && Boolean(formik.errors.party)}
-                            helperText={formik.touched.party && formik.errors.party}
-                            sx={{ mb: 2 }}
-                        />
-                    </Stack>
+                <form onSubmit={formik.handleSubmit}>
+                    <DialogContent dividers>
+                        {/* Company Dropdown */}
+                        <Stack direction="row" spacing={2} mb={2}>
+                            <ThemeSelect
+                                label="Company"
+                                options={companies.map((item) => ({ value: item._id, label: item.companyName }))}
+                                value={companies.map((item) => ({ value: item._id, label: item.companyName })).find(opt => opt.value === company._id) || null}
+                                disabled
+                                sx={{ mb: 2 }}
+                            />
+                            <ThemeSelect
+                                label="Party"
+                                options={partyOptions}
+                                value={partyOptions.find(opt => opt.value === formik.values.party) || null}
+                                onChange={(e, newValue) => {
+                                    formik.setFieldValue("party", newValue?.value || "");
+                                    formik.setFieldValue("orderId", ""); // Reset order when party changes
+                                }}
+                                onBlur={formik.handleBlur}
+                                error={formik.touched.party && Boolean(formik.errors.party)}
+                                helperText={formik.touched.party && formik.errors.party}
+                                sx={{ mb: 2 }}
+                            />
+                        </Stack>
 
-                    {/* Order and Subject Inputs */}
-                    <Stack direction="row" spacing={2} mb={2}>
-                        <ThemeSelect
-                            label="Related Order"
-                            options={orderOptions}
-                            value={selectedOrderOption}
-                            onChange={(e, newValue) => formik.setFieldValue("orderId", newValue?.value || "")}
-                            onBlur={formik.handleBlur}
-                            error={formik.touched.orderId && Boolean(formik.errors.orderId)}
-                            helperText={formik.touched.orderId && formik.errors.orderId}
-                            disabled={!formik.values.party}
-                            sx={{ mb: 2 }}
-                        />
+                        <Stack direction="row" spacing={2} mb={2}>
+                            <ThemeSelect
+                                label="Related Order"
+                                options={orderOptions}
+                                value={orderOptions.find(opt => opt.value === formik.values.orderId) || null}
+                                onChange={(e, newValue) => formik.setFieldValue("orderId", newValue?.value || "")}
+                                onBlur={formik.handleBlur}
+                                error={formik.touched.orderId && Boolean(formik.errors.orderId)}
+                                helperText={formik.touched.orderId && formik.errors.orderId}
+                                disabled={!formik.values.party}
+                                sx={{ mb: 2 }}
+                            />
+                            <ThemeInput
+                                labelName="Complaint Subject"
+                                name="subject"
+                                value={formik.values.subject}
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                error={formik.touched.subject && Boolean(formik.errors.subject)}
+                                helperText={formik.touched.subject && formik.errors.subject}
+                                fullWidth
+                                sx={{ mb: 2 }}
+                            />
+                        </Stack>
+
                         <ThemeInput
-                            labelName="Complaint Subject"
-                            name="subject"
-                            value={formik.values.subject}
+                            labelName="Details"
+                            name="details"
+                            value={formik.values.details}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            error={formik.touched.subject && Boolean(formik.errors.subject)}
-                            helperText={formik.touched.subject && formik.errors.subject}
+                            error={formik.touched.details && Boolean(formik.errors.details)}
+                            helperText={formik.touched.details && formik.errors.details}
+                            multiline
+                            minRows={3}
                             fullWidth
                             sx={{ mb: 2 }}
                         />
-                    </Stack>
 
-                    <ThemeInput
-                        labelName="Details"
-                        name="details"
-                        value={formik.values.details}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.details && Boolean(formik.errors.details)}
-                        helperText={formik.touched.details && formik.errors.details}
-                        multiline
-                        minRows={3}
-                        fullWidth
-                        sx={{ mb: 2 }}
-                    />
-
-                    {/* File Upload Input */}
-                    <Box mb={2}>
-                        <Button
-                            variant="contained"
-                            component="label"
-                            color="primary"
-                        >
-                            Upload Files
-                            <input
-                                type="file"
-                                hidden
-                                multiple
-                                accept=".pdf,.png,.jpg,.jpeg"
-                                onChange={handleFileChange}
+                        {/* File Upload Section */}
+                        <Box mb={2}>
+                            <FileUpload
+                                ref={fileUploadRef}
+                                folder="complaints"
+                                multiple={true}
+                                accept="*/*"
+                                variant="dropzone"
+                                onFilesSelected={handleFilesSelected}
+                                onUploadError={handleUploadError}
+                                showPreview={false}
+                                showUploadButton={false}
+                                autoUpload={false}
+                                label="Attach Complaint Documents"
+                                helperText="Upload relevant documents, images, or proof related to complaint"
                             />
-                        </Button>
-                        {formik.touched.files && formik.errors.files && (
-                            <Typography color="error" variant="caption">
-                                {formik.errors.files}
-                            </Typography>
-                        )}
-                        <Box mt={1}>
-                            {(formik.values.files || []).map((file, index) => (
-                                <Stack
-                                    key={index}
-                                    direction="row"
-                                    alignItems="center"
-                                    spacing={1}
-                                    mt={1}
-                                >
-                                    <Typography variant="body2">
-                                        {typeof file === "string" ? file.split('/').pop() : file.name}
-                                    </Typography>
-                                    <IconButton
-                                        size="small"
-                                        color="error"
-                                        onClick={() => handleRemoveFile(index)}
-                                    >
-                                        <DeleteIcon />
-                                    </IconButton>
-                                </Stack>
-                            ))}
                         </Box>
-                    </Box>
 
-                    {/* Status and Response Inputs (Edit Mode) */}
-                    {editData && (
-                        <>
-                            <ThemeSelect
-                                label="Status"
-                                name="status"
-                                options={[
-                                    { value: "Pending", label: "Pending" },
-                                    { value: "In Progress", label: "In Progress" },
-                                    { value: "Completed", label: "Completed" }
-                                ]}
-                                value={{ value: formik.values.status, label: formik.values.status }}
-                                onChange={(e, newValue) => formik.setFieldValue("status", newValue?.value || "Pending")}
-                                onBlur={formik.handleBlur}
-                                error={formik.touched.status && Boolean(formik.errors.status)}
-                                helperText={formik.touched.status && formik.errors.status}
-                                sx={{ mb: 2 }}
-                            />
+                        {/* Existing files display with View Button */}
+                        {uploadedFiles.length > 0 && (
+                            <Box mb={2}>
+                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                    <Typography variant="body2" color="textSecondary">
+                                        Attached Files: {uploadedFiles.length}
+                                    </Typography>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={handleViewFiles}
+                                        sx={{ textTransform: 'none' }}
+                                    >
+                                        View All Files
+                                    </Button>
+                                </Box>
+                                <Box sx={{ maxHeight: 100, overflow: 'auto', border: '1px solid #e0e0e0', borderRadius: 1, p: 1 }}>
+                                    {uploadedFiles.map((filePath, index) => (
+                                        <Typography 
+                                            key={index} 
+                                            variant="caption" 
+                                            display="block"
+                                            sx={{ 
+                                                fontFamily: 'monospace',
+                                                fontSize: '0.75rem',
+                                                color: '#666',
+                                                py: 0.5
+                                            }}
+                                        >
+                                            {filePath.split('/').pop()}
+                                        </Typography>
+                                    ))}
+                                </Box>
+                            </Box>
+                        )}
 
-                            <ThemeInput
-                                labelName="Response"
-                                name="response"
-                                value={formik.values.response}
-                                onChange={formik.handleChange}
-                                onBlur={formik.handleBlur}
-                                error={formik.touched.response && Boolean(formik.errors.response)}
-                                helperText={formik.touched.response && formik.errors.response}
-                                multiline
-                                minRows={2}
-                                fullWidth
-                                sx={{ mb: 2 }}
-                                required={formik.values.status === "Completed"}
-                                placeholder={formik.values.status === "Completed" ? "Response is required when status is Completed" : ""}
-                            />
-                        </>
-                    )}
-                </DialogContent>
+                        {/* Status and Response - Show for edit mode */}
+                        {editData && (
+                            <>
+                                <ThemeSelect
+                                    label="Status"
+                                    name="status"
+                                    options={[
+                                        { value: "Pending", label: "Pending" },
+                                        { value: "In Progress", label: "In Progress" },
+                                        { value: "Completed", label: "Completed" }
+                                    ]}
+                                    value={{ value: formik.values.status, label: formik.values.status }}
+                                    onChange={(e, newValue) => formik.setFieldValue("status", newValue?.value || "Pending")}
+                                    onBlur={formik.handleBlur}
+                                    error={formik.touched.status && Boolean(formik.errors.status)}
+                                    helperText={formik.touched.status && formik.errors.status}
+                                    sx={{ mb: 2 }}
+                                />
 
-                <DialogActions>
-                    <Button
-                        onClick={handleClose}
-                        color="secondary"
-                        type="button"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="submit"
-                        color="primary"
-                        variant="contained"
-                        disabled={formik.isSubmitting}
-                    >
-                        {formik.isSubmitting ? "Saving..." : (editData ? "Update" : "Save")}
-                    </Button>
-                </DialogActions>
-            </form>
-        </Dialog>
+                                <ThemeInput
+                                    labelName="Response"
+                                    name="response"
+                                    value={formik.values.response}
+                                    onChange={formik.handleChange}
+                                    onBlur={formik.handleBlur}
+                                    error={formik.touched.response && Boolean(formik.errors.response)}
+                                    helperText={formik.touched.response && formik.errors.response}
+                                    multiline
+                                    minRows={2}
+                                    fullWidth
+                                    sx={{ mb: 2 }}
+                                    required={formik.values.status === "Completed"}
+                                    placeholder={formik.values.status === "Completed" ? "Response is required when status is Completed" : ""}
+                                />
+                            </>
+                        )}
+                    </DialogContent>
+
+                    <DialogActions>
+                        <Button
+                            onClick={handleClose}
+                            color="secondary"
+                            type="button"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            color="primary"
+                            variant="contained"
+                            disabled={formik.isSubmitting || fileLoading}
+                        >
+                            {(formik.isSubmitting || fileLoading) ? "Saving..." : (editData ? "Update" : "Save")}
+                        </Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
+
+            {/* View Files Dialog */}
+            <ViewFilesDialog
+                open={openFilesDialog}
+                onClose={handleCloseFilesDialog}
+                files={uploadedFiles}
+                title="Complaint Documents"
+                showDownload={true}
+                showView={true}
+                downloadEndpoint={`${process.env.NEXT_PUBLIC_API_URL}/api/filedownload/download`}
+            />
+        </>
     );
 };
 

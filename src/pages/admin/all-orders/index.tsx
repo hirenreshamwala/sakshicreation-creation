@@ -21,6 +21,7 @@ import { toast } from "react-toastify"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import AddSakhiOrderDialog from "@/component/allorderdailog"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
+import ComplainDialogue from "../all-complains/ComplainDialogue"
 
 const columns = [
   { id: "orderNumber", label: "Order No." },
@@ -33,6 +34,7 @@ const columns = [
   { id: "orderedBy", label: "Ordered By" },
   { id: "orderStatus", label: "Order Status" },
   { id: "actions", label: "Actions" },
+  { id: "complain", label: "Complain" },
 ]
 
 type OrderRow = {
@@ -100,6 +102,9 @@ const AllOrdersPage = () => {
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
+  const [complainOpen, setComplainOpen] = useState(false);
+  const [selectedOrderForComplain, setSelectedOrderForComplain] = useState<OrderRow | null>(null);
+
 
   const canViewGlobal = userData?.role?.permissions?.all_orders?.view_global
   const canViewOwn = userData?.role?.permissions?.all_orders?.view_own
@@ -159,6 +164,11 @@ const AllOrdersPage = () => {
       setActiveTab(c === "Quality Packaging" || c === "QP" ? 1 : 0)
 
   }, [c])
+
+  const handleComplainClick = (rowData: OrderRow) => {
+    setSelectedOrderForComplain(rowData);
+    setComplainOpen(true);
+  };
 
   // Filter orders based on search query, date range, and selected filters
   const filteredOrders = useMemo(() => {
@@ -670,6 +680,13 @@ const AllOrdersPage = () => {
                   </Button>
                 </Box>
               </TableCell>
+              <TableCell>
+                <ThemeButton
+                  onClick={() => handleComplainClick(row)}
+                >
+                  Complain
+                </ThemeButton>
+              </TableCell>
             </>
           )}
         />
@@ -680,6 +697,21 @@ const AllOrdersPage = () => {
         open={open}
         onClose={() => setOpen(false)}
       /> : null}
+      {complainOpen && selectedOrderForComplain && (
+        <ComplainDialogue
+          company={{
+            _id: selectedOrderForComplain.companyName._id,
+            companyName: selectedOrderForComplain.companyName.companyName
+          }}
+          open={complainOpen}
+          onClose={() => {
+            setComplainOpen(false);
+            setSelectedOrderForComplain(null);
+          }}
+          selectedOrderData={selectedOrderForComplain} // Pass the selected order data
+          // refreshData={refreshData}
+        />
+      )}
     </>
   );
 

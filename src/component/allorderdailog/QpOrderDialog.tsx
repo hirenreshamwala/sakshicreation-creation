@@ -152,19 +152,25 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     })
                 ).unwrap();
                 const partyOptions = packagingOptions.filter((opt: any) => opt.party?._id === partyId);
+
                 if (partyOptions.length > 0) {
-                    const lastOption = partyOptions[partyOptions.length - 1];
+                    // Sort by createdAt in descending order to get the latest option first
+                    const sortedOptions = partyOptions.sort((a: any, b: any) =>
+                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                    );
+                    const latestOption = sortedOptions[0];
+
                     setQpFormData((prev) => ({
                         ...prev,
-                        ply: lastOption.ply || "",
-                        uom: lastOption.uom || "",
-                        length: lastOption.length || "",
-                        width: lastOption.width || "",
-                        height: lastOption.height || "",
-                        deckal: lastOption.deckal || "",
-                        paper1GSM: lastOption.paper1GSM || "",
-                        paper2GSM: lastOption.paper2GSM || "",
-                        paper3GSM: lastOption.paper3GSM || "",
+                        ply: latestOption.ply || "",
+                        uom: latestOption.uom || "",
+                        length: latestOption.length || "",
+                        width: latestOption.width || "",
+                        height: latestOption.height || "",
+                        deckal: latestOption.deckal || "",
+                        paper1GSM: latestOption.paper1GSM || "",
+                        paper2GSM: latestOption.paper2GSM || "",
+                        paper3GSM: latestOption.paper3GSM || "",
                     }));
                 }
             } catch (error) {
