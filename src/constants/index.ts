@@ -28,6 +28,13 @@ export const permissionsArray = {
     delete: false,
     status: false,
   },
+  sell_orders: {
+    view_global: false,
+    view_own: false,
+    create: false,
+    edit: false,
+    delete: false,
+  },
   driver: {
     view_global: false,
     // view_own: false,
@@ -158,6 +165,13 @@ export const QualityPermissionsArray = {
     delete: false,
   },
   all_orders: {
+    view_global: false,
+    view_own: false,
+    create: false,
+    edit: false,
+    status: false,
+  },
+  sell_orders: {
     view_global: false,
     view_own: false,
     create: false,
