@@ -644,7 +644,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 updatePapers.paper3.length > 0 &&
                 !selectedDesigner
             ) {
-                updateData.status = 'Paper cutting & Corrugation';
+                updateData.status = 'Paper cutting';
             }
         
 
