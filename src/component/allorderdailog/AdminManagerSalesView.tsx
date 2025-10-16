@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react"
-import { Avatar, Box, IconButton, TableCell, Typography } from "@mui/material"
+import { Avatar, Box, IconButton, TableCell, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material"
 import BasicTable from "@/component/common_component/Table/themetable"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
@@ -100,6 +100,7 @@ type OrderRow = {
 
 const AdminManagerSalesView = () => {
   const [open, setOpen] = React.useState(false)
+  const [selectedRow, setSelectedRow] = useState<OrderRow | null>(null)
   const router = useRouter()
   const dispatch = useAppDispatch()
   const [editData, setEditData] = useState<OrderRow | null>(null)
@@ -127,16 +128,24 @@ const AdminManagerSalesView = () => {
     { id: "companyName", label: "Company Name" },
     { id: "party", label: "Party Name" },
     { id: "orderDate", label: "Order Date" },
+    { id: "status", label: "Status" },
+    { id: "actions", label: "Actions" },
+  ]
+
+  const allFilterableColumns = [
+    { id: "orderNo", label: "Order No" },
+    { id: "companyName", label: "Company Name" },
+    { id: "party", label: "Party Name" },
+    { id: "orderDate", label: "Order Date" },
+    { id: "status", label: "Status" },
     { id: "ply", label: "Ply" },
     { id: "size", label: "Size" },
-    { id: "uom", label: "Unit of Mesurment" },
+    { id: "uom", label: "Unit of Measurement" },
     { id: "paperGSM", label: "Paper GSM" },
     { id: "gsm", label: "GSM" },
     { id: "deckalCalculation", label: "Cal Deckal" },
     { id: "deckal", label: "Deckal" },
     { id: "noOfPieces", label: "Piece No" },
-    { id: "cuttingLength", label: "Cutting length" },
-    { id: "noOfSheetut", label: "sheet to cut" },
     { id: "ratePerPiece", label: "Rate/Piece" },
     { id: "amount", label: "Amount" },
     { id: "kgPerUnit", label: "KG Per Unit" },
@@ -146,9 +155,16 @@ const AdminManagerSalesView = () => {
     { id: "totalKantan", label: "Total Kantan" },
     { id: "kantanDeckal", label: "Kantan Dec" },
     { id: "salesRemark", label: "Sales Remarks" },
-    { id: "status", label: "Status" },
-    ...(canCreate ? [{ id: "repeatOrder", label: "Repeat Order" }] : []),
-    { id: "complain", label: "Complain" },
+    { id: "unitNo", label: "Unit No" },
+    { id: "startDate", label: "Start Date" },
+    { id: "deliveryDate", label: "Delivery Date" },
+    { id: "dyeNumber", label: "Dye Number" },
+    { id: "dyeSize", label: "Dye Sheet Size" },
+    { id: "glue", label: "Glue KG" },
+    { id: "wire", label: "Wire KG" },
+    { id: "dyeRemark", label: "Dye Remark" },
+    { id: "godownRemark", label: "Godown Remark" },
+    { id: "factoryRemark", label: "Factory Remark" },
   ]
 
   const refreshData = () => {
@@ -195,6 +211,10 @@ const AdminManagerSalesView = () => {
     setOpen(true);
   };
 
+  const handleViewDetails = (row: OrderRow) => {
+    setSelectedRow(row);
+  };
+
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString)
@@ -204,23 +224,44 @@ const AdminManagerSalesView = () => {
     }
   }
 
-  // Prepare Excel headers
-  const excelHeaders = useMemo(() => {
-    const tableHeaders = columns.map((col) => col.label);
-    const expandedHeaders = [
-      "Unit No",
-      "Start Date",
-      "Delivery Date",
-      "Dye Number",
-      "Dye Sheet Size",
-      "Glue KG",
-      "Wire KG",
-      "Dye Remark",
-      "Godown Remark",
-      "Factory Remark",
-    ];
-    return [...tableHeaders, ...expandedHeaders];
-  }, []);
+  // Prepare Excel headers (full set to match excelData)
+  const excelHeaders = useMemo(() => [
+    "Order No",
+    "Company Name",
+    "Party Name",
+    "Order Date",
+    "Ply",
+    "Unit of Measurement",
+    "Size",
+    "Paper GSM",
+    "GSM",
+    "Cal Deckal",
+    "Deckal",
+    "Piece No",
+    "Cutting length",
+    "sheet to cut",
+    "Rate/Piece",
+    "Amount",
+    "KG Per Unit",
+    "Total KG",
+    "Kantan",
+    "Kantan/Piece",
+    "Total Kantan",
+    "Kantan Dec",
+    "Sales Remarks",
+    "Status",
+    "Unit No",
+    "Start Date",
+    "Delivery Date",
+    "Dye Number",
+    "Dye Sheet Size",
+    "Glue KG",
+    "Wire KG",
+    "Dye Remark",
+    "Godown Remark",
+    "Factory Remark",
+    "Actual no of piece",
+  ], []);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order: any) => {
@@ -273,6 +314,9 @@ const AdminManagerSalesView = () => {
             break
           case "orderDate":
             value = formatDate(order.createdAt) || "N/A"
+            break
+          case "status":
+            value = order.status
             break
           case "ply":
             value = order.orderdata?.ply
@@ -327,8 +371,35 @@ const AdminManagerSalesView = () => {
           case "salesRemark":
             value = order.salesRemark
             break
-          case "status":
-            value = order.status
+          case "unitNo":
+            value = order.unitNo
+            break
+          case "startDate":
+            value = order.startDate ? formatDate(order.startDate) : "N/A"
+            break
+          case "deliveryDate":
+            value = order.deliveryDate ? formatDate(order.deliveryDate) : "N/A"
+            break
+          case "dyeNumber":
+            value = order.dyeNumber
+            break
+          case "dyeSize":
+            value = order.dyeSize
+            break
+          case "glue":
+            value = order.glue
+            break
+          case "wire":
+            value = order.wire
+            break
+          case "dyeRemark":
+            value = order.dyeRemark
+            break
+          case "godownRemark":
+            value = order.godownRemark
+            break
+          case "factoryRemark":
+            value = order.factoryRemark
             break
         }
         return value && filters[columnId].includes(value.toString())
@@ -379,7 +450,7 @@ const AdminManagerSalesView = () => {
 
   const getUniqueValues = useMemo(() => {
     if (!selectedFilterField) return []
-    const columnId = columns.find(col => col.label === selectedFilterField)?.id
+    const columnId = allFilterableColumns.find(col => col.label === selectedFilterField)?.id
     if (!columnId) return []
 
     const values = orders.map((order: any) => {
@@ -397,6 +468,9 @@ const AdminManagerSalesView = () => {
         case "orderDate":
           value = formatDate(order.createdAt) || "N/A"
           break
+        case "status":
+          value = order.status
+          break
         case "ply":
           value = order.orderdata?.ply
           break
@@ -405,7 +479,7 @@ const AdminManagerSalesView = () => {
           value = order.size?.size || `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`
           break
         case "uom":
-          value = order.uom?.uom
+          value = order.orderdata?.uom
           break
         case "paperGSM":
           // Format paper GSM same as displayed in table: "paper1GSM x paper2GSM x paper3GSM"
@@ -450,8 +524,35 @@ const AdminManagerSalesView = () => {
         case "salesRemark":
           value = order.salesRemark
           break
-        case "status":
-          value = order.status
+        case "unitNo":
+          value = order.unitNo
+          break
+        case "startDate":
+          value = order.startDate ? formatDate(order.startDate) : "N/A"
+          break
+        case "deliveryDate":
+          value = order.deliveryDate ? formatDate(order.deliveryDate) : "N/A"
+          break
+        case "dyeNumber":
+          value = order.dyeNumber
+          break
+        case "dyeSize":
+          value = order.dyeSize
+          break
+        case "glue":
+          value = order.glue
+          break
+        case "wire":
+          value = order.wire
+          break
+        case "dyeRemark":
+          value = order.dyeRemark
+          break
+        case "godownRemark":
+          value = order.godownRemark
+          break
+        case "factoryRemark":
+          value = order.factoryRemark
           break
       }
       return value?.toString() || "N/A"
@@ -488,6 +589,17 @@ const AdminManagerSalesView = () => {
   }, [error, dispatch]);
 
   if (loading) return <Loader />
+
+  const renderField = (label: string, value: string | number | JSX.Element) => (
+    <Box display="flex" justifyContent="flex-start" alignItems="center" minHeight={40} gap={0.5}>
+      <Typography variant="body2" fontWeight={500} color="#111827" sx={{ minWidth: '180px' }}>
+        {label}:
+      </Typography>
+      <Typography fontSize="14px" color="#6B7280">
+        {value}
+      </Typography>
+    </Box>
+  );
 
   return (
     <>
@@ -539,14 +651,14 @@ const AdminManagerSalesView = () => {
             />
           </Box>
           <FilterDropdown
-            filterOptions={columns
-              .filter((col) => col.id !== "action")
+            filterOptions={allFilterableColumns
+              .filter((col) => col.id !== "actions")
               .map((col) => col.label)}
             uniqueValues={selectedFilterField ? getUniqueValues : []}
             onFiltersChange={(newFilters) => {
               const idBasedFilters: { [key: string]: string[] } = {}
               Object.entries(newFilters).forEach(([label, values]) => {
-                const columnId = columns.find(col => col.label === label)?.id
+                const columnId = allFilterableColumns.find(col => col.label === label)?.id
                 if (columnId) {
                   idBasedFilters[columnId] = values
                 }
@@ -554,7 +666,7 @@ const AdminManagerSalesView = () => {
               setFilters(idBasedFilters)
             }}
             filters={Object.keys(filters).reduce((acc, columnId) => {
-              const columnLabel = columns.find(col => col.id === columnId)?.label
+              const columnLabel = allFilterableColumns.find(col => col.id === columnId)?.label
               if (columnLabel) {
                 acc[columnLabel] = filters[columnId]
               }
@@ -617,127 +729,79 @@ const AdminManagerSalesView = () => {
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.orderdata?.ply || "N/A"}
+                  {row.status}
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.size?.size || `${row.orderdata?.length || "N/A"} x ${row.orderdata?.width || "N/A"} x ${row.orderdata?.height || "N/A"}`}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.orderdata?.uom || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.orderdata?.paper1GSM || "N/A"} x {row.orderdata?.paper2GSM || "N/A"} x {row.orderdata?.paper3GSM || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.gsm || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.deckalCalculation || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.orderdata?.deckal || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.noOfPieces || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.orderdata?.length && row.orderdata?.width
-                    ? Number(row.orderdata.length) + Number(row.orderdata.width) + 2
-                    : "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.noOfPieces
-                    ? Number(row.noOfPieces) * 2
-                    : "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.ratePerPiece ? `${row.ratePerPiece}` : "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.amount || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.kgPerUnit || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.totalKg || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.kantan?.kantanName || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.kantanPerUnit || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.totalKantan ? `${row.totalKantan.reel} reel ${row.totalKantan.inch} inch` : "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.kantanDeckal || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.salesRemark || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                {row.status}
-                {/* <StatusCell row={row} /> */}
-              </TableCell>
-              {canCreate && (
-                <TableCell>
+                <Box display="flex" gap={1} flexWrap="wrap">
                   <ThemeButton
-                    onClick={() => handleRepeatOrder(row)}
+                    size="small"
+                    onClick={() => handleViewDetails(row)}
                   >
-                    Repeat Order
+                    View Details
                   </ThemeButton>
-                </TableCell>
-              )}
-              <TableCell>
-                <ThemeButton
-                  onClick={() => handleComplainClick(row)}
-                >
-                  Complain
-                </ThemeButton>
+                  {canCreate && (
+                    <ThemeButton
+                      size="small"
+                      onClick={() => handleRepeatOrder(row)}
+                    >
+                      Repeat Order
+                    </ThemeButton>
+                  )}
+                  <ThemeButton
+                    size="small"
+                    onClick={() => handleComplainClick(row)}
+                  >
+                    Complain
+                  </ThemeButton>
+                </Box>
               </TableCell>
             </>);
           }}
         />
       </Box>
+
+      {selectedRow && (
+        <Dialog
+          open={true}
+          onClose={() => setSelectedRow(null)}
+          maxWidth="lg"
+          fullWidth
+        >
+          <DialogTitle>Order Details - QP-{selectedRow.orderNo}</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, p: 1 }}>
+              {renderField("Ply", selectedRow.orderdata?.ply || "N/A")}
+              {renderField("Size", selectedRow.size?.size || `${selectedRow.orderdata?.length || "N/A"} x ${selectedRow.orderdata?.width || "N/A"} x ${selectedRow.orderdata?.height || "N/A"}`)}
+              {renderField("Unit of Measurement", selectedRow.orderdata?.uom || "N/A")}
+              {renderField("Paper GSM", `${selectedRow.orderdata?.paper1GSM || "N/A"} x ${selectedRow.orderdata?.paper2GSM || "N/A"} x ${selectedRow.orderdata?.paper3GSM || "N/A"}`)}
+              {renderField("GSM", selectedRow.gsm || "N/A")}
+              {renderField("Cal Deckal", selectedRow.deckalCalculation || "N/A")}
+              {renderField("Deckal", selectedRow.orderdata?.deckal || "N/A")}
+              {renderField("Piece No", selectedRow.noOfPieces || "N/A")}
+              {renderField("Cutting Length", selectedRow.orderdata?.length && selectedRow.orderdata?.width
+                ? Number(selectedRow.orderdata.length) + Number(selectedRow.orderdata.width) + 2
+                : "N/A")}
+              {renderField("Sheet to Cut", selectedRow.noOfPieces
+                ? Number(selectedRow.noOfPieces) * 2
+                : "N/A")}
+              {renderField("Rate/Piece", selectedRow.ratePerPiece ? `${selectedRow.ratePerPiece}` : "N/A")}
+              {renderField("Amount", selectedRow.amount || "N/A")}
+              {renderField("KG Per Unit", selectedRow.kgPerUnit || "N/A")}
+              {renderField("Total KG", selectedRow.totalKg || "N/A")}
+              {renderField("Kantan", selectedRow.kantan?.kantanName || "N/A")}
+              {renderField("Kantan/Piece", selectedRow.kantanPerUnit || "N/A")}
+              {renderField("Total Kantan", selectedRow.totalKantan ? `${selectedRow.totalKantan.reel} reel ${selectedRow.totalKantan.inch} inch` : "N/A")}
+              {renderField("Kantan Dec", selectedRow.kantanDeckal || "N/A")}
+              {renderField("Sales Remarks", selectedRow.salesRemark || "N/A")}
+              {renderField("Status", selectedRow.status)}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setSelectedRow(null)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {open && (
         <>

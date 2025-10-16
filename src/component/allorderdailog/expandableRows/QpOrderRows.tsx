@@ -214,15 +214,15 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
         // Create a map to track available quantities for each paper
         const paperQuantities: Record<string, number> = {};
-        availablePapers.forEach((paper:any) => {
-            paperQuantities[paper._id] = Number(paper.kg) - (paper.allocations.length ? paper.allocations?.filter((item:any) => item.qpOrder !== row._id)?.reduce((sum:any, item:any) => sum + item.allocatedKg, 0) : 0); // -----------------------
+        availablePapers.forEach((paper: any) => {
+            paperQuantities[paper._id] = Number(paper.kg) - (paper.allocations.length ? paper.allocations?.filter((item: any) => item.qpOrder !== row._id)?.reduce((sum: any, item: any) => sum + item.allocatedKg, 0) : 0); // -----------------------
         });
 
         // Function to calculate allocations for a single paper type
         const calculateForType = (paperType: keyof typeof paperSelections, requiredKg: number) => {
 
             const papers = paperSelections[paperType]
-                .map((paperId:any) => availablePapers.find(p => p._id === paperId))
+                .map((paperId: any) => availablePapers.find(p => p._id === paperId))
                 .filter(Boolean) as InventoryPaper[];
 
             let remainingRequired = requiredKg;
@@ -294,7 +294,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [paperSelections, paperRequirements, availablePapers]);
 
     // Memoize the allocations calculation
-    const allAllocations:any = useMemo(() => calculateAllPaperAllocations(), [
+    const allAllocations: any = useMemo(() => calculateAllPaperAllocations(), [
         calculateAllPaperAllocations
     ]);
 
@@ -448,7 +448,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     // Helper function to calculate allocations for a paper type
     const calculatePaperAllocations = useCallback((paperType: keyof typeof paperSelections, requiredKg: number) => {
         const papers = paperSelections[paperType]
-            .map((paperId:any) => availablePapers.find(p => p._id === paperId))
+            .map((paperId: any) => availablePapers.find(p => p._id === paperId))
             .filter(Boolean) as InventoryPaper[];
 
         let remainingRequired = requiredKg;
@@ -496,11 +496,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [paperSelections, availablePapers, getAllocatedQuantity]);
 
     useEffect(() => {
-        const newActuals1:any = { paper1: [], paper2: [], paper3: [] };
+        const newActuals1: any = { paper1: [], paper2: [], paper3: [] };
 
         (["paper1", "paper2", "paper3"] as const).forEach(pt => {
             paperSelections[pt].forEach((paperId: any) => {
-                const allocation: any = allAllocations[pt]?.allocations?.find((a:any) => a.paperId === paperId);
+                const allocation: any = allAllocations[pt]?.allocations?.find((a: any) => a.paperId === paperId);
                 if (allocation) {
                     newActuals1[pt].push({ paperId, allocatedKg: allocation.allocatedKg });
                 }
@@ -568,11 +568,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 paper3: paper3Allocations
             };
 
-            const newActuals1:any = { paper1: [], paper2: [], paper3: [] };
+            const newActuals1: any = { paper1: [], paper2: [], paper3: [] };
 
             (["paper1", "paper2", "paper3"] as const).forEach(pt => {
                 paperSelections[pt].forEach((paperId: any) => {
-                    const allocation: any = allAllocations[pt]?.allocations?.find((a:any) => a.paperId === paperId);
+                    const allocation: any = allAllocations[pt]?.allocations?.find((a: any) => a.paperId === paperId);
                     if (allocation) {
                         newActuals1[pt].push({ paperId, allocatedKg: allocation.allocatedKg });
                     }
@@ -625,289 +625,305 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             const rowPapers = row.selectedPapers
             const updatePapers = updateData.selectedPapers
 
-            if (selectedDesigner && row.status === 'In Progress') {
-                updateData.status = 'Designer'
+            if (rowPapers.paper1.length === 0 &&
+                rowPapers.paper2.length === 0 &&
+                rowPapers.paper3.length === 0 &&
+                updatePapers.paper1.length > 0 &&
+                updatePapers.paper2.length > 0 &&
+                updatePapers.paper3.length > 0 &&
+                selectedDesigner
+            ) {
+                updateData.status = 'Designer';
             }
-            // If no designer but papers are selected, use the original paper cutting status
-            else if (rowPapers.paper1.length === 0 && rowPapers.paper2.length === 0 && rowPapers.paper3.length === 0 && row.status === 'In Progress' && updatePapers.paper1.length > 0 && updatePapers.paper2.length > 0 && updatePapers.paper3.length > 0) {
-                updateData.status = 'Paper cutting & Corrugation'
+            else if (
+                rowPapers.paper1.length === 0 &&
+                rowPapers.paper2.length === 0 &&
+                rowPapers.paper3.length === 0 &&
+                updatePapers.paper1.length > 0 &&
+                updatePapers.paper2.length > 0 &&
+                updatePapers.paper3.length > 0 &&
+                !selectedDesigner
+            ) {
+                updateData.status = 'Paper cutting & Corrugation';
             }
+        
+
 
             await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
 
-            dispatch(getAllInventoryThunk());
+        dispatch(getAllInventoryThunk());
 
-            setInitialFormData({ ...formData, selectedPapers: selectedPapersForApi });
-            if (formData.status === "Completed") setIsCompleted(true);
+        setInitialFormData({ ...formData, selectedPapers: selectedPapersForApi });
+        if (formData.status === "Completed") setIsCompleted(true);
 
-            toast.success("Order updated successfully");
-        } catch (err: any) {
-            console.error("ExpandedRowForm: Update failed:", err);
-            toast.error(err?.message || "Failed to update order");
-        }
+        toast.success("Order updated successfully");
+    } catch (err: any) {
+        console.error("ExpandedRowForm: Update failed:", err);
+        toast.error(err?.message || "Failed to update order");
     }
+}
 
-    const handleCancel = useCallback(() => {
-        setFormData(initialFormData);
-        setIsInitialUnitSet(!!initialFormData.unitNo);
-        // setIsActualNoOfPiecesUpdated(!!initialFormData.actualNoOfPieces);
+const handleCancel = useCallback(() => {
+    setFormData(initialFormData);
+    setIsInitialUnitSet(!!initialFormData.unitNo);
+    // setIsActualNoOfPiecesUpdated(!!initialFormData.actualNoOfPieces);
 
-        // Reset paper selections to initial values
-        const initialSelections: any = extractInventoryIds(initialFormData.selectedPapers);
-        setPaperSelections(initialSelections);
-        toast.info("Changes cancelled");
-    }, [initialFormData, row.printer, row.binder, extractInventoryIds]);
+    // Reset paper selections to initial values
+    const initialSelections: any = extractInventoryIds(initialFormData.selectedPapers);
+    setPaperSelections(initialSelections);
+    toast.info("Changes cancelled");
+}, [initialFormData, row.printer, row.binder, extractInventoryIds]);
 
-    useEffect(() => {
-        const summaries: Record<string, string[]> = { paper1: [], paper2: [], paper3: [] };
+useEffect(() => {
+    const summaries: Record<string, string[]> = { paper1: [], paper2: [], paper3: [] };
 
-        ["paper1", "paper2", "paper3"].forEach((type) => {
-            const allocations = allAllocations[type]?.allocations || [];
-            const selections = paperSelections[type] || [];
+    ["paper1", "paper2", "paper3"].forEach((type) => {
+        const allocations = allAllocations[type]?.allocations || [];
+        const selections = paperSelections[type] || [];
 
-            selections.forEach((paperId:any) => {
-                const paper = availablePapers.find((p) => p._id === paperId);
-                const alloc = allocations.find((a:any) => a.paperId === paperId);
-                if (!paper || !alloc) return;
+        selections.forEach((paperId: any) => {
+            const paper = availablePapers.find((p) => p._id === paperId);
+            const alloc = allocations.find((a: any) => a.paperId === paperId);
+            if (!paper || !alloc) return;
 
-                // Base used KG = allocated in this order
-                let usedKg = alloc.allocatedKg || 0;
+            // Base used KG = allocated in this order
+            let usedKg = alloc.allocatedKg || 0;
 
-                // Adjust used KG if GSM matches other papers
-                const gsm1 = Number(row.paperKG.paper1.gsm);
-                const gsm2 = Number(row.paperKG.paper2.gsm);
-                const gsm3 = Number(row.paperKG.paper3.gsm);
+            // Adjust used KG if GSM matches other papers
+            const gsm1 = Number(row.paperKG.paper1.gsm);
+            const gsm2 = Number(row.paperKG.paper2.gsm);
+            const gsm3 = Number(row.paperKG.paper3.gsm);
 
-                if (type === "paper2" && gsm1 === gsm2) {
-                    const relatedAlloc = newAllocations.paper1?.find((x:any) => x.paperId === paperId);
-                    if (relatedAlloc) usedKg += relatedAlloc.allocatedKg;
+            if (type === "paper2" && gsm1 === gsm2) {
+                const relatedAlloc = newAllocations.paper1?.find((x: any) => x.paperId === paperId);
+                if (relatedAlloc) usedKg += relatedAlloc.allocatedKg;
+            }
+
+            if (type === "paper3") {
+                if (gsm3 === gsm1) {
+                    const related1 = newAllocations.paper1?.find((x: any) => x.paperId === paperId);
+                    if (related1) usedKg += related1.allocatedKg;
                 }
-
-                if (type === "paper3") {
-                    if (gsm3 === gsm1) {
-                        const related1 = newAllocations.paper1?.find((x:any) => x.paperId === paperId);
-                        if (related1) usedKg += related1.allocatedKg;
-                    }
-                    if (gsm3 === gsm2) {
-                        const related2 = newAllocations.paper2?.find((x:any) => x.paperId === paperId);
-                        if (related2) usedKg += related2.allocatedKg;
-                    }
+                if (gsm3 === gsm2) {
+                    const related2 = newAllocations.paper2?.find((x: any) => x.paperId === paperId);
+                    if (related2) usedKg += related2.allocatedKg;
                 }
+            }
 
-                summaries[type].push(`${usedKg.toFixed(2)} KG used from ${paper.kg.toFixed(0)} KG roll`);
-            });
+            summaries[type].push(`${usedKg.toFixed(2)} KG used from ${paper.kg.toFixed(0)} KG roll`);
         });
+    });
 
-        setPaperUsageSummary(summaries);
-    }, [paperSelections, allAllocations, availablePapers, newAllocations, row.paperKG]);
+    setPaperUsageSummary(summaries);
+}, [paperSelections, allAllocations, availablePapers, newAllocations, row.paperKG]);
 
 
-    return (
-        <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
-            <form onSubmit={handleSubmit}>
-                <Stack spacing={2}>
-                    <Stack direction="row" spacing={2}>
-                        <TextField
-                            select
-                            label="Unit No"
-                            value={formData.unitNo || ""}
-                            onChange={(e) => {
-                                handleFormChange("unitNo", e.target.value);
-                                if (!formData.startDate) {
-                                    handleFormChange("startDate", moment().format("YYYY-MM-DD"));
-                                }
-                            }}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 80 }}
-                            disabled={isCompleted}
-                        >
-                            <MenuItem value="Unit1">Unit1</MenuItem>
-                            <MenuItem value="Unit2">Unit2</MenuItem>
-                        </TextField>
+return (
+    <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
+        <form onSubmit={handleSubmit}>
+            <Stack spacing={2}>
+                <Stack direction="row" spacing={2}>
+                    <TextField
+                        select
+                        label="Unit No"
+                        value={formData.unitNo || ""}
+                        onChange={(e) => {
+                            handleFormChange("unitNo", e.target.value);
+                            if (!formData.startDate) {
+                                handleFormChange("startDate", moment().format("YYYY-MM-DD"));
+                            }
+                        }}
+                        variant="outlined"
+                        size="small"
+                        sx={{ minWidth: 80 }}
+                        disabled={isCompleted}
+                    >
+                        <MenuItem value="Unit1">Unit1</MenuItem>
+                        <MenuItem value="Unit2">Unit2</MenuItem>
+                    </TextField>
 
-                        <TextField
-                            label="Start Date"
-                            type="date"
-                            value={formData.startDate}
-                            onChange={(e) => handleFormChange("startDate", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            InputLabelProps={{ shrink: true }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Delivery Date"
-                            type="date"
-                            value={formData.deliveryDate}
-                            onChange={(e) => handleFormChange("deliveryDate", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            InputLabelProps={{ shrink: true }}
-                            inputProps={{
-                                min: moment().format("YYYY-MM-DD"), // Restrict to today or future dates
-                            }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Dye Number"
-                            value={formData.dyeNumber}
-                            onChange={(e) => handleFormChange("dyeNumber", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Dye Sheet Size"
-                            value={formData.dyeSize}
-                            onChange={(e) => handleFormChange("dyeSize", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Glue KG"
-                            value={formData.glue}
-                            onChange={(e) => handleFormChange("glue", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Wire KG"
-                            value={formData.wire}
-                            onChange={(e) => handleFormChange("wire", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Actual No. of Pieces"
-                            value={formData.actualNoOfPieces}
-                            onChange={(e) => handleFormChange("actualNoOfPieces", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            select
-                            label="Status"
-                            value={formData.status}
-                            onChange={(e) => handleFormChange("status", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            disabled={isCompleted}
-                        >
-                            {ORDER_STATUSES.map((item) => (
-                                <MenuItem key={item} value={item}>
-                                    {item}
-                                </MenuItem>
-                            ))}
-                        </TextField>
-                    </Stack>
-                    <PaperAssign
-                        row={row}
-                        isCompleted={isCompleted}
-                        paperRequirements={paperRequirements}
-                        allAllocations={allAllocations}
-                        paperSelections={paperSelections}
-                        isPaperSelectionRequired={isPaperSelectionRequired}
-                        newAllocations={newAllocations}
-                        availablePapers={availablePapers}
-                        setPaperSelections={setPaperSelections}
+                    <TextField
+                        label="Start Date"
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => handleFormChange("startDate", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ minWidth: 100 }}
+                        InputLabelProps={{ shrink: true }}
+                        disabled={isCompleted}
                     />
-
-                    <PaperSelection
-                        setSelectedPrinter={setSelectedPrinter}
-                        setSelectedBinder={setSelectedBinder}
-                        setSelectedDesigner={setSelectedDesigner}
-                        isCompleted={isCompleted}
-                        selectedPrinter={selectedPrinter}
-                        printers={printers}
-                        staffLoading={staffLoading}
-                        selectedBinder={selectedBinder}
-                        selectedDesigner={selectedDesigner}
-                        binders={binders}
-                        designers={designers}
-                        data={row}
+                    <TextField
+                        label="Delivery Date"
+                        type="date"
+                        value={formData.deliveryDate}
+                        onChange={(e) => handleFormChange("deliveryDate", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ minWidth: 100 }}
+                        InputLabelProps={{ shrink: true }}
+                        inputProps={{
+                            min: moment().format("YYYY-MM-DD"), // Restrict to today or future dates
+                        }}
+                        disabled={isCompleted}
                     />
-
-                    <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
-                        <TextField
-                            label="Dye Remark"
-                            value={formData.dyeRemark}
-                            onChange={(e) => handleFormChange("dyeRemark", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            multiline
-                            rows={2}
-                            sx={{ flex: 1, minWidth: 150 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Godown Remark"
-                            value={formData.godownRemark}
-                            onChange={(e) => handleFormChange("godownRemark", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            multiline
-                            rows={2}
-                            sx={{ flex: 1, minWidth: 150 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Factory Remark"
-                            value={formData.factoryRemark}
-                            onChange={(e) => handleFormChange("factoryRemark", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            multiline
-                            rows={2}
-                            sx={{ flex: 1, minWidth: 150 }}
-                            disabled={isCompleted}
-                        />
-                    </Stack>
-
-                    <Stack direction="row" spacing={2}>
-                        <ThemeButton
-                            type="submit"
-                            disabled={isCompleted || (isPaperSelectionRequired && !arePaperSelectionsValid())}
-                        >
-                            Submit
-                        </ThemeButton>
-                        <ThemeButton type="button" disabled={isCompleted} onClick={handleCancel} variant="outlined">
-                            Cancel
-                        </ThemeButton>
-                        <ThemeButton
-                            type="button"
-                            disabled={isCompleted}
-                            onClick={() => {
-                                setEditData(row);
-                                setOpen(true);
-                            }}
-                        >
-                            Edit
-                        </ThemeButton>
-                        <ThemeButton
-                            type="button"
-                            variant="outlined"
-                            onClick={() => setViewRemarksOpen(true)}
-                        >
-                            View Remarks
-                        </ThemeButton>
-                    </Stack>
+                    <TextField
+                        label="Dye Number"
+                        value={formData.dyeNumber}
+                        onChange={(e) => handleFormChange("dyeNumber", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ minWidth: 100 }}
+                        disabled={isCompleted}
+                    />
+                    <TextField
+                        label="Dye Sheet Size"
+                        value={formData.dyeSize}
+                        onChange={(e) => handleFormChange("dyeSize", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ minWidth: 100 }}
+                        disabled={isCompleted}
+                    />
+                    <TextField
+                        label="Glue KG"
+                        value={formData.glue}
+                        onChange={(e) => handleFormChange("glue", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ minWidth: 100 }}
+                        disabled={isCompleted}
+                    />
+                    <TextField
+                        label="Wire KG"
+                        value={formData.wire}
+                        onChange={(e) => handleFormChange("wire", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ minWidth: 100 }}
+                        disabled={isCompleted}
+                    />
+                    <TextField
+                        label="Actual No. of Pieces"
+                        value={formData.actualNoOfPieces}
+                        onChange={(e) => handleFormChange("actualNoOfPieces", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ minWidth: 100 }}
+                        disabled={isCompleted}
+                    />
+                    <TextField
+                        select
+                        label="Status"
+                        value={formData.status}
+                        onChange={(e) => handleFormChange("status", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ minWidth: 100 }}
+                        disabled={isCompleted}
+                    >
+                        {ORDER_STATUSES.map((item) => (
+                            <MenuItem key={item} value={item}>
+                                {item}
+                            </MenuItem>
+                        ))}
+                    </TextField>
                 </Stack>
-            </form>
-            <RemarkModal remarkModalOpen={remarkModalOpen} setRemarkModalOpen={setRemarkModalOpen} remarkType={remarkType} setRemarkType={setRemarkType} remarkText={remarkText} setRemarkText={setRemarkText} handleRemarkSubmit={handleRemarkSubmit} setTempStartDate={setTempStartDate} />
-            <ViewRemark viewRemarksOpen={viewRemarksOpen} setViewRemarksOpen={setViewRemarksOpen} formData={formData} />
-        </Box>
-    );
+                <PaperAssign
+                    row={row}
+                    isCompleted={isCompleted}
+                    paperRequirements={paperRequirements}
+                    allAllocations={allAllocations}
+                    paperSelections={paperSelections}
+                    isPaperSelectionRequired={isPaperSelectionRequired}
+                    newAllocations={newAllocations}
+                    availablePapers={availablePapers}
+                    setPaperSelections={setPaperSelections}
+                />
+
+                <PaperSelection
+                    setSelectedPrinter={setSelectedPrinter}
+                    setSelectedBinder={setSelectedBinder}
+                    setSelectedDesigner={setSelectedDesigner}
+                    isCompleted={isCompleted}
+                    selectedPrinter={selectedPrinter}
+                    printers={printers}
+                    staffLoading={staffLoading}
+                    selectedBinder={selectedBinder}
+                    selectedDesigner={selectedDesigner}
+                    binders={binders}
+                    designers={designers}
+                    data={row}
+                />
+
+                <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
+                    <TextField
+                        label="Dye Remark"
+                        value={formData.dyeRemark}
+                        onChange={(e) => handleFormChange("dyeRemark", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        multiline
+                        rows={2}
+                        sx={{ flex: 1, minWidth: 150, maxWidth: 350 }}
+                        disabled={isCompleted}
+                    />
+                    <TextField
+                        label="Godown Remark"
+                        value={formData.godownRemark}
+                        onChange={(e) => handleFormChange("godownRemark", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        multiline
+                        rows={2}
+                        sx={{ flex: 1, minWidth: 150, maxWidth: 350 }}
+                        disabled={isCompleted}
+                    />
+                    <TextField
+                        label="Factory Remark"
+                        value={formData.factoryRemark}
+                        onChange={(e) => handleFormChange("factoryRemark", e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        multiline
+                        rows={2}
+                        sx={{ flex: 1, minWidth: 150, maxWidth: 350 }}
+                        disabled={isCompleted}
+                    />
+                </Stack>
+
+                <Stack direction="row" spacing={2}>
+                    <ThemeButton
+                        type="submit"
+                        disabled={isCompleted || (isPaperSelectionRequired && !arePaperSelectionsValid())}
+                    >
+                        Submit
+                    </ThemeButton>
+                    <ThemeButton type="button" disabled={isCompleted} onClick={handleCancel} variant="outlined">
+                        Cancel
+                    </ThemeButton>
+                    <ThemeButton
+                        type="button"
+                        disabled={isCompleted}
+                        onClick={() => {
+                            setEditData(row);
+                            setOpen(true);
+                        }}
+                    >
+                        Edit
+                    </ThemeButton>
+                    <ThemeButton
+                        type="button"
+                        variant="outlined"
+                        onClick={() => setViewRemarksOpen(true)}
+                    >
+                        View Remarks
+                    </ThemeButton>
+                </Stack>
+            </Stack>
+        </form>
+        <RemarkModal remarkModalOpen={remarkModalOpen} setRemarkModalOpen={setRemarkModalOpen} remarkType={remarkType} setRemarkType={setRemarkType} remarkText={remarkText} setRemarkText={setRemarkText} handleRemarkSubmit={handleRemarkSubmit} setTempStartDate={setTempStartDate} />
+        <ViewRemark viewRemarksOpen={viewRemarksOpen} setViewRemarksOpen={setViewRemarksOpen} formData={formData} />
+    </Box>
+);
 };
