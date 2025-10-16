@@ -24,6 +24,8 @@ import type { CreateAssignTask, UpdateAssignTask } from "@/services/assignTask.s
 import Swal from "sweetalert2";
 import CompanySelect from "../reusablecomponents/CompanyWithPartyName";
 import { useRouter } from "next/router";
+import { toast } from "react-toastify";
+import { StaticCompanyOptions } from "@/constants";
 
 interface OptionType {
   label: string;
@@ -41,6 +43,9 @@ interface AssignTaskDialogProps {
   taskId?: string | null;
   selectedParties?: Party[];
   refreshData?: () => void;
+  toggleScDialog?: any;
+  toggleQpDialog?: any;
+  companyTab?: any;
 }
 
 
@@ -52,7 +57,10 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   selectedParties = [],
   refreshData,
   partyOptions,
-  companyOptions
+  companyOptions,
+  toggleScDialog,
+  toggleQpDialog,
+  companyTab
 }) => {
   const router = useRouter()
   const dispatch = useAppDispatch();
@@ -105,16 +113,8 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
       ),
       feedback: isEditMode
         ? Yup.string()
-          .required("Feedback is required while editing")
-          .test(
-            'min-words',
-            'Feedback must be at least 20 words',
-            (value) => {
-              if (!value) return false;
-              const wordCount = value.trim().split(/\s+/).length;
-              return wordCount >= 20;
-            }
-          )
+          .required('Call feedback is required')
+          .min(20, 'Call feedback must be at least 20 characters')
         : Yup.string(),
       status: Yup.string().required("Status is required"),
       rescheduleDate: Yup.string().when("status", {
@@ -175,12 +175,17 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
               } as UpdateAssignTask,
             })
           ).unwrap();
-          Swal.fire({
-            title: "Success!",
-            text: "Task updated successfully",
-            icon: "success",
-            confirmButtonColor: "#7F56D9",
-          });
+          toast.success("Task updated successfully")
+          // Swal.fire({
+          //   title: "Success!",
+          //   text: "Task updated successfully",
+          //   icon: "success",
+          //   confirmButtonColor: "#7F56D9",
+          // });
+
+          console.log(values.reasonForVisit, 'values.reasonForVisit', StaticCompanyOptions, companyTab, "companyTab", values.status)
+          if (values.reasonForVisit === "Order" && companyTab === 0 && values.status === "Completed") toggleScDialog()
+          if (values.reasonForVisit === "Order" && companyTab === 1 && values.status === "Completed") toggleQpDialog()
           if (refreshData) refreshData();
         } else if (isBulkMode) {
           const tasks = selectedParties.map((party) => ({

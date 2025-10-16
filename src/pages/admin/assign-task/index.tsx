@@ -37,6 +37,8 @@ import { getCompanyWisePermission } from "@/utills/utills";
 import { useRouter } from "next/router";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { StaticCompanyOptions } from "@/constants";
+import AddQPOrderDialog from "@/component/allorderdailog/QpOrderDialog";
+import AddSakhiOrderDialog from "@/component/allorderdailog";
 
 interface RowData {
   id: string;
@@ -91,8 +93,11 @@ const AssignTaskPage: React.FC = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [scDialog, setScDialog] = useState(false)
+  const [qpDialog, setQpDialog] = useState(false)
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusTab, setStatusTab] = useState(0);
+  const [tempEditId, setTempEditId] = useState(null)
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(
     null
   );
@@ -105,6 +110,8 @@ const AssignTaskPage: React.FC = () => {
   const cancreate = user?.role?.permissions?.assign_task?.create;
   const canedit = user?.role?.permissions?.assign_task?.edit;
   const candelete = user?.role?.permissions?.assign_task?.delete;
+
+  console.log(assignTasks, 'assignTasks')
 
   // Determine company permissions
   const hasSakshi = !!getCompanyWisePermission(5);
@@ -128,12 +135,15 @@ const AssignTaskPage: React.FC = () => {
 
   useEffect(() => {
     if (c)
-      setCompanyTab(c === "Quality Packaging" || c === "QP"? 1 : 0)
+      setCompanyTab(c === "Quality Packaging" || c === "QP" ? 1 : 0)
   }, [c])
 
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true))
   }, [])
+
+  const toggleQpDialog = () => setQpDialog(!qpDialog)
+  const toggleScDialog = () => setScDialog(!scDialog)
 
   // Set initial date range and status from query parameters
   useEffect(() => {
@@ -165,6 +175,7 @@ const AssignTaskPage: React.FC = () => {
 
   const handleEdit = (id: string) => {
     setEditId(id);
+    setTempEditId(id)
     setOpen(true);
   };
 
@@ -623,6 +634,7 @@ const AssignTaskPage: React.FC = () => {
             <ThemeButton
               onClick={() => {
                 setEditId(null);
+                setTempEditId(null)
                 setOpen(true);
               }}
             >
@@ -699,13 +711,15 @@ const AssignTaskPage: React.FC = () => {
           ))
         )}
       </Box>
-
+      {console.log(editId, 'editId')}
       <AssignTaskDialog
         open={open}
         onClose={() => {
           setOpen(false);
           setEditId(null);
         }}
+        toggleScDialog={toggleScDialog}
+        toggleQpDialog={toggleQpDialog}
         taskId={editId}
         refreshData={() => {
           dispatch(getAllAssignTasksThunk({
@@ -717,8 +731,32 @@ const AssignTaskPage: React.FC = () => {
             reason: r
           }));
         }}
+        companyTab={companyTab}
         company={companies?.find((item) => item.companyName === StaticCompanyOptions[companyTab])}
       />
+
+
+      {qpDialog ? <AddQPOrderDialog
+        company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
+        open={qpDialog}
+        onClose={() => {
+          toggleQpDialog()
+          setTempEditId(null)
+          // refreshData();
+        }}
+        refreshData={() => { }}
+        party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
+      /> : null}
+
+      {scDialog ? <AddSakhiOrderDialog
+        company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id}
+        open={scDialog}
+        onClose={() => {
+          toggleScDialog()
+          setTempEditId(null)
+        }}
+        party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
+      /> : null}
     </>
   );
 };

@@ -27,8 +27,9 @@ interface AddOrderDialogProps {
   open: boolean
   onClose: () => void
   refreshData?: () => void
+  party?: any
 }
-const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData }) => {
+const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, party }) => {
   const dispatch = useAppDispatch()
   const fileUploadRef = useRef<FileUploadRef>(null)
   const { productItems, loading: productLoading } = useAppSelector((state) => state.productItems)
@@ -69,6 +70,10 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
       value: item._id,
     }))
   }, [productItems])
+
+  useEffect(() => {
+    if (party !== undefined && party !== null) setSakshiFormData((prev) => ({ ...prev, partyName: party }))
+  }, [party])
 
   // Clear messages when dialog opens
   useEffect(() => {

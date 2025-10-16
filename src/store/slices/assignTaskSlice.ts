@@ -6,7 +6,6 @@ export const getAllAssignTasksThunk = createAsyncThunk(
   async (filters, { rejectWithValue }) => {
     try {
       const response = await assignTaskService.getAllAssignTasks(filters);
-      console.log("DEBUG : filters:", filters);
 
       if (response.success && Array.isArray(response.data)) {
         return response.data;
