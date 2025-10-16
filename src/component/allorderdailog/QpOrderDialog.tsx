@@ -40,7 +40,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
     const [qpFormData, setQpFormData] = useState({
         companyName: company,
-        partyName: "",
         date: "",
         orderFrom: "",
         ply: "",
@@ -78,17 +77,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     });
 
     useEffect(() => {
-        if (party !== undefined && party !== null) {
-            setQpFormData((prev) => ({ ...prev, partyName: party }))
-            handlePartyChange("", party)
-        }
-    }, [party])
-
-    useEffect(() => {
         if (open && editData) {
             setQpFormData({
                 companyName: editData.companyName || company,
-                partyName: editData.party?._id || "",
                 date: editData.date || "",
                 orderFrom: editData.orderFrom || "",
                 ply: editData.orderdata?.ply || "",
@@ -163,7 +154,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     const handleQpChange = (field: string, value: any) => {
         setQpFormData((prev) => {
             const newState = { ...prev, [field]: value };
-            
+
             // Handle conditional logic
             if (field === "varnish" && value === true) {
                 // If varnish is true, disable lamination and uv
@@ -193,74 +184,14 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 // If pasting is selected, unselect pinning
                 newState.isPinning = false;
             }
-            
+
             return newState;
         });
     };
 
-    const handlePartyChange = async (event: any, newValue: any) => {
-        const partyId = typeof newValue === "object" && newValue !== null
-            ? newValue.value
-            : newValue;
-
-        handleQpChange("partyName", partyId);
-
-        if (company && partyId) {
-            try {
-                await dispatch(
-                    getAccountMasterByCompanyAndPartyThunk({
-                        companyId: company,
-                        partyId: partyId,
-                    })
-                ).unwrap();
-                const partyOptions = packagingOptions.filter((opt: any) => opt.party?._id === partyId);
-
-                if (partyOptions.length > 0) {
-                    // Sort by createdAt in descending order to get the latest option first
-                    const sortedOptions = partyOptions.sort((a: any, b: any) =>
-                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                    );
-                    const latestOption = sortedOptions[0];
-
-                    setQpFormData((prev) => ({
-                        ...prev,
-                        ply: latestOption.ply || "",
-                        uom: latestOption.uom || "",
-                        length: latestOption.length || "",
-                        width: latestOption.width || "",
-                        height: latestOption.height || "",
-                        deckal: latestOption.deckal || "",
-                        paper1GSM: latestOption.paper1GSM || "",
-                        paper2GSM: latestOption.paper2GSM || "",
-                        paper3GSM: latestOption.paper3GSM || "",
-                    }));
-                }
-            } catch (error) {
-                console.error("Failed to fetch account master data:", error);
-                toast.error("Failed to load party details");
-            }
-        }
-    };
-
     const handleQpSubmit = async () => {
-        if (!qpFormData.partyName) {
-            toast.error("Please fill all required fields (Company Name and Party Name)");
-            return;
-        }
         setIsSubmitting(true);
         try {
-            const packagingOption = {
-                party: qpFormData.partyName,
-                ply: qpFormData.ply,
-                uom: qpFormData.uom,
-                length: qpFormData.length,
-                width: qpFormData.width,
-                height: qpFormData.height,
-                deckal: qpFormData.deckal,
-                paper1GSM: qpFormData.paper1GSM,
-                paper2GSM: qpFormData.paper2GSM,
-                paper3GSM: qpFormData.paper3GSM,
-            };
             const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
                 parseFloat(qpFormData.length),
                 parseFloat(qpFormData.width),
@@ -276,8 +207,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             const orderData = {
                 isQp: true,
                 companyName: qpFormData?.companyName?._id ? qpFormData?.companyName?._id : qpFormData.companyName,
-                party: qpFormData.partyName,
-                packagingOption,
                 date: qpFormData.date || undefined,
                 orderFrom: qpFormData.orderFrom || undefined,
                 gsm: qpFormData.gsm || undefined,
@@ -344,7 +273,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     const resetForm = () => {
         setQpFormData({
             companyName: "",
-            partyName: "",
             date: "",
             orderFrom: "",
             ply: "",
@@ -955,8 +883,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         required
                         showPartyName={true}
                         partyName={qpFormData.partyName}
-                        onPartyChange={handlePartyChange}
+                        onPartyChange={() => { }}
                         disableCompanySelect={true}
+                        showPartyName={false}
                     />
                 </Box>
                 {renderQpForm()}
