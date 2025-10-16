@@ -44,6 +44,7 @@ interface ComplainDialogProps {
     onClose: () => void;
     refreshData?: () => void;
     editData?: Complaint | null;
+    // selectedOrderData?: OrderRow | null
 }
 
 const getValidationSchema = (isEdit: boolean, status: string) => {
@@ -82,6 +83,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     onClose,
     refreshData,
     editData,
+    selectedOrderData,
 }) => {
     const dispatch = useAppDispatch();
     const { user } = useAppSelector((state) => state.auth);
@@ -99,6 +101,22 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
 
     const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
     const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
+
+    useEffect(() => {
+        if (selectedOrderData && open) {
+            // Auto-fill the form with order data
+            formik.setValues({
+                company: selectedOrderData.companyName._id,
+                // subject: `Complaint for QP-${selectedOrderData.orderNo}`,
+                details: "",
+                orderId: selectedOrderData._id,
+                party: selectedOrderData.party?._id || "",
+                status: "Pending",
+                response: "",
+                files: []
+            });
+        }
+    }, [selectedOrderData, open]);
 
     // Formik initialization
     const formik = useFormik({
