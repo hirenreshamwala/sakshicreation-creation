@@ -2,7 +2,11 @@ import SellOrderQpOrderPage from "@/component/SellOrder/QpOrderPage";
 
 
 const AllOrdersPage = () => {
-  return <><SellOrderQpOrderPage /></>;
+  return (
+    <>
+      <SellOrderQpOrderPage />
+    </>
+  )
 }
 
 export default AllOrdersPage;
