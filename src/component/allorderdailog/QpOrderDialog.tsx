@@ -601,7 +601,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     />
                 </Stack>
                 <Stack direction="row" spacing={2} mb={2}>
-                    <Autocomplete
+                    {/* <Autocomplete
                         options={getUniqueDeckalOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.deckal, getUniqueDeckalOptions())}
@@ -615,7 +615,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             />
                         )}
                         sx={{ flex: 1 }}
-                    />
+                    /> */}
                     <Autocomplete
                         options={getUniquePaper1GSMOptions()}
                         getOptionLabel={(option) => option.label}
@@ -772,13 +772,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 </Stack>
 
                 <Stack direction="row" spacing={2} mb={2}>
-                    <ThemeInput
+                    {/* <ThemeInput
                         labelName="Deckal Calculation"
                         placeholder="Deckal Calculation"
                         fullWidth
                         value={qpFormData.deckalCalculation}
                         disabled
-                    />
+                    /> */}
                     <ThemeInput
                         labelName="No of Pieces"
                         placeholder="No of Pieces"
@@ -831,7 +831,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     />
                 </Stack>
                 <Stack direction="row" spacing={2} mb={2}>
-                    <Autocomplete
+                    {/* <Autocomplete
                         options={kantans.map((item: any) => ({ value: item?._id, label: item.kantanName }))}
                         getOptionLabel={(option) => option.label}
                         value={kantans
@@ -840,7 +840,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         onChange={(_, val) => handleQpChange("kantan", val?.value || null)}
                         renderInput={(params) => <TextField {...params} label="Kantan" sx={{ width: 200, mt: 2 }} />}
                         sx={{ flex: 1 }}
-                    />
+                    /> */}
                     <ThemeInput
                         labelName="Kantan Per Unit"
                         placeholder="Kantan Per Unit"

@@ -52,15 +52,14 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     category: "",
     kg: '',
     reel: '',
-    paperMil: '', // Added paper mill name field
+    paperMil: '',
+    bf: '', // Added BF field
   });
 
   useEffect(() => {
     if (!paperGSM.length) dispatch(getAllPaperGSMThunk());
     if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
   }, []);
-
-  console.log(packagingOptions, 'packagingOptions')
 
   useEffect(() => {
     if (packagingOptions.length) {
@@ -223,8 +222,9 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         gsm: singlePurchase.gsm || '',
         kg: singlePurchase.kg || '',
         reel: singlePurchase.reel || '',
-        category: singlePurchase.category || "",
-        paperMil: singlePurchase.paperMil || '', // Added for edit mode
+        category: singlePurchase.category || '',
+        paperMil: singlePurchase.paperMil || '',
+        bf: singlePurchase.bf || '', // Added BF for edit mode
       });
 
       if (singlePurchase.for?._id) {
@@ -256,7 +256,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       ...prev,
       [name]: value || '',
       ...(name === 'type'
-        ? { kantan: '', kg: '', deckal: '', gsm: '', reel: '', paperMil: '' }
+        ? { kantan: '', kg: '', deckal: '', gsm: '', reel: '', paperMil: '', bf: '' }
         : {}),
     }));
 
@@ -271,7 +271,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       } else if (formData.type === 'glue' || formData.type === 'wire') {
         requiredFields.push('kg');
       } else if (formData.type === 'paper') {
-        requiredFields.push( 'deckal', 'gsm', 'kg', 'paperMil');
+        requiredFields.push('deckal', 'gsm', 'kg', 'paperMil', 'bf');
       }
 
       const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
@@ -393,49 +393,60 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
             />
           )}
 
-          <ThemeInput
-            labelName="PAPER MILL NAME"
-            name="paperMil"
-            value={formData.paperMil}
-            onChange={handleChange}
-            fullWidth
-            required
-            placeholder="Enter paper mill name"
-          />
-        </Stack>
-
-        {formData.type === 'paper' && (
-          <>
-            <Stack direction="row" spacing={2} mb={2}>
-              <ThemeSelect
-                label="DECKAL"
-                options={deckalOptions}
-                value={deckalOptions.find(opt => opt.value === formData.deckal) || null}
-                onChange={(e, newValue) => handleSelectChange('deckal', newValue?.value)}
-                required
-                fullWidth
-              />
-
-              <ThemeSelect
-                label="GSM"
-                options={gsmOptions}
-                value={gsmOptions.find(opt => opt.value === formData.gsm) || null}
-                onChange={(e, newValue) => handleSelectChange('gsm', newValue?.value)}
-                required
-                fullWidth
-              />
-
+          {formData.type === 'paper' && (
+            <>
               <ThemeInput
-                labelName="KG"
-                name="kg"
-                type="number"
-                value={formData.kg}
+                labelName="PAPER MILL NAME"
+                name="paperMil"
+                value={formData.paperMil}
                 onChange={handleChange}
                 fullWidth
                 required
+                placeholder="Enter paper mill name"
               />
-            </Stack>
-          </>
+              <ThemeInput
+                labelName="BF"
+                name="bf"
+                value={formData.bf}
+                onChange={handleChange}
+                fullWidth
+                required
+                placeholder="Enter burst factor"
+              />
+            </>
+          )}
+        </Stack>
+
+        {formData.type === 'paper' && (
+          <Stack direction="row" spacing={2} mb={2}>
+            <ThemeSelect
+              label="DECKAL"
+              options={deckalOptions}
+              value={deckalOptions.find(opt => opt.value === formData.deckal) || null}
+              onChange={(e, newValue) => handleSelectChange('deckal', newValue?.value)}
+              required
+              fullWidth
+            />
+
+            <ThemeSelect
+              label="GSM"
+              options={gsmOptions}
+              value={gsmOptions.find(opt => opt.value === formData.gsm) || null}
+              onChange={(e, newValue) => handleSelectChange('gsm', newValue?.value)}
+              required
+              fullWidth
+            />
+
+            <ThemeInput
+              labelName="KG"
+              name="kg"
+              type="number"
+              value={formData.kg}
+              onChange={handleChange}
+              fullWidth
+              required
+            />
+          </Stack>
         )}
 
         <Stack direction="row" spacing={2} mb={2}>
@@ -445,14 +456,12 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
             value={roleOptions.find(opt => opt.value === formData.for) || null}
             onChange={(e, newValue) => {
               const label = newValue?.label?.toLowerCase().trim();
-
-              if (label?.includes("factory")) {
-                setFormData((prev) => ({ ...prev, category: "factory" }));
-              } else if (label?.includes("godown")) {
-                setFormData((prev) => ({ ...prev, category: "godown" }));
+              if (label?.includes('factory')) {
+                setFormData(prev => ({ ...prev, category: 'factory' }));
+              } else if (label?.includes('godown')) {
+                setFormData(prev => ({ ...prev, category: 'godown' }));
               }
-
-              handleSelectChange("for", newValue?.value);
+              handleSelectChange('for', newValue?.value);
             }}
             required
             fullWidth

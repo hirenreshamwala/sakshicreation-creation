@@ -247,12 +247,14 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
   const tasks = getRoleSpecificTasks();
 
-  useEffect(() => {
+useEffect(() => {
+  if (user) {
     dispatch(getDesignerOrdersThunk());
     dispatch(getPrinterOrdersThunk());
     dispatch(getBinderOrdersThunk());
     dispatch(getBookletBinderThunk());
-  }, [dispatch]);
+  }
+}, [user, dispatch]); // 👈 Added `user` dependency
 
   // Function to get current page title
   const getCurrentPageTitle = () => {

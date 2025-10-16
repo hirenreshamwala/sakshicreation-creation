@@ -785,7 +785,7 @@ return (
                         sx={{ minWidth: 100 }}
                         disabled={isCompleted}
                     />
-                    <TextField
+                    {/* <TextField
                         label="Glue KG"
                         value={formData.glue}
                         onChange={(e) => handleFormChange("glue", e.target.value)}
@@ -802,7 +802,7 @@ return (
                         size="small"
                         sx={{ minWidth: 100 }}
                         disabled={isCompleted}
-                    />
+                    /> */}
                     <TextField
                         label="Actual No. of Pieces"
                         value={formData.actualNoOfPieces}
