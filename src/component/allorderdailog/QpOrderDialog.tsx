@@ -70,8 +70,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         // New fields - using boolean for API
         lamination: false, // true or false
         laminationType: "", // "glossy" or "mate"
-        yv: false, // true or false
-        yvType: "", // "yv" or "yv_mate"
+        uv: false, // true or false
+        uvType: "", // "uv" or "uv_mate"
         varnish: false, // true or false
         isPinning: false, // true or false
         isPasting: false, // true or false
@@ -118,8 +118,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 // New fields with edit data - converting to boolean
                 lamination: editData.lamination || false,
                 laminationType: editData.laminationType || "",
-                yv: editData.yv || false,
-                yvType: editData.yvType || "",
+                uv: editData.uv || false,
+                uvType: editData.uvType || "",
                 varnish: editData.varnish || false,
                 isPinning: editData.isPinning || false,
                 isPasting: editData.isPasting || false,
@@ -166,17 +166,17 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             
             // Handle conditional logic
             if (field === "varnish" && value === true) {
-                // If varnish is true, disable lamination and YV
+                // If varnish is true, disable lamination and uv
                 newState.lamination = false;
                 newState.laminationType = "";
-                newState.yv = false;
-                newState.yvType = "";
+                newState.uv = false;
+                newState.uvType = "";
             } else if (field === "lamination" && value === false) {
                 // If lamination is false, clear lamination type
                 newState.laminationType = "";
-            } else if (field === "yv" && value === false) {
-                // If YV is false, clear YV type
-                newState.yvType = "";
+            } else if (field === "uv" && value === false) {
+                // If uv is false, clear uv type
+                newState.uvType = "";
             } else if (field === "isPinning" && value === true) {
                 // If pinning is selected, unselect pasting
                 newState.isPasting = false;
@@ -289,8 +289,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 // New fields - using boolean values for API
                 lamination: qpFormData.lamination,
                 laminationType: qpFormData.laminationType || undefined,
-                yv: qpFormData.yv,
-                yvType: qpFormData.yvType || undefined,
+                uv: qpFormData.uv,
+                uvType: qpFormData.uvType || undefined,
                 varnish: qpFormData.varnish,
                 isPinning: qpFormData.isPinning,
                 isPasting: qpFormData.isPasting,
@@ -365,8 +365,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             // Reset new fields to false
             lamination: false,
             laminationType: "",
-            yv: false,
-            yvType: "",
+            uv: false,
+            uvType: "",
             varnish: false,
             isPinning: false,
             isPasting: false,
@@ -713,13 +713,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         </FormControl>
                     )}
 
-                    {/* YV */}
+                    {/* uv */}
                     <FormControl fullWidth>
-                        <InputLabel>YV</InputLabel>
+                        <InputLabel>uv</InputLabel>
                         <Select
-                            value={qpFormData.yv ? "yes" : "no"}
-                            label="YV"
-                            onChange={(e) => handleQpChange("yv", e.target.value === "yes")}
+                            value={qpFormData.uv ? "yes" : "no"}
+                            label="uv"
+                            onChange={(e) => handleQpChange("uv", e.target.value === "yes")}
                             disabled={qpFormData.varnish}
                         >
                             <MenuItem value="no">No</MenuItem>
@@ -727,17 +727,17 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         </Select>
                     </FormControl>
 
-                    {/* YV Type (only show if YV is true) */}
-                    {qpFormData.yv && (
+                    {/* uv Type (only show if uv is true) */}
+                    {qpFormData.uv && (
                         <FormControl fullWidth>
-                            <InputLabel>YV Type</InputLabel>
+                            <InputLabel>uv Type</InputLabel>
                             <Select
-                                value={qpFormData.yvType}
-                                label="YV Type"
-                                onChange={(e) => handleQpChange("yvType", e.target.value)}
+                                value={qpFormData.uvType}
+                                label="uv Type"
+                                onChange={(e) => handleQpChange("uvType", e.target.value)}
                             >
-                                <MenuItem value="yv">YV</MenuItem>
-                                <MenuItem value="yv_mate">YV + Mate Lamination</MenuItem>
+                                <MenuItem value="uv">uv</MenuItem>
+                                <MenuItem value="uv_mate">uv + Mate Lamination</MenuItem>
                             </Select>
                         </FormControl>
                     )}
