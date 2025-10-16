@@ -769,7 +769,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             sx={{ minWidth: 100 }}
                             disabled={isCompleted}
                         />
-                        <TextField
+                        {/* <TextField
                             label="Glue KG"
                             value={formData.glue}
                             onChange={(e) => handleFormChange("glue", e.target.value)}
@@ -777,8 +777,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             size="small"
                             sx={{ minWidth: 100 }}
                             disabled={isCompleted}
-                        />
-                        <TextField
+                        /> */}
+                        {/* <TextField
                             label="Wire KG"
                             value={formData.wire}
                             onChange={(e) => handleFormChange("wire", e.target.value)}
@@ -786,7 +786,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             size="small"
                             sx={{ minWidth: 100 }}
                             disabled={isCompleted}
-                        />
+                        /> */}
                         <TextField
                             label="Actual No. of Pieces"
                             value={formData.actualNoOfPieces}

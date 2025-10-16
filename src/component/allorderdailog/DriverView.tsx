@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useMemo } from "react";
-import { Box, IconButton, TableCell, Typography, Modal, Checkbox, Button, Chip, InputBase } from "@mui/material";
+import { Box, IconButton, TableCell, Typography, Modal, Checkbox, Button, Chip, InputBase, FormControl, FormLabel } from "@mui/material";
 import BasicTable from "@/component/common_component/Table/themetable";
 import ThemeButton from "@/component/common_component/themebutton";
 import { useAppDispatch, useAppSelector } from "@/store";
@@ -28,11 +28,12 @@ const columns = [
 ];
 
 // Upload files to server
-const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]> => {
+const uploadFilesToServer = async (files: File[], folder: string, billNumber: string): Promise<any[]> => {
     const BaseURL = process.env.NEXT_PUBLIC_API_URL;
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
     formData.append("folder", folder);
+    formData.append("billNumber", billNumber); // Add billNumber to FormData
 
     try {
         const response = await Request.post(`${BaseURL}/api/fileUpload/multiple`, formData);
@@ -71,7 +72,7 @@ const DriverView = () => {
     const [selectionType, setSelectionType] = useState<"completed" | "loading" | null>(null);
     const [factoryModalOpen, setFactoryModalOpen] = useState(false);
     const [factoryPhotos, setFactoryPhotos] = useState<File[]>([]);
-
+    const [billNumber, setBillNumber] = useState("");
 
     const dispatch = useAppDispatch();
     const { companies } = useAppSelector((state) => state.company);
@@ -231,7 +232,7 @@ const DriverView = () => {
         if (selectedOrders.length === 0) return toast.warning("Please select orders for delivery");
         if (billPhotos.length === 0) return toast.warning("Please upload bill photos");
         try {
-            const uploadedPhotos = await uploadFilesToServer(billPhotos, "bill-photos");
+            const uploadedPhotos = await uploadFilesToServer(billPhotos, "bill-photos", "");
             const imageUrls = uploadedPhotos.map((p) => p.path);
             await dispatch(bulkUpdateQPOrderStatusThunk({
                 orderIds: selectedOrders,
@@ -253,8 +254,10 @@ const DriverView = () => {
     const handleDispatchSubmit = async () => {
         if (!currentDispatchOrder) return;
         if (dispatchPhotos.length === 0) return toast.warning("Please upload dispatch photos");
+        if (!billNumber) return toast.warning("Please enter a bill number");
+
         try {
-            const uploadedPhotos = await uploadFilesToServer(dispatchPhotos, "dispatch-photos");
+            const uploadedPhotos = await uploadFilesToServer(dispatchPhotos, "dispatch-photos", billNumber);
             const imageUrls = uploadedPhotos.map((p) => p.path);
 
             const response = await dispatch(
@@ -263,6 +266,7 @@ const DriverView = () => {
                     deliveryStatus: "in_transit",
                     dispatchPhotos: imageUrls,
                     dispatchTime: new Date().toISOString(),
+                    billNumber,
                 })
             ).unwrap();
 
@@ -278,12 +282,12 @@ const DriverView = () => {
                 const storedUser = JSON.parse(localStorage.getItem("user"));
                 const updatedUser = { ...storedUser, isDisptach: updatedDriver.isDisptach };
                 console.log("DEBUG : handleDispatchSubmit : updatedDriver.isDisptach: ispe true hoga ", updatedDriver.isDisptach);
-
                 localStorage.setItem("user", JSON.stringify(updatedUser));
             }
 
             setDispatchModalOpen(false);
             setDispatchPhotos([]);
+            setBillNumber("");
             setCurrentDispatchOrder(null);
             refreshData();
         } catch {
@@ -296,7 +300,7 @@ const DriverView = () => {
         if (billPhotos.length === 0) return toast.warning("Please upload delivery photos");
 
         try {
-            const uploadedPhotos = await uploadFilesToServer(billPhotos, "delivery-photos");
+            const uploadedPhotos = await uploadFilesToServer(billPhotos, "delivery-photos", "");
             const imageUrls = uploadedPhotos.map((p) => p.path);
 
             const response = await dispatch(
@@ -337,7 +341,7 @@ const DriverView = () => {
         if (factoryPhotos.length === 0) return toast.warning("Please upload factory photos");
 
         try {
-            const uploadedPhotos = await uploadFilesToServer(factoryPhotos, "factory-photos");
+            const uploadedPhotos = await uploadFilesToServer(factoryPhotos, "factory-photos", "");
             const imageUrls = uploadedPhotos.map((p) => p.path);
 
             const response = await driverService.backToFactory(user?.id, imageUrls);
@@ -536,19 +540,51 @@ const DriverView = () => {
                 <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, bgcolor: "background.paper", p: 3, borderRadius: 2 }}>
                     <Typography variant="h6" mb={2}>Upload Dispatch Photos</Typography>
                     <Typography variant="body2" mb={2}>Order No: <strong>{currentDispatchOrder?.orderNo}</strong></Typography>
-
-                    <input type="file" id="dispatch-photos" multiple accept="image/*" onChange={(e) => { if (e.target.files) setDispatchPhotos(Array.from(e.target.files)); }} style={{ display: "none" }} />
+                    <FormControl fullWidth sx={{ mb: 2 }}>
+                        <FormLabel required>Bill Number</FormLabel>
+                        <InputBase
+                            value={billNumber}
+                            onChange={(e) => setBillNumber(e.target.value)}
+                            placeholder="Enter Bill Number"
+                            sx={{ border: "1px solid #D0D5DD", borderRadius: 1, px: 1, py: 0.5 }}
+                        />
+                    </FormControl>
+                    <input
+                        type="file"
+                        id="dispatch-photos"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => { if (e.target.files) setDispatchPhotos(Array.from(e.target.files)); }}
+                        style={{ display: "none" }}
+                    />
                     <label htmlFor="dispatch-photos">
-                        <Button variant="outlined" component="span" startIcon={<FiUpload />} sx={{ mb: 2 }}>Upload Dispatch Photos</Button>
+                        <Button variant="outlined" component="span" startIcon={<FiUpload />} sx={{ mb: 2 }}>
+                            Upload Dispatch Photos
+                        </Button>
                     </label>
-
                     <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                        {dispatchPhotos.map((photo, i) => <Chip key={i} label={`Photo ${i + 1}`} onDelete={() => setDispatchPhotos(prev => prev.filter((_, idx) => idx !== i))} />)}
+                        {dispatchPhotos.map((photo, i) => (
+                            <Chip
+                                key={i}
+                                label={`Photo ${i + 1}`}
+                                onDelete={() => setDispatchPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                            />
+                        ))}
                     </Box>
 
                     <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 2 }}>
-                        <ThemeButton onClick={() => setDispatchModalOpen(false)}>Cancel</ThemeButton>
-                        <ThemeButton onClick={handleDispatchSubmit} disabled={dispatchPhotos.length === 0}>Dispatch Order</ThemeButton>
+                        <ThemeButton onClick={() => {
+                            setDispatchModalOpen(false);
+                            setBillNumber("");
+                        }}>
+                            Cancel
+                        </ThemeButton>
+                        <ThemeButton
+                            onClick={handleDispatchSubmit}
+                            disabled={dispatchPhotos.length === 0 || !billNumber}
+                        >
+                            Dispatch Order
+                        </ThemeButton>
                     </Box>
                 </Box>
             </Modal>
@@ -557,16 +593,33 @@ const DriverView = () => {
             <Modal open={deliveryModalOpen} onClose={() => setDeliveryModalOpen(false)}>
                 <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, bgcolor: "background.paper", p: 3, borderRadius: 2 }}>
                     <Typography variant="h6" mb={2}>Upload Bill Photos for Delivery</Typography>
-                    <input type="file" id="bill-photos" multiple accept="image/*" onChange={(e) => { if (e.target.files) setBillPhotos(Array.from(e.target.files)); }} style={{ display: "none" }} />
-                    <label htmlFor="bill-photos"><Button variant="outlined" component="span" startIcon={<FiUpload />} sx={{ mb: 2 }}>Upload Bill Photos</Button></label>
-
+                    <input
+                        type="file"
+                        id="bill-photos"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => { if (e.target.files) setBillPhotos(Array.from(e.target.files)); }}
+                        style={{ display: "none" }}
+                    />
+                    <label htmlFor="bill-photos">
+                        <Button variant="outlined" component="span" startIcon={<FiUpload />} sx={{ mb: 2 }}>
+                            Upload Bill Photos
+                        </Button>
+                    </label>
                     <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                        {billPhotos.map((photo, i) => <Chip key={i} label={`Photo ${i + 1}`} onDelete={() => setBillPhotos(prev => prev.filter((_, idx) => idx !== i))} />)}
+                        {billPhotos.map((photo, i) => (
+                            <Chip
+                                key={i}
+                                label={`Photo ${i + 1}`}
+                                onDelete={() => setBillPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                            />
+                        ))}
                     </Box>
-
                     <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 2 }}>
                         <ThemeButton onClick={() => setDeliveryModalOpen(false)}>Cancel</ThemeButton>
-                        <ThemeButton onClick={handleDeliverySubmit} disabled={billPhotos.length === 0}>Mark as In Transit</ThemeButton>
+                        <ThemeButton onClick={handleDeliverySubmit} disabled={billPhotos.length === 0}>
+                            Mark as In Transit
+                        </ThemeButton>
                     </Box>
                 </Box>
             </Modal>
