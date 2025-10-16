@@ -172,6 +172,17 @@ const LeadManagementPage: React.FC = () => {
     return leads.filter(lead => lead.companyName?._id === activeCompanyId);
   }, [leads, activeCompanyId]);
 
+    const isToday = (dateString: string): boolean => {
+    const today = new Date();
+    const [day, month, year] = dateString.split("/");
+    const compareDate = new Date(`${year}-${month}-${day}`);
+    return (
+      compareDate.getDate() === today.getDate() &&
+      compareDate.getMonth() === today.getMonth() &&
+      compareDate.getFullYear() === today.getFullYear()
+    );
+  };
+
   useEffect(() => {
     if (error) {
       toast.error(error);
@@ -301,84 +312,103 @@ const LeadManagementPage: React.FC = () => {
   }, [companyFilteredLeads, selectedFilterField]);
 
   // Filter leads based on search query, date range, and multiple filters
-  const filteredLeads = useMemo(() => {
-    let filtered = mapLeadsToRows(companyFilteredLeads);
+const filteredLeads = useMemo(() => {
+  let filtered = mapLeadsToRows(companyFilteredLeads);
 
-    // Apply status filter
-    filtered = filtered.filter((lead) =>
-      tab === 0
-        ? ["pending", "rescheduled"].includes(lead.status.toLowerCase())
-        : ["completed", "cancelled"].includes(lead.status.toLowerCase())
+  // Apply status filter
+  filtered = filtered.filter((lead) => {
+    const leadDate = new Date(lead.date);
+    const isLeadToday = isToday(
+      leadDate.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
     );
 
-    // Apply date range filter
-    if (startDate || endDate) {
-      filtered = filtered.filter((lead) => {
-        const leadDate = new Date(lead.date);
-        const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
-        const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-        return (!start || leadDate >= start) && (!end || leadDate <= end);
-      });
-    }
-
-    // Apply search query filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter((lead) =>
-        [
-          lead.partyName?.partyName,
-          lead.companyName?.companyName,
-          lead.reason,
-          lead.partyName?.address?.unitNo,
-          lead.partyName?.address?.marketName,
-          lead.partyName?.address?.area,
-        ].some((value) =>
-          value?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+    if (tab === 0) {
+      // Pending tab: Include Pending, Rescheduled, and Completed leads from today
+      return (
+        ["pending", "rescheduled"].includes(lead.status.toLowerCase()) ||
+        (lead.status.toLowerCase() === "completed" && isLeadToday)
+      );
+    } else {
+      // History tab: Include Cancelled and Completed leads not from today
+      return (
+        lead.status.toLowerCase() === "cancelled" ||
+        (lead.status.toLowerCase() === "completed" && !isLeadToday)
       );
     }
+  });
 
-    // Apply multiple filters
-    if (Object.keys(filters).length > 0) {
-      filtered = filtered.filter((lead) =>
-        Object.entries(filters).every(([field, values]) => {
-          const key = filterFieldToKey[field];
-          let value: string;
-          if (key === "companyName.companyName") {
-            value = lead.companyName?.companyName || "N/A";
-          } else if (key === "partyName.partyName") {
-            value = lead.partyName?.partyName || "N/A";
-          } else if (key === "partyName.ownerMobileNo") {
-            value = lead.partyName?.ownerMobileNo || "N/A";
-          } else if (key === "partyName.address.unitNo") {
-            value = lead.partyName?.address?.unitNo || "N/A";
-          } else if (key === "partyName.address.marketName") {
-            value = lead.partyName?.address?.marketName || "N/A";
-          } else if (key === "partyName.address.area") {
-            value = lead.partyName?.address?.area || "N/A";
-          } else if (key === "partyName.partyTag") {
-            value = lead.partyName?.partyTag || "N/A";
-          } else if (key === "status") {
-            value = lead.status || "N/A";
-          } else if (key === "createdAt") {
-            value = lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("en-GB") : "N/A";
-          } else if (key === "partyName.createdBy") {
-            value = lead.partyName?.createdBy
-              ? `${lead.partyName.createdBy.firstName} ${lead.partyName.createdBy.lastName}`.trim()
-              : "N/A";
-          } else if (key === "assignedTo") {
-            value = lead.assignedTo
-              ? `${lead.assignedTo.firstName} ${lead.assignedTo.lastName}`.trim()
-              : "N/A";
-          } else {
-            value = String((lead as any)[key] || "N/A");
-          }
-          return values.includes(value);
-        })
-      );
-    }
+  // Apply date range filter
+  if (startDate || endDate) {
+    filtered = filtered.filter((lead) => {
+      const leadDate = new Date(lead.date);
+      const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+      const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
+      return (!start || leadDate >= start) && (!end || leadDate <= end);
+    });
+  }
 
-    return filtered;
-  }, [companyFilteredLeads, tab, startDate, endDate, searchQuery, filters]);
+  // Apply search query filter
+  if (searchQuery.trim()) {
+    filtered = filtered.filter((lead) =>
+      [
+        lead.partyName?.partyName,
+        lead.companyName?.companyName,
+        lead.reason,
+        lead.partyName?.address?.unitNo,
+        lead.partyName?.address?.marketName,
+        lead.partyName?.address?.area,
+      ].some((value) =>
+        value?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }
+
+  // Apply multiple filters
+  if (Object.keys(filters).length > 0) {
+    filtered = filtered.filter((lead) =>
+      Object.entries(filters).every(([field, values]) => {
+        const key = filterFieldToKey[field];
+        let value: string;
+        if (key === "companyName.companyName") {
+          value = lead.companyName?.companyName || "N/A";
+        } else if (key === "partyName.partyName") {
+          value = lead.partyName?.partyName || "N/A";
+        } else if (key === "partyName.ownerMobileNo") {
+          value = lead.partyName?.ownerMobileNo || "N/A";
+        } else if (key === "partyName.address.unitNo") {
+          value = lead.partyName?.address?.unitNo || "N/A";
+        } else if (key === "partyName.address.marketName") {
+          value = lead.partyName?.address?.marketName || "N/A";
+        } else if (key === "partyName.address.area") {
+          value = lead.partyName?.address?.area || "N/A";
+        } else if (key === "partyName.partyTag") {
+          value = lead.partyName?.partyTag || "N/A";
+        } else if (key === "status") {
+          value = lead.status || "N/A";
+        } else if (key === "createdAt") {
+          value = lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("en-GB") : "N/A";
+        } else if (key === "partyName.createdBy") {
+          value = lead.partyName?.createdBy
+            ? `${lead.partyName.createdBy.firstName} ${lead.partyName.createdBy.lastName}`.trim()
+            : "N/A";
+        } else if (key === "assignedTo") {
+          value = lead.assignedTo
+            ? `${lead.assignedTo.firstName} ${lead.assignedTo.lastName}`.trim()
+            : "N/A";
+        } else {
+          value = String((lead as any)[key] || "N/A");
+        }
+        return values.includes(value);
+      })
+    );
+  }
+
+  return filtered;
+}, [companyFilteredLeads, tab, startDate, endDate, searchQuery, filters]);
 
   const filteredGroupedLeads = useMemo(() => {
     return filteredLeads.reduce((acc, lead) => {
@@ -410,16 +440,6 @@ const LeadManagementPage: React.FC = () => {
     }
   }, [filteredSortedDates, tab, startDate, endDate, searchQuery, filters]);
 
-  const isToday = (dateString: string): boolean => {
-    const today = new Date();
-    const [day, month, year] = dateString.split("/");
-    const compareDate = new Date(`${year}-${month}-${day}`);
-    return (
-      compareDate.getDate() === today.getDate() &&
-      compareDate.getMonth() === today.getMonth() &&
-      compareDate.getFullYear() === today.getFullYear()
-    );
-  };
 
   const handleClick = (id: string) => {
     router.push(`/admin/party-call/view-lead/${id}`);
