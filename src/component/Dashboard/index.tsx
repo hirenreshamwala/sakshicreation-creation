@@ -106,6 +106,11 @@ const menuItems = [
     icon: <MdAssignment size={18} />,
     path: "/admin/all-orders",
   },
+  {
+    label: "Sell Orders",
+    icon: <MdAssignment size={18} />,
+    path: "/admin/sell-orders",
+  },
   { label: "Driver", icon: <MdSettings size={18} />, path: "/admin/driver" },
   {
     label: "All Complains",
