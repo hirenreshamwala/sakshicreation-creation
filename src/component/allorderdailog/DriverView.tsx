@@ -28,12 +28,11 @@ const columns = [
 ];
 
 // Upload files to server
-const uploadFilesToServer = async (files: File[], folder: string, billNumber: string): Promise<any[]> => {
+const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]> => {
     const BaseURL = process.env.NEXT_PUBLIC_API_URL;
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
     formData.append("folder", folder);
-    formData.append("billNumber", billNumber); // Add billNumber to FormData
 
     try {
         const response = await Request.post(`${BaseURL}/api/fileUpload/multiple`, formData);
@@ -232,7 +231,7 @@ const DriverView = () => {
         if (selectedOrders.length === 0) return toast.warning("Please select orders for delivery");
         if (billPhotos.length === 0) return toast.warning("Please upload bill photos");
         try {
-            const uploadedPhotos = await uploadFilesToServer(billPhotos, "bill-photos", "");
+            const uploadedPhotos = await uploadFilesToServer(billPhotos, "bill-photos");
             const imageUrls = uploadedPhotos.map((p) => p.path);
             await dispatch(bulkUpdateQPOrderStatusThunk({
                 orderIds: selectedOrders,
