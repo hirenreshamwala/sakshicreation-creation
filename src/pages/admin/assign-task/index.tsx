@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
@@ -117,7 +118,16 @@ const AssignTaskPage: React.FC = () => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = hasSakshi && hasQP;
-
+  const isToday = (dateString: string): boolean => {
+    const today = new Date();
+    const [day, month, year] = dateString.split("/");
+    const compareDate = new Date(`${year}-${month}-${day}`);
+    return (
+      compareDate.getDate() === today.getDate() &&
+      compareDate.getMonth() === today.getMonth() &&
+      compareDate.getFullYear() === today.getFullYear()
+    );
+  };
   // Company tabs configuration
   const companyTabs = useMemo(() => {
     const tabs = [];
@@ -344,55 +354,67 @@ const AssignTaskPage: React.FC = () => {
   const filteredTasks = useMemo(() => {
     let filtered = tasksFilteredByCompany;
 
-    // Apply status filter
-    filtered = filtered.filter((task) =>
-      statusTab === 0
-        ? ["Pending", "Rescheduled"].includes(task.status)
-        : ["Completed", "Cancelled"].includes(task.status)
+  // Apply status filter
+  filtered = filtered.filter((task) => {
+    const taskDate = new Date(task.date);
+    const isTaskToday = isToday(
+      taskDate.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
     );
 
-    // Apply date range filter
-    if (startDate || endDate) {
-      filtered = filtered.filter((task) => {
-        const taskDate = new Date(task.date);
-        const start = startDate
-          ? new Date(startDate).setHours(0, 0, 0, 0)
-          : null;
-        const end = endDate
-          ? new Date(endDate).setHours(23, 59, 59, 999)
-          : null;
-        return (!start || taskDate >= start) && (!end || taskDate <= end);
-      });
-    }
-
-    // Apply search query filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter((task) =>
-        [
-          task.partyName?.partyName,
-          task.companyName?.companyName,
-          task.reasonForVisit,
-        ].some((value) =>
-          value?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+    if (statusTab === 0) {
+      // Pending tab: Include Pending, Rescheduled, and Completed tasks from today
+      return (
+        ["Pending", "Rescheduled"].includes(task.status) ||
+        (task.status === "Completed" && isTaskToday)
       );
+    } else {
+      // History tab: Include Completed tasks not from today and Cancelled tasks
+      return task.status === "Cancelled" || (task.status === "Completed" && !isTaskToday);
     }
+  });
 
-    // Apply multiple filters
-    if (Object.keys(filters).length > 0) {
-      filtered = filtered.filter((task) => {
-        const row = mapTasksToRows([task])[0];
-        return Object.entries(filters).every(([field, values]) => {
-          const key = filterFieldToKey[field];
-          if (!key) return true;
-          const value = key === "company" ? (row[key] as any)?.name : row[key];
-          return values.includes(String(value));
-        });
+  // Apply date range filter
+  if (startDate || endDate) {
+    filtered = filtered.filter((task) => {
+      const taskDate = new Date(task.date);
+      const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+      const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
+      return (!start || taskDate >= start) && (!end || taskDate <= end);
+    });
+  }
+
+  // Apply search query filter
+  if (searchQuery.trim()) {
+    filtered = filtered.filter((task) =>
+      [
+        task.partyName?.partyName,
+        task.companyName?.companyName,
+        task.reasonForVisit,
+      ].some((value) =>
+        value?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }
+
+  // Apply multiple filters
+  if (Object.keys(filters).length > 0) {
+    filtered = filtered.filter((task) => {
+      const row = mapTasksToRows([task])[0];
+      return Object.entries(filters).every(([field, values]) => {
+        const key = filterFieldToKey[field];
+        if (!key) return true;
+        const value = key === "company" ? (row[key] as any)?.name : row[key];
+        return values.includes(String(value));
       });
-    }
+    });
+  }
 
-    return filtered;
-  }, [tasksFilteredByCompany, statusTab, startDate, endDate, searchQuery, filters]);
+  return filtered;
+}, [tasksFilteredByCompany, statusTab, startDate, endDate, searchQuery, filters]);
 
   const filteredGroupedTasks = useMemo(() => {
     return filteredTasks.reduce((acc, task) => {
@@ -539,16 +561,7 @@ const AssignTaskPage: React.FC = () => {
     </>
   );
 
-  const isToday = (dateString: string): boolean => {
-    const today = new Date();
-    const [day, month, year] = dateString.split("/");
-    const compareDate = new Date(`${year}-${month}-${day}`);
-    return (
-      compareDate.getDate() === today.getDate() &&
-      compareDate.getMonth() === today.getMonth() &&
-      compareDate.getFullYear() === today.getFullYear()
-    );
-  };
+
 
   return (
     <>

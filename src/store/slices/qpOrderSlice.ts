@@ -363,11 +363,11 @@ export const updateQPOrderStatusThunk = createAsyncThunk(
 export const bulkUpdateQPOrderStatusThunk = createAsyncThunk(
   "qpOrder/bulkUpdateStatus",
   async (
-    { orderIds, status, deliveryStatus, billPhotos, dispatchPhotos, dispatchTime, deliveryTime }: any,
+    { orderIds, status, deliveryStatus, billPhotos, dispatchPhotos, dispatchTime, deliveryTime,billNumber  }: any,
     { rejectWithValue }
   ) => {
     try {
-      console.log('Bulk update data:', { orderIds, status, deliveryStatus, billPhotos, dispatchPhotos, dispatchTime, deliveryTime });
+      console.log('Bulk update data:', { orderIds, status, deliveryStatus, billPhotos, dispatchPhotos, dispatchTime, deliveryTime,billNumber  });
       const updateData: any = { orderIds };
       if (status) updateData.status = status;
       if (deliveryStatus) updateData.deliveryStatus = deliveryStatus;
@@ -375,6 +375,7 @@ export const bulkUpdateQPOrderStatusThunk = createAsyncThunk(
       if (dispatchPhotos) updateData.dispatchPhotos = dispatchPhotos;
       if (dispatchTime) updateData.dispatchTime = dispatchTime;
       if (deliveryTime) updateData.deliveryTime = deliveryTime;
+       if (billNumber) updateData.billNumber = billNumber; 
 
       const response = await orderService.driverBulkStatusUpdate(updateData);
 
