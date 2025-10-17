@@ -69,11 +69,11 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         // New fields - using boolean for API
         lamination: false, // true or false
         laminationType: "", // "glossy" or "mate"
-        uv: false, // true or false
+        uv: false, // true or false - DEFAULT: false (No)
         uvType: "", // "uv" or "uv_mate"
         varnish: false, // true or false
-        isPinning: false, // true or false
-        isPasting: false, // true or false
+        isPinning: false, // true or false - DEFAULT: false
+        isPasting: true, // true or false - DEFAULT: true (Pasting selected by default)
     });
 
     useEffect(() => {
@@ -109,12 +109,20 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 // New fields with edit data - converting to boolean
                 lamination: editData.lamination || false,
                 laminationType: editData.laminationType || "",
-                uv: editData.uv || false,
+                uv: editData.uv || false, // Default to false if no edit data
                 uvType: editData.uvType || "",
                 varnish: editData.varnish || false,
                 isPinning: editData.isPinning || false,
-                isPasting: editData.isPasting || false,
+                isPasting: editData.isPasting !== undefined ? editData.isPasting : true, // Default to true for new forms
             });
+        } else if (open && !editData) {
+            // Set default values for new form
+            setQpFormData(prev => ({
+                ...prev,
+                uv: false, // Default UV to "No"
+                isPasting: true, // Default process to "Pasting"
+                isPinning: false,
+            }));
         }
     }, [open, editData, company]);
 
@@ -169,8 +177,15 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 newState.uvType = "";
             } else if (field === "laminationType") {
                 // If lamination type changes, handle uv visibility
-                if (value !== "mate") {
-                    // If lamination type is not "mate", disable uv
+                if (value === "glossy") {
+                    // If lamination type is "glossy", disable uv and set to "no"
+                    newState.uv = false;
+                    newState.uvType = "";
+                } else if (value === "mate") {
+                    // If lamination type is "mate", uv can be enabled (keep current uv value)
+                    // Don't change uv value, let user choose
+                } else {
+                    // If lamination type is cleared, disable uv
                     newState.uv = false;
                     newState.uvType = "";
                 }
@@ -299,14 +314,14 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             },
             kantanDeckal: "",
             salesRemark: "",
-            // Reset new fields to false
+            // Reset new fields to default values
             lamination: false,
             laminationType: "",
-            uv: false,
+            uv: false, // Default to "No"
             uvType: "",
             varnish: false,
             isPinning: false,
-            isPasting: false,
+            isPasting: true, // Default to "Pasting"
         });
     };
 
@@ -529,7 +544,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     />
                 </Stack>
                 <Stack direction="row" spacing={2} mb={2}>
-                    {/* <Autocomplete
+                    <Autocomplete
                         options={getUniqueDeckalOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.deckal, getUniqueDeckalOptions())}
@@ -543,7 +558,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             />
                         )}
                         sx={{ flex: 1 }}
-                    /> */}
+                    />
                     <Autocomplete
                         options={getUniquePaper1GSMOptions()}
                         getOptionLabel={(option) => option.label}
@@ -612,7 +627,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 }
                             }}
                         >
-                            <MenuItem value="">Select Process</MenuItem>
+                            {/* <MenuItem value="">Select Process</MenuItem> */}
                             <MenuItem value="pinning">Pinning</MenuItem>
                             <MenuItem value="pasting">Pasting</MenuItem>
                         </Select>
@@ -650,37 +665,33 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         </FormControl>
                     )}
 
-                    {/* UV - Only show when lamination type is "mate" */}
-                    {qpFormData.lamination && qpFormData.laminationType === "mate" && (
-                        <>
-                            <FormControl fullWidth>
-                                <InputLabel>UV</InputLabel>
-                                <Select
-                                    value={qpFormData.uv ? "yes" : "no"}
-                                    label="UV"
-                                    onChange={(e) => handleQpChange("uv", e.target.value === "yes")}
-                                    disabled={qpFormData.varnish}
-                                >
-                                    <MenuItem value="no">No</MenuItem>
-                                    <MenuItem value="yes">Yes</MenuItem>
-                                </Select>
-                            </FormControl>
+                    {/* UV - Always show, but disable when lamination type is "glossy" */}
+                    <FormControl fullWidth>
+                        <InputLabel>UV</InputLabel>
+                        <Select
+                            value={qpFormData.uv ? "yes" : "no"}
+                            label="UV"
+                            onChange={(e) => handleQpChange("uv", e.target.value === "yes")}
+                            disabled={qpFormData.varnish || qpFormData.laminationType === "glossy"}
+                        >
+                            <MenuItem value="no">No</MenuItem>
+                            <MenuItem value="yes">Yes</MenuItem>
+                        </Select>
+                    </FormControl>
 
-                            {/* UV Type (only show if UV is true) */}
-                            {qpFormData.uv && (
-                                <FormControl fullWidth>
-                                    <InputLabel>UV Type</InputLabel>
-                                    <Select
-                                        value={qpFormData.uvType}
-                                        label="UV Type"
-                                        onChange={(e) => handleQpChange("uvType", e.target.value)}
-                                    >
-                                        <MenuItem value="uv">UV</MenuItem>
-                                        <MenuItem value="uv_mate">UV + Mate Lamination</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            )}
-                        </>
+                    {/* UV Type (only show if UV is true) */}
+                    {qpFormData.uv && (
+                        <FormControl fullWidth>
+                            <InputLabel>UV Type</InputLabel>
+                            <Select
+                                value={qpFormData.uvType}
+                                label="UV Type"
+                                onChange={(e) => handleQpChange("uvType", e.target.value)}
+                            >
+                                <MenuItem value="uv">UV</MenuItem>
+                                <MenuItem value="uv_mate">UV + Mate Lamination</MenuItem>
+                            </Select>
+                        </FormControl>
                     )}
                 </Stack>
 
@@ -759,7 +770,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     />
                 </Stack>
                 <Stack direction="row" spacing={2} mb={2}>
-                    {/* <Autocomplete
+                    <Autocomplete
                         options={kantans.map((item: any) => ({ value: item?._id, label: item.kantanName }))}
                         getOptionLabel={(option) => option.label}
                         value={kantans
@@ -768,7 +779,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         onChange={(_, val) => handleQpChange("kantan", val?.value || null)}
                         renderInput={(params) => <TextField {...params} label="Kantan" sx={{ width: 200, mt: 2 }} />}
                         sx={{ flex: 1 }}
-                    /> */}
+                    />
                     <ThemeInput
                         labelName="Kantan Per Unit"
                         placeholder="Kantan Per Unit"
