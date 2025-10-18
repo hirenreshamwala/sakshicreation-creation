@@ -5,6 +5,7 @@ import Request from "./axios";
 export interface Kantan {
   _id: string;
   kantanName: string;
+  deckal: string;
   createdAt: string;
   updatedAt: string;
 }

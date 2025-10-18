@@ -814,6 +814,7 @@ const AdminManagerSalesView = () => {
                 refreshData();
               }}
               refreshData={refreshData}
+              orderNo={orders[0]?.orderNo}
             />
           ) : (
             <AddQPOrderDialog

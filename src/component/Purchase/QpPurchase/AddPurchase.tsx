@@ -33,11 +33,13 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
   const { paperGSM } = useAppSelector(state => state.paperGSMs);
   const { companies, roles, staff, singlePurchase, error } = useAppSelector(state => state.purchase);
   const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
+  
   // State for individual options
   const [paperOptions, setPaperOptions] = useState<Option[]>([]);
   const [deckalOptions, setDeckalOptions] = useState<Option[]>([]);
   const [gsmOptions, setGsmOptions] = useState<Option[]>([]);
   const [vendorOptions, setVendorOptions] = useState<Option[]>([]);
+  const [kantanDeckalOptions, setKantanDeckalOptions] = useState<Option[]>([]); // 👈 Alag se kantan deckal options
 
   const [formData, setFormData] = useState({
     vendorName: '',
@@ -53,17 +55,32 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     kg: '',
     reel: '',
     paperMil: '',
-    bf: '', // Added BF field
+    bf: '',
   });
 
   useEffect(() => {
     if (!paperGSM.length) dispatch(getAllPaperGSMThunk());
     if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
+    if (!kantans.length) dispatch(getAllKantansThunk());
   }, []);
+
+  // Kantan deckal options prepare karein
+  useEffect(() => {
+    if (kantans.length > 0) {
+      // Unique deckal values from kantans
+      const uniqueDeckals = Array.from(
+        new Set(kantans.map(k => k.deckal).filter(Boolean))
+      ).map(deckal => ({
+        value: deckal,
+        label: deckal,
+      }));
+      setKantanDeckalOptions(uniqueDeckals);
+    }
+  }, [kantans]);
 
   useEffect(() => {
     if (packagingOptions.length) {
-      // Unique Deckal options
+      // Unique Deckal options for paper
       const uniqueDeckals = Array.from(
         new Set(packagingOptions.map(opt => opt.deckal).filter(Boolean))
       ).map(deckal => ({
@@ -88,13 +105,11 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     }
   }, [packagingOptions]);
 
-
   // Fetch data on component mount
   useEffect(() => {
     dispatch(getCompaniesThunk());
     dispatch(getRolesThunk());
     dispatch(getAllVendorsThunk());
-    dispatch(getAllKantansThunk());
 
     if (isEditMode && purchaseId) dispatch(getQpPurchaseByIdThunk(purchaseId));
   }, [dispatch, isEditMode, purchaseId]);
@@ -148,7 +163,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
   useEffect(() => {
     if (paperGSM.length > 0) {
       const options = paperGSM
-        .filter(paper => paper.name && paper.name.trim() !== '') // Filter out blank names
+        .filter(paper => paper.name && paper.name.trim() !== '')
         .map(paper => ({
           value: paper._id,
           label: paper.name,
@@ -157,22 +172,19 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     }
   }, [paperGSM]);
 
-  console.log(paperGSM, 'paperGSM')
-
-  // Create individual deckal options
-  // Deckal options
+  // Deckal options for paper
   useEffect(() => {
     if (paperGSM.length > 0) {
       const uniqueDeckals = Array.from(
         new Map(
           paperGSM
             .filter(paper => paper.deckal && paper.deckal.trim() !== '')
-            .map(paper => [paper.deckal, paper]) // keep unique by deckal
+            .map(paper => [paper.deckal, paper])
         ).values()
       );
 
       const options = uniqueDeckals.map(paper => ({
-        value: paper._id,   // <-- now using paper._id
+        value: paper._id,
         label: paper.deckal,
       }));
 
@@ -187,19 +199,18 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         new Map(
           paperGSM
             .filter(paper => paper.gsm && paper.gsm.trim() !== '')
-            .map(paper => [paper.gsm, paper]) // keep unique by gsm
+            .map(paper => [paper.gsm, paper])
         ).values()
       );
 
       const options = uniqueGsms.map(paper => ({
-        value: paper._id,   // <-- now using paper._id
+        value: paper._id,
         label: paper.gsm,
       }));
 
       setGsmOptions(options);
     }
   }, [paperGSM]);
-
 
   useEffect(() => {
     if (error) {
@@ -224,7 +235,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         reel: singlePurchase.reel || '',
         category: singlePurchase.category || '',
         paperMil: singlePurchase.paperMil || '',
-        bf: singlePurchase.bf || '', // Added BF for edit mode
+        bf: singlePurchase.bf || '',
       });
 
       if (singlePurchase.for?._id) {
@@ -267,7 +278,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       const requiredFields = ['vendorName', 'billNumber', 'companyName', 'for', 'forCompany', 'type'];
 
       if (formData.type === 'kantan') {
-        requiredFields.push('kantan', 'reel');
+        requiredFields.push('kantan', 'reel', 'deckal'); // 👈 deckal required for kantan
       } else if (formData.type === 'glue' || formData.type === 'wire') {
         requiredFields.push('kg');
       } else if (formData.type === 'paper') {
@@ -309,9 +320,18 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         }
       }
     } catch (error: any) {
-      // console.log(error)
       toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'create'} purchase`);
     }
+  };
+
+  // Current type ke according deckal options decide karein
+  const getCurrentDeckalOptions = () => {
+    if (formData.type === 'kantan') {
+      return kantanDeckalOptions;
+    } else if (formData.type === 'paper') {
+      return deckalOptions;
+    }
+    return [];
   };
 
   return (
@@ -417,35 +437,42 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
           )}
         </Stack>
 
-        {formData.type === 'paper' && (
+        {/* DECKAL FIELD - Ab yeh kantan aur paper dono ke liye dikhega */}
+        {(formData.type === 'paper' || formData.type === 'kantan') && (
           <Stack direction="row" spacing={2} mb={2}>
             <ThemeSelect
               label="DECKAL"
-              options={deckalOptions}
-              value={deckalOptions.find(opt => opt.value === formData.deckal) || null}
+              options={getCurrentDeckalOptions()}
+              value={getCurrentDeckalOptions().find(opt => opt.value === formData.deckal) || null}
               onChange={(e, newValue) => handleSelectChange('deckal', newValue?.value)}
               required
               fullWidth
             />
 
-            <ThemeSelect
-              label="GSM"
-              options={gsmOptions}
-              value={gsmOptions.find(opt => opt.value === formData.gsm) || null}
-              onChange={(e, newValue) => handleSelectChange('gsm', newValue?.value)}
-              required
-              fullWidth
-            />
+            {/* GSM FIELD - Sirf paper type ke liye */}
+            {formData.type === 'paper' && (
+              <ThemeSelect
+                label="GSM"
+                options={gsmOptions}
+                value={gsmOptions.find(opt => opt.value === formData.gsm) || null}
+                onChange={(e, newValue) => handleSelectChange('gsm', newValue?.value)}
+                required
+                fullWidth
+              />
+            )}
 
-            <ThemeInput
-              labelName="KG"
-              name="kg"
-              type="number"
-              value={formData.kg}
-              onChange={handleChange}
-              fullWidth
-              required
-            />
+            {/* KG FIELD - Paper, glue, wire ke liye */}
+            {(formData.type === 'paper' || formData.type === 'glue' || formData.type === 'wire') && (
+              <ThemeInput
+                labelName="KG"
+                name="kg"
+                type="number"
+                value={formData.kg}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+            )}
           </Stack>
         )}
 

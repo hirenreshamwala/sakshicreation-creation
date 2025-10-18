@@ -30,7 +30,7 @@ interface AddOrderDialogProps {
     editData?: any;
 }
 
-const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData, party }) => {
+const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData, party, orderNo}) => {
     const dispatch = useAppDispatch();
     const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
     const { kantans } = useAppSelector((state) => state.kantans);
@@ -955,7 +955,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     ]);
 
     return (
-        <CustomDialog open={open} onClose={handleClose} maxWidth="md" title={editData?._id ? "Update Order" : "Place New Order"}>
+        <CustomDialog open={open} onClose={handleClose} maxWidth="md" title={editData?._id ? `Update Order QP-${editData?.orderNo || ""}` : `Place New Order QP-${orderNo + 1|| ""}`}>
             <Box sx={{ p: 2, background: "#fff", borderRadius: 2 }}>
                 <Box mb={2}>
                     <CompanySelect
