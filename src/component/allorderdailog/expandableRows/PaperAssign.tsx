@@ -91,7 +91,9 @@ function PaperAssign({
                         requirement,
                         paperType
                     )}
-                    getOptionLabel={(option: any) => option.label}
+                    getOptionLabel={(option: any) => {
+                        return `${option.label} ( BF:${option.bf || ""} ) `;
+                    }}
                     renderInput={(params) => (
                         <TextField {...params} label="Available Papers" placeholder="Select a paper to add" />
                     )}
@@ -178,7 +180,7 @@ function PaperAssign({
                                         primary={paper.paperName}
                                         secondary={
                                             <span>
-                                                {showKg.toFixed(2)} KG Roll
+                                                {showKg.toFixed(2)} KG Roll {paper.bf && `(BF: ${paper.bf})`}
                                                 <br />
                                             </span>
                                         }
@@ -326,6 +328,7 @@ function PaperAssign({
 
                 return {
                     value: item._id,
+                    bf: item.bf,
                     label: `${availableKg.toFixed(2)} KG`,
                     kg: item.kg,
                     usedKg: allocatedKg,

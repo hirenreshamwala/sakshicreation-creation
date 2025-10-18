@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Stack, Button } from '@mui/material';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ThemeInput from '@/component/common_component/themeinput';
 import ThemeSelect from '@/component/common_component/themeselect';
@@ -52,6 +52,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     category: "",
     kg: '',
     reel: '',
+    reelBatchNo: '', // Added REEL/BATCH NO field
     paperMil: '',
     bf: '', // Added BF field
   });
@@ -222,6 +223,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         gsm: singlePurchase.gsm || '',
         kg: singlePurchase.kg || '',
         reel: singlePurchase.reel || '',
+        reelBatchNo: singlePurchase.reelBatchNo || '', // Added for edit mode
         category: singlePurchase.category || '',
         paperMil: singlePurchase.paperMil || '',
         bf: singlePurchase.bf || '', // Added BF for edit mode
@@ -256,7 +258,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       ...prev,
       [name]: value || '',
       ...(name === 'type'
-        ? { kantan: '', kg: '', deckal: '', gsm: '', reel: '', paperMil: '', bf: '' }
+        ? { kantan: '', kg: '', deckal: '', gsm: '', reel: '', reelBatchNo: '', paperMil: '', bf: '' }
         : {}),
     }));
 
@@ -267,7 +269,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       const requiredFields = ['vendorName', 'billNumber', 'companyName', 'for', 'forCompany', 'type'];
 
       if (formData.type === 'kantan') {
-        requiredFields.push('kantan', 'reel');
+        requiredFields.push('kantan', 'reel', 'reelBatchNo'); // Added reelBatchNo as required
       } else if (formData.type === 'glue' || formData.type === 'wire') {
         requiredFields.push('kg');
       } else if (formData.type === 'paper') {
@@ -316,7 +318,6 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
 
   return (
     <Box>
-      <ToastContainer position="top-right" autoClose={3000} />
 
       <form onSubmit={handleSubmit}>
         <Stack direction="row" spacing={2} mb={2}>
@@ -377,6 +378,15 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                 onChange={handleChange}
                 fullWidth
                 required
+              />
+              <ThemeInput
+                labelName="REEL/BATCH NO"
+                name="reelBatchNo"
+                value={formData.reelBatchNo}
+                onChange={handleChange}
+                fullWidth
+                required
+                placeholder="Enter reel/batch number"
               />
             </>
           )}

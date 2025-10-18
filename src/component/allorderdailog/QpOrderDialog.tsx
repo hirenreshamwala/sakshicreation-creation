@@ -30,7 +30,7 @@ interface AddOrderDialogProps {
     editData?: any;
 }
 
-const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData, party }) => {
+const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData, party, orderNo }) => {
     const dispatch = useAppDispatch();
     const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
     const { kantans } = useAppSelector((state) => state.kantans);
@@ -43,7 +43,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         date: "",
         orderFrom: "",
         ply: "",
-        uom: "",
+        // uom: "",
         length: "",
         width: "",
         height: "",
@@ -83,7 +83,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 date: editData.date || "",
                 orderFrom: editData.orderFrom || "",
                 ply: editData.orderdata?.ply || "",
-                uom: editData.orderdata?.uom || "",
+                // uom: editData.orderdata?.uom || "",
                 length: editData.orderdata?.length || "",
                 width: editData.orderdata?.width || "",
                 height: editData.orderdata?.height || "",
@@ -205,14 +205,29 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     };
 
     const handleQpSubmit = async () => {
+        
         setIsSubmitting(true);
         try {
+            const packagingOption = {
+                party: qpFormData.partyName, // Include party ID in packagingOption
+                ply: qpFormData.ply,
+                // uom: qpFormData.uom,
+                length: qpFormData.length,
+                width: qpFormData.width,
+                height: qpFormData.height,
+                deckal: qpFormData.deckal,
+                paper1GSM: qpFormData.paper1GSM,
+                paper2GSM: qpFormData.paper2GSM,
+                paper3GSM: qpFormData.paper3GSM,
+            };
             const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
+
                 parseFloat(qpFormData.length),
                 parseFloat(qpFormData.width),
                 parseFloat(qpFormData.height),
                 parseFloat(qpFormData.deckal),
                 parseInt(qpFormData.ply),
+                // parseInt(qpFormData.uom),
                 parseFloat(qpFormData.paper3GSM),
                 parseFloat(qpFormData.paper2GSM),
                 parseFloat(qpFormData.paper1GSM),
@@ -222,6 +237,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             const orderData = {
                 isQp: true,
                 companyName: qpFormData?.companyName?._id ? qpFormData?.companyName?._id : qpFormData.companyName,
+                party: qpFormData.partyName,
+                packagingOption,
                 date: qpFormData.date || undefined,
                 orderFrom: qpFormData.orderFrom || undefined,
                 gsm: qpFormData.gsm || undefined,
@@ -239,14 +256,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 },
                 kantanDeckal: qpFormData.kantanDeckal || undefined,
                 salesRemark: qpFormData.salesRemark || undefined,
-                // New fields - using boolean values for API
-                lamination: qpFormData.lamination,
-                laminationType: qpFormData.laminationType || undefined,
-                uv: qpFormData.uv,
-                uvType: qpFormData.uvType || undefined,
-                varnish: qpFormData.varnish,
-                isPinning: qpFormData.isPinning,
-                isPasting: qpFormData.isPasting,
                 paperKG: {
                     paper1: {
                         deckal: qpFormData.deckal,
@@ -267,9 +276,11 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             };
 
             if (editData?._id) {
-                await dispatch(updateQPOrderThunk({ id: editData?._id, data: orderData })).unwrap();
+                // Update existing order
+                await dispatch(updateQPOrderThunk({ id: editData._id, data: orderData })).unwrap();
                 toast.success("Order updated successfully");
             } else {
+                // Create new order
                 await dispatch(createQpOrderThunk(orderData)).unwrap();
                 toast.success("Order created successfully");
             }
@@ -291,7 +302,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             date: "",
             orderFrom: "",
             ply: "",
-            uom: "",
+            // uom: "",
             length: "",
             width: "",
             height: "",
@@ -348,28 +359,28 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         }));
     };
 
-    const getUniqueUomOptions = () => {
-        const standardUomOptions = [
-            { value: "inch", label: "Inch" },
-            { value: "cm", label: "Centimeter" },
-            { value: "mm", label: "Millimeter" },
-        ];
+    // const getUniqueUomOptions = () => {
+    //     const standardUomOptions = [
+    //         { value: "inch", label: "Inch" },
+    //         { value: "cm", label: "Centimeter" },
+    //         { value: "mm", label: "Millimeter" },
+    //     ];
 
-        const uniqueUoms = [...new Set(filteredPackagingOptions.map((item: any) => item.uom))].sort();
-        const packagingUomOptions = uniqueUoms.map((uom) => ({
-            value: uom,
-            label: `${uom}`,
-        }));
+    //     const uniqueUoms = [...new Set(filteredPackagingOptions.map((item: any) => item.uom))].sort();
+    //     const packagingUomOptions = uniqueUoms.map((uom) => ({
+    //         value: uom,
+    //         label: `${uom}`,
+    //     }));
 
-        const allOptions = [...standardUomOptions];
-        packagingUomOptions.forEach(option => {
-            if (!standardUomOptions.some(std => std.value.toLowerCase() === option.value.toLowerCase())) {
-                allOptions.push(option);
-            }
-        });
+    //     const allOptions = [...standardUomOptions];
+    //     packagingUomOptions.forEach(option => {
+    //         if (!standardUomOptions.some(std => std.value.toLowerCase() === option.value.toLowerCase())) {
+    //             allOptions.push(option);
+    //         }
+    //     });
 
-        return allOptions;
-    };
+    //     return allOptions;
+    // };
 
     const getUniqueLengthOptions = () => {
         const uniqueLengths = [...new Set(filteredPackagingOptions.map((item: any) => item.length))].sort();
@@ -430,7 +441,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     const setAllData = (label: string, value: string) => {
         const fields = [
             "ply",
-            "uom",
+            // "uom",
             "length",
             "width",
             "height",
@@ -481,7 +492,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         )}
                         sx={{ flex: 1 }}
                     />
-                    <Autocomplete
+                    {/* <Autocomplete
                         options={getUniqueUomOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.uom, getUniqueUomOptions())}
@@ -496,7 +507,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             />
                         )}
                         sx={{ flex: 1 }}
-                    />
+                    /> */}
                     <Autocomplete
                         options={getUniqueLengthOptions()}
                         getOptionLabel={(option) => option.label}
@@ -711,13 +722,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 </Stack>
 
                 <Stack direction="row" spacing={2} mb={2}>
-                    {/* <ThemeInput
-                        labelName="Deckal Calculation"
-                        placeholder="Deckal Calculation"
-                        fullWidth
-                        value={qpFormData.deckalCalculation}
-                        disabled
-                    /> */}
                     <ThemeInput
                         labelName="No of Pieces"
                         placeholder="No of Pieces"
@@ -883,7 +887,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     ]);
 
     return (
-        <CustomDialog open={open} onClose={handleClose} maxWidth="md" title={editData?._id ? "Update Order" : "Place New Order"}>
+        <CustomDialog open={open} onClose={handleClose} maxWidth="md" title={editData?._id ? `Update Order QP-${editData?.orderNo || ""}` : `Place New Order QP-${orderNo + 1|| ""}`}>
             <Box sx={{ p: 2, background: "#fff", borderRadius: 2 }}>
                 <Box mb={2}>
                     <CompanySelect
