@@ -30,7 +30,7 @@ interface AddOrderDialogProps {
     editData?: any;
 }
 
-const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData, party, orderNo }) => {
+const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData, party, orderNo, type = "sell" }) => {
     const dispatch = useAppDispatch();
     const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
     const { kantans } = useAppSelector((state) => state.kantans);
@@ -43,7 +43,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         date: "",
         orderFrom: "",
         ply: "",
-        // uom: "",
+        uom: "inch",
         length: "",
         width: "",
         height: "",
@@ -73,7 +73,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         uvType: "", // "uv" or "uv_mate"
         varnish: false, // true or false
         isPinning: false, // true or false - DEFAULT: false
-        isPasting: true, // true or false - DEFAULT: true (Pasting selected by default)
+        isPasting: false, // true or false - DEFAULT: true (Pasting selected by default)
     });
 
     useEffect(() => {
@@ -83,7 +83,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 date: editData.date || "",
                 orderFrom: editData.orderFrom || "",
                 ply: editData.orderdata?.ply || "",
-                // uom: editData.orderdata?.uom || "",
+                uom: editData.orderdata?.uom || "inch",
                 length: editData.orderdata?.length || "",
                 width: editData.orderdata?.width || "",
                 height: editData.orderdata?.height || "",
@@ -112,16 +112,17 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 uv: editData.uv || false, // Default to false if no edit data
                 uvType: editData.uvType || "",
                 varnish: editData.varnish || false,
-                isPinning: editData.isPinning || false,
-                isPasting: editData.isPasting !== undefined ? editData.isPasting : true, // Default to true for new forms
+                isPinning: editData.isPinning,
+                isPasting: editData.isPasting,
             });
         } else if (open && !editData) {
             // Set default values for new form
             setQpFormData(prev => ({
                 ...prev,
-                uv: false, // Default UV to "No"
-                isPasting: true, // Default process to "Pasting"
+                uv: false,
+                isPasting: false,
                 isPinning: false,
+                uom: "inch",
             }));
         }
     }, [open, editData, company]);
@@ -163,55 +164,18 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         setQpFormData((prev) => {
             const newState = { ...prev, [field]: value };
 
-            // Handle conditional logic
-            if (field === "varnish" && value === true) {
-                // If varnish is true, disable lamination and uv
-                newState.lamination = false;
-                newState.laminationType = "";
-                newState.uv = false;
-                newState.uvType = "";
-            } else if (field === "lamination" && value === false) {
-                // If lamination is false, clear lamination type and disable uv
-                newState.laminationType = "";
-                newState.uv = false;
-                newState.uvType = "";
-            } else if (field === "laminationType") {
-                // If lamination type changes, handle uv visibility
-                if (value === "glossy") {
-                    // If lamination type is "glossy", disable uv and set to "no"
-                    newState.uv = false;
-                    newState.uvType = "";
-                } else if (value === "mate") {
-                    // If lamination type is "mate", uv can be enabled (keep current uv value)
-                    // Don't change uv value, let user choose
-                } else {
-                    // If lamination type is cleared, disable uv
-                    newState.uv = false;
-                    newState.uvType = "";
-                }
-            } else if (field === "uv" && value === false) {
-                // If uv is false, clear uv type
-                newState.uvType = "";
-            } else if (field === "isPinning" && value === true) {
-                // If pinning is selected, unselect pasting
-                newState.isPasting = false;
-            } else if (field === "isPasting" && value === true) {
-                // If pasting is selected, unselect pinning
-                newState.isPinning = false;
-            }
-
             return newState;
         });
     };
 
     const handleQpSubmit = async () => {
-        
+
         setIsSubmitting(true);
         try {
             const packagingOption = {
                 party: qpFormData.partyName, // Include party ID in packagingOption
                 ply: qpFormData.ply,
-                // uom: qpFormData.uom,
+                uom: qpFormData.uom,
                 length: qpFormData.length,
                 width: qpFormData.width,
                 height: qpFormData.height,
@@ -227,7 +191,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 parseFloat(qpFormData.height),
                 parseFloat(qpFormData.deckal),
                 parseInt(qpFormData.ply),
-                // parseInt(qpFormData.uom),
+                qpFormData.uom,
                 parseFloat(qpFormData.paper3GSM),
                 parseFloat(qpFormData.paper2GSM),
                 parseFloat(qpFormData.paper1GSM),
@@ -302,7 +266,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             date: "",
             orderFrom: "",
             ply: "",
-            // uom: "",
+            uom: "inch",
             length: "",
             width: "",
             height: "",
@@ -332,7 +296,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             uvType: "",
             varnish: false,
             isPinning: false,
-            isPasting: true, // Default to "Pasting"
+            isPasting: false,
         });
     };
 
@@ -359,28 +323,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         }));
     };
 
-    // const getUniqueUomOptions = () => {
-    //     const standardUomOptions = [
-    //         { value: "inch", label: "Inch" },
-    //         { value: "cm", label: "Centimeter" },
-    //         { value: "mm", label: "Millimeter" },
-    //     ];
-
-    //     const uniqueUoms = [...new Set(filteredPackagingOptions.map((item: any) => item.uom))].sort();
-    //     const packagingUomOptions = uniqueUoms.map((uom) => ({
-    //         value: uom,
-    //         label: `${uom}`,
-    //     }));
-
-    //     const allOptions = [...standardUomOptions];
-    //     packagingUomOptions.forEach(option => {
-    //         if (!standardUomOptions.some(std => std.value.toLowerCase() === option.value.toLowerCase())) {
-    //             allOptions.push(option);
-    //         }
-    //     });
-
-    //     return allOptions;
-    // };
+    const getUniqueUomOptions = () => {
+        // Only return inch and millimeter options
+        return [
+            { value: "inch", label: "Inch" },
+            { value: "mm", label: "Millimeter" },
+        ];
+    };
 
     const getUniqueLengthOptions = () => {
         const uniqueLengths = [...new Set(filteredPackagingOptions.map((item: any) => item.length))].sort();
@@ -441,7 +390,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     const setAllData = (label: string, value: string) => {
         const fields = [
             "ply",
-            // "uom",
+            "uom",
             "length",
             "width",
             "height",
@@ -471,6 +420,50 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         }
     };
 
+     const handlePartyChange = async (event: any, newValue: any) => {
+        const partyId = typeof newValue === "object" && newValue !== null
+            ? newValue.value
+            : newValue;
+
+        handleQpChange("partyName", partyId);
+
+        if (company && partyId) {
+            try {
+                await dispatch(
+                    getAccountMasterByCompanyAndPartyThunk({
+                        companyId: company,
+                        partyId: partyId,
+                    })
+                ).unwrap();
+                const partyOptions = packagingOptions.filter((opt: any) => opt.party?._id === partyId);
+
+                if (partyOptions.length > 0) {
+                    // Sort by createdAt in descending order to get the latest option first
+                    const sortedOptions = partyOptions.sort((a: any, b: any) =>
+                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                    );
+                    const latestOption = sortedOptions[0];
+
+                    setQpFormData((prev) => ({
+                        ...prev,
+                        ply: latestOption.ply || "",
+                        uom: latestOption.uom || "",
+                        length: latestOption.length || "",
+                        width: latestOption.width || "",
+                        height: latestOption.height || "",
+                        deckal: latestOption.deckal || "",
+                        paper1GSM: latestOption.paper1GSM || "",
+                        paper2GSM: latestOption.paper2GSM || "",
+                        paper3GSM: latestOption.paper3GSM || "",
+                    }));
+                }
+            } catch (error) {
+                console.error("Failed to fetch account master data:", error);
+                toast.error("Failed to load party details");
+            }
+        }
+    };
+
     const renderQpForm = () => {
         return (
             <>
@@ -492,13 +485,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         )}
                         sx={{ flex: 1 }}
                     />
-                    {/* <Autocomplete
+                    <Autocomplete
                         options={getUniqueUomOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.uom, getUniqueUomOptions())}
                         onChange={(_, val) => {
-                            handleQpChange("uom", val?.value || "");
-                            setAllData("uom", val?.value || "");
+                            handleQpChange("uom", val?.value || "inch");
+                            // Don't call setAllData for UOM as it's a standalone field
                         }}
                         renderInput={(params) => (
                             <TextField
@@ -507,7 +500,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             />
                         )}
                         sx={{ flex: 1 }}
-                    /> */}
+                    />
                     <Autocomplete
                         options={getUniqueLengthOptions()}
                         getOptionLabel={(option) => option.label}
@@ -617,110 +610,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     />
                 </Stack>
 
-                {/* Process Field - Pinning and Pasting as separate boolean fields */}
-                <Stack direction="row" spacing={2} mb={2}>
-                    <FormControl fullWidth>
-                        <InputLabel>Process</InputLabel>
-                        <Select
-                            value={qpFormData.isPinning ? "pinning" : qpFormData.isPasting ? "pasting" : ""}
-                            label="Process"
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                if (value === "pinning") {
-                                    handleQpChange("isPinning", true);
-                                    handleQpChange("isPasting", false);
-                                } else if (value === "pasting") {
-                                    handleQpChange("isPinning", false);
-                                    handleQpChange("isPasting", true);
-                                } else {
-                                    handleQpChange("isPinning", false);
-                                    handleQpChange("isPasting", false);
-                                }
-                            }}
-                        >
-                            {/* <MenuItem value="">Select Process</MenuItem> */}
-                            <MenuItem value="pinning">Pinning</MenuItem>
-                            <MenuItem value="pasting">Pasting</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Stack>
-
-                {/* New Options Section */}
-                <Stack direction="row" spacing={2} mb={2}>
-                    {/* Lamination */}
-                    <FormControl fullWidth>
-                        <InputLabel>Lamination</InputLabel>
-                        <Select
-                            value={qpFormData.lamination ? "yes" : "no"}
-                            label="Lamination"
-                            onChange={(e) => handleQpChange("lamination", e.target.value === "yes")}
-                            disabled={qpFormData.varnish}
-                        >
-                            <MenuItem value="no">No</MenuItem>
-                            <MenuItem value="yes">Yes</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    {/* Lamination Type (only show if lamination is true) */}
-                    {qpFormData.lamination && (
-                        <FormControl fullWidth>
-                            <InputLabel>Lamination Type</InputLabel>
-                            <Select
-                                value={qpFormData.laminationType}
-                                label="Lamination Type"
-                                onChange={(e) => handleQpChange("laminationType", e.target.value)}
-                            >
-                                <MenuItem value="glossy">Glossy</MenuItem>
-                                <MenuItem value="mate">Mate</MenuItem>
-                            </Select>
-                        </FormControl>
-                    )}
-
-                    {/* UV - Always show, but disable when lamination type is "glossy" */}
-                    <FormControl fullWidth>
-                        <InputLabel>UV</InputLabel>
-                        <Select
-                            value={qpFormData.uv ? "yes" : "no"}
-                            label="UV"
-                            onChange={(e) => handleQpChange("uv", e.target.value === "yes")}
-                            disabled={qpFormData.varnish || qpFormData.laminationType === "glossy"}
-                        >
-                            <MenuItem value="no">No</MenuItem>
-                            <MenuItem value="yes">Yes</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    {/* UV Type (only show if UV is true) */}
-                    {qpFormData.uv && (
-                        <FormControl fullWidth>
-                            <InputLabel>UV Type</InputLabel>
-                            <Select
-                                value={qpFormData.uvType}
-                                label="UV Type"
-                                onChange={(e) => handleQpChange("uvType", e.target.value)}
-                            >
-                                <MenuItem value="uv">UV</MenuItem>
-                                <MenuItem value="uv_mate">UV + Mate Lamination</MenuItem>
-                            </Select>
-                        </FormControl>
-                    )}
-                </Stack>
-
-                {/* Varnish */}
-                <Stack direction="row" spacing={2} mb={2}>
-                    <FormControl fullWidth>
-                        <InputLabel>Varnish</InputLabel>
-                        <Select
-                            value={qpFormData.varnish ? "yes" : "no"}
-                            label="Varnish"
-                            onChange={(e) => handleQpChange("varnish", e.target.value === "yes")}
-                        >
-                            <MenuItem value="no">No</MenuItem>
-                            <MenuItem value="yes">Yes</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Stack>
-
                 <Stack direction="row" spacing={2} mb={2}>
                     <ThemeInput
                         labelName="No of Pieces"
@@ -802,13 +691,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         }
                         disabled
                     />
-                    <ThemeInput
+                    {/* <ThemeInput
                         labelName="Kantan Deckal"
                         placeholder="Kantan Deckal"
                         fullWidth
                         value={qpFormData.kantanDeckal}
                         onChange={(e) => handleQpChange("kantanDeckal", e.target.value)}
-                    />
+                    /> */}
                 </Stack>
                 <ThemeInput
                     labelName="Sales Remarks"
@@ -825,47 +714,48 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     };
 
     useEffect(() => {
-        const { length, width, height, ply, deckal, noOfPieces, ratePerPiece, paper1GSM, paper2GSM, paper3GSM } = qpFormData;
+        const { length, width, height, ply, deckal, noOfPieces, ratePerPiece, paper1GSM, paper2GSM, paper3GSM, uom } = qpFormData;
+
+        // Convert dimensions to inches if uom is 'mm'
+        let lengthInInches = Number(length) || 0;
+        let widthInInches = Number(width) || 0;
+        let heightInInches = Number(height) || 0;
+
+        if (uom === 'mm') {
+            lengthInInches = lengthInInches / 25.4;
+            widthInInches = widthInInches / 25.4;
+            heightInInches = heightInInches / 25.4;
+        }
 
         let deckalValue: number | null = null;
-        if (width && height) {
-            deckalValue = calculateDeckal(Number(width), Number(height));
+        if (widthInInches && heightInInches) {
+            deckalValue = calculateDeckal(widthInInches, heightInInches);
             handleQpChange("deckalCalculation", deckalValue.toFixed(2));
-        } else {
-            handleQpChange("deckalCalculation", "");
-        }
+        } else handleQpChange("deckalCalculation", "");
 
         let gsmValue: number | null = null;
         if (ply && paper1GSM && paper2GSM && paper3GSM) {
             gsmValue = calculateGSM(Number(ply), Number(paper3GSM), Number(paper2GSM), Number(paper1GSM));
             handleQpChange("gsm", gsmValue.toFixed(2));
-        } else {
-            handleQpChange("gsm", "");
-        }
+        } else handleQpChange("gsm", "");
 
-        if (length && width && deckalValue && gsmValue) {
-            const kgPerPiece = calculateKgPerPiece(Number(length), Number(width), Number(deckal), Number(gsmValue));
+        if (lengthInInches && widthInInches && deckalValue && gsmValue) {
+            const kgPerPiece = calculateKgPerPiece(lengthInInches, widthInInches, Number(deckalValue), gsmValue);
             handleQpChange("kgPerUnit", kgPerPiece.toFixed(4));
-        } else {
-            handleQpChange("kgPerUnit", "");
-        }
+        } else handleQpChange("kgPerUnit", "");
 
         if (Number(noOfPieces) && qpFormData.kgPerUnit) {
             const totalKg = calculateTotalKg(Number(noOfPieces), Number(qpFormData.kgPerUnit));
             handleQpChange("totalKg", totalKg.toFixed(2));
-        } else {
-            handleQpChange("totalKg", "");
-        }
+        } else handleQpChange("totalKg", "");
 
         if (Number(noOfPieces) && Number(ratePerPiece)) {
             const amount = calculateTotalAmount(Number(noOfPieces), Number(ratePerPiece));
             handleQpChange("amount", amount.toFixed(2));
-        } else {
-            handleQpChange("amount", "");
-        }
+        } else handleQpChange("amount", "");
 
-        if (length && width && Number(noOfPieces)) {
-            const { kantanPerUnit, reel, inch } = calculateKantan(Number(length), Number(width), Number(noOfPieces));
+        if (lengthInInches && widthInInches && Number(noOfPieces)) {
+            const { kantanPerUnit, reel, inch } = calculateKantan(lengthInInches, widthInInches, Number(noOfPieces));
             handleQpChange("kantanPerUnit", kantanPerUnit.toString());
             handleQpChange("totalKantan", { reel: reel.toString(), inch: inch.toString() });
         } else {
@@ -883,11 +773,12 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         qpFormData.noOfPieces,
         qpFormData.ratePerPiece,
         qpFormData.totalKg,
+        qpFormData.uom,
         packagingOptions,
     ]);
 
     return (
-        <CustomDialog open={open} onClose={handleClose} maxWidth="md" title={editData?._id ? `Update Order QP-${editData?.orderNo || ""}` : `Place New Order QP-${orderNo + 1|| ""}`}>
+        <CustomDialog open={open} onClose={handleClose} maxWidth="md" title={editData?._id ? `Update Order QP-${editData?.orderNo || ""}` : `Place New Order QP-${orderNo + 1 || ""}`}>
             <Box sx={{ p: 2, background: "#fff", borderRadius: 2 }}>
                 <Box mb={2}>
                     <CompanySelect
@@ -898,9 +789,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         required
                         showPartyName={true}
                         partyName={qpFormData.partyName}
-                        onPartyChange={() => { }}
+                        onPartyChange={handlePartyChange}
                         disableCompanySelect={true}
-                        showPartyName={false}
                     />
                 </Box>
                 {renderQpForm()}

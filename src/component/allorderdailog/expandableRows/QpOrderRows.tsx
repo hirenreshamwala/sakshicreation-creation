@@ -1006,7 +1006,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             </FormControl>
                         )}
 
-                        {formData.lamination && formData.laminationType === "mate" && (
+                        {formData.laminationType !== "glossy" && (
                             <>
                                 <FormControl sx={{ width: 200 }}>
                                     <InputLabel>UV</InputLabel>
