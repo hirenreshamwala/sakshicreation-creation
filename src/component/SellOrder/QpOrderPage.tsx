@@ -14,7 +14,7 @@ import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk } from "@/store/slices/q
 import { toast } from "react-toastify"
 import moment from "moment"
 import Loader from "../common_component/loader"
-import AddQPOrderDialog from "./QpOrderDialog"
+import AddQPOrderDialog from "../allorderdailog/QpOrderDialog"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { StaticCompanyOptions } from "@/constants"
 import { getAllInventoryThunk } from "@/store/slices/inventorySlice"

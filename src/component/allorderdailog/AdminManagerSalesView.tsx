@@ -16,13 +16,12 @@ import moment from "moment"
 import { StatusCell } from "./StatusCell"
 import Loader from "../common_component/loader"
 import { ExpandedRowForm } from "./expandableRows/QpOrderRows"
-// import AddQPOrderDialog from "./QpOrderDialog"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import { StaticCompanyOptions } from "@/constants"
 import { getAllInventoryThunk } from "@/store/slices/inventorySlice"
 import { Label } from "@mui/icons-material"
 import ComplainDialogue from "@/pages/admin/all-complains/ComplainDialogue"
-import AddQPOrderDialog from "../SellOrder/QpOrderDialog"
+import AddQPOrderDialog from "./QpOrderDialog"
 
 type OrderRow = {
   _id: string;
