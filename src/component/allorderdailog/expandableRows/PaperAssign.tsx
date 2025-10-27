@@ -17,6 +17,7 @@ import { useCallback } from "react";
 import { toast } from "react-toastify";
 import RemoveIcon from '@mui/icons-material/Remove';
 import { PaperOption, InventoryPaper } from "@/constants/interface";
+import { color } from "framer-motion";
 
 function PaperAssign({
     row,
@@ -92,7 +93,7 @@ function PaperAssign({
                         paperType
                     )}
                     getOptionLabel={(option: any) => {
-                        return `${option.label} ( BF:${option.bf || ""} ) `;
+                        return `${option.label} ( BF:${option.bf || ""} ) ( COLOR:${option.color || ""} ) ( REEL/BATCH NO:${option.reelBatchNo || ""} )`;
                     }}
                     renderInput={(params) => (
                         <TextField {...params} label="Available Papers" placeholder="Select a paper to add" />
@@ -329,6 +330,8 @@ function PaperAssign({
                 return {
                     value: item._id,
                     bf: item.bf,
+                    color: item.color,
+                    reelBatchNo: item.reelBatchNo,
                     label: `${availableKg.toFixed(2)} KG`,
                     kg: item.kg,
                     usedKg: allocatedKg,

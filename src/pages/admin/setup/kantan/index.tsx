@@ -29,7 +29,6 @@ import { Kantan } from "@/services/kantan.service";
 const columns = [
     { id: "id", label: "ID" },
     { id: "name", label: "Kantan Name" },
-    { id: "deckal", label: "Deckal" }, // 👈 Naya column add karein
     { id: "options", label: "Options" },
 ];
 
@@ -55,14 +54,12 @@ const KantanPage = () => {
     // ✅ Yup validation schema
     const validationSchema = Yup.object({
         kantanName: Yup.string().required("Kantan Name is required"),
-        deckal: Yup.string().required("Deckal is required"), // 👈 Naya validation
     });
 
     // ✅ Formik hook
     const formik = useFormik({
         initialValues: {
             kantanName: "",
-            deckal: "", // 👈 Naya field
         },
         validationSchema,
         onSubmit: (values) => {
@@ -81,7 +78,6 @@ const KantanPage = () => {
             setEditId(kantan._id);
             formik.setValues({
                 kantanName: kantan.kantanName,
-                deckal: kantan.deckal, // 👈 Edit mode mein deckal set karein
             });
         } else {
             setEditId(null);
@@ -139,8 +135,7 @@ const KantanPage = () => {
     };
 
     const handleDownloadSample = () => {
-        const csvContent =
-            "kantanName,deckal\nSample Kantan,28x40\n"; // 👈 Deckal add karein sample mein
+        const csvContent = "kantanName\nSample Kantan\n";
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
@@ -184,7 +179,6 @@ const KantanPage = () => {
                     <>
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>{row?.kantanName}</TableCell>
-                        <TableCell>{row?.deckal}</TableCell> {/* 👈 Deckal display karein */}
                         <TableCell>
                             <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                                 <Edit />
@@ -206,19 +200,17 @@ const KantanPage = () => {
             >
                 <form onSubmit={formik.handleSubmit}>
                     <Box display="grid" gap={2}>
-                        {["kantanName", "deckal"].map((field) => ( // 👈 Deckal field add karein
-                            <Box key={field}>
-                                <Input
-                                    label={field.toUpperCase()}
-                                    name={field}
-                                    value={formik.values[field as keyof typeof formik.values]}
-                                    onChange={formik.handleChange}
-                                    fullWidth
-                                    error={formik.touched[field as keyof typeof formik.touched] && Boolean(formik.errors[field as keyof typeof formik.errors])}
-                                    helperText={formik.touched[field as keyof typeof formik.touched] && formik.errors[field as keyof typeof formik.errors]}
-                                />
-                            </Box>
-                        ))}
+                        <Box>
+                            <Input
+                                label="KANTAN NAME"
+                                name="kantanName"
+                                value={formik.values.kantanName}
+                                onChange={formik.handleChange}
+                                fullWidth
+                                error={formik.touched.kantanName && Boolean(formik.errors.kantanName)}
+                                helperText={formik.touched.kantanName && formik.errors.kantanName}
+                            />
+                        </Box>
                     </Box>
                     <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
                         <Button variant="outlined" onClick={() => setDialogOpen(false)}>

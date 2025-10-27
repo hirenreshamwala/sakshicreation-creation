@@ -33,13 +33,12 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
   const { paperGSM } = useAppSelector(state => state.paperGSMs);
   const { companies, roles, staff, singlePurchase, error } = useAppSelector(state => state.purchase);
   const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
-  
+
   // State for individual options
   const [paperOptions, setPaperOptions] = useState<Option[]>([]);
   const [deckalOptions, setDeckalOptions] = useState<Option[]>([]);
   const [gsmOptions, setGsmOptions] = useState<Option[]>([]);
   const [vendorOptions, setVendorOptions] = useState<Option[]>([]);
-  const [kantanDeckalOptions, setKantanDeckalOptions] = useState<Option[]>([]); // 👈 Alag se kantan deckal options
 
   const [formData, setFormData] = useState({
     vendorName: '',
@@ -57,7 +56,13 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     reelBatchNo: '', // Added REEL/BATCH NO field
     paperMil: '',
     bf: '',
+    color: '',
   });
+
+  const colorOptions = [
+    { value: 'natural', label: 'Natural' },
+    { value: 'gold', label: 'Gold' },
+  ];
 
   useEffect(() => {
     if (!paperGSM.length) dispatch(getAllPaperGSMThunk());
@@ -65,19 +70,6 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     if (!kantans.length) dispatch(getAllKantansThunk());
   }, []);
 
-  // Kantan deckal options prepare karein
-  useEffect(() => {
-    if (kantans.length > 0) {
-      // Unique deckal values from kantans
-      const uniqueDeckals = Array.from(
-        new Set(kantans.map(k => k.deckal).filter(Boolean))
-      ).map(deckal => ({
-        value: deckal,
-        label: deckal,
-      }));
-      setKantanDeckalOptions(uniqueDeckals);
-    }
-  }, [kantans]);
 
   useEffect(() => {
     if (packagingOptions.length) {
@@ -238,6 +230,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         category: singlePurchase.category || '',
         paperMil: singlePurchase.paperMil || '',
         bf: singlePurchase.bf || '',
+        color: singlePurchase.color || '',
       });
 
       if (singlePurchase.for?._id) {
@@ -269,7 +262,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       ...prev,
       [name]: value || '',
       ...(name === 'type'
-        ? { kantan: '', kg: '', deckal: '', gsm: '', reel: '', reelBatchNo: '', paperMil: '', bf: '' }
+        ? { kantan: '', kg: '', deckal: '', gsm: '', reel: '', reelBatchNo: '', paperMil: '', bf: '', color: '' }
         : {}),
     }));
 
@@ -280,11 +273,11 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       const requiredFields = ['vendorName', 'billNumber', 'companyName', 'for', 'forCompany', 'type'];
 
       if (formData.type === 'kantan') {
-        requiredFields.push('kantan', 'reel', 'reelBatchNo'); // Added reelBatchNo as required
+        requiredFields.push('kantan', 'reel'); // Added reelBatchNo as required
       } else if (formData.type === 'glue' || formData.type === 'wire') {
         requiredFields.push('kg');
       } else if (formData.type === 'paper') {
-        requiredFields.push('deckal', 'gsm', 'kg', 'paperMil', 'bf');
+        requiredFields.push('deckal', 'gsm', 'kg', 'paperMil', 'bf', 'reelBatchNo', 'color');
       }
 
       const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
@@ -328,9 +321,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
 
   // Current type ke according deckal options decide karein
   const getCurrentDeckalOptions = () => {
-    if (formData.type === 'kantan') {
-      return kantanDeckalOptions;
-    } else if (formData.type === 'paper') {
+    if (formData.type === 'paper') {
       return deckalOptions;
     }
     return [];
@@ -391,7 +382,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                 fullWidth
               />
               <ThemeInput
-                labelName="REEL"
+                labelName="TAKA"
                 name="reel"
                 type="number"
                 value={formData.reel}
@@ -399,7 +390,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                 fullWidth
                 required
               />
-              <ThemeInput
+              {/* <ThemeInput
                 labelName="REEL/BATCH NO"
                 name="reelBatchNo"
                 value={formData.reelBatchNo}
@@ -407,7 +398,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                 fullWidth
                 required
                 placeholder="Enter reel/batch number"
-              />
+              /> */}
             </>
           )}
 
@@ -434,21 +425,12 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                 required
                 placeholder="Enter paper mill name"
               />
-              <ThemeInput
-                labelName="BF"
-                name="bf"
-                value={formData.bf}
-                onChange={handleChange}
-                fullWidth
-                required
-                placeholder="Enter burst factor"
-              />
             </>
           )}
         </Stack>
 
         {/* DECKAL FIELD - Ab yeh kantan aur paper dono ke liye dikhega */}
-        {(formData.type === 'paper' || formData.type === 'kantan') && (
+        {(formData.type === 'paper') && (
           <Stack direction="row" spacing={2} mb={2}>
             <ThemeSelect
               label="DECKAL"
@@ -461,14 +443,42 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
 
             {/* GSM FIELD - Sirf paper type ke liye */}
             {formData.type === 'paper' && (
-              <ThemeSelect
-                label="GSM"
-                options={gsmOptions}
-                value={gsmOptions.find(opt => opt.value === formData.gsm) || null}
-                onChange={(e, newValue) => handleSelectChange('gsm', newValue?.value)}
-                required
-                fullWidth
-              />
+              <>
+                <ThemeSelect
+                  label="GSM"
+                  options={gsmOptions}
+                  value={gsmOptions.find(opt => opt.value === formData.gsm) || null}
+                  onChange={(e, newValue) => handleSelectChange('gsm', newValue?.value)}
+                  required
+                  fullWidth
+                />
+                <ThemeInput
+                  labelName="BF"
+                  name="bf"
+                  value={formData.bf}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  placeholder="Enter BF"
+                />
+                <ThemeInput
+                  labelName="REEL/BATCH NO"
+                  name="reelBatchNo"
+                  value={formData.reelBatchNo}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  placeholder="Enter reel/batch number"
+                />
+                <ThemeSelect
+                  label="COLOR"
+                  options={colorOptions}
+                  value={colorOptions.find(opt => opt.value === formData.color) || null}
+                  onChange={(e, newValue) => handleSelectChange('color', newValue?.value)}
+                  required
+                  fullWidth
+                />
+              </>
             )}
 
             {/* KG FIELD - Paper, glue, wire ke liye */}

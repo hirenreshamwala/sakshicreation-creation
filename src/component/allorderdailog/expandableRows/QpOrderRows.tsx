@@ -253,7 +253,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     allocations.push({
                         paperId: paper._id,
                         allocatedKg: 0,
-                        bf: paper.bf
+                        bf: paper.bf,
+                        color: paper.color,
+                        reelBatchNo: paper.reelBatchNo,
                     });
                     continue;
                 }
@@ -263,7 +265,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     allocations.push({
                         paperId: paper._id,
                         allocatedKg: 0,
-                        bf: paper.bf
+                        bf: paper.bf,
+                        color: paper.color,
+                        reelBatchNo: paper.reelBatchNo,
                     });
                     continue;
                 }
@@ -273,7 +277,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 allocations.push({
                     paperId: paper._id,
                     allocatedKg,
-                    bf: paper.bf
+                    bf: paper.bf,
+                    color: paper.color,
+                    reelBatchNo: paper.reelBatchNo,
                 });
 
                 paperQuantities[paper._id] -= allocatedKg;
@@ -306,7 +312,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             if (!paperAllocationsMap[allocation.paperId]) {
                 paperAllocationsMap[allocation.paperId] = {
                     allocatedKg: 0,
-                    bf: allocation.bf
+                    bf: allocation.bf,
+                    color: allocation.color,
+                    reelBatchNo: allocation.reelBatchNo,
                 };
             }
             paperAllocationsMap[allocation.paperId].allocatedKg += allocation.allocatedKg;
