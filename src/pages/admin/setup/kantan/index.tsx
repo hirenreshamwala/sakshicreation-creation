@@ -29,6 +29,7 @@ import { Kantan } from "@/services/kantan.service";
 const columns = [
     { id: "id", label: "ID" },
     { id: "name", label: "Kantan Name" },
+    { id: "deckal", label: "Deckal" }, // 👈 Naya column add karein
     { id: "options", label: "Options" },
 ];
 
@@ -54,12 +55,14 @@ const KantanPage = () => {
     // ✅ Yup validation schema
     const validationSchema = Yup.object({
         kantanName: Yup.string().required("Kantan Name is required"),
+        deckal: Yup.string().required("Deckal is required"), // 👈 Naya validation
     });
 
     // ✅ Formik hook
     const formik = useFormik({
         initialValues: {
             kantanName: "",
+            deckal: "", // 👈 Naya field
         },
         validationSchema,
         onSubmit: (values) => {
@@ -70,7 +73,7 @@ const KantanPage = () => {
             }
             setDialogOpen(false);
         },
-        enableReinitialize: true, // ✅ important for edit mode
+        enableReinitialize: true,
     });
 
     const handleOpenDialog = (kantan?: any) => {
@@ -78,6 +81,7 @@ const KantanPage = () => {
             setEditId(kantan._id);
             formik.setValues({
                 kantanName: kantan.kantanName,
+                deckal: kantan.deckal, // 👈 Edit mode mein deckal set karein
             });
         } else {
             setEditId(null);
@@ -136,7 +140,7 @@ const KantanPage = () => {
 
     const handleDownloadSample = () => {
         const csvContent =
-            "kantanName\nSample Kantan\n";
+            "kantanName,deckal\nSample Kantan,28x40\n"; // 👈 Deckal add karein sample mein
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
@@ -180,6 +184,7 @@ const KantanPage = () => {
                     <>
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>{row?.kantanName}</TableCell>
+                        <TableCell>{row?.deckal}</TableCell> {/* 👈 Deckal display karein */}
                         <TableCell>
                             <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                                 <Edit />
@@ -201,7 +206,7 @@ const KantanPage = () => {
             >
                 <form onSubmit={formik.handleSubmit}>
                     <Box display="grid" gap={2}>
-                        {["kantanName"].map((field) => (
+                        {["kantanName", "deckal"].map((field) => ( // 👈 Deckal field add karein
                             <Box key={field}>
                                 <Input
                                     label={field.toUpperCase()}

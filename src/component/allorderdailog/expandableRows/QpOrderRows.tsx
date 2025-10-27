@@ -320,6 +320,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         };
     }, [paperSelections, paperRequirements, availablePapers]);
 
+
     // Memoize the allocations calculation
     const allAllocations: any = useMemo(() => calculateAllPaperAllocations(), [
         calculateAllPaperAllocations
