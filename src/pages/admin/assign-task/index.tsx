@@ -59,7 +59,6 @@ interface RowData {
   rescheduleDate?: string;
   isRescheduledTask?: boolean;
   originalTaskDate?: string | null;
-  shouldHighlight?: boolean;
 }
 
 const columns = [
@@ -282,61 +281,38 @@ const AssignTaskPage: React.FC = () => {
   }, [dispatch, router.isReady, canViewGlobal, canViewOwn, user?.id, selectedCompanyId,]);
 
   const mapTasksToRows = (tasks: any[]): RowData[] =>
-    tasks.map((task) => {
-      // Condition check: reason = "other" और assignTo का role = "driver"
-      // ये वो reasons हैं जिनके लिए highlight नहीं करना है
-      const excludedReasons = [
-        "delivery",
-        "pickup",
-        "collection",
-        "payment",
-        "meeting",
-        "installation",
-        "service"
-      ];
-
-      const shouldHighlight =
-        task.reasonForVisit &&
-        !excludedReasons.includes(task.reasonForVisit.toLowerCase()) &&
-        task.assignTo?.role?.roleName?.toLowerCase() === "driver";
-
-        
-
-      return {
-        id: task._id,
-        company: {
-          name: task.companyName?.companyName || "Unknown",
-          avatar: task.companyName?.avatar || ""
-        },
-        date: new Date(task.isRescheduledTask && task.originalTaskId?.createdAt
-          ? task.originalTaskId.createdAt
-          : task.createdAt).toLocaleDateString("en-GB"),
-        reason: task.reasonForVisit || "N/A",
-        party: task.partyName?.partyName || "Unknown",
-        address: task.partyName?.address?.unitNo || "N/A",
-        market: task.partyName?.address?.marketName?.marketName || "N/A",
-        area: task.partyName?.address?.area?.area || "N/A",
-        mobile: task.partyName?.ownerWhatsAppNo || "N/A",
-        remarks: task.remarks || "N/A",
-        assignBy: task.createdBy
-          ? `${task.createdBy.firstName} ${task.createdBy.lastName}`
-          : "Unknown",
-        assignTo: task.assignTo
-          ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
-          : "Unassigned",
-        status: task.status || "Pending",
-        statusType: mapStatusToType(task.status),
-        isRescheduledTask: task.isRescheduledTask || false,
-        originalTaskDate: task.originalTaskId?.date
-          ? new Date(task.originalTaskId.date).toLocaleDateString("en-GB")
-          : null,
-        rescheduleDate: task.rescheduleDate
-          ? new Date(task.rescheduleDate).toLocaleDateString("en-GB")
-          : undefined,
-        // नया field set करें
-        shouldHighlight: shouldHighlight,
-      };
-    });
+    tasks.map((task) => ({
+      id: task._id,
+      company: {
+        name: task.companyName?.companyName || "Unknown",
+        avatar: task.companyName?.avatar || ""
+      },
+      date: new Date(task.isRescheduledTask && task.originalTaskId?.createdAt
+        ? task.originalTaskId.createdAt
+        : task.createdAt).toLocaleDateString("en-GB"),
+      reason: task.reasonForVisit || "N/A",
+      party: task.partyName?.partyName || "Unknown",
+      address: task.partyName?.address?.unitNo || "N/A",
+      market: task.partyName?.address?.marketName?.marketName || "N/A",
+      area: task.partyName?.address?.area?.area || "N/A",
+      mobile: task.partyName?.ownerWhatsAppNo || "N/A",
+      remarks: task.remarks || "N/A",
+      assignBy: task.createdBy
+        ? `${task.createdBy.firstName} ${task.createdBy.lastName}`
+        : "Unknown",
+      assignTo: task.assignTo
+        ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
+        : "Unassigned",
+      status: task.status || "Pending",
+      statusType: mapStatusToType(task.status),
+      isRescheduledTask: task.isRescheduledTask || false,
+      originalTaskDate: task.originalTaskId?.date
+        ? new Date(task.originalTaskId.date).toLocaleDateString("en-GB")
+        : null,
+      rescheduleDate: task.rescheduleDate
+        ? new Date(task.rescheduleDate).toLocaleDateString("en-GB")
+        : undefined,
+    }));
 
   // Map filter labels to rowData keys
   const filterFieldToKey: { [key: string]: keyof RowData } = {
@@ -378,67 +354,67 @@ const AssignTaskPage: React.FC = () => {
   const filteredTasks = useMemo(() => {
     let filtered = tasksFilteredByCompany;
 
-    // Apply status filter
+  // Apply status filter
+  filtered = filtered.filter((task) => {
+    const taskDate = new Date(task.date);
+    const isTaskToday = isToday(
+      taskDate.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    );
+
+    if (statusTab === 0) {
+      // Pending tab: Include Pending, Rescheduled, and Completed tasks from today
+      return (
+        ["Pending", "Rescheduled"].includes(task.status) ||
+        (task.status === "Completed" && isTaskToday)
+      );
+    } else {
+      // History tab: Include Completed tasks not from today and Cancelled tasks
+      return task.status === "Cancelled" || (task.status === "Completed" && !isTaskToday);
+    }
+  });
+
+  // Apply date range filter
+  if (startDate || endDate) {
     filtered = filtered.filter((task) => {
       const taskDate = new Date(task.date);
-      const isTaskToday = isToday(
-        taskDate.toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
-      );
-
-      if (statusTab === 0) {
-        // Pending tab: Include Pending, Rescheduled, and Completed tasks from today
-        return (
-          ["Pending", "Rescheduled"].includes(task.status) ||
-          (task.status === "Completed" && isTaskToday)
-        );
-      } else {
-        // History tab: Include Completed tasks not from today and Cancelled tasks
-        return task.status === "Cancelled" || (task.status === "Completed" && !isTaskToday);
-      }
+      const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+      const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
+      return (!start || taskDate >= start) && (!end || taskDate <= end);
     });
+  }
 
-    // Apply date range filter
-    if (startDate || endDate) {
-      filtered = filtered.filter((task) => {
-        const taskDate = new Date(task.date);
-        const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
-        const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-        return (!start || taskDate >= start) && (!end || taskDate <= end);
+  // Apply search query filter
+  if (searchQuery.trim()) {
+    filtered = filtered.filter((task) =>
+      [
+        task.partyName?.partyName,
+        task.companyName?.companyName,
+        task.reasonForVisit,
+      ].some((value) =>
+        value?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }
+
+  // Apply multiple filters
+  if (Object.keys(filters).length > 0) {
+    filtered = filtered.filter((task) => {
+      const row = mapTasksToRows([task])[0];
+      return Object.entries(filters).every(([field, values]) => {
+        const key = filterFieldToKey[field];
+        if (!key) return true;
+        const value = key === "company" ? (row[key] as any)?.name : row[key];
+        return values.includes(String(value));
       });
-    }
+    });
+  }
 
-    // Apply search query filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter((task) =>
-        [
-          task.partyName?.partyName,
-          task.companyName?.companyName,
-          task.reasonForVisit,
-        ].some((value) =>
-          value?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-    }
-
-    // Apply multiple filters
-    if (Object.keys(filters).length > 0) {
-      filtered = filtered.filter((task) => {
-        const row = mapTasksToRows([task])[0];
-        return Object.entries(filters).every(([field, values]) => {
-          const key = filterFieldToKey[field];
-          if (!key) return true;
-          const value = key === "company" ? (row[key] as any)?.name : row[key];
-          return values.includes(String(value));
-        });
-      });
-    }
-
-    return filtered;
-  }, [tasksFilteredByCompany, statusTab, startDate, endDate, searchQuery, filters]);
+  return filtered;
+}, [tasksFilteredByCompany, statusTab, startDate, endDate, searchQuery, filters]);
 
   const filteredGroupedTasks = useMemo(() => {
     return filteredTasks.reduce((acc, task) => {
@@ -477,7 +453,7 @@ const AssignTaskPage: React.FC = () => {
 
   const renderRow = (row: RowData) => (
     <>
-      <TableCell sx={{ backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>
+      <TableCell>
         <Box display="flex" alignItems="center" gap={1}>
           <Avatar
             sx={{ width: 32, height: 32 }}
@@ -507,15 +483,15 @@ const AssignTaskPage: React.FC = () => {
           </Box>
         </Box>
       </TableCell>
-      <TableCell sx={{ fontSize: 14, color: "blue", backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>{row.date}</TableCell>
+      <TableCell sx={{ fontSize: 14, color: "blue" }}>{row.date}</TableCell>
       <TableCell
         onClick={() => handleClick(row.id)}
-        sx={{ cursor: "pointer", fontSize: 14, backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}
+        sx={{ cursor: "pointer", fontSize: 14 }}
       >
         {row.party}
       </TableCell>
 
-      <TableCell sx={{ fontSize: 14, backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>
+      <TableCell sx={{ fontSize: 14 }}>
         <Typography
           sx={{
             maxWidth: 150,
@@ -527,16 +503,16 @@ const AssignTaskPage: React.FC = () => {
           {truncateText(row.address, 30)}
         </Typography>
       </TableCell>
-      <TableCell sx={{ fontSize: 14, backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>{row.market}</TableCell>
-      <TableCell sx={{ fontSize: 14, backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>{row.area}</TableCell>
-      <TableCell sx={{ fontSize: 14, backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>{row.mobile}</TableCell>
-      <TableCell sx={{ fontSize: 14, backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>{row.reason}</TableCell>
-      <TableCell sx={{ fontSize: 14, backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>{row.assignBy}</TableCell>
-      <TableCell sx={{ fontSize: 14, backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>{row.assignTo}</TableCell>
-      <TableCell ><Typography sx={{ fontSize: 14, backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
+      <TableCell sx={{ fontSize: 14 }}>{row.market}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.assignBy}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
+      <TableCell ><Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
         ? `${row.remarks.substring(0, 10)}...`
         : row.remarks}</Typography></TableCell>
-      <TableCell sx={{ fontSize: 14, backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>
+      <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip
           label={row.status}
           icon={
@@ -570,7 +546,7 @@ const AssignTaskPage: React.FC = () => {
           }}
         />
       </TableCell>
-      <TableCell sx={{ display: "flex", backgroundColor: row.shouldHighlight ? "#FFF9C4" : "inherit" }}>
+      <TableCell sx={{ display: "flex" }}>
         {canedit && (
           <IconButton color="primary" onClick={() => handleEdit(row.id)}>
             <EditIcon />
