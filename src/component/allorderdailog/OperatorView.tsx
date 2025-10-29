@@ -131,29 +131,52 @@ const OperatorView = () => {
     ?.toLowerCase()
     ?.includes("cutting") || false;
   console.log("DEBUG : OperatorView : cutting:", cutting);
-  const columns = [
-    { id: "orderNo", label: "Order No" },
-    { id: "party", label: "Party Name" },
-    { id: "boxSize", label: "Box Size" },
-    { id: "noOfBox", label: "No of Box" },
-    { id: "ply", label: "Ply" },
-    { id: "top", label: "Top" },
-    { id: "corogation", label: "Corogation" },
-    { id: "bottom", label: "Bottom" },
-    { id: "deckal", label: "Deckal" },
-    { id: "cuttingLength", label: "Cutting length" },
-    { id: "noOfSheetut", label: "No of sheet to cut / PCs" },
-    { id: "liner", label: "Liner" },
-    { id: "totalKG", label: "Total KG" },
-    { id: "kgOfPaper", label: "KG of each paper" },
-    { id: "status", label: "Status" },
-    ...(cutting
-      ? [{ id: "noOfSheetCut", label: "No of sheet to cut" }]
-      : [{ id: "noOfPeice", label: "No of piece" }]
-    ),
 
-    { id: "action", label: "Actions" },
-  ]
+  // Define columns based on user role
+  // Define columns based on user role
+  const columns = useMemo(() => {
+    const baseColumns = [
+      { id: "orderNo", label: "Order No" },
+      { id: "party", label: "Party Name" },
+    ];
+
+    // Add unitNo column for cutting users right after party name
+    if (cutting) {
+      baseColumns.push({ id: "unitNo", label: "Unit No" });
+    }
+
+    // Continue with remaining common columns
+    baseColumns.push(
+      { id: "boxSize", label: "Box Size" },
+      { id: "noOfBox", label: "No of Box" },
+      { id: "top", label: "Top" },
+      { id: "deckal", label: "Deckal" },
+      { id: "cuttingLength", label: "Cutting length" },
+      { id: "noOfSheetut", label: "No of sheet to cut / PCs" },
+      { id: "totalKG", label: "Total KG" },
+      { id: "status", label: "Status" }
+    );
+
+    // Add role-specific ending columns
+    if (cutting) {
+      return [
+        ...baseColumns,
+        { id: "noOfSheetCut", label: "No of sheet to cut" },
+        { id: "action", label: "Actions" },
+      ];
+    } else {
+      return [
+        ...baseColumns,
+        { id: "ply", label: "Ply" },
+        { id: "corogation", label: "Corogation" },
+        { id: "bottom", label: "Bottom" },
+        { id: "liner", label: "Liner" },
+        { id: "noofliner", label: "No of Liner" },
+        { id: "noOfPeice", label: "No of piece" },
+        { id: "action", label: "Actions" },
+      ];
+    }
+  }, [cutting]);
 
   const { companyName, staffId, startDate: st, endDate: ed } = router.query
   const refreshData = () => {
@@ -206,6 +229,10 @@ const OperatorView = () => {
         return order.orderdata?.ply
           ? (Number(order.orderdata.ply) - 1).toString()
           : "N/A";
+      case "noofliner":
+        return order.orderdata?.ply && order.noOfPieces
+          ? (Number(order.noOfPieces) * 2 * (Number(order.orderdata.ply) - 1)).toString()
+          : "N/A";
       case "totalKG":
         return order.totalKg || "N/A";
       case "kgOfPaper":
@@ -214,6 +241,8 @@ const OperatorView = () => {
         return order.status || "N/A";
       case "noOfPeice":
         return order.noOfPieces?.toString() || "N/A";
+      case "unitNo":
+        return order.unitNo || "N/A"; // New field for unit number
       default:
         return "N/A";
     }
@@ -265,7 +294,8 @@ const OperatorView = () => {
         (order.totalKantan && safeToString(`${order.totalKantan.reel} reel ${order.totalKantan.inch} inch`).toLowerCase().includes(searchQuery.toLowerCase())) ||
         safeToString(order.kantanDeckal).toLowerCase().includes(searchQuery.toLowerCase()) ||
         safeToString(order.salesRemark).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        safeToString(order.status).toLowerCase().includes(searchQuery.toLowerCase())
+        safeToString(order.status).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.unitNo).toLowerCase().includes(searchQuery.toLowerCase()) // Include unitNo in search
         : true
 
       // Column filters
@@ -278,7 +308,7 @@ const OperatorView = () => {
 
       return matchesDateRange && matchesSearch && matchesFilters
     })
-  }, [orders, startDate, endDate, searchQuery, filters])
+  }, [orders, startDate, endDate, searchQuery, filters, columns])
 
   const getUniqueValues = useMemo(() => {
     if (!selectedFilterField) return []
@@ -291,7 +321,7 @@ const OperatorView = () => {
     })
 
     return Array.from(new Set(values)).filter((v) => v !== "N/A").sort()
-  }, [selectedFilterField, orders])
+  }, [selectedFilterField, orders, columns])
 
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true))
@@ -483,6 +513,7 @@ const OperatorView = () => {
           renderExpandedRow={canViewGlobal && !canStatus ? renderExpandedRow : undefined}
           renderRow={(row: OrderRow) => {
             return (<>
+              {/* Common columns for all users */}
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
                   QP-{row.orderNo || "N/A"}
@@ -493,23 +524,23 @@ const OperatorView = () => {
                   {row.party?.partyName || "N/A"}
                 </Typography>
               </TableCell>
-              <TableCell>
+
+              {/* Unit No column for cutting users - right after Party Name */}
+              {cutting && (
+                <TableCell>
+                  <Typography>{row.unitNo || "N/A"}</Typography>
+                </TableCell>
+              )}
+
+              {/* Continue with remaining common columns */}
+              <TableCell sx={{ whiteSpace: "nowrap" }}>
                 <Typography>{`${row.orderdata?.length || "N/A"} x ${row.orderdata?.width || "N/A"} x ${row.orderdata?.height || "N/A"}`}</Typography>
               </TableCell>
               <TableCell>
                 <Typography>{row.noOfPieces || "N/A"}</Typography>
               </TableCell>
               <TableCell>
-                <Typography>{row.orderdata?.ply || "N/A"}</Typography>
-              </TableCell>
-              <TableCell>
                 <Typography>{`${row.orderdata?.paper1GSM || "N/A"}`}</Typography>
-              </TableCell>
-              <TableCell>
-                <Typography>{`${row.orderdata?.paper2GSM || "N/A"}`}</Typography>
-              </TableCell>
-              <TableCell>
-                <Typography>{row.orderdata?.paper3GSM || "N/A"}</Typography>
               </TableCell>
               <TableCell>
                 <Typography>{row.orderdata?.deckal || "N/A"}</Typography>
@@ -529,39 +560,75 @@ const OperatorView = () => {
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography>
-                  {row.orderdata?.ply
-                    ? Number(row.orderdata.ply) - 1
-                    : "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
                 <Typography>{row.totalKg || "N/A"}</Typography>
-              </TableCell>
-              <TableCell>
-                <Typography>{`${row?.paperKG?.paper1?.totalKg || "N/A"} - ${row?.paperKG?.paper2?.totalKg || "N/A"} - ${row?.paperKG?.paper3?.totalKg || "N/A"}`}</Typography>
               </TableCell>
               <TableCell>
                 <StatusCell row={row} />
               </TableCell>
-              <TableCell>
-                <ThemeInput
-                  placeholder={cutting ? "No of sheet to cut" : "No of piece"}
-                  type="number"
-                  value={
-                    pieceInputs[row._id] !== undefined
-                      ? pieceInputs[row._id]
-                      : cutting
-                        ? row.operatorNoOfSheet || ""
-                        : row.operatorNoOfPieces || ""
-                  }
-                  onChange={(e) =>
-                    setPieceInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
-                  }
-                />
-              </TableCell>
 
+              {/* Role-specific columns */}
+              {cutting ? (
+                // Cutting user specific columns
+                <TableCell>
+                  <ThemeInput
+                    placeholder="No of sheet to cut"
+                    type="number"
+                    sx={{ width: 70, padding: "0" }}
+                    value={
+                      pieceInputs[row._id] !== undefined
+                        ? pieceInputs[row._id]
+                        : row.operatorNoOfSheet || ""
+                    }
+                    onChange={(e) =>
+                      setPieceInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
+                    }
+                  />
+                </TableCell>
+              ) : (
+                // Non-cutting user specific columns
+                <>
+                  <TableCell>
+                    <Typography>{row.orderdata?.ply || "N/A"}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography>{`${row.orderdata?.paper2GSM || "N/A"}`}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography>{row.orderdata?.paper3GSM || "N/A"}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography>
+                      {row.orderdata?.ply
+                        ? Number(row.orderdata.ply) - 1
+                        : "N/A"}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography>
+                      {row.orderdata?.ply && row.noOfPieces
+                        ? Number(row.noOfPieces) * 2 * (Number(row.orderdata.ply) - 1)
+                        : "N/A"}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <ThemeInput
+                      placeholder="No of piece"
+                      type="number"
+                      sx={{ width: 70, padding: "0" }}
+                      value={
+                        pieceInputs[row._id] !== undefined
+                          ? pieceInputs[row._id]
+                          : row.operatorNoOfPieces || ""
+                      }
+                      onChange={(e) =>
+                        setPieceInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
+                      }
+                    />
+                  </TableCell>
+                </>
+              )}
 
+              {/* Actions column - common for all users */}
               <TableCell>
                 <Box display="flex" gap={1}>
                   <ThemeButton
@@ -582,7 +649,6 @@ const OperatorView = () => {
                   </ThemeButton>
                 </Box>
               </TableCell>
-
             </>);
           }}
         />

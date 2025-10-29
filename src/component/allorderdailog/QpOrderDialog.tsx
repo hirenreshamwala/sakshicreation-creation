@@ -191,7 +191,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 parseFloat(qpFormData.height),
                 parseFloat(qpFormData.deckal),
                 parseInt(qpFormData.ply),
-                qpFormData.uom,
+                // qpFormData.uom,
                 parseFloat(qpFormData.paper3GSM),
                 parseFloat(qpFormData.paper2GSM),
                 parseFloat(qpFormData.paper1GSM),

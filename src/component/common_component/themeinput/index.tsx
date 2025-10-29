@@ -244,6 +244,16 @@ const ThemeInput: React.FC<ThemeInputProps> = ({
             cursor: readOnly ? 'default' : 'text', // Change cursor for readOnly
           },
           ...rest.sx,
+          // Hide number input spinners
+          ...(type === 'number' && {
+            '& .MuiInputBase-input[type="number"]': {
+              '-moz-appearance': 'textfield',
+            },
+            '& .MuiInputBase-input[type="number"]::-webkit-outer-spin-button, & .MuiInputBase-input[type="number"]::-webkit-inner-spin-button': {
+              '-webkit-appearance': 'none',
+              margin: 0,
+            },
+          }),
         }}
       >
         {renderSelectItems()}

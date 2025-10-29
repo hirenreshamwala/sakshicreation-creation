@@ -84,14 +84,15 @@ const OrdersList: React.FC = () => {
       <BasicTable
         tableHeader={columns}
         rowData={filteredOrders}
-        renderRow={(row: Order, index: number) => (
-          <>
+        renderRow={(row: Order, index: number) => {
+          console.log("DEBUG : OrdersList : row:", row);
+          return <>
             <TableCell>QP-{row.orderNo}</TableCell>
             <TableCell>{row.companyName.companyName}</TableCell>
             <TableCell>{row.party.partyName}</TableCell>
             <TableCell><StatusCell row={row}/></TableCell>
-          </>
-        )}
+          </>;
+        }}
         // title="Printer Orders"
         showDatePicker={false}
         showSearch={false}
