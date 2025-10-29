@@ -277,7 +277,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       } else if (formData.type === 'glue' || formData.type === 'wire') {
         requiredFields.push('kg');
       } else if (formData.type === 'paper') {
-        requiredFields.push('deckal', 'gsm', 'kg', 'paperMil', 'bf', 'reelBatchNo', 'color');
+        requiredFields.push('deckal', 'gsm', 'kg', 'paperMil', 'bf', 'color');
       }
 
       const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
@@ -467,7 +467,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                   value={formData.reelBatchNo}
                   onChange={handleChange}
                   fullWidth
-                  required
+                  // required
                   placeholder="Enter reel/batch number"
                 />
                 <ThemeSelect

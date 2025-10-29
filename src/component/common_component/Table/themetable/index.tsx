@@ -346,6 +346,27 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
     setPage(0);
   };
 
+
+  const [colWidths, setColWidths] = useState<number[]>([]);
+
+  useEffect(() => {
+    const newWidths = tableHeader.map((col) => {
+      const headerLen = col.label.length;
+      const maxRowLen = Math.max(
+        ...rowData.map((r) => {
+          const val = (r as any)[col.id];
+          if (val === null || val === undefined) return 0;
+          return String(val).length;
+        }),
+        0
+      );
+      const length = Math.max(headerLen, maxRowLen);
+      return Math.min(110, Math.max(60, length * 2)); // heuristic 7px per char
+    });
+    setColWidths(newWidths);
+  }, [tableHeader, rowData]);
+
+
   // Excel download function
   const handleExcelDownload = useCallback(() => {
     // Use custom excelHeaders and excelData if provided, otherwise fall back to table data
@@ -630,46 +651,51 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
           <Table>
             <TableHead>
               <TableRow>
-                {tableHeader.map((col) => (
-                  <Tooltip title={col.label} arrow>
-
-                    <TableCell
-                      key={col.id}
-                      align={col.align || "left"}
-                      sx={{
-                        background: "#EAECF0",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "#667085",
-                        borderBottom: "none",
-                        whiteSpace: "nowrap",
-                        padding: "10px 10px",
-                        minWidth: "80px",
-                        maxWidth: "150px",
-                        overflow: "hidden",          // 👈 required
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {col.id === "checkbox" ? (
-                        <Checkbox
-                          checked={selectedRows.length === rowData.length && rowData.length > 0}
-                          onChange={onSelectAll}
-                          disabled={!onSelectAll}
-                        />
-                      ) : (
-                        col.label
-                      )}
-                    </TableCell>
-                  </Tooltip>
+                {tableHeader.map((col, i) => (
+                  <TableCell
+                    key={col.id}
+                    align={col.align || "left"}
+                    sx={{
+                      background: "#EAECF0",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#667085",
+                      borderBottom: "none",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      width: colWidths[i],
+                      maxWidth: colWidths[i],
+                    }}
+                  >
+                    <Tooltip title={col.label} arrow>
+                      <Box
+                        sx={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {col.id === "checkbox" ? (
+                          <Checkbox
+                            checked={selectedRows.length === rowData.length && rowData.length > 0}
+                            onChange={onSelectAll}
+                            disabled={!onSelectAll}
+                          />
+                        ) : (
+                          col.label
+                        )}
+                      </Box>
+                    </Tooltip>
+                  </TableCell>
                 ))}
-                {/* Add header for expand column if needed */}
+
                 {renderExpandedRow && (
                   <TableCell
                     sx={{
                       background: "#EAECF0",
                       borderBottom: "none",
-                      padding: "10px 10px",
-                      width: "50px",
+                      width: 50,
                     }}
                   />
                 )}

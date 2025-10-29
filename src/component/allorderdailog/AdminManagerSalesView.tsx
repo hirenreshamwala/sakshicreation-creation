@@ -129,6 +129,7 @@ const AdminManagerSalesView = () => {
     { id: "party", label: "Party Name" },
     { id: "orderDate", label: "Order Date" },
     { id: "status", label: "Status" },
+    { id: "details", label: "Details" },
     { id: "actions", label: "Actions" },
   ]
 
@@ -740,6 +741,10 @@ const AdminManagerSalesView = () => {
                   >
                     View Details
                   </ThemeButton>
+                </Box>
+              </TableCell>
+              <TableCell>
+                <Box display="flex" gap={1} flexWrap="wrap">
                   {canCreate && (
                     <ThemeButton
                       size="small"
