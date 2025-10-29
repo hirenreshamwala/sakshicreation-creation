@@ -212,5 +212,15 @@ const Endpoint = {
   UPDATE_KANTAN: `${BaseURL}/api/kantan/update`,
   DELETE_KANTAN: `${BaseURL}/api/kantan/delete`,
   BULK_UPLOAD_KANTANS: `${BaseURL}/api/kantan/bulk`,
+
+  CREATE_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/create`,
+  GET_ALL_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/getall`,
+  GET_SALE_QP_ORDER_BY_STAFF_ID: `${BaseURL}/api/saleqporder/getbystaff`,
+  UPDATE_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/update`,
+  UPDATE_SALE_QP_ORDER_STATUS: `${BaseURL}/api/saleqporder/updatestatus`,
+  UPDATE_SALE_QP_ORDER_BULK_STATUS: "/api/saleqporder/bulk-status/bulkupdatestatus",
+  DELETE_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/delete`,
+  REMOVE_LOADING_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/remove-loading`,
+  GET_DESIGNER_SALE_QP_ORDERS: `${BaseURL}/api/saleqporder/designer`,
 };
 export default Endpoint;

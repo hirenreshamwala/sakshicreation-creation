@@ -1,7 +1,7 @@
 "use client";
 import type React from "react";
 import { useState, useEffect, useMemo } from "react";
-import { Box, Stack, CircularProgress, Autocomplete, TextField, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { Box, Stack, CircularProgress, Autocomplete, TextField } from "@mui/material";
 import CustomDialog from "@/component/customdialog";
 import ThemeInput from "@/component/common_component/themeinput";
 import ThemeButton from "@/component/common_component/themebutton";
@@ -15,6 +15,7 @@ import { createQpOrderThunk, updateQPOrderThunk } from "@/store/slices/qpOrderSl
 import { getAllPackagingOptionsThunk } from "@/store/slices/packagingOptionSlice";
 import { getAllKantansThunk } from "@/store/slices/kantanSlice";
 import { calculateDeckal, calculateGSM, calculateKgPerPiece, calculateTotalKg, calculateTotalAmount, calculateKantan, calculatePaperKg } from "@/utills/qpCalculations";
+import { createSaleQpOrderThunk, updateSaleQpOrderThunk } from "@/store/slices/saleQpOrderSlice";
 
 interface OptionType {
     label: string;
@@ -30,7 +31,7 @@ interface AddOrderDialogProps {
     editData?: any;
 }
 
-const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData, party, orderNo, type = "sell" }) => {
+const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, editData, party, orderNo, type = "job" }) => {
     const dispatch = useAppDispatch();
     const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
     const { kantans } = useAppSelector((state) => state.kantans);
@@ -184,19 +185,36 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 paper2GSM: qpFormData.paper2GSM,
                 paper3GSM: qpFormData.paper3GSM,
             };
-            const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
+            // Convert mm to inch helper
+            const mmToInch = (value) => value / 25.4;
 
-                parseFloat(qpFormData.length),
-                parseFloat(qpFormData.width),
-                parseFloat(qpFormData.height),
-                parseFloat(qpFormData.deckal),
+            // Before calling calculatePaperKg
+            let length = parseFloat(qpFormData.length);
+            let width = parseFloat(qpFormData.width);
+            let height = parseFloat(qpFormData.height);
+            let deckal = parseFloat(qpFormData.deckal);
+
+            // Check UOM and convert if needed
+            if (qpFormData.uom === "mm" || qpFormData.uom === "millimeter") {
+                length = mmToInch(length);
+                width = mmToInch(width);
+                height = mmToInch(height);
+                deckal = mmToInch(deckal);
+            }
+
+            // Now pass converted values to calculatePaperKg
+            const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
+                length,
+                width,
+                height,
+                deckal,
                 parseInt(qpFormData.ply),
-                qpFormData.uom,
                 parseFloat(qpFormData.paper3GSM),
                 parseFloat(qpFormData.paper2GSM),
                 parseFloat(qpFormData.paper1GSM),
                 parseFloat(qpFormData.noOfPieces)
             );
+
 
             const orderData = {
                 isQp: true,
@@ -241,11 +259,11 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
             if (editData?._id) {
                 // Update existing order
-                await dispatch(updateQPOrderThunk({ id: editData._id, data: orderData })).unwrap();
+                await dispatch(type === 'sell' ? updateSaleQpOrderThunk({ id: editData._id, data: orderData }) : updateQpOrderThunk({ id: editData._id, data: orderData })).unwrap();
                 toast.success("Order updated successfully");
             } else {
                 // Create new order
-                await dispatch(createQpOrderThunk(orderData)).unwrap();
+                await dispatch(type === 'sell' ? createSaleQpOrderThunk(orderData) : createQpOrderThunk(orderData)).unwrap();
                 toast.success("Order created successfully");
             }
 
@@ -420,7 +438,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         }
     };
 
-     const handlePartyChange = async (event: any, newValue: any) => {
+    const handlePartyChange = async (event: any, newValue: any) => {
         const partyId = typeof newValue === "object" && newValue !== null
             ? newValue.value
             : newValue;
@@ -720,11 +738,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         let lengthInInches = Number(length) || 0;
         let widthInInches = Number(width) || 0;
         let heightInInches = Number(height) || 0;
+        let deckalInInches = Number(deckal) || 0;
 
         if (uom === 'mm') {
             lengthInInches = lengthInInches / 25.4;
             widthInInches = widthInInches / 25.4;
             heightInInches = heightInInches / 25.4;
+            deckalInInches = deckalInInches / 25.4;
         }
 
         let deckalValue: number | null = null;
@@ -740,7 +760,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         } else handleQpChange("gsm", "");
 
         if (lengthInInches && widthInInches && deckalValue && gsmValue) {
-            const kgPerPiece = calculateKgPerPiece(lengthInInches, widthInInches, Number(deckalValue), gsmValue);
+            const kgPerPiece = calculateKgPerPiece(lengthInInches, widthInInches, deckalInInches, gsmValue);
             handleQpChange("kgPerUnit", kgPerPiece.toFixed(4));
         } else handleQpChange("kgPerUnit", "");
 
@@ -775,6 +795,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         qpFormData.totalKg,
         qpFormData.uom,
         packagingOptions,
+        qpFormData
     ]);
 
     return (

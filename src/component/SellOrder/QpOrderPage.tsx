@@ -10,7 +10,7 @@ import DateRangePicker from "@/component/daterangepicker"
 import { FiSearch } from "react-icons/fi"
 import { InputBase } from "@mui/material"
 import { getDisplayStatus } from "@/utills/utills"
-import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk } from "@/store/slices/qpOrderSlice"
+import { getAllSaleQpOrdersThunk, getSaleQpOrdersByStaffIdThunk } from "@/store/slices/saleQpOrderSlice"
 import { toast } from "react-toastify"
 import moment from "moment"
 import Loader from "../common_component/loader"
@@ -105,7 +105,7 @@ const SellOrderQpOrderPage = () => {
     const { allInventory } = useAppSelector(state => state.inventory);
 
     const { companies } = useAppSelector((state) => state.company)
-    const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.qpOrders)
+    const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.saleQpOrder)
     const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState<string>("")
     const [startDate, setStartDate] = useState<Date | null>(null)
@@ -151,9 +151,9 @@ const SellOrderQpOrderPage = () => {
 
     const refreshData = () => {
         if (canViewGlobal) {
-            dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party }))
+            dispatch(getAllSaleQpOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party }))
         } else if (canViewOwn && user?.id) {
-            dispatch(getQPOrdersByStaffIdThunk(user?.id))
+            dispatch(getSaleQpOrdersByStaffIdThunk(user?.id))
         }
     };
 
@@ -592,7 +592,7 @@ const SellOrderQpOrderPage = () => {
                         return (<>
                             <TableCell>
                                 <Typography fontSize="14px" color="#6B7280">
-                                    QP-{row.orderNo || "N/A"}
+                                    JO-{row.saleorderNo || "N/A"}
                                 </Typography>
                             </TableCell>
                             <TableCell>
@@ -748,6 +748,7 @@ const SellOrderQpOrderPage = () => {
                                 refreshData();
                             }}
                             refreshData={refreshData}
+                            type="sell"
                         />
                     ) : (
                         <AddQPOrderDialog
@@ -759,6 +760,7 @@ const SellOrderQpOrderPage = () => {
                             }}
                             editData={editData}
                             refreshData={refreshData}
+                            type="sell"
                         />
                     )}
                 </>
