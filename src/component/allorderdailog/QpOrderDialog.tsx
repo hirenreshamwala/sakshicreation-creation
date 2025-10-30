@@ -256,7 +256,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             };
 
             if (qpFormData.isKantan) {
-                orderData.kantan = qpFormData.kantan || undefined;
+                orderData.kantan =qpFormData.kantan._id || qpFormData.kantan || undefined;
                 orderData.kantanPerUnit = qpFormData.kantanPerUnit ? Number(qpFormData.kantanPerUnit) : undefined;
                 orderData.totalKantan = {
                     reel: qpFormData.totalKantan.reel || "0",
@@ -267,7 +267,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
             if (editData?._id) {
                 // Update existing order
-                await dispatch(type === 'sell' ? updateSaleQpOrderThunk({ id: editData._id, data: orderData }) : updateQpOrderThunk({ id: editData._id, data: orderData })).unwrap();
+                await dispatch(type === 'sell' ? updateSaleQpOrderThunk({ id: editData._id, data: orderData }) : updateQPOrderThunk({ id: editData._id, data: orderData })).unwrap();
                 toast.success("Order updated successfully");
             } else {
                 // Create new order
