@@ -66,6 +66,7 @@ const Endpoint = {
   UPDATE_INVENTORY: `${BaseURL}/api/inventory/update`,
   GET_ALL_INVENTORY: `${BaseURL}/api/inventory/getall`,
   GET_BY_COMPANY: `${BaseURL}/api/purchase/getbycompany`,
+  GET_INVENTORY_BOX: `${BaseURL}/api/inventory/getbox`,
 
   //staff
   GET_ROLE: `${BaseURL}/api/staff/getrol`,
