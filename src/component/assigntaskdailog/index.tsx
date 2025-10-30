@@ -271,7 +271,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
         }));
     }
     return staffList
-      // .filter((staff) => staff.role?.roleName === "Sales Staff")
+      .filter((staff) => staff.role?.roleName === "Sales Staff" || staff.role?.roleName === "Driver" || staff.role?.roleName === "Admin" || staff.role?.roleName === "Manager")
       .map((staff) => ({
         label: `${staff.firstName} ${staff.lastName}`,
         value: staff._id,

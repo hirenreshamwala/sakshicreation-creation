@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Stack, Button } from '@mui/material';
+import { Box, Stack, Button, Autocomplete, TextField, Typography } from '@mui/material';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ThemeInput from '@/component/common_component/themeinput';
@@ -470,14 +470,24 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                   // required
                   placeholder="Enter reel/batch number"
                 />
-                <ThemeSelect
-                  label="COLOR"
-                  options={colorOptions}
-                  value={colorOptions.find(opt => opt.value === formData.color) || null}
-                  onChange={(e, newValue) => handleSelectChange('color', newValue?.value)}
-                  required
-                  fullWidth
+                <Box sx={{ width: '100%', flex: ''}} />
+                <Typography sx={{ alignSelf: 'center', fontWeight: '500' }}>COLOR</Typography>
+                <Autocomplete
+                  freeSolo
+                  options={[...colorOptions.map(opt => opt.label), "White"]}
+                  value={formData.color || ""}
+                  sx={{ width: '100%' }}
+                  onChange={(e, newValue) => {
+                    setFormData(prev => ({ ...prev, color: newValue || '' }));
+                  }}
+                  onInputChange={(e, newValue) => {
+                    setFormData(prev => ({ ...prev, color: newValue || '' }));
+                  }}
+                  renderInput={(params) => (
+                    <TextField {...params} label="COLOR" required fullWidth />
+                  )}
                 />
+
               </>
             )}
 
