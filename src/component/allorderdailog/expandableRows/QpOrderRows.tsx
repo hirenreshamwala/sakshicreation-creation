@@ -14,6 +14,7 @@ import { ExpandedRowFormProps, Remark, PaperAllocationsResult, PaperAllocation, 
 import PaperSelection from "./PaperSelection";
 import PaperAssign from "./PaperAssign";
 import QpOrderStep1 from "./QpOrderStep1";
+import StackSelection from "./StackSelection";
 
 export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
     const dispatch = useAppDispatch();
@@ -825,6 +826,13 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                             handleFormChange={handleFormChange}
                         />
                     </> : null}
+
+                    <StackSelection
+                        formData={formData}
+                        row={row}
+                        isCompleted={isCompleted}
+                        paperRequirement={paperRequirements}
+                    />
                     <Stack direction="row" spacing={2}>
                         <ThemeButton
                             type="submit"

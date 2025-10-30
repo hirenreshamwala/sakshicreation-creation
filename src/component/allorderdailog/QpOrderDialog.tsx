@@ -1,7 +1,7 @@
 "use client";
 import type React from "react";
 import { useState, useEffect, useMemo } from "react";
-import { Box, Stack, CircularProgress, Autocomplete, TextField } from "@mui/material";
+import { Box, Stack, CircularProgress, Autocomplete, TextField, FormControlLabel, Checkbox } from "@mui/material";
 import CustomDialog from "@/component/customdialog";
 import ThemeInput from "@/component/common_component/themeinput";
 import ThemeButton from "@/component/common_component/themebutton";
@@ -75,6 +75,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         varnish: false, // true or false
         isPinning: false, // true or false - DEFAULT: false
         isPasting: false, // true or false - DEFAULT: true (Pasting selected by default)
+        isKantan: false, // true or false - DEFAULT: false
     });
 
     useEffect(() => {
@@ -115,6 +116,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 varnish: editData.varnish || false,
                 isPinning: editData.isPinning,
                 isPasting: editData.isPasting,
+                // Set isKantan based on whether kantan data exists
+                isKantan: !!(editData.kantan || editData.kantanPerUnit || editData.totalKantan),
             });
         } else if (open && !editData) {
             // Set default values for new form
@@ -123,6 +126,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 uv: false,
                 isPasting: false,
                 isPinning: false,
+                isKantan: false, // Default to false for new orders
                 uom: "inch",
             }));
         }
@@ -216,8 +220,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 parseFloat(qpFormData.noOfPieces)
             );
 
-
-            const orderData = {
+            // Prepare order data with conditional Kantan fields
+            const orderData: any = {
                 isQp: true,
                 companyName: qpFormData?.companyName?._id ? qpFormData?.companyName?._id : qpFormData.companyName,
                 party: qpFormData.partyName,
@@ -231,13 +235,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 amount: qpFormData.amount ? Number(qpFormData.amount) : undefined,
                 kgPerUnit: qpFormData.kgPerUnit ? Number(qpFormData.kgPerUnit) : undefined,
                 totalKg: qpFormData.totalKg ? Number(qpFormData.totalKg) : undefined,
-                kantan: qpFormData.kantan || undefined,
-                kantanPerUnit: qpFormData.kantanPerUnit ? Number(qpFormData.kantanPerUnit) : undefined,
-                totalKantan: {
-                    reel: qpFormData.totalKantan.reel || "0",
-                    inch: qpFormData.totalKantan.inch || "0",
-                },
-                kantanDeckal: qpFormData.kantanDeckal || undefined,
                 salesRemark: qpFormData.salesRemark || undefined,
                 paperKG: {
                     paper1: {
@@ -257,6 +254,16 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     },
                 },
             };
+
+            if (qpFormData.isKantan) {
+                orderData.kantan = qpFormData.kantan || undefined;
+                orderData.kantanPerUnit = qpFormData.kantanPerUnit ? Number(qpFormData.kantanPerUnit) : undefined;
+                orderData.totalKantan = {
+                    reel: qpFormData.totalKantan.reel || "0",
+                    inch: qpFormData.totalKantan.inch || "0",
+                };
+                orderData.kantanDeckal = qpFormData.kantanDeckal || undefined;
+            }
 
             if (editData?._id) {
                 // Update existing order
@@ -316,6 +323,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             varnish: false,
             isPinning: false,
             isPasting: false,
+            isKantan: false,
         });
     };
 
@@ -681,43 +689,62 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         disabled
                     />
                 </Stack>
-                <Stack direction="row" spacing={2} mb={2}>
-                    <Autocomplete
-                        options={kantans.map((item: any) => ({ value: item?._id, label: item.kantanName }))}
-                        getOptionLabel={(option) => option.label}
-                        value={kantans
-                            .map((item: any) => ({ value: item?._id, label: item.kantanName }))
-                            .find((item) => item.value === qpFormData.kantan) || null}
-                        onChange={(_, val) => handleQpChange("kantan", val?.value || null)}
-                        renderInput={(params) => <TextField {...params} label="Kantan" sx={{ width: 200, mt: 2 }} />}
-                        sx={{ flex: 1 }}
-                    />
-                    <ThemeInput
-                        labelName="Kantan Per Unit"
-                        placeholder="Kantan Per Unit"
-                        fullWidth
-                        value={qpFormData.kantanPerUnit}
-                        disabled
-                    />
-                    <ThemeInput
-                        labelName="Total Kantan"
-                        placeholder="Total Kantan"
-                        fullWidth
-                        value={
-                            qpFormData.totalKantan.reel && qpFormData.totalKantan.inch
-                                ? `${qpFormData.totalKantan.reel} reel ${qpFormData.totalKantan.inch} inch`
-                                : ""
+
+                {/* Kantan Toggle Checkbox */}
+                <Box mb={2}>
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={qpFormData.isKantan}
+                                onChange={(e) => handleQpChange("isKantan", e.target.checked)}
+                                color="primary"
+                            />
                         }
-                        disabled
+                        label="Include Kantan"
                     />
-                    {/* <ThemeInput
-                        labelName="Kantan Deckal"
-                        placeholder="Kantan Deckal"
-                        fullWidth
-                        value={qpFormData.kantanDeckal}
-                        onChange={(e) => handleQpChange("kantanDeckal", e.target.value)}
-                    /> */}
-                </Stack>
+                </Box>
+
+                {/* Kantan Fields - Conditionally Rendered */}
+                {qpFormData.isKantan && (
+                    <Stack direction="row" spacing={2} mb={2}>
+                        <Autocomplete
+                            options={kantans.map((item: any) => ({ value: item?._id, label: item.kantanName }))}
+                            getOptionLabel={(option) => option.label}
+                            value={kantans
+                                .map((item: any) => ({ value: item?._id, label: item.kantanName }))
+                                .find((item) => item.value === qpFormData.kantan) || null}
+                            onChange={(_, val) => handleQpChange("kantan", val?.value || null)}
+                            renderInput={(params) => <TextField {...params} label="Kantan" sx={{ width: 200, mt: 2 }} />}
+                            sx={{ flex: 1 }}
+                        />
+                        <ThemeInput
+                            labelName="Kantan Per Unit"
+                            placeholder="Kantan Per Unit"
+                            fullWidth
+                            value={qpFormData.kantanPerUnit}
+                            disabled
+                        />
+                        <ThemeInput
+                            labelName="Total Kantan"
+                            placeholder="Total Kantan"
+                            fullWidth
+                            value={
+                                qpFormData.totalKantan.reel && qpFormData.totalKantan.inch
+                                    ? `${qpFormData.totalKantan.reel} reel ${qpFormData.totalKantan.inch} inch`
+                                    : ""
+                            }
+                            disabled
+                        />
+                        {/* <ThemeInput
+                            labelName="Kantan Deckal"
+                            placeholder="Kantan Deckal"
+                            fullWidth
+                            value={qpFormData.kantanDeckal}
+                            onChange={(e) => handleQpChange("kantanDeckal", e.target.value)}
+                        /> */}
+                    </Stack>
+                )}
+
                 <ThemeInput
                     labelName="Sales Remarks"
                     placeholder="Sales Remarks"
@@ -775,13 +802,14 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             handleQpChange("amount", amount.toFixed(2));
         } else handleQpChange("amount", "");
 
-        if (lengthInInches && widthInInches && Number(noOfPieces)) {
+        if (qpFormData.isKantan && lengthInInches && widthInInches && Number(noOfPieces)) {
             const { kantanPerUnit, reel, inch } = calculateKantan(lengthInInches, widthInInches, Number(noOfPieces));
             handleQpChange("kantanPerUnit", kantanPerUnit.toString());
             handleQpChange("totalKantan", { reel: reel.toString(), inch: inch.toString() });
-        } else {
+        } else if (!qpFormData.isKantan) {
             handleQpChange("kantanPerUnit", "");
             handleQpChange("totalKantan", { reel: "", inch: "" });
+            handleQpChange("kantan", null);
         }
     }, [
         qpFormData.length,
@@ -795,6 +823,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         qpFormData.ratePerPiece,
         qpFormData.totalKg,
         qpFormData.uom,
+        qpFormData.isKantan,
         packagingOptions,
         qpFormData
     ]);
