@@ -661,6 +661,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
             const updateData = {
                 ...formData,
+                kantan:formData.kantan._id,
                 designer: selectedDesigner,
                 printer: selectedPrinter,
                 binder: selectedBinder,
