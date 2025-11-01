@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
@@ -10,6 +9,7 @@ import {
   IconButton,
   InputBase,
   Tooltip,
+  TableRow,
 } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
@@ -18,7 +18,7 @@ import {
   deleteAssignTaskThunk,
   clearError,
   clearSuccessMessage,
-} from "@/store/slices/assignTaskSlice";
+  } from "@/store/slices/assignTaskSlice";
 import FilterDropdown from "@/component/fillter";
 import BasicTable from "@/component/common_component/Table/themetable";
 import ThemeButton from "@/component/common_component/themebutton";
@@ -59,6 +59,7 @@ interface RowData {
   rescheduleDate?: string;
   isRescheduledTask?: boolean;
   originalTaskDate?: string | null;
+  highlightYellow?: boolean;
 }
 
 const columns = [
@@ -280,6 +281,16 @@ const AssignTaskPage: React.FC = () => {
     };
   }, [dispatch, router.isReady, canViewGlobal, canViewOwn, user?.id, selectedCompanyId,]);
 
+  const defaultReasons = [
+    "Delivery",
+    "Get Payment",
+    "Get Visit",
+    "Order",
+    "Complain",
+    "Sample Approval",
+    "Other",
+  ];
+
   const mapTasksToRows = (tasks: any[]): RowData[] =>
     tasks.map((task) => ({
       id: task._id,
@@ -287,9 +298,11 @@ const AssignTaskPage: React.FC = () => {
         name: task.companyName?.companyName || "Unknown",
         avatar: task.companyName?.avatar || ""
       },
-      date: new Date(task.isRescheduledTask && task.originalTaskId?.createdAt
-        ? task.originalTaskId.createdAt
-        : task.createdAt).toLocaleDateString("en-GB"),
+      date: new Date(
+        task.isRescheduledTask && task.originalTaskId?.createdAt
+          ? task.originalTaskId.createdAt
+          : task.createdAt
+      ).toLocaleDateString("en-GB"),
       reason: task.reasonForVisit || "N/A",
       party: task.partyName?.partyName || "Unknown",
       address: task.partyName?.address?.unitNo || "N/A",
@@ -312,6 +325,11 @@ const AssignTaskPage: React.FC = () => {
       rescheduleDate: task.rescheduleDate
         ? new Date(task.rescheduleDate).toLocaleDateString("en-GB")
         : undefined,
+
+      /** 🟡 Custom Highlight Condition */
+      highlightYellow:
+        !defaultReasons.includes(task.reasonForVisit) &&
+        task.assignTo?.role?.roleName?.toLowerCase() === "driver",
     }));
 
   // Map filter labels to rowData keys
@@ -354,67 +372,67 @@ const AssignTaskPage: React.FC = () => {
   const filteredTasks = useMemo(() => {
     let filtered = tasksFilteredByCompany;
 
-  // Apply status filter
-  filtered = filtered.filter((task) => {
-    const taskDate = new Date(task.date);
-    const isTaskToday = isToday(
-      taskDate.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })
-    );
-
-    if (statusTab === 0) {
-      // Pending tab: Include Pending, Rescheduled, and Completed tasks from today
-      return (
-        ["Pending", "Rescheduled"].includes(task.status) ||
-        (task.status === "Completed" && isTaskToday)
-      );
-    } else {
-      // History tab: Include Completed tasks not from today and Cancelled tasks
-      return task.status === "Cancelled" || (task.status === "Completed" && !isTaskToday);
-    }
-  });
-
-  // Apply date range filter
-  if (startDate || endDate) {
+    // Apply status filter
     filtered = filtered.filter((task) => {
       const taskDate = new Date(task.date);
-      const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
-      const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-      return (!start || taskDate >= start) && (!end || taskDate <= end);
+      const isTaskToday = isToday(
+        taskDate.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })
+      );
+
+      if (statusTab === 0) {
+        // Pending tab: Include Pending, Rescheduled, and Completed tasks from today
+        return (
+          ["Pending", "Rescheduled"].includes(task.status) ||
+          (task.status === "Completed" && isTaskToday)
+        );
+      } else {
+        // History tab: Include Completed tasks not from today and Cancelled tasks
+        return task.status === "Cancelled" || (task.status === "Completed" && !isTaskToday);
+      }
     });
-  }
 
-  // Apply search query filter
-  if (searchQuery.trim()) {
-    filtered = filtered.filter((task) =>
-      [
-        task.partyName?.partyName,
-        task.companyName?.companyName,
-        task.reasonForVisit,
-      ].some((value) =>
-        value?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    );
-  }
-
-  // Apply multiple filters
-  if (Object.keys(filters).length > 0) {
-    filtered = filtered.filter((task) => {
-      const row = mapTasksToRows([task])[0];
-      return Object.entries(filters).every(([field, values]) => {
-        const key = filterFieldToKey[field];
-        if (!key) return true;
-        const value = key === "company" ? (row[key] as any)?.name : row[key];
-        return values.includes(String(value));
+    // Apply date range filter
+    if (startDate || endDate) {
+      filtered = filtered.filter((task) => {
+        const taskDate = new Date(task.date);
+        const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+        const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
+        return (!start || taskDate >= start) && (!end || taskDate <= end);
       });
-    });
-  }
+    }
 
-  return filtered;
-}, [tasksFilteredByCompany, statusTab, startDate, endDate, searchQuery, filters]);
+    // Apply search query filter
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((task) =>
+        [
+          task.partyName?.partyName,
+          task.companyName?.companyName,
+          task.reasonForVisit,
+        ].some((value) =>
+          value?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    }
+
+    // Apply multiple filters
+    if (Object.keys(filters).length > 0) {
+      filtered = filtered.filter((task) => {
+        const row = mapTasksToRows([task])[0];
+        return Object.entries(filters).every(([field, values]) => {
+          const key = filterFieldToKey[field];
+          if (!key) return true;
+          const value = key === "company" ? (row[key] as any)?.name : row[key];
+          return values.includes(String(value));
+        });
+      });
+    }
+
+    return filtered;
+  }, [tasksFilteredByCompany, statusTab, startDate, endDate, searchQuery, filters]);
 
   const filteredGroupedTasks = useMemo(() => {
     return filteredTasks.reduce((acc, task) => {
@@ -451,115 +469,124 @@ const AssignTaskPage: React.FC = () => {
     return `${text.substring(0, maxLength)}...`;
   };
 
-  const renderRow = (row: RowData) => (
-    <>
-      <TableCell>
-        <Box display="flex" alignItems="center" gap={1}>
-          <Avatar
-            sx={{ width: 32, height: 32 }}
-            src={row.company.avatar}
-            alt={row.company.name}
-          />
-          <Box>
-            <Typography fontWeight={500} sx={{ fontSize: 14 }}>
-              {row.company.name}
-            </Typography>
-            {row.isRescheduledTask && (
-              <Tooltip title={`Rescheduled from ${row.originalTaskDate}`}>
-                <ThemeChip
-                  label="Rescheduled"
-                  color="warning"
-                  size="small"
-                  sx={{
-                    mt: 0.5,
-                    background: "#FFFAEB",
-                    color: "#B54708",
-                    fontSize: 11,
-                    height: 20,
-                  }}
-                />
-              </Tooltip>
-            )}
-          </Box>
-        </Box>
-      </TableCell>
-      <TableCell sx={{ fontSize: 14, color: "blue" }}>{row.date}</TableCell>
-      <TableCell
-        onClick={() => handleClick(row.id)}
-        sx={{ cursor: "pointer", fontSize: 14 }}
-      >
-        {row.party}
-      </TableCell>
+  const renderRow = (row: RowData) => {
+    const getCellSx = (baseSx?: any) => ({
+      ... (row.highlightYellow ? { backgroundColor: '#fff3cd' } : {}),
+      ...baseSx
+    });
 
-      <TableCell sx={{ fontSize: 14 }}>
-        <Typography
-          sx={{
-            maxWidth: 150,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
+    return (
+      <>
+        <TableCell sx={getCellSx()}>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Avatar
+              sx={{ width: 32, height: 32 }}
+              src={row.company.avatar}
+              alt={row.company.name}
+            />
+            <Box>
+              <Typography fontWeight={500} sx={{ fontSize: 14 }}>
+                {row.company.name}
+              </Typography>
+              {row.isRescheduledTask && (
+                <Tooltip title={`Rescheduled from ${row.originalTaskDate}`}>
+                  <ThemeChip
+                    label="Rescheduled"
+                    color="warning"
+                    size="small"
+                    sx={{
+                      mt: 0.5,
+                      background: "#FFFAEB",
+                      color: "#B54708",
+                      fontSize: 11,
+                      height: 20,
+                    }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
+          </Box>
+        </TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14, color: "blue" })}>{row.date}</TableCell>
+        <TableCell
+          onClick={() => handleClick(row.id)}
+          sx={getCellSx({ cursor: "pointer", fontSize: 14 })}
         >
-          {truncateText(row.address, 30)}
-        </Typography>
-      </TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.market}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.assignBy}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
-      <TableCell ><Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
-        ? `${row.remarks.substring(0, 10)}...`
-        : row.remarks}</Typography></TableCell>
-      <TableCell sx={{ fontSize: 14 }}>
-        <ThemeChip
-          label={row.status}
-          icon={
-            row.statusType === "success" ? (
-              <AiOutlineCheck style={{ fontSize: 18 }} />
-            ) : row.statusType === "error" ? (
-              <AiOutlineClose style={{ fontSize: 18 }} />
-            ) : (
-              <></>
-            )
-          }
-          color={row.statusType}
-          variant="filled"
-          sx={{
-            background:
-              row.statusType === "success"
-                ? "#ECFDF3"
-                : row.statusType === "error"
-                  ? "#FEF3F2"
-                  : "#F2F4F7",
-            color:
-              row.statusType === "success"
-                ? "#027A48"
-                : row.statusType === "error"
-                  ? "#D92D20"
-                  : "#344054",
-            fontWeight: 600,
-            fontSize: 14,
-            px: 1.5,
-            height: 28,
-          }}
-        />
-      </TableCell>
-      <TableCell sx={{ display: "flex" }}>
-        {canedit && (
-          <IconButton color="primary" onClick={() => handleEdit(row.id)}>
-            <EditIcon />
-          </IconButton>
-        )}
-        {candelete && (
-          <IconButton color="error" onClick={() => handleDelete(row.id)}>
-            <DeleteIcon />
-          </IconButton>
-        )}
-      </TableCell>
-    </>
-  );
+          {row.party}
+        </TableCell>
+
+        <TableCell sx={getCellSx({ fontSize: 14 })}>
+          <Typography
+            sx={{
+              maxWidth: 150,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {truncateText(row.address, 30)}
+          </Typography>
+        </TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.market}</TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.area}</TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.mobile}</TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.reason}</TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignBy}</TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignTo}</TableCell>
+        <TableCell sx={getCellSx()}>
+          <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
+            ? `${row.remarks.substring(0, 10)}...`
+            : row.remarks}</Typography>
+        </TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>
+          <ThemeChip
+            label={row.status}
+            icon={
+              row.statusType === "success" ? (
+                <AiOutlineCheck style={{ fontSize: 18 }} />
+              ) : row.statusType === "error" ? (
+                <AiOutlineClose style={{ fontSize: 18 }} />
+              ) : (
+                <></>
+              )
+            }
+            color={row.statusType}
+            variant="filled"
+            sx={{
+              background:
+                row.statusType === "success"
+                  ? "#ECFDF3"
+                  : row.statusType === "error"
+                    ? "#FEF3F2"
+                    : "#F2F4F7",
+              color:
+                row.statusType === "success"
+                  ? "#027A48"
+                  : row.statusType === "error"
+                    ? "#D92D20"
+                    : "#344054",
+              fontWeight: 600,
+              fontSize: 14,
+              px: 1.5,
+              height: 28,
+            }}
+          />
+        </TableCell>
+        <TableCell sx={getCellSx({ display: "flex" })}>
+          {canedit && (
+            <IconButton color="primary" onClick={() => handleEdit(row.id)}>
+              <EditIcon />
+            </IconButton>
+          )}
+          {candelete && (
+            <IconButton color="error" onClick={() => handleDelete(row.id)}>
+              <DeleteIcon />
+            </IconButton>
+          )}
+        </TableCell>
+      </>
+    );
+  };
 
 
 
