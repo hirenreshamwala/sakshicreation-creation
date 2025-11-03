@@ -15,6 +15,7 @@ import PaperSelection from "./PaperSelection";
 import PaperAssign from "./PaperAssign";
 import QpOrderStep1 from "./QpOrderStep1";
 import StackSelection from "./StackSelection";
+import DriverSelection from "./DriverSelection";
 
 export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
     const dispatch = useAppDispatch();
@@ -661,7 +662,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
             const updateData = {
                 ...formData,
-                kantan:formData.kantan._id,
+                kantan: formData?.kantan?._id || undefined,
                 designer: selectedDesigner,
                 printer: selectedPrinter,
                 binder: selectedBinder,
@@ -791,13 +792,13 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
             <form onSubmit={handleSubmit}>
                 <Stack spacing={2}>
-                    {row.step === 0 ? <QpOrderStep1
+                    {(row.step === 0 || row.step === 4) ? <QpOrderStep1
                         formData={formData}
                         handleFormChange={handleFormChange}
                         isCompleted={isCompleted}
                         handleProcessChange={handleProcessChange}
                     /> : null}
-                    {row.step === 1 ? <>
+                    {row.step === 4 ? <>
                         <PaperAssign
                             row={row}
                             isCompleted={isCompleted}
@@ -828,12 +829,13 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         />
                     </> : null}
 
-                    <StackSelection
+                    {row.step === 1 ? <StackSelection
                         formData={formData}
                         row={row}
                         isCompleted={isCompleted}
                         paperRequirement={paperRequirements}
-                    />
+                    /> : null}
+                    <DriverSelection row={row}/>
                     <Stack direction="row" spacing={2}>
                         <ThemeButton
                             type="submit"

@@ -181,6 +181,29 @@ export const updateQPOrderThunk = createAsyncThunk(
 );
 
 
+// Update Order
+export const sendBoxFromGodownOrFactoryThunk = createAsyncThunk(
+  "qpOrder/sendBoxFromGodownOrFactoryThunk",
+  async (
+    { id, data }: { id: string; data: any }, // ✅ destructure from one object
+    { rejectWithValue }
+  ) => {
+    try {
+      // console.log(id, data,'id, data')
+      const response = await orderService.sendBoxFromGodownOrFactory(id, data);
+
+      if (response.success) {
+        return response.data;
+      } else {
+        return rejectWithValue(response.message || "Failed to update QP order");
+      }
+    } catch (error: any) {
+      console.error("Redux: Update QP order error:", error);
+      return rejectWithValue(error.message || "Failed to update QP order");
+    }
+  }
+);
+
 // Delete Order
 export const deleteQPOrderThunk = createAsyncThunk(
   "qpOrder/delete",
@@ -526,6 +549,30 @@ const qpOrderSlice = createSlice({
         }
       )
       .addCase(updateQPOrderThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      .addCase(sendBoxFromGodownOrFactoryThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        sendBoxFromGodownOrFactoryThunk.fulfilled,
+        (state, action: PayloadAction<Order>) => {
+          state.loading = false;
+          const index = state.orders.findIndex(
+            (order) => order._id === action.payload._id
+          );
+          if (index !== -1) {
+            state.orders[index] = action.payload;
+          }
+          state.singleOrder = action.payload;
+          state.successMessage = "QP Order updated successfully";
+          state.error = null;
+        }
+      )
+      .addCase(sendBoxFromGodownOrFactoryThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })

@@ -64,7 +64,7 @@ export const inventoryService = {
     }
   },
 
-  async getInventorySummery(data: any): Promise<ApiResponse<Inventory[]>> {
+  async getInventoryBoxSummery(data: any): Promise<ApiResponse<Inventory[]>> {
     try {
       const response: AxiosResponse<ApiResponse<Inventory[]>> = await Request.post(
         Endpoint.GET_INVENTORY_BOX,data);

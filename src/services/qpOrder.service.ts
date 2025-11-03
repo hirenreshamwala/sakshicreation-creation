@@ -278,6 +278,34 @@ export const orderService = {
     }
   },
 
+  async sendBoxFromGodownOrFactory(
+    id: string,
+    data: Partial<CreateOrderData & {
+      printerPapers?: PaperField[];
+      binderPapers?: PaperField[];
+      bookletPapers?: PaperField[];
+    }>
+
+  ): Promise<ApiResponse<Order>> {
+    try {
+
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
+        `${Endpoint.SEND_BOX_FROM_GODOWN_OR_FACTORY}/${id}`,
+        data);
+
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Update order error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to update order"
+      );
+    }
+  },
+
   //GET DESIGNER ORDER
   //   async getGodownOrders(): Promise<ApiResponse<Order[]>> {
   //     try {
