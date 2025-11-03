@@ -979,16 +979,16 @@ const handleUpdateDesigner = async () => {
 
   const handleDownloadInvoice = () => {
     try {
-      const fullAddress = [
-        singleOrder?.party?.address?.unitNo || "",
-        // singleOrder?.party?.address?.streetAddress || "",
-        singleOrder?.party?.address?.marketName || "",
-        singleOrder?.party?.address?.landMark || "",
-        singleOrder?.party?.address?.area || "",
-        singleOrder?.party?.address?.pincode || "",
-      ]
-        .filter((part) => part.trim() !== "")
-        .join(", ");
+      // const fullAddress = [
+      //   singleOrder?.party?.address?.unitNo || "",
+      //   // singleOrder?.party?.address?.streetAddress || "",
+      //   singleOrder?.party?.address?.marketName || "",
+      //   singleOrder?.party?.address?.landMark || "",
+      //   singleOrder?.party?.address?.area || "",
+      //   singleOrder?.party?.address?.pincode || "",
+      // ]
+      //   .filter((part) => part?.trim() !== "")
+      //   .join(", ");
 
       const formData = {
         orderNumber: singleOrder?.orderNumber || "N/A",
@@ -996,8 +996,7 @@ const handleUpdateDesigner = async () => {
         remarks: singleOrder?.remarks || "",
         ownerMobileNo: singleOrder?.party?.ownerMobileNo || "",
         partyName: singleOrder?.party?.partyName || "N/A",
-        addressName: `${singleOrder?.party?.address?.unitNo} ${markets?.find((item) => item._id === singleOrder?.party?.address?.marketName)?.marketName} ${markets?.find((item) => item._id === singleOrder?.party?.address?.landMark)?.landmark} 
-              ${markets?.find((item) => item._id === singleOrder?.party?.address?.area)?.area} ${markets?.find((item) => item._id === singleOrder?.party?.address?.pincode)?.pincode}`,
+        addressName: `${singleOrder?.party?.address?.unitNo}, ${singleOrder?.party?.address?.marketName?.marketName}, ${singleOrder?.party?.address?.area?.area} - ${singleOrder?.party?.address?.pincode?.pincode}` || "N/A",
         GSTNo: singleOrder?.party?.GSTNo || "N/A",
         servicePerformance: singleOrder?.productItem?.itemName || "N/A",
         quantity: singleOrder?.qty || 0,
