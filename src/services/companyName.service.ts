@@ -55,7 +55,7 @@ export const companyNameService = {
   async updateCompanyName(id: string, data: Partial<CreateCompanyNameData>): Promise<ApiResponse<CompanyName>> {
     try {
       const response: AxiosResponse<ApiResponse<CompanyName>> = await Request.patch(
-        `${Endpoint.UPDATE_COMPANY_NAME}/${id}`,data);
+        `${Endpoint.UPDATE_COMPANY_NAME}/${id}`, data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to update company name");

@@ -152,6 +152,7 @@ const ViewOrderPage = () => {
   useEffect(() => {
     if (!markets.length) dispatch(getAllMarketsThunk())
   }, [])
+  const hasValidProof = Array.isArray(singleOrder?.invoiceValidProof) && singleOrder?.invoiceValidProof?.length > 0;
 
 
   const handleUploadQuotationProof = async () => {
@@ -254,11 +255,7 @@ const ViewOrderPage = () => {
         remarks: singleOrder?.remarks || "",
         ownerMobileNo: singleOrder?.party?.ownerMobileNo || "",
         partyName: singleOrder?.party?.partyName || "N/A",
-        addressName: `${singleOrder?.party?.address?.unitNo || ""} ${markets?.find((item) => item._id === singleOrder?.party?.address?.marketName)?.marketName || ""
-          } ${markets?.find((item) => item._id === singleOrder?.party?.address?.landMark)?.landmark || ""
-          } ${markets?.find((item) => item._id === singleOrder?.party?.address?.area)?.area || ""
-          } ${markets?.find((item) => item._id === singleOrder?.party?.address?.pincode)?.pincode || ""
-          }`.trim(),
+        addressName: `${singleOrder?.party?.address?.unitNo || ""}, ${singleOrder?.party?.address?.marketName?.marketName || ""}, ${singleOrder?.party?.address?.area?.area || ""}, ${singleOrder?.party?.address?.pincode?.pincode || ""}`,
         GSTNo: singleOrder?.party?.GSTNo || "N/A",
         servicePerformance: singleOrder?.productItem?.itemName || "N/A",
         quantity: quantity,
@@ -612,7 +609,6 @@ const ViewOrderPage = () => {
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            {/* Generate Quotation – हमेशा दिखेगा */}
             <ThemeButton
               sx={{
                 flex: 1,
@@ -622,30 +618,28 @@ const ViewOrderPage = () => {
                 fontSize: 16,
                 borderRadius: 2,
                 py: 1.2,
-
               }}
-              disabled={Boolean(singleOrder?.quotationProof)}
+              disabled={Boolean(singleOrder?.quotationProof) || hasValidProof}
               onClick={() => setQuoteDialog(true)}
             >
               Generate Quotation
             </ThemeButton>
 
             {/* View Quotation History – condition पर */}
-            {singleOrder?.quotation.length ? (
+            {singleOrder?.quotation?.length ? (
               <Button
                 variant="contained"
-
                 onClick={() => setQuotationHistoryDialog(true)}
                 sx={{ flex: 1 }}
               >
                 View Quotation History
               </Button>
             ) : (
-              <Box sx={{ flex: 1 }} /> // खाली space लेगा layout न टूटे
+              <Box sx={{ flex: 1 }} />
             )}
 
             {/* Download Quotation – condition पर */}
-            {singleOrder?.quotation.length ? (
+            {singleOrder?.quotation?.length ? (
               <ThemeButton
                 sx={{
                   flex: 1,
@@ -663,11 +657,11 @@ const ViewOrderPage = () => {
                 Download Quotation
               </ThemeButton>
             ) : (
-              <Box sx={{ flex: 1 }} /> // layout balance के लिए
+              <Box sx={{ flex: 1 }} />
             )}
           </Box>
 
-          {/* नीचे existing upload / next step वाला कोड जस का तस */}
+          {/* Upload section - only show if no quotation proof exists */}
           {!hasQuotationProof ? (
             <>
               <FileUpload
@@ -703,51 +697,51 @@ const ViewOrderPage = () => {
               </ThemeButton>
             </>
           ) : (
-            <>
-              <Box mb={2}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={handleViewQuotationProofs}
-                  sx={{
-                    color: "#344054",
-                    borderColor: "#D0D5DD",
-                    fontWeight: 600,
-                    mb: 1,
-                    textTransform: "none",
-                    fontSize: 16,
-                    py: 1.2,
-                    background: "#fff",
-                    "&:hover": { background: "#f6fef9", borderColor: "#D0D5DD" },
-                  }}
-                  startIcon={
-                    <svg width="20" height="20" fill="none" style={{ marginRight: 4 }}>
-                      <circle cx="10" cy="10" r="9" stroke="#98A2B3" strokeWidth="2" />
-                      <circle cx="10" cy="10" r="3" fill="#98A2B3" />
-                    </svg>
-                  }
-                >
-                  View Quotation Proof
-                </Button>
-              </Box>
-
-              <ThemeButton
+            <Box mb={2}>
+              <Button
+                variant="outlined"
                 fullWidth
+                onClick={handleViewQuotationProofs}
                 sx={{
-                  mt: 2,
-                  background: "#12B76A",
-                  color: "#fff",
+                  color: "#344054",
+                  borderColor: "#D0D5DD",
                   fontWeight: 600,
+                  mb: 1,
+                  textTransform: "none",
                   fontSize: 16,
-                  borderRadius: 2,
                   py: 1.2,
+                  background: "#fff",
+                  "&:hover": { background: "#f6fef9", borderColor: "#D0D5DD" },
                 }}
-                onClick={handleNextStep}
+                startIcon={
+                  <svg width="20" height="20" fill="none" style={{ marginRight: 4 }}>
+                    <circle cx="10" cy="10" r="9" stroke="#98A2B3" strokeWidth="2" />
+                    <circle cx="10" cy="10" r="3" fill="#98A2B3" />
+                  </svg>
+                }
               >
-                Next
-              </ThemeButton>
-            </>
+                View Quotation Proof
+              </Button>
+            </Box>
           )}
+
+          {/* Next Button - ALWAYS VISIBLE and ALWAYS ACTIVE */}
+          <ThemeButton
+            fullWidth
+            sx={{
+              mt: 2,
+              background: "#12B76A",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 16,
+              borderRadius: 2,
+              py: 1.2,
+              "&:hover": { background: "#079455" },
+            }}
+            onClick={handleNextStep}
+          >
+            Next
+          </ThemeButton>
         </Box>
 
       </Paper>
@@ -905,7 +899,7 @@ const ViewOrderPage = () => {
                     variant="h5"
                     fontWeight={800}
                     sx={{
-                      ml:8,
+                      ml: 8,
                       fontSize: { lg: 25 },
                     }}
                   >

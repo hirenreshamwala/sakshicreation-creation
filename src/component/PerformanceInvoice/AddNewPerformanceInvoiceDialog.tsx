@@ -716,10 +716,9 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               companyName: displayCompanyName,
               orderNumber: formik.values.orderNumber,
               remarks: formik.values.remarks || "",
-              ownerMobileNo: formik.values.ownerMobileNo || "",
+              ownerMobileNo: formik.values.ownerMobileNo || `${data?.party?.ownerMobileNo}` ||"",
               partyName: displayPartyName,
-              addressName: `${data?.party?.address?.unitNo} ${markets?.find((item) => item._id === data?.party?.address?.marketName)?.marketName} ${markets?.find((item) => item._id === data?.party?.address?.landMark)?.landmark} 
-              ${markets?.find((item) => item._id === data?.party?.address?.area)?.area} ${markets?.find((item) => item._id === data?.party?.address?.pincode)?.pincode}`,
+              addressName: `${data?.party?.address?.unitNo}, ${data?.party?.address?.marketName?.marketName}, ${data?.party?.address?.area?.area}, ${data?.party?.address?.pincode?.pincode}`,
               GSTNo: formik.values.GSTNo,
               servicePerformance: formik.values.servicePerformance,
               quantity: formik.values.quantity,
