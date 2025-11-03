@@ -236,7 +236,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 kgPerUnit: qpFormData.kgPerUnit ? Number(qpFormData.kgPerUnit) : undefined,
                 totalKg: qpFormData.totalKg ? Number(qpFormData.totalKg) : undefined,
                 salesRemark: qpFormData.salesRemark || undefined,
-                isKantan:qpFormData.isKantan,
+                isKantan: qpFormData.isKantan,
                 paperKG: {
                     paper1: {
                         deckal: qpFormData.deckal,
