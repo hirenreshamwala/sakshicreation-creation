@@ -22,8 +22,6 @@ import { StaticCompanyOptions } from "@/constants"
 import ThemeInput from "../common_component/themeinput"
 import { calculatePaperKg } from "@/utills/qpCalculations"
 
-
-
 type OrderRow = {
   _id: string;
   orderNo: string;
@@ -109,6 +107,7 @@ const OperatorView = () => {
   const [pieceInputs, setPieceInputs] = useState<{ [key: string]: string }>({});
   const [remarksOpen, setRemarksOpen] = useState(false);
   const [remarksRow, setRemarksRow] = useState<OrderRow | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<string | null>(null); // 'Unit1', 'Unit2', or null for all
 
   const router = useRouter()
   const dispatch = useAppDispatch()
@@ -130,23 +129,13 @@ const OperatorView = () => {
   const cutting = user?.role?.roleName
     ?.toLowerCase()
     ?.includes("cutting") || false;
-  console.log("DEBUG : OperatorView : cutting:", cutting);
 
-  // Define columns based on user role
-  // Define columns based on user role
+  // Define columns based on user role - UPDATED: Operator columns come before Status
   const columns = useMemo(() => {
-    const baseColumns = [
+    const commonColumns = [
       { id: "orderNo", label: "Order No" },
       { id: "party", label: "Party Name" },
-    ];
-
-    // Add unitNo column for cutting users right after party name
-    if (cutting) {
-      baseColumns.push({ id: "unitNo", label: "Unit No" });
-    }
-
-    // Continue with remaining common columns
-    baseColumns.push(
+      { id: "unitNo", label: "Unit No" },
       { id: "boxSize", label: "Box Size" },
       { id: "noOfBox", label: "No of Box" },
       { id: "top", label: "Top" },
@@ -154,25 +143,25 @@ const OperatorView = () => {
       { id: "cuttingLength", label: "Cutting length" },
       { id: "noOfSheetut", label: "No of sheet to cut / PCs" },
       { id: "totalKG", label: "Total KG" },
-      { id: "status", label: "Status" }
-    );
+    ];
 
-    // Add role-specific ending columns
     if (cutting) {
       return [
-        ...baseColumns,
+        ...commonColumns,
+        { id: "status", label: "Status" },
         { id: "noOfSheetCut", label: "No of sheet to cut" },
         { id: "action", label: "Actions" },
       ];
     } else {
       return [
-        ...baseColumns,
+        ...commonColumns,
         { id: "ply", label: "Ply" },
         { id: "corogation", label: "Corogation" },
         { id: "bottom", label: "Bottom" },
         { id: "liner", label: "Liner" },
         { id: "noofliner", label: "No of Liner" },
         { id: "noOfPeice", label: "No of piece" },
+        { id: "status", label: "Status" }, // Status comes after operator-specific columns
         { id: "action", label: "Actions" },
       ];
     }
@@ -242,7 +231,7 @@ const OperatorView = () => {
       case "noOfPeice":
         return order.noOfPieces?.toString() || "N/A";
       case "unitNo":
-        return order.unitNo || "N/A"; // New field for unit number
+        return order.unitNo || "N/A";
       default:
         return "N/A";
     }
@@ -258,12 +247,18 @@ const OperatorView = () => {
     return String(value);
   };
 
+  // Filter orders based on selected unit
   const filteredOrders = useMemo(() => {
     return orders.filter((order: OrderRow) => {
       // Date range filter
       const matchesDateRange =
         (!startDate || new Date(order.createdAt) >= new Date(startDate).setHours(0, 0, 0, 0)) &&
         (!endDate || new Date(order.createdAt) <= new Date(endDate).setHours(23, 59, 59, 999))
+
+      // Unit filter
+      const matchesUnit = 
+        !selectedUnit || 
+        order.unitNo === selectedUnit;
 
       // Search filter - search across all visible fields
       const matchesSearch = searchQuery
@@ -295,7 +290,7 @@ const OperatorView = () => {
         safeToString(order.kantanDeckal).toLowerCase().includes(searchQuery.toLowerCase()) ||
         safeToString(order.salesRemark).toLowerCase().includes(searchQuery.toLowerCase()) ||
         safeToString(order.status).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        safeToString(order.unitNo).toLowerCase().includes(searchQuery.toLowerCase()) // Include unitNo in search
+        safeToString(order.unitNo).toLowerCase().includes(searchQuery.toLowerCase())
         : true
 
       // Column filters
@@ -306,9 +301,9 @@ const OperatorView = () => {
         return value && value !== "N/A" && filters[columnId].includes(value.toString())
       })
 
-      return matchesDateRange && matchesSearch && matchesFilters
+      return matchesDateRange && matchesUnit && matchesSearch && matchesFilters;
     })
-  }, [orders, startDate, endDate, searchQuery, filters, columns])
+  }, [orders, startDate, endDate, selectedUnit, searchQuery, filters, columns])
 
   const getUniqueValues = useMemo(() => {
     if (!selectedFilterField) return []
@@ -415,6 +410,16 @@ const OperatorView = () => {
     }
   };
 
+  // Function to get row background color based on unit
+  const getRowBackgroundColor = (row: OrderRow) => {
+    if (row?.unitNo === 'Unit1') {
+      return 'rgba(59, 130, 246, 0.1)'; // Light blue for unit 1
+    } else if (row?.unitNo === 'Unit2') {
+      return 'rgba(34, 197, 94, 0.1)'; // Light green for unit 2
+    }
+    return 'transparent'; // Default background
+  };
+
   if (loading) return <Loader />
 
   return (
@@ -442,6 +447,60 @@ const OperatorView = () => {
           >
             Clear Date Range
           </ThemeButton>
+          
+          {/* Unit Filter Buttons */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 2 }}>
+            <Button
+              variant={selectedUnit === 'Unit1' ? "contained" : "outlined"}
+              sx={{
+                backgroundColor: selectedUnit === 'Unit1' ? '#3B82F6' : 'transparent',
+                color: selectedUnit === 'Unit1' ? 'white' : '#3B82F6',
+                borderColor: '#3B82F6',
+                '&:hover': {
+                  backgroundColor: selectedUnit === 'Unit1' ? '#2563EB' : 'rgba(59, 130, 246, 0.1)',
+                },
+                minWidth: '80px'
+              }}
+              onClick={() => setSelectedUnit(selectedUnit === 'Unit1' ? null : 'Unit1')}
+            >
+              Unit 1
+            </Button>
+            <Button
+              variant={selectedUnit === 'Unit2' ? "contained" : "outlined"}
+              sx={{
+                backgroundColor: selectedUnit === 'Unit2' ? '#22C55E' : 'transparent',
+                color: selectedUnit === 'Unit2' ? 'white' : '#22C55E',
+                borderColor: '#22C55E',
+                '&:hover': {
+                  backgroundColor: selectedUnit === 'Unit2' ? '#16A34A' : 'rgba(34, 197, 94, 0.1)',
+                },
+                minWidth: '80px'
+              }}
+              onClick={() => setSelectedUnit(selectedUnit === 'Unit2' ? null : 'Unit2')}
+            >
+              Unit 2
+            </Button>
+            
+            {/* Clear Unit Filter Button */}
+            {selectedUnit && (
+              <Button
+                variant="outlined"
+                sx={{
+                  color: '#6B7280',
+                  borderColor: '#6B7280',
+                  '&:hover': {
+                    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                    borderColor: '#6B7280',
+                  },
+                  minWidth: '80px',
+                  ml: 1
+                }}
+                onClick={() => setSelectedUnit(null)}
+              >
+                Clear Unit
+              </Button>
+            )}
+          </Box>
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -512,105 +571,107 @@ const OperatorView = () => {
           pagination={pagination}
           renderExpandedRow={canViewGlobal && !canStatus ? renderExpandedRow : undefined}
           renderRow={(row: OrderRow) => {
+            const rowBackgroundColor = getRowBackgroundColor(row);
+            
             return (<>
               {/* Common columns for all users */}
-              <TableCell>
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography fontSize="14px" color="#6B7280">
                   QP-{row.orderNo || "N/A"}
                 </Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography fontSize="14px" color="#6B7280">
                   {row.party?.partyName || "N/A"}
                 </Typography>
               </TableCell>
 
-              {/* Unit No column for cutting users - right after Party Name */}
-              {cutting && (
-                <TableCell>
-                  <Typography>{row.unitNo || "N/A"}</Typography>
-                </TableCell>
-              )}
+              {/* Unit No column for BOTH operator and cutting users */}
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                <Typography>{row.unitNo || "N/A"}</Typography>
+              </TableCell>
 
               {/* Continue with remaining common columns */}
-              <TableCell sx={{ whiteSpace: "nowrap" }}>
+              <TableCell sx={{ whiteSpace: "nowrap", backgroundColor: rowBackgroundColor }}>
                 <Typography>{`${row.orderdata?.length || "N/A"} x ${row.orderdata?.width || "N/A"} x ${row.orderdata?.height || "N/A"}`}</Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>{row.noOfPieces || "N/A"}</Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>{`${row.orderdata?.paper1GSM || "N/A"}`}</Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>{row.orderdata?.deckal || "N/A"}</Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>
                   {row.orderdata?.length && row.orderdata?.width
                     ? Number(row.orderdata.length) + Number(row.orderdata.width) + 2
                     : "N/A"}
                 </Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>
                   {row.noOfPieces
                     ? Number(row.noOfPieces) * 2
                     : "N/A"}
                 </Typography>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>{row.totalKg || "N/A"}</Typography>
-              </TableCell>
-              <TableCell>
-                <StatusCell row={row} />
               </TableCell>
 
               {/* Role-specific columns */}
               {cutting ? (
-                // Cutting user specific columns
-                <TableCell>
-                  <ThemeInput
-                    placeholder="No of sheet to cut"
-                    type="number"
-                    sx={{ width: 70, padding: "0" }}
-                    value={
-                      pieceInputs[row._id] !== undefined
-                        ? pieceInputs[row._id]
-                        : row.operatorNoOfSheet || ""
-                    }
-                    onChange={(e) =>
-                      setPieceInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
-                    }
-                  />
-                </TableCell>
-              ) : (
-                // Non-cutting user specific columns
+                // Cutting user specific columns - Status comes first
                 <>
-                  <TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                    <StatusCell row={row} />
+                  </TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                    <ThemeInput
+                      placeholder="No of sheet to cut"
+                      type="number"
+                      sx={{ width: 70, padding: "0" }}
+                      value={
+                        pieceInputs[row._id] !== undefined
+                          ? pieceInputs[row._id]
+                          : row.operatorNoOfSheet || ""
+                      }
+                      onChange={(e) =>
+                        setPieceInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
+                      }
+                    />
+                  </TableCell>
+                </>
+              ) : (
+                // Non-cutting user specific columns - Operator columns come BEFORE Status
+                <>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                     <Typography>{row.orderdata?.ply || "N/A"}</Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                     <Typography>{`${row.orderdata?.paper2GSM || "N/A"}`}</Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                     <Typography>{row.orderdata?.paper3GSM || "N/A"}</Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                     <Typography>
                       {row.orderdata?.ply
                         ? Number(row.orderdata.ply) - 1
                         : "N/A"}
                     </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                     <Typography>
                       {row.orderdata?.ply && row.noOfPieces
                         ? Number(row.noOfPieces) * 2 * (Number(row.orderdata.ply) - 1)
                         : "N/A"}
                     </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                     <ThemeInput
                       placeholder="No of piece"
                       type="number"
@@ -625,11 +686,14 @@ const OperatorView = () => {
                       }
                     />
                   </TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                    <StatusCell row={row} />
+                  </TableCell>
                 </>
               )}
 
               {/* Actions column - common for all users */}
-              <TableCell>
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Box display="flex" gap={1}>
                   <ThemeButton
                     size="small"
