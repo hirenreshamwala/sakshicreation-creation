@@ -835,17 +835,21 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         isCompleted={isCompleted}
                         paperRequirement={paperRequirements}
                     /> : null}
-                    <DriverSelection row={row}/>
+
+                    {row?.driver?._id === undefined ? <DriverSelection row={row} /> : null}
+
                     <Stack direction="row" spacing={2}>
-                        <ThemeButton
-                            type="submit"
-                            disabled={isCompleted || (row.step > 0 && isPaperSelectionRequired && !arePaperSelectionsValid())}
-                        >
-                            Submit
-                        </ThemeButton>
-                        <ThemeButton type="button" disabled={isCompleted} onClick={handleCancel} variant="outlined">
-                            Cancel
-                        </ThemeButton>
+                        {(row.step === 0 || row.step === 4) || row.step === 4 || row.step === 1 ? <>
+                            <ThemeButton
+                                type="submit"
+                                disabled={isCompleted || (row.step > 0 && isPaperSelectionRequired && !arePaperSelectionsValid())}
+                            >
+                                Submit
+                            </ThemeButton>
+                            <ThemeButton type="button" disabled={isCompleted} onClick={handleCancel} variant="outlined">
+                                Cancel
+                            </ThemeButton>
+                        </> : null}
                         <ThemeButton
                             type="button"
                             disabled={isCompleted}

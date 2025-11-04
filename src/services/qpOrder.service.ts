@@ -305,6 +305,28 @@ export const orderService = {
       );
     }
   },
+  async driverSelectAndManageInventory(
+    id: string,
+    data: any
+  ): Promise<ApiResponse<Order>> {
+    try {
+
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
+        `${Endpoint.DRIVER_SELECT_AND_INVENTORY_MANAGE}/${id}`,
+        data);
+
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Update order error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to update order"
+      );
+    }
+  }
 
   //GET DESIGNER ORDER
   //   async getGodownOrders(): Promise<ApiResponse<Order[]>> {

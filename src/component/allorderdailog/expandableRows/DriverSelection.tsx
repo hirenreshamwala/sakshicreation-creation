@@ -11,7 +11,10 @@ import {
   Select,
   MenuItem,
   InputLabel,
+  Button,
 } from "@mui/material";
+import { driverSelectAndManageInventoryThunk } from "@/store/slices/qpOrderSlice";
+import { toast } from "react-toastify";
 
 function DriverSelection({ row }: any) {
   const dispatch = useAppDispatch();
@@ -25,14 +28,33 @@ function DriverSelection({ row }: any) {
 
   const driverStaff = staffList.filter((s: any) => s.role.roleName === "Driver");
 
-  const handleChange = (e: any) => {
-    setDeliveryOption(e.target.value);
+  const handleDeliveryOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => setDeliveryOption(e.target.value);
+
+  const handleDriverChange = (e: any) => setSelectedDriver(e.target.value);
+
+  const handleSubmit = async () => {
+    try {
+      const payload = {
+        step: row.step,
+        deliverTo: deliveryOption,
+        driverId: selectedDriver,
+        noOfPieces: row.noOfPieces,
+        inventory:row.inventory
+      };
+
+      dispatch(driverSelectAndManageInventoryThunk({ id: row._id, data: payload }))
+      toast.success("Driver Assigned Successfully")
+    } catch (error) {
+      console.error("Error submitting driver assignment:", error);
+    }
   };
+
+  const showStep4Or3WithCompleted = (row.step === 4 && row.status === "completed") || row.step === 3;
+  const showStep2 = row.step === 2;
 
   return (
     <Box sx={{ mt: 2 }}>
-      {/* ✅ Step === 4 & status === 'completed' OR step === 3 */}
-      {( (row.step === 4 && row.status === "completed") || row.step === 3 ) && (
+      {showStep4Or3WithCompleted && (
         <Box>
           <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
             Choose Delivery Option
@@ -42,7 +64,7 @@ function DriverSelection({ row }: any) {
             <RadioGroup
               row
               value={deliveryOption}
-              onChange={handleChange}
+              onChange={handleDeliveryOptionChange}
               name="deliveryOption"
             >
               <FormControlLabel
@@ -58,30 +80,38 @@ function DriverSelection({ row }: any) {
             </RadioGroup>
           </FormControl>
 
-          {deliveryOption === "client" && (
-            <Box sx={{ mt: 2 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Select Driver</InputLabel>
-                <Select
-                       sx={{maxWidth:200}}
-                  value={selectedDriver}
-                  onChange={(e) => setSelectedDriver(e.target.value)}
-                  label="Select Driver"
-                >
-                  {driverStaff.map((driver: any) => (
-                    <MenuItem key={driver._id} value={driver._id}>
-                      {driver.firstName} {driver.lastName}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-          )}
+          <Box sx={{ mt: 2 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Select Driver</InputLabel>
+              <Select
+                sx={{ maxWidth: 200 }}
+                value={selectedDriver}
+                onChange={handleDriverChange}
+                label="Select Driver"
+              >
+                {driverStaff.map((driver: any) => (
+                  <MenuItem key={driver._id} value={driver._id}>
+                    {driver.firstName} {driver.lastName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          <Box sx={{ mt: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
+              disabled={!selectedDriver}
+            >
+              Submit
+            </Button>
+          </Box>
         </Box>
       )}
 
-      {/* ✅ Step === 2 */}
-      {row.step === 2 && (
+      {showStep2 && (
         <Box>
           <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
             Deliver to Client
@@ -90,9 +120,9 @@ function DriverSelection({ row }: any) {
           <FormControl fullWidth size="small">
             <InputLabel>Select Driver</InputLabel>
             <Select
-            sx={{maxWidth:200}}
+              sx={{ maxWidth: 200 }}
               value={selectedDriver}
-              onChange={(e) => setSelectedDriver(e.target.value)}
+              onChange={handleDriverChange}
               label="Select Driver"
             >
               {driverStaff.map((driver: any) => (
@@ -102,6 +132,17 @@ function DriverSelection({ row }: any) {
               ))}
             </Select>
           </FormControl>
+
+          <Box sx={{ mt: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
+              disabled={!selectedDriver}
+            >
+              Assign Driver
+            </Button>
+          </Box>
         </Box>
       )}
     </Box>
