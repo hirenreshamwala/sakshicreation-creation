@@ -18,9 +18,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import DownloadIcon from "@mui/icons-material/Download";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import axios from "axios";
 import { toast } from "react-toastify";
-import { authService } from "@/services/auth.service";
 
 const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
 
@@ -31,7 +29,6 @@ interface ViewFilesDialogProps {
   title?: string;
   showDownload?: boolean;
   showView?: boolean;
-  downloadEndpoint?: string;
 }
 
 const ViewFilesDialog: React.FC<ViewFilesDialogProps> = ({
@@ -41,99 +38,69 @@ const ViewFilesDialog: React.FC<ViewFilesDialogProps> = ({
   title = "Attached Files",
   showDownload = true,
   showView = false,
-  downloadEndpoint = `${BaseURL}`,
 }) => {
   const [downloading, setDownloading] = useState<string | null>(null);
 
-  const getFileName = (filePath: string) => {
-    return filePath.split("/").pop() || filePath;
-  };
+  const getFileName = (filePath: string) => filePath.split("/").pop() || filePath;
+  const getFileExtension = (fileName: string) =>
+    fileName.split(".").pop()?.toLowerCase() || "";
 
-  const getFileExtension = (fileName: string) => {
-    return fileName.split(".").pop()?.toLowerCase() || "";
-  };
+  const handleDownloadFile = (filePath: string) => {
+    try {
+      setDownloading(filePath);
+      const fileName = getFileName(filePath);
+      let downloadUrl = "";
 
-  const getFileSize = (filePath: string) => {
-    return "Unknown size";
-  };
+      if (filePath.startsWith("http")) {
+        downloadUrl = filePath;
+      } else if (filePath.startsWith("/uploads")) {
+        downloadUrl = `${BaseURL}${filePath}`;
+      } else if (filePath.startsWith("design/")) {
+        downloadUrl = `${BaseURL}/uploads/${filePath}`;
+      } else {
+        downloadUrl = `${BaseURL}/api/filedownload/download/${encodeURIComponent(filePath)}`;
+      }
 
-const handleDownloadFile = async (filePath: string) => {
-  try {
-    setDownloading(filePath);
-    const fileName = getFileName(filePath);
-    
-    // Construct the proper download URL
-    let downloadUrl;
-    
-    if (filePath.startsWith('http')) {
-      // Direct URL - use as is
-      downloadUrl = filePath;
-    } else if (filePath.startsWith('/uploads')) {
-      // Relative path from uploads directory
-      downloadUrl = `${BaseURL}/api/filedownload/download?filePath=${encodeURIComponent(filePath)}`;
-    } else {
-      // For files in specific folders like 'design'
-      downloadUrl = `${BaseURL}/api/filedownload/download?filePath=${encodeURIComponent(filePath)}`;
-    }
-
-    const token = authService.getToken();
-    const response = await axios.get(downloadUrl, {
-        responseType: "blob",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-      });
-
-      // Create blob link to download
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // ✅ Use browser-based download (no API call)
       const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", fileName);
+      link.href = downloadUrl;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(url);
 
-      toast.success(`${fileName} downloaded successfully`);
+      toast.success(`${fileName} download started`);
     } catch (error: any) {
       console.error("Download error:", error);
-      toast.error(
-        `Failed to download file: ${
-          error.response?.data?.message || error.message
-        }`
-      );
+      toast.error(`Failed to download file: ${error.message}`);
     } finally {
       setDownloading(null);
     }
   };
 
-  // View file function (opens in new tab)
   const handleViewFile = (filePath: string) => {
     try {
-      const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
-      
-      if (filePath.startsWith('http')) {
-        window.open(filePath, '_blank');
-      } else if (filePath.startsWith('/uploads')) {
-        window.open(`${BaseURL}${filePath}`, '_blank');
-      } else if (filePath.startsWith('design/')) {
-        window.open(`${BaseURL}/uploads/${filePath}`, '_blank');
+      let viewUrl = "";
+
+      if (filePath.startsWith("http")) {
+        viewUrl = filePath;
+      } else if (filePath.startsWith("/uploads")) {
+        viewUrl = `${BaseURL}${filePath}`;
+      } else if (filePath.startsWith("design/")) {
+        viewUrl = `${BaseURL}/uploads/${filePath}`;
       } else {
-        window.open(
-          `${BaseURL}/api/filedownload/download/${encodeURIComponent(filePath)}?view=true`,
-          '_blank'
-        );
+        viewUrl = `${BaseURL}/api/filedownload/download/${encodeURIComponent(filePath)}?view=true`;
       }
+
+      window.open(viewUrl, "_blank");
     } catch (error) {
-      console.error('Error viewing file:', error);
-      toast.error('Failed to view file');
+      console.error("Error viewing file:", error);
+      toast.error("Failed to view file");
     }
   };
-  // Get file icon based on extension
+
   const getFileIcon = (fileName: string) => {
     const extension = getFileExtension(fileName);
-    // You can customize icons based on file type
     switch (extension) {
       case "pdf":
         return <InsertDriveFileIcon color="error" sx={{ mr: 2 }} />;
@@ -170,7 +137,6 @@ const handleDownloadFile = async (filePath: string) => {
           <List sx={{ maxHeight: 400, overflow: "auto" }}>
             {files.map((filePath, index) => {
               const fileName = getFileName(filePath);
-              const fileSize = getFileSize(filePath);
               const isDownloading = downloading === filePath;
 
               return (
@@ -182,10 +148,8 @@ const handleDownloadFile = async (filePath: string) => {
                     py: 2,
                   }}
                 >
-                  {/* File Icon */}
                   {getFileIcon(fileName)}
 
-                  {/* File Info */}
                   <ListItemText
                     primary={
                       <Typography variant="body1" fontWeight={500}>
@@ -193,24 +157,17 @@ const handleDownloadFile = async (filePath: string) => {
                       </Typography>
                     }
                     secondary={
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
-                        >
-                          Path: {filePath}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Size: {fileSize}
-                        </Typography>
-                      </Box>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                      >
+                        Path: {filePath}
+                      </Typography>
                     }
                   />
 
-                  {/* Action Buttons */}
                   <Box display="flex" gap={1} alignItems="center">
-                    {/* View Button */}
                     {showView && (
                       <Button
                         size="small"
@@ -224,7 +181,6 @@ const handleDownloadFile = async (filePath: string) => {
                       </Button>
                     )}
 
-                    {/* Download Button */}
                     {showDownload && (
                       <Button
                         size="small"

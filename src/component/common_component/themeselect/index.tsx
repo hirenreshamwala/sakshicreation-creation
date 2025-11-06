@@ -6,18 +6,21 @@ import {
   TextFieldProps,
   Typography,
   Box,
+  ListItemText,
 } from '@mui/material';
 
 type OptionType = {
+  key?: string | number;
   label: string;
   value: string | number;
+  [key: string]: any; // allow extra fields like area, pincode, etc.
 };
 
 interface ThemeSelectProps {
   name?: string;
   label?: string;
   options: OptionType[];
-  value?: OptionType | null ;
+  value?: OptionType | null;
   onChange?: (event: React.SyntheticEvent, newValue: OptionType | null) => void;
   error?: boolean;
   helperText?: string | boolean | undefined | any;
@@ -28,6 +31,7 @@ interface ThemeSelectProps {
   size?: 'small' | 'medium';
   placeholder?: string;
   readOnly?: boolean;
+  renderOptionCustom?: boolean; // 👈 toggle for custom rendering
 }
 
 const ThemeSelect: React.FC<ThemeSelectProps> = ({
@@ -44,22 +48,19 @@ const ThemeSelect: React.FC<ThemeSelectProps> = ({
   size = 'small',
   placeholder = '',
   readOnly = false,
+  renderOptionCustom = true, // 👈 enable custom rendering by default
 }) => {
   return (
     <Box sx={{ width: '100%', ...sx }}>
       {label && (
-        <Typography
-          fontWeight={700}
-          fontSize={14}
-          color="#344054"
-          mb={0.5}
-        >
+        <Typography fontWeight={700} fontSize={14} color="#344054" mb={0.5}>
           {label} {required && <span style={{ color: 'red' }}>*</span>}
         </Typography>
       )}
+
       <Autocomplete
         options={options}
-        getOptionLabel={(option) => option.label}
+        getOptionLabel={(option) => option?.label || ''}
         value={value}
         onChange={onChange}
         isOptionEqualToValue={(option, val) => option.value === val?.value}
@@ -89,6 +90,25 @@ const ThemeSelect: React.FC<ThemeSelectProps> = ({
             color: '#667085',
           },
         }}
+        renderOption={(props, item) =>
+          renderOptionCustom ? (
+            <li {...props} key={item.key || item.value}>
+              <ListItemText
+                primary={item.label}
+                style={{
+                  fontSize: '30px',
+                  fontWeight: 500
+                }}
+                sx={{
+                }}
+              />
+            </li>
+          ) : (
+            <li {...props} key={item.key || item.value}>
+              {item.label}
+            </li>
+          )
+        }
         renderInput={(params) => (
           <TextField
             {...params}
