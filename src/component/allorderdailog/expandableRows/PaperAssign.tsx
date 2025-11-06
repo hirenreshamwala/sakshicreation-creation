@@ -17,7 +17,6 @@ import { useCallback } from "react";
 import { toast } from "react-toastify";
 import RemoveIcon from '@mui/icons-material/Remove';
 import { PaperOption, InventoryPaper } from "@/constants/interface";
-import { color } from "framer-motion";
 
 function PaperAssign({
     row,
@@ -39,7 +38,6 @@ function PaperAssign({
 
     if (!hasPaperRequirements)
         return null;
-
 
     const addPaperToSelection = useCallback((paperType: keyof typeof paperSelections, paperId: any) => {
         if (paperSelections[paperType].includes(paperId)) {

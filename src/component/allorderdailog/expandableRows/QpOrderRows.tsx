@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 import { calculateKantan, calculatePaperKg } from "@/utills/qpCalculations";
 import ViewRemark from "./ViewRemark";
 import RemarkModal from "./RemarkModal";
-import { ExpandedRowFormProps, Remark, PaperAllocationsResult, PaperAllocation, InventoryPaper } from "@/constants/interface";
+import { ExpandedRowFormProps, PaperAllocationsResult, PaperAllocation, InventoryPaper } from "@/constants/interface";
 import PaperSelection from "./PaperSelection";
 import PaperAssign from "./PaperAssign";
 import QpOrderStep1 from "./QpOrderStep1";
@@ -52,7 +52,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         paper3: [],
     });
 
-    // ✅ CORRECTED: Properly initialize all boolean values with default false
     const [formData, setFormData] = useState({
         ...row,
         actualNoOfPieces: row.actualNoOfPieces || row.operatorNoOfPieces || "",
@@ -64,7 +63,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             paper2: [],
             paper3: []
         },
-        // ✅ CORRECTED: Ensure all boolean values are properly set
         lamination: row.lamination || false,
         uv: row.uv || false,
         varnish: row.varnish || false,
@@ -80,7 +78,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         if (!allInventory.length) dispatch(getAllInventoryThunk());
     }, []);
 
-    // Improved helper function to safely extract inventory IDs from selected papers
     const extractInventoryIds = useCallback((selectedPapers: any) => {
         const result = {
             paper1: [] as string[],
@@ -90,12 +87,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
         if (!selectedPapers) return result;
 
-        // Helper function to extract IDs from different formats
         const extractIds = (paperData: any): string[] => {
             if (!paperData) return [];
 
             if (Array.isArray(paperData)) {
-                // New format: array of allocations
+
                 const ids = paperData
                     .filter((alloc: any) => alloc && (alloc.inventoryId || alloc._id || alloc.paperId))
                     .map((alloc: any) => alloc.inventoryId || alloc._id || alloc.paperId);
@@ -109,7 +105,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             return [];
         };
 
-        // Extract from each paper type
         result.paper1 = extractIds(selectedPapers?.paper1);
         result.paper2 = extractIds(selectedPapers?.paper2);
         result.paper3 = extractIds(selectedPapers?.paper3);
@@ -117,7 +112,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         return result;
     }, []);
 
-    // Initialize everything in one effect to avoid timing issues
     useEffect(() => {
         const initialSelections: any = extractInventoryIds(row.selectedPapers);
 
@@ -131,7 +125,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             paper3Req = parseFloat(row.paperKG?.paper3?.totalKg > 0 ? row.paperKG?.paper3?.totalKg : row.paperKG?.paper3?.totalKg || 0);
         }
 
-        // ✅ CORRECTED: Properly initialize all form data with actual row values
         const newFormData = {
             ...row,
             actualNoOfPieces: row.actualNoOfPieces || row.operatorNoOfPieces || "",
@@ -143,7 +136,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 paper2: [],
                 paper3: []
             },
-            // ✅ CORRECTED: Proper boolean initialization
+
             lamination: Boolean(row.lamination),
             uv: Boolean(row.uv),
             varnish: Boolean(row.varnish),
@@ -163,7 +156,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setIsInitialUnitSet(!!row.unitNo);
         setIsCompleted(row.status === "Completed");
 
-        // ✅ CORRECTED: Set staff selections from row data
         setSelectedBinder(row.binder?._id || null);
         setSelectedPrinter(row.printer?._id || null);
         setSelectedDesigner(row.designer?._id || null);
@@ -189,15 +181,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         }
     }, [formData.status, row.status, paperRequirements]);
 
-    // Filter staff with role "printer" or "binder" (case-insensitive)
     const designers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "designer");
     const printers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "printer");
     const binders = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "binder");
 
-    // Calculate all paper allocations at once to avoid circular dependency
     const calculateAllPaperAllocations = useCallback((): PaperAllocationsResult => {
 
-        // Create a map to track available quantities for each paper
         const paperQuantities: Record<string, number> = {};
         availablePapers.forEach((paper: any) => {
             paperQuantities[paper._id] =
@@ -209,7 +198,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     : 0);
         });
 
-        // Function to calculate allocations for a single paper type
         const calculateForType = (
             paperType: keyof typeof paperSelections,
             requiredKg: number
@@ -229,7 +217,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 };
             }
 
-            // Greedy allocation
             for (const paper of papers) {
                 if (remainingRequired <= 0) {
                     allocations.push({
@@ -275,12 +262,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             };
         };
 
-        // Calculate allocations for all paper types
         const paper1Result = calculateForType("paper1", paperRequirements?.paper1 || 0);
         const paper2Result = calculateForType("paper2", paperRequirements?.paper2 || 0);
         const paper3Result = calculateForType("paper3", paperRequirements?.paper3 || 0);
 
-        // ✅ FIXED: Include bf also in allocations map
         const paperAllocationsMap: Record<
             string,
             { allocatedKg: number; bf: number | string }
@@ -345,7 +330,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setFormData((prev) => {
             let newState = { ...prev };
 
-            // ===== Custom Logic Based on Fields =====
             if (field === "startDate" && row.startDate === "") {
                 if (prev.startDate) {
                     setTempStartDate(value);
@@ -409,7 +393,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 return newState;
             }
 
-            // ===== Lamination / Varnish / UV Logic =====
             if (field === "varnish" && value === true) {
                 newState.varnish = true;
                 newState.lamination = false;
@@ -702,9 +685,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 updatePapers.paper2.length > 0 &&
                 updatePapers.paper3.length > 0 &&
                 selectedDesigner
-            ) {
+            ) 
                 updateData.status = 'Designer';
-            }
+            
             else if (
                 rowPapers.paper1.length === 0 &&
                 rowPapers.paper2.length === 0 &&
@@ -713,10 +696,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 updatePapers.paper2.length > 0 &&
                 updatePapers.paper3.length > 0 &&
                 !selectedDesigner
-            ) {
+            ) 
                 updateData.status = 'Paper cutting';
-            }
-
+            
             await dispatch(updateQPOrderThunk({ id: formData._id, data: { ...updateData, step: row.step === 0 ? row.step + 1 : row.step } })).unwrap();
 
             dispatch(getAllInventoryThunk());
@@ -786,7 +768,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
         setPaperUsageSummary(summaries);
     }, [paperSelections, allAllocations, availablePapers, newAllocations, row.paperKG]);
-
 
     return (
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>

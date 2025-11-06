@@ -13,7 +13,6 @@ import { getDisplayStatus } from "@/utills/utills"
 import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk } from "@/store/slices/qpOrderSlice"
 import { toast } from "react-toastify"
 import moment from "moment"
-import { StatusCell } from "./StatusCell"
 import Loader from "../common_component/loader"
 import { ExpandedRowForm } from "./expandableRows/QpOrderRows"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
@@ -105,7 +104,6 @@ const AdminManagerSalesView = () => {
   const dispatch = useAppDispatch()
   const [editData, setEditData] = useState<OrderRow | null>(null)
   const { user } = useAppSelector((state) => state.auth)
-  const { allInventory } = useAppSelector(state => state.inventory);
 
   const { companies } = useAppSelector((state) => state.company)
   const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.qpOrders)
@@ -169,11 +167,10 @@ const AdminManagerSalesView = () => {
   ]
 
   const refreshData = () => {
-    if (canViewGlobal) {
+    if (canViewGlobal) 
       dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party }))
-    } else if (canViewOwn && user?.id) {
+     else if (canViewOwn && user?.id) 
       dispatch(getQPOrdersByStaffIdThunk(user?.id))
-    }
   };
 
   useEffect(() => {

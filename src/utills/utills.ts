@@ -824,3 +824,13 @@ export const getCompanyWisePermission = (company) => {
     if (company === 6) return userData?.qpCompanyId
   }
 }
+
+export const validateString = (name: any) => {
+  if (
+    typeof name === "string" &&
+    (name.trim().toLowerCase() === "na" || name.trim().toLowerCase() === "n/a")
+  ) {
+    return "";
+  }
+  return name ?? "";
+};

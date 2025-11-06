@@ -1,10 +1,4 @@
-import ThemeButton from "@/component/common_component/themebutton";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { updateQPOrderThunk } from "@/store/slices/qpOrderSlice";
-import { getAllStaffThunk } from "@/store/slices/staffSlice";
-import { getAllInventoryThunk } from "@/store/slices/inventorySlice";
 import {
-    Box,
     FormControl,
     InputLabel,
     MenuItem,
@@ -16,15 +10,7 @@ import {
     Checkbox,
 } from "@mui/material";
 import moment from "moment";
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { toast } from "react-toastify";
-import { calculateKantan, calculatePaperKg } from "@/utills/qpCalculations";
 import { ORDER_STATUSES } from "@/constants";
-import ViewRemark from "./ViewRemark";
-import RemarkModal from "./RemarkModal";
-import { ExpandedRowFormProps, Remark, PaperAllocationsResult, PaperAllocation, InventoryPaper } from "@/constants/interface";
-import PaperSelection from "./PaperSelection";
-import PaperAssign from "./PaperAssign";
 
 function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessChange }: any) {
     return (
@@ -166,7 +152,7 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                                     checked={formData.isPunching}
                                     onChange={(e) => {
                                         handleProcessChange("isPunching", e.target.checked)
-                                        if (e.target.checked === false) {   
+                                        if (e.target.checked === false) {
                                             handleProcessChange("isPinning", false)
                                             handleProcessChange("isPasting", false)
                                         }
