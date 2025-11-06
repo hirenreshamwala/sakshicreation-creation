@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, Checkbox, debounce, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Stack, Typography } from "@mui/material";
+import { Box, debounce, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Typography } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { toast } from "react-toastify";
@@ -28,7 +28,7 @@ import { authService } from "@/services/auth.service";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice";
-import { downloadSkippedRecordsAsCSV } from "@/utills/utills";
+import { downloadSkippedRecordsAsCSV, validateString } from "@/utills/utills";
 
 interface Address {
   unitNo: string;
@@ -106,9 +106,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     (state) => state.staff
   );
   const {
-    loading: accountLoading,
     error: accountError,
-    successMessage,
     partySuggestions,
   } = useAppSelector((state) => state.accountMasters);
   const { markets } = useAppSelector((state) => state.markets);
@@ -230,16 +228,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     },
   });
 
-  //  useEffect(() => {
-  //   if (isEditMode && formik.values.reference) {
-  //     setHasReference("yes");
-  //   } else {
-  //     setHasReference("no");
-  //   }
-  // }, [isEditMode, formik.values.reference]);
-
-  // console.log(markets, 'markets')
-
   const handleDownloadSample = () => {
     const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,createdBy\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Near Abc,Area A,400001,Visit,Ref123,FALSE,New,SUSHIL CHHAJER\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer,SUSHIL CHHAJER`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -262,23 +250,24 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         await dispatch(getAllStaffThunk());
         if (isEditMode && accountId) {
           const result = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
-          // console.log(result, 'partyData')
+
           formik.setValues({
+            ...result,
             companyName: result.companyName || "",
             partyName: result.partyName || "",
-            ownerName: result.ownerName || "",
+            ownerName: validateString(result.ownerName),
             ownerMobileNo: result.ownerMobileNo || "",
             ownerWhatsAppNo: result.ownerWhatsAppNo || "",
-            ownerEmail: result.ownerEmail || "",
-            contactPerson: result.contactPerson || "",
-            personMobileNo: result.personMobileNo || "",
-            personWhatsAppNo: result.personWhatsAppNo || "",
-            contactPersonEmail: result.contactPersonEmail || "",
-            contactForPayment: result.contactForPayment || "",
-            contactMobileNo: result.contactMobileNo || "",
-            contactWhatsAppNo: result.contactWhatsAppNo || "",
-            contactForPaymentEmail: result.contactForPaymentEmail || "",
-            GSTNo: result.GSTNo || "",
+            ownerEmail: validateString(result.ownerEmail),
+            contactPerson: validateString(result.contactPerson),
+            personMobileNo: validateString(result.personMobileNo),
+            personWhatsAppNo: validateString(result.personWhatsAppNo),
+            contactPersonEmail: validateString(result.contactPersonEmail),
+            contactForPayment: validateString(result.contactForPayment),
+            contactMobileNo: validateString(result.contactMobileNo),
+            contactWhatsAppNo: validateString(result.contactWhatsAppNo),
+            contactForPaymentEmail: validateString(result.contactForPaymentEmail),
+            GSTNo: validateString(result.GSTNo),
             partyTag: result.party.partyTag,
             address: {
               unitNo: result.party.address?.unitNo || "",
@@ -339,11 +328,11 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         value: staff.id,
       }));
 
-const getSelectedOption = (value: string, options: { label: string; value: string }[]) => {
-  if (!value || !options?.length) return null;
-  const selected = options.find((option) => option.value === value);
-  return selected || null;
-};
+  const getSelectedOption = (value: string, options: { label: string; value: string }[]) => {
+    if (!value || !options?.length) return null;
+    const selected = options.find((option) => option.value === value);
+    return selected || null;
+  };
 
   const handleCompanyChange = (event: any, newValue: any) => {
     const companyId = newValue ? newValue.value : "";
@@ -408,62 +397,6 @@ const getSelectedOption = (value: string, options: { label: string; value: strin
     }
   }
 
-// Fix the getFilteredData function
-const getFilteredData = (array = [], value, label) => {
-  if (!array?.length || !value) return [];
-  
-  console.log(`Filtering by ${label} = ${value}`); // Debug log
-  
-  const foundItem = array.find((item) => item?._id === value);
-  console.log("Found item:", foundItem); // Debug log
-  
-  if (!foundItem) return [];
-
-  const valueLabel = foundItem[label];
-  console.log(`Value label for ${label}:`, valueLabel); // Debug log
-  
-  const filtered = array.filter((item) => {
-    const itemLabel = item[label];
-    // Handle both object and string cases
-    const compareValue = typeof itemLabel === 'object' ? itemLabel?.[label] : itemLabel;
-    return compareValue === valueLabel;
-  });
-  
-  console.log("Filtered result:", filtered); // Debug log
-  return filtered;
-};
-
-// Fix the getUniqueOptions function
-const getUniqueOptions = (array = [], labelKey = "marketName", valueKey = "_id") => {
-  if (!array?.length) return [];
-
-  console.log(`Creating unique options for ${labelKey} from:`, array); // Debug log
-
-  const unique = array.filter((item, index, self) => {
-    const currentLabel = item[labelKey];
-    const currentLabelValue = typeof currentLabel === 'object' ? currentLabel?.[labelKey] : currentLabel;
-    
-    return index === self.findIndex((m) => {
-      const compareLabel = m[labelKey];
-      const compareLabelValue = typeof compareLabel === 'object' ? compareLabel?.[labelKey] : compareLabel;
-      return compareLabelValue === currentLabelValue;
-    });
-  });
-
-  const options = unique.map((item) => {
-    const labelValue = item[labelKey];
-    const labelText = typeof labelValue === 'object' ? labelValue?.[labelKey] : labelValue;
-    
-    return {
-      value: item[valueKey],
-      label: labelText || 'Unknown',
-    };
-  });
-
-  console.log(`Unique options for ${labelKey}:`, options); // Debug log
-  return options;
-};
-
   const filteredReferenceOptions = React.useMemo(() => {
     return referenceOptions.filter(option => option.partyName !== formik.values.partyName);
   }, [referenceOptions, formik.values.partyName]);
@@ -477,30 +410,7 @@ const getUniqueOptions = (array = [], labelKey = "marketName", valueKey = "_id")
     dispatch(clearSuggestions());
     onClose();
   };
-// Add this debug useEffect
-// Add this debug useEffect
-useEffect(() => {
-  if (open && markets.length > 0) {
-    console.log("=== MARKET DEBUG INFO ===");
-    console.log("All markets:", markets);
-    console.log("Selected market ID:", formik.values?.address?.marketName);
-    
-    const marketOptions = getUniqueOptions(markets, "marketName", "_id");
-    console.log("Market options:", marketOptions);
-    
-    const selectedMarket = getSelectedOption(formik.values?.address?.marketName, marketOptions);
-    console.log("Selected market option:", selectedMarket);
-    
-    // Debug filtered data
-    const filteredByMarket = getFilteredData(markets, formik.values?.address?.marketName, "marketName");
-    console.log("Filtered by market:", filteredByMarket);
-    
-    const areaOptions = getUniqueOptions(filteredByMarket, "area", "_id");
-    console.log("Area options:", areaOptions);
-  }
-}, [open, markets, formik.values?.address?.marketName]);
 
-  console.log( formik.values, 'hasReference')
   return (
     <CustomDialog
       open={open}
@@ -889,214 +799,214 @@ useEffect(() => {
             </Box>
 
             <Box>
-            <Typography fontWeight={500} fontSize={14} mb={-3}>
-  Address
-</Typography>
-<Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-  <Box display="flex" gap={2}>
-    <ThemeInput
-      label="Unit No."
-      sx={{ mt: 3.5 }}
-      name="address.unitNo"
-      value={formik.values.address.unitNo}
-      onChange={(e) => formik.setFieldValue("address.unitNo", e.target.value.toUpperCase())}
-      onBlur={formik.handleBlur}
-      error={Boolean(formik.errors.address?.unitNo)}
-      helperText={formik.touched.address?.unitNo && formik.errors.address?.unitNo}
-      required
-    />
-    
-    {/* Market Name */}
-    <ThemeSelect
-      label="Market Name"
-      options={markets.map(market => ({
-        value: market._id, // Use _id as value
-        label: market.marketName // Show marketName as label
-      }))}
-      value={markets.find(market => market._id === formik.values?.address?.marketName) ? {
-        value: formik.values?.address?.marketName,
-        label: markets.find(market => market._id === formik.values?.address?.marketName)?.marketName
-      } : null}
-      onChange={(event, newValue) => {
-        formik.setFieldValue("address.marketName", newValue ? newValue.value : "");
-        // Reset dependent fields when market changes
-        formik.setFieldValue("address.area", "");
-        formik.setFieldValue("address.landMark", "");
-        formik.setFieldValue("address.pincode", "");
-      }}
-      name="address.marketName"
-      error={Boolean(formik.errors.address?.marketName)}
-      helperText={formik.touched.address?.marketName && formik.errors.address?.marketName}
-      required
-    />
+              <Typography fontWeight={500} fontSize={14} mb={-3}>
+                Address
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Box display="flex" gap={2}>
+                  <ThemeInput
+                    label="Unit No."
+                    sx={{ mt: 3.5 }}
+                    name="address.unitNo"
+                    value={formik.values.address.unitNo}
+                    onChange={(e) => formik.setFieldValue("address.unitNo", e.target.value.toUpperCase())}
+                    onBlur={formik.handleBlur}
+                    error={Boolean(formik.errors.address?.unitNo)}
+                    helperText={formik.touched.address?.unitNo && formik.errors.address?.unitNo}
+                    required
+                  />
 
-    {/* Area */}
-    <ThemeSelect
-      label="Area"
-      options={(() => {
-        if (!formik.values?.address?.marketName) return [];
-        const selectedMarket = markets.find(market => market._id === formik.values?.address?.marketName);
-        if (!selectedMarket) return [];
-        
-        // Get all markets with the same marketName to get areas
-        const sameMarketMarkets = markets.filter(market => 
-          market.marketName === selectedMarket.marketName
-        );
-        
-        // Get unique areas with their _ids
-        const uniqueAreas = sameMarketMarkets
-          .filter(market => market.area && market._id) // Ensure area and _id exist
-          .reduce((acc, market) => {
-            const existing = acc.find(item => item.area === market.area);
-            if (!existing) {
-              acc.push({
-                _id: market._id, // Use market _id as value
-                area: market.area // Show area as label
-              });
-            }
-            return acc;
-          }, []);
-        
-        return uniqueAreas.map(item => ({
-          value: item._id, // Use _id as value
-          label: item.area // Show area as label
-        }));
-      })()}
-      value={(() => {
-        if (!formik.values?.address?.area) return null;
-        // Find the market that has this area to get the correct _id
-        const marketWithArea = markets.find(market => 
-          market._id === formik.values?.address?.area
-        );
-        return marketWithArea ? {
-          value: marketWithArea._id,
-          label: marketWithArea.area
-        } : null;
-      })()}
-      onChange={(event, newValue) => {
-        formik.setFieldValue("address.area", newValue ? newValue.value : "");
-        formik.setFieldValue("address.landMark", "");
-        formik.setFieldValue("address.pincode", "");
-      }}
-      name="address.area"
-      error={Boolean(formik.errors.address?.area)}
-      helperText={formik.touched.address?.area && formik.errors.address?.area}
-      required
-    />
+                  {/* Market Name */}
+                  <ThemeSelect
+                    label="Market Name"
+                    options={markets.map(market => ({
+                      value: market._id, // Use _id as value
+                      label: market.marketName // Show marketName as label
+                    }))}
 
-    {/* Land Mark */}
-    <ThemeSelect
-      label="Land Mark"
-      options={(() => {
-        if (!formik.values?.address?.area) return [];
-        
-        // Find the market with the selected area _id to get landmarks
-        const selectedMarket = markets.find(market => 
-          market._id === formik.values?.address?.area
-        );
-        if (!selectedMarket) return [];
-        
-        // Get all markets with the same area to get landmarks
-        const sameAreaMarkets = markets.filter(market => 
-          market.area === selectedMarket.area
-        );
-        
-        // Get unique landmarks with their _ids
-        const uniqueLandmarks = sameAreaMarkets
-          .filter(market => market.landmark && market._id)
-          .reduce((acc, market) => {
-            const existing = acc.find(item => item.landmark === market.landmark);
-            if (!existing) {
-              acc.push({
-                _id: market._id, // Use market _id as value
-                landmark: market.landmark // Show landmark as label
-              });
-            }
-            return acc;
-          }, []);
-        
-        return uniqueLandmarks.map(item => ({
-          value: item._id, // Use _id as value
-          label: item.landmark // Show landmark as label
-        }));
-      })()}
-      value={(() => {
-        if (!formik.values?.address?.landMark) return null;
-        // Find the market that has this landmark to get the correct _id
-        const marketWithLandmark = markets.find(market => 
-          market._id === formik.values?.address?.landMark
-        );
-        return marketWithLandmark ? {
-          value: marketWithLandmark._id,
-          label: marketWithLandmark.landmark
-        } : null;
-      })()}
-      onChange={(event, newValue) => {
-        formik.setFieldValue("address.landMark", newValue ? newValue.value : "");
-        formik.setFieldValue("address.pincode", "");
-      }}
-      name="address.landMark"
-      error={Boolean(formik.errors.address?.landMark)}
-      helperText={formik.touched.address?.landMark && formik.errors.address?.landMark}
-    />
+                    value={markets.find(market => market._id === formik.values?.address?.marketName) ? {
+                      value: formik.values?.address?.marketName,
+                      label: markets.find(market => market._id === formik.values?.address?.marketName)?.marketName
+                    } : null}
+                    onChange={(event, newValue) => {
+                      formik.setFieldValue("address.marketName", newValue ? newValue.value : "");
+                      formik.setFieldValue("address.area", newValue ? newValue.value : "");
+                      formik.setFieldValue("address.landMark", newValue ? newValue.value : "");
+                      formik.setFieldValue("address.pincode", newValue ? newValue.value : "");
+                    }}
+                    name="address.marketName"
+                    error={Boolean(formik.errors.address?.marketName)}
+                    helperText={formik.touched.address?.marketName && formik.errors.address?.marketName}
+                    required
+                  />
 
-    {/* Pin Code */}
-    <ThemeSelect
-      label="Pin Code"
-      options={(() => {
-        if (!formik.values?.address?.landMark) return [];
-        
-        // Find the market with the selected landmark _id to get pincodes
-        const selectedMarket = markets.find(market => 
-          market._id === formik.values?.address?.landMark
-        );
-        if (!selectedMarket) return [];
-        
-        // Get all markets with the same landmark to get pincodes
-        const sameLandmarkMarkets = markets.filter(market => 
-          market.landmark === selectedMarket.landmark
-        );
-        
-        // Get unique pincodes with their _ids
-        const uniquePincodes = sameLandmarkMarkets
-          .filter(market => market.pincode && market._id)
-          .reduce((acc, market) => {
-            const existing = acc.find(item => item.pincode === market.pincode);
-            if (!existing) {
-              acc.push({
-                _id: market._id, // Use market _id as value
-                pincode: market.pincode // Show pincode as label
-              });
-            }
-            return acc;
-          }, []);
-        
-        return uniquePincodes.map(item => ({
-          value: item._id, // Use _id as value
-          label: item.pincode // Show pincode as label
-        }));
-      })()}
-      value={(() => {
-        if (!formik.values?.address?.pincode) return null;
-        // Find the market that has this pincode to get the correct _id
-        const marketWithPincode = markets.find(market => 
-          market._id === formik.values?.address?.pincode
-        );
-        return marketWithPincode ? {
-          value: marketWithPincode._id,
-          label: marketWithPincode.pincode
-        } : null;
-      })()}
-      onChange={(event, newValue) => {
-        formik.setFieldValue("address.pincode", newValue ? newValue.value : "");
-      }}
-      name="address.pincode"
-      error={Boolean(formik.errors.address?.pincode)}
-      helperText={formik.touched.address?.pincode && formik.errors.address?.pincode}
-      required
-    />
-  </Box>
-</Box>
+                  {/* Area */}
+                  <ThemeSelect
+                    label="Area"
+                    options={(() => {
+                      if (!formik.values?.address?.marketName) return [];
+                      const selectedMarket = markets.find(market => market._id === formik.values?.address?.marketName);
+                      if (!selectedMarket) return [];
+
+                      // Get all markets with the same marketName to get areas
+                      const sameMarketMarkets = markets.filter(market =>
+                        market.marketName === selectedMarket.marketName
+                      );
+
+                      // Get unique areas with their _ids
+                      const uniqueAreas = sameMarketMarkets
+                        .filter(market => market.area && market._id) // Ensure area and _id exist
+                        .reduce((acc, market) => {
+                          const existing = acc.find(item => item.area === market.area);
+                          if (!existing) {
+                            acc.push({
+                              _id: market._id, // Use market _id as value
+                              area: market.area // Show area as label
+                            });
+                          }
+                          return acc;
+                        }, []);
+
+                      return uniqueAreas.map(item => ({
+                        value: item._id, // Use _id as value
+                        label: item.area // Show area as label
+                      }));
+                    })()}
+                    value={(() => {
+                      if (!formik.values?.address?.area) return null;
+                      // Find the market that has this area to get the correct _id
+                      const marketWithArea = markets.find(market =>
+                        market._id === formik.values?.address?.area
+                      );
+                      return marketWithArea ? {
+                        value: marketWithArea._id,
+                        label: marketWithArea.area
+                      } : null;
+                    })()}
+                    onChange={(event, newValue) => {
+                      formik.setFieldValue("address.area", newValue ? newValue.value : "");
+                      formik.setFieldValue("address.landMark", newValue ? newValue.value : "");
+                      formik.setFieldValue("address.pincode", newValue ? newValue.value : "");
+                    }}
+                    name="address.area"
+                    error={Boolean(formik.errors.address?.area)}
+                    helperText={formik.touched.address?.area && formik.errors.address?.area}
+                    required
+                  />
+
+                  {/* Land Mark */}
+                  <ThemeSelect
+                    label="Land Mark"
+                    options={(() => {
+                      if (!formik.values?.address?.area) return [];
+
+                      // Find the market with the selected area _id to get landmarks
+                      const selectedMarket = markets.find(market =>
+                        market._id === formik.values?.address?.area
+                      );
+                      if (!selectedMarket) return [];
+
+                      // Get all markets with the same area to get landmarks
+                      const sameAreaMarkets = markets.filter(market =>
+                        market.area === selectedMarket.area
+                      );
+
+                      // Get unique landmarks with their _ids
+                      const uniqueLandmarks = sameAreaMarkets
+                        .filter(market => market.landmark && market._id)
+                        .reduce((acc, market) => {
+                          const existing = acc.find(item => item.landmark === market.landmark);
+                          if (!existing) {
+                            acc.push({
+                              _id: market._id, // Use market _id as value
+                              landmark: market.landmark // Show landmark as label
+                            });
+                          }
+                          return acc;
+                        }, []);
+
+                      return uniqueLandmarks.map(item => ({
+                        value: item._id, // Use _id as value
+                        label: item.landmark // Show landmark as label
+                      }));
+                    })()}
+                    value={(() => {
+                      if (!formik.values?.address?.landMark) return null;
+                      // Find the market that has this landmark to get the correct _id
+                      const marketWithLandmark = markets.find(market =>
+                        market._id === formik.values?.address?.landMark
+                      );
+                      return marketWithLandmark ? {
+                        value: marketWithLandmark._id,
+                        label: marketWithLandmark.landmark
+                      } : null;
+                    })()}
+                    onChange={(event, newValue) => {
+                      formik.setFieldValue("address.landMark", newValue ? newValue.value : "");
+                      formik.setFieldValue("address.pincode", newValue ? newValue.value : "");
+                    }}
+                    name="address.landMark"
+                    error={Boolean(formik.errors.address?.landMark)}
+                    helperText={formik.touched.address?.landMark && formik.errors.address?.landMark}
+                  />
+
+                  {/* Pin Code */}
+                  <ThemeSelect
+                    label="Pin Code"
+                    options={(() => {
+                      if (!formik.values?.address?.landMark) return [];
+
+                      // Find the market with the selected landmark _id to get pincodes
+                      const selectedMarket = markets.find(market =>
+                        market._id === formik.values?.address?.landMark
+                      );
+                      if (!selectedMarket) return [];
+
+                      // Get all markets with the same landmark to get pincodes
+                      const sameLandmarkMarkets = markets.filter(market =>
+                        market.landmark === selectedMarket.landmark
+                      );
+
+                      // Get unique pincodes with their _ids
+                      const uniquePincodes = sameLandmarkMarkets
+                        .filter(market => market.pincode && market._id)
+                        .reduce((acc, market) => {
+                          const existing = acc.find(item => item.pincode === market.pincode);
+                          if (!existing) {
+                            acc.push({
+                              _id: market._id, // Use market _id as value
+                              pincode: market.pincode // Show pincode as label
+                            });
+                          }
+                          return acc;
+                        }, []);
+
+                      return uniquePincodes.map(item => ({
+                        value: item._id, // Use _id as value
+                        label: item.pincode // Show pincode as label
+                      }));
+                    })()}
+                    value={(() => {
+                      if (!formik.values?.address?.pincode) return null;
+                      // Find the market that has this pincode to get the correct _id
+                      const marketWithPincode = markets.find(market =>
+                        market._id === formik.values?.address?.pincode
+                      );
+                      return marketWithPincode ? {
+                        value: marketWithPincode._id,
+                        label: marketWithPincode.pincode
+                      } : null;
+                    })()}
+                    onChange={(event, newValue) => {
+                      formik.setFieldValue("address.pincode", newValue ? newValue.value : "");
+                    }}
+                    name="address.pincode"
+                    error={Boolean(formik.errors.address?.pincode)}
+                    helperText={formik.touched.address?.pincode && formik.errors.address?.pincode}
+                    required
+                  />
+                </Box>
+              </Box>
 
               <Box mt={3}>
                 <Box sx={{ display: "flex", gap: 2 }}>
