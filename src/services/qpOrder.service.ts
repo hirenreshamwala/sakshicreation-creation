@@ -328,36 +328,56 @@ export const orderService = {
     }
   }
 
-  //GET DESIGNER ORDER
-  //   async getGodownOrders(): Promise<ApiResponse<Order[]>> {
-  //     try {
-  //       const token = authService.getToken();
-  //       if (!token) {
-  //         throw new Error("No authentication token found");
-  //       }
+  async markOrderAsUrgent(orderId: string, isUrgent: boolean): Promise<ApiResponse<Order>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
+        `${Endpoint.MARK_ORDER_AS_URGENT}/${orderId}`,{ isUrgent }
+      );
 
-  //       const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
-  //         `${Endpoint.GET_DESIGNER_ORDERS}`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${token}`,
-  //             "Content-Type": "application/json",
-  //           },
-  //           withCredentials: true,
-  //         }
-  //       );
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Mark order as urgent error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to mark order as urgent"
+      );
+    }
+  }
 
-  //       return {
-  //         success: response.data.success,
-  //         data: response.data.data || [],
-  //         message: response.data.message,
-  //       };
-  //     } catch (error: any) {
-  //       console.error("Service: Get designer orders error:", error);
-  //       throw new Error(
-  //         error.response?.data?.message || "Failed to fetch designer orders"
-  //       );
-  //     }
-  //   },
 
-};
+    //GET DESIGNER ORDER
+    //   async getGodownOrders(): Promise<ApiResponse<Order[]>> {
+    //     try {
+    //       const token = authService.getToken();
+    //       if (!token) {
+    //         throw new Error("No authentication token found");
+    //       }
+
+    //       const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
+    //         `${Endpoint.GET_DESIGNER_ORDERS}`,
+    //         {
+    //           headers: {
+    //             Authorization: `Bearer ${token}`,
+    //             "Content-Type": "application/json",
+    //           },
+    //           withCredentials: true,
+    //         }
+    //       );
+
+    //       return {
+    //         success: response.data.success,
+    //         data: response.data.data || [],
+    //         message: response.data.message,
+    //       };
+    //     } catch (error: any) {
+    //       console.error("Service: Get designer orders error:", error);
+    //       throw new Error(
+    //         error.response?.data?.message || "Failed to fetch designer orders"
+    //       );
+    //     }
+    //   },
+
+  };

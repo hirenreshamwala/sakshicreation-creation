@@ -160,8 +160,9 @@ const OperatorView = () => {
         { id: "bottom", label: "Bottom" },
         { id: "liner", label: "Liner" },
         { id: "noofliner", label: "No of Liner" },
-        { id: "noOfPeice", label: "No of piece" },
+        { id: "kantan", label: "Kantan" },
         { id: "status", label: "Status" }, // Status comes after operator-specific columns
+        { id: "noOfPeice", label: "No of piece" },
         { id: "action", label: "Actions" },
       ];
     }
@@ -256,8 +257,8 @@ const OperatorView = () => {
         (!endDate || new Date(order.createdAt) <= new Date(endDate).setHours(23, 59, 59, 999))
 
       // Unit filter
-      const matchesUnit = 
-        !selectedUnit || 
+      const matchesUnit =
+        !selectedUnit ||
         order.unitNo === selectedUnit;
 
       // Search filter - search across all visible fields
@@ -447,7 +448,7 @@ const OperatorView = () => {
           >
             Clear Date Range
           </ThemeButton>
-          
+
           {/* Unit Filter Buttons */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 2 }}>
             <Button
@@ -480,7 +481,7 @@ const OperatorView = () => {
             >
               Unit 2
             </Button>
-            
+
             {/* Clear Unit Filter Button */}
             {selectedUnit && (
               <Button
@@ -572,14 +573,32 @@ const OperatorView = () => {
           renderExpandedRow={canViewGlobal && !canStatus ? renderExpandedRow : undefined}
           renderRow={(row: OrderRow) => {
             const rowBackgroundColor = getRowBackgroundColor(row);
-            
+
             return (<>
               {/* Common columns for all users */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography fontSize="14px" color="#6B7280">
-                  QP-{row.orderNo || "N/A"}
-                </Typography>
-              </TableCell>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography fontSize="14px" color="#6B7280">
+                    QP-{row.orderNo || "N/A"}
+                  </Typography>
+                  {row.isUrgent && (
+                    <Box
+                      sx={{
+                        backgroundColor: "#DC2626",
+                        color: "#FFFFFF",
+                        fontSize: "10px",
+                        fontWeight: 600,
+                        borderRadius: "4px",
+                        px: 1,
+                        py: 0.25,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      URGENT
+                    </Box>
+                  )}
+                </Box>
+              </TableCell >
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography fontSize="14px" color="#6B7280">
                   {row.party?.partyName || "N/A"}
@@ -588,7 +607,7 @@ const OperatorView = () => {
 
               {/* Unit No column for BOTH operator and cutting users */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>{row.unitNo || "N/A"}</Typography>
+                <Typography>{`${row.unitNo || "N/A"} ${row.unitType || ""}`}</Typography>
               </TableCell>
 
               {/* Continue with remaining common columns */}
@@ -611,6 +630,7 @@ const OperatorView = () => {
                     : "N/A"}
                 </Typography>
               </TableCell>
+
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>
                   {row.noOfPieces
@@ -672,6 +692,14 @@ const OperatorView = () => {
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                    <Typography>
+                      {row.kantan?.kantanName || "N/A"}
+                    </Typography>
+                  </TableCell>
+                   <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                    <StatusCell row={row} />
+                  </TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                     <ThemeInput
                       placeholder="No of piece"
                       type="number"
@@ -686,9 +714,7 @@ const OperatorView = () => {
                       }
                     />
                   </TableCell>
-                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                    <StatusCell row={row} />
-                  </TableCell>
+                 
                 </>
               )}
 

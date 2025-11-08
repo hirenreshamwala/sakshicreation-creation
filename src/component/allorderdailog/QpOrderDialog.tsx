@@ -95,8 +95,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 paper3GSM: editData.orderdata?.paper3GSM || "",
                 gsm: editData.gsm || "",
                 deckalCalculation: editData.deckalCalculation || "",
-                noOfPieces: editData.noOfPieces?.toString() || "",
-                ratePerPiece: editData.ratePerPiece?.toString() || "",
+                // noOfPieces: editData.noOfPieces?.toString() || "",
+                // ratePerPiece: editData.ratePerPiece?.toString() || "",
                 amount: editData.amount?.toString() || "",
                 kgPerUnit: editData.kgPerUnit?.toString() || "",
                 totalKg: editData.totalKg || "",
@@ -118,6 +118,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 isPasting: editData.isPasting,
                 // Set isKantan based on whether kantan data exists
                 isKantan: !!(editData.kantan || editData.kantanPerUnit || editData.totalKantan),
+                noOfPieces: editData.orderdata?.noOfPieces || editData.noOfPieces?.toString() || "",
+                ratePerPiece: editData.orderdata?.ratePerPiece || editData.ratePerPiece?.toString() || "",
             });
         } else if (open && !editData) {
             // Set default values for new form
@@ -188,6 +190,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 paper1GSM: qpFormData.paper1GSM,
                 paper2GSM: qpFormData.paper2GSM,
                 paper3GSM: qpFormData.paper3GSM,
+                noOfPieces: qpFormData.noOfPieces,
+                ratePerPiece: qpFormData.ratePerPiece
             };
             // Convert mm to inch helper
             const mmToInch = (value) => value / 25.4;
@@ -257,7 +261,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             };
 
             if (qpFormData.isKantan) {
-                orderData.kantan =qpFormData?.kantan?._id || qpFormData.kantan || undefined;
+                orderData.kantan = qpFormData?.kantan?._id || qpFormData.kantan || undefined;
                 orderData.kantanPerUnit = qpFormData.kantanPerUnit ? Number(qpFormData.kantanPerUnit) : undefined;
                 orderData.totalKantan = {
                     reel: qpFormData.totalKantan.reel || "0",
@@ -414,6 +418,21 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             label: gsm,
         }));
     };
+    const getUniqueNoOfPiecesOptions = () => {
+        const uniqueNoOfPieces = [...new Set(filteredPackagingOptions.map((item: any) => item.noOfPieces))].sort();
+        return uniqueNoOfPieces.map((pieces) => ({
+            value: pieces,
+            label: pieces,
+        }));
+    };
+
+    const getUniqueRatePerPieceOptions = () => {
+        const uniqueRates = [...new Set(filteredPackagingOptions.map((item: any) => item.ratePerPiece))].sort();
+        return uniqueRates.map((rate) => ({
+            value: rate,
+            label: rate,
+        }));
+    };
 
     const setAllData = (label: string, value: string) => {
         const fields = [
@@ -426,6 +445,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             "paper1GSM",
             "paper2GSM",
             "paper3GSM",
+            "noOfPieces",
+            "ratePerPiece"
         ];
 
         const matchedOption = filteredPackagingOptions.find(
@@ -468,9 +489,11 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 if (partyOptions.length > 0) {
                     // Sort by createdAt in descending order to get the latest option first
                     const sortedOptions = partyOptions.sort((a: any, b: any) =>
-                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
                     );
+
                     const latestOption = sortedOptions[0];
+
 
                     setQpFormData((prev) => ({
                         ...prev,
@@ -483,6 +506,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         paper1GSM: latestOption.paper1GSM || "",
                         paper2GSM: latestOption.paper2GSM || "",
                         paper3GSM: latestOption.paper3GSM || "",
+                        noOfPieces: latestOption.noOfPieces || "",
+                        ratePerPiece: latestOption.ratePerPiece || "",
                     }));
                 }
             } catch (error) {
@@ -497,6 +522,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             <>
                 <Stack direction="row" spacing={2} mb={2}>
                     <Autocomplete
+                    fullWidth
                         options={getUniquePlyOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.ply, getUniquePlyOptions())}
@@ -504,6 +530,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
+                            fullWidth
                                 {...params}
                                 label="Ply"
                                 onChange={(e) => {
@@ -511,9 +538,10 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 }}
                             />
                         )}
-                        sx={{ flex: 1 }}
+                        // sx={{ flex: 1 }}
                     />
                     <Autocomplete
+                    fullWidth
                         options={getUniqueUomOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.uom, getUniqueUomOptions())}
@@ -523,13 +551,15 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         }}
                         renderInput={(params) => (
                             <TextField
+                            fullWidth
                                 {...params}
                                 label="Unit of Measurement"
                             />
                         )}
-                        sx={{ flex: 1 }}
+                        // sx={{ flex: 1 }}
                     />
                     <Autocomplete
+                    fullWidth
                         options={getUniqueLengthOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.length, getUniqueLengthOptions())}
@@ -537,14 +567,16 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
+                            fullWidth
                                 {...params}
                                 label="Length"
                                 onChange={(e) => { handleQpChange("length", e.target.value) }}
                             />
                         )}
-                        sx={{ flex: 1 }}
+                        // sx={{ flex: 1 }}
                     />
                     <Autocomplete
+                    fullWidth
                         options={getUniqueWidthOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.width, getUniqueWidthOptions())}
@@ -552,14 +584,16 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
+                            fullWidth
                                 {...params}
                                 label="Width"
                                 onChange={(e) => { handleQpChange("width", e.target.value) }}
                             />
                         )}
-                        sx={{ flex: 1 }}
+                        // sx={{ flex: 1 }}
                     />
                     <Autocomplete
+                    fullWidth
                         options={getUniqueHeightOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.height, getUniqueHeightOptions())}
@@ -567,16 +601,18 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
+                            fullWidth
                                 {...params}
                                 label="Height"
                                 onChange={(e) => { handleQpChange("height", e.target.value) }}
                             />
                         )}
-                        sx={{ flex: 1 }}
+                        // sx={{ flex: 1 }}
                     />
                 </Stack>
-                <Stack direction="row" spacing={2} mb={2}>
+                <Stack direction="row" spacing={2} mb={2} >
                     <Autocomplete
+                        fullWidth
                         options={getUniqueDeckalOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.deckal, getUniqueDeckalOptions())}
@@ -584,14 +620,16 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
+                                fullWidth
                                 {...params}
                                 label="Deckal"
                                 onChange={(e) => { handleQpChange("deckal", e.target.value) }}
                             />
                         )}
-                        sx={{ flex: 1 }}
+                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
+                        fullWidth
                         options={getUniquePaper1GSMOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.paper1GSM, getUniquePaper1GSMOptions())}
@@ -599,14 +637,16 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
+                                fullWidth
                                 {...params}
                                 label="Paper 1 GSM"
                                 onChange={(e) => { handleQpChange("paper1GSM", e.target.value) }}
                             />
                         )}
-                        sx={{ flex: 1 }}
+                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
+                        fullWidth
                         options={getUniquePaper2GSMOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.paper2GSM, getUniquePaper2GSMOptions())}
@@ -614,14 +654,16 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
+                                fullWidth
                                 {...params}
                                 label="Paper 2 GSM"
                                 onChange={(e) => { handleQpChange("paper2GSM", e.target.value) }}
                             />
                         )}
-                        sx={{ flex: 1 }}
+                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
+                        fullWidth
                         options={getUniquePaper3GSMOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.paper3GSM, getUniquePaper3GSMOptions())}
@@ -629,44 +671,73 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
+                                fullWidth
                                 {...params}
                                 label="Paper 3 GSM"
                                 onChange={(e) => { handleQpChange("paper3GSM", e.target.value) }}
                             />
                         )}
-                        sx={{ flex: 1 }}
+                    // sx={{ flex: 1 }}
                     />
                 </Stack>
 
                 <Stack direction="row" spacing={2} mb={2}>
-                    <ThemeInput
-                        labelName="No of Pieces"
-                        placeholder="No of Pieces"
-                        fullWidth
-                        value={qpFormData.noOfPieces}
-                        onChange={(e) => {
-                            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
-                            handleQpChange("noOfPieces", numericValue);
+
+                    {/* No of Pieces */}
+                    <Autocomplete
+                    fullWidth
+                        options={getUniqueNoOfPiecesOptions()}
+                        getOptionLabel={(option) => option.label}
+                        value={getSelectedOption(qpFormData.noOfPieces, getUniqueNoOfPiecesOptions())}
+                        onChange={(_, val) => {
+                            handleQpChange("noOfPieces", val?.value || "");
+                            setAllData("noOfPieces", val?.value || "");
                         }}
+                        freeSolo
+                        renderInput={(params) => (
+                            <TextField
+                            fullWidth
+                                {...params}
+                                label="No of Pieces"
+                                onChange={(e) => handleQpChange("noOfPieces", e.target.value)}
+                            />
+                        )}
                     />
-                    <ThemeInput
-                        labelName="Rate Per Piece"
-                        placeholder="Rate Per Piece"
-                        fullWidth
-                        value={qpFormData.ratePerPiece}
-                        onChange={(e) => {
-                            const numericValue = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
-                            handleQpChange("ratePerPiece", numericValue);
+
+                    {/* Rate Per Piece */}
+                    <Autocomplete
+                    fullWidth
+                        options={getUniqueRatePerPieceOptions()}
+                        getOptionLabel={(option) => option.label}
+                        value={getSelectedOption(qpFormData.ratePerPiece, getUniqueRatePerPieceOptions())}
+                        onChange={(_, val) => {
+                            handleQpChange("ratePerPiece", val?.value || "");
+                            setAllData("ratePerPiece", val?.value || "");
                         }}
+                        freeSolo
+                        renderInput={(params) => (
+                            <TextField
+                            fullWidth
+                                {...params}
+                                label="Rate Per Piece"
+                                onChange={(e) => handleQpChange("ratePerPiece", e.target.value)}
+                            />
+                        )}
                     />
+
+                    {/* Amount */}
                     <ThemeInput
                         labelName="Amount"
                         placeholder="Amount"
-                        fullWidth
                         value={qpFormData.amount}
                         disabled
+                        fullWidth
                     />
+
                 </Stack>
+
+
+
                 <Stack direction="row" spacing={2} mb={2}>
                     <ThemeInput
                         labelName="GSM"

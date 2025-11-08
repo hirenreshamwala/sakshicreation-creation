@@ -17,6 +17,11 @@ interface Order {
   binder: { _id: string; firstName: string; lastName: string };
   designer: { _id: string; firstName: string; lastName: string };
   createdAt: string;
+  varnish: boolean;
+  lamination: boolean;
+  laminationType: string;
+  uv: boolean;
+  uvType: string;
 }
 
 const OrdersList: React.FC = () => {
@@ -27,17 +32,9 @@ const OrdersList: React.FC = () => {
   );
 
   const [page, setPage] = useState(1);
-
-  console.log("DEBUG : OrdersList : user:", user);
-  console.log("DEBUG : OrdersList : orders:", orders);
-
   const designer = user?.role?.roleName === "Designer"
   const printer = user?.role?.roleName === "Printer"
   const binder = user?.role?.roleName === "Binder"
-  console.log("DEBUG : OrdersList : printer:", printer);
-
-
-
   // Filter orders where printer._id matches user?.id
   const filteredOrders = orders.filter((order: Order) => {
     if (designer) {
@@ -50,8 +47,6 @@ const OrdersList: React.FC = () => {
     return false; // If neither printer nor binder, show all orders (or change this logic if needed)
   });
 
-  console.log("DEBUG : OrdersList : filteredOrders:", filteredOrders);
-
   useEffect(() => {
     if (user?.id) {
       // Dispatch with printerId for server-side filtering
@@ -61,20 +56,13 @@ const OrdersList: React.FC = () => {
 
   // Define columns for BasicTable
   const columns = [
-    { id: "orderNo", label: "Order Number", align: "left" as const },
-    {
-      id: "companyName",
-      label: "Company",
-      align: "left" as const,
-      render: (row: Order) => row.companyName.companyName,
-    },
-    {
-      id: "partyName",
-      label: "Party",
-      align: "left" as const,
-      render: (row: Order) => row.party.partyName,
-    },
-    { id: "status", label: "Status", align: "left" as const },
+    { id: "orderNo", label: "Order Number" },
+    { id: "companyName", label: "Company" },
+    { id: "partyName", label: "Party" },
+    { id: "varnish", label: "Varnish" },
+    { id: "lamination", label: "Lamination" },
+    { id: "uv", label: "UV" },
+    { id: "status", label: "Status"},
   ];
 
   if (loading) return <Loader />
@@ -85,21 +73,22 @@ const OrdersList: React.FC = () => {
         tableHeader={columns}
         rowData={filteredOrders}
         renderRow={(row: Order, index: number) => {
-          console.log("DEBUG : OrdersList : row:", row);
           return <>
             <TableCell>QP-{row.orderNo}</TableCell>
             <TableCell>{row.companyName.companyName}</TableCell>
             <TableCell>{row.party.partyName}</TableCell>
+            <TableCell>{row.varnish ? "YES" : "NO"}</TableCell>
+            <TableCell>{row.lamination ? row.laminationType : "NO"}</TableCell>
+            <TableCell>{row.uv ? row.uvType : "NO"}</TableCell>
             <TableCell><StatusCell row={row}/></TableCell>
           </>;
         }}
-        // title="Printer Orders"
         showDatePicker={false}
         showSearch={false}
         showFillter={false}
         showExcelDownload={false}
         totalCount={totalCount}
-        onPageChange={(newPage: number) => setPage(newPage)} // Handle page changes
+        onPageChange={(newPage: number) => setPage(newPage)} 
       />
     </div>
   );

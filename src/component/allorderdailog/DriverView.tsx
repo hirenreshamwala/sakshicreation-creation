@@ -276,8 +276,6 @@ const DriverView = () => {
             const updatedDriver = response?.data?.[0]?.driver;
             console.log("DEBUG : handleDispatchSubmit : updatedDriver:", updatedDriver);
 
-            console.log("DEBUG : handleDispatchSubmit : response:", response);
-
             if (updatedDriver) {
                 const storedUser = JSON.parse(localStorage.getItem("user"));
                 const updatedUser = { ...storedUser, isDisptach: updatedDriver.isDisptach };
@@ -312,20 +310,14 @@ const DriverView = () => {
                     deliveryTime: new Date().toISOString(),
                 })
             ).unwrap();
-
             toast.success("Order marked as delivered successfully");
 
             // 🟡 Update localStorage (isDisptach = false when all delivered)
             const updatedDriver = response?.data?.[0]?.driver;
-            console.log("DEBUG : handleDeliveredSubmit : updatedDriver:", updatedDriver);
-
-            console.log("DEBUG : handleDeliveredSubmit : response:", response);
 
             if (updatedDriver) {
                 const storedUser = JSON.parse(localStorage.getItem("user"));
                 const updatedUser = { ...storedUser, isDisptach: updatedDriver.isDisptach };
-                console.log("DEBUG : handleDeliveredSubmit : updatedDriver.isDisptach: deliver dipstach need to be false at last order", updatedDriver.isDisptach);
-
                 localStorage.setItem("user", JSON.stringify(updatedUser));
             }
 
@@ -463,7 +455,29 @@ const DriverView = () => {
                                         }
                                     />
                                 </TableCell>
-                                <TableCell>{row.orderNo}</TableCell>
+                                <TableCell>
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                        <Typography fontSize="14px" color="#6B7280">
+                                            QP-{row.orderNo || "N/A"}
+                                        </Typography>
+                                        {row.isUrgent && (
+                                            <Box
+                                                sx={{
+                                                    backgroundColor: "#DC2626",
+                                                    color: "#FFFFFF",
+                                                    fontSize: "10px",
+                                                    fontWeight: 600,
+                                                    borderRadius: "4px",
+                                                    px: 1,
+                                                    py: 0.25,
+                                                    textTransform: "uppercase",
+                                                }}
+                                            >
+                                                URGENT
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </TableCell >
                                 <TableCell>{`${row.party?.partyName} - ${row.party?.address?.unitNo} - ${row.party?.address?.marketName?.marketName} - ${row.party?.address?.area?.area}`}</TableCell>
                                 <TableCell>{`${row.party?.address?.marketName?.marketName}`}</TableCell>
                                 <TableCell>{`${row.party?.address?.area?.area}`}</TableCell>
