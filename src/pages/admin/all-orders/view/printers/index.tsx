@@ -721,7 +721,7 @@ const PrinterForm = () => {
                 </svg>
               }
             >
-              View Design Files ({singleOrder?.designFiles?.length || 0})
+              View Design Files ({singleOrder?.approvedFiles?.length || 0})
             </ThemeButton>
           </Stack>
 
