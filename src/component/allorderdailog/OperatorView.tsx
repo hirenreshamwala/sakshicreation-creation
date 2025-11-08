@@ -161,6 +161,9 @@ const OperatorView = () => {
         { id: "liner", label: "Liner" },
         { id: "noofliner", label: "No of Liner" },
         { id: "kantan", label: "Kantan" },
+        { id: "dyenumber", label: "Dye Number" },
+        { id: "dyesize", label: "Dye Size" },
+        { id: "kantan", label: "Kantan" },
         { id: "status", label: "Status" }, // Status comes after operator-specific columns
         { id: "noOfPeice", label: "No of piece" },
         { id: "action", label: "Actions" },
@@ -694,6 +697,16 @@ const OperatorView = () => {
                   <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                     <Typography>
                       {row.kantan?.kantanName || "N/A"}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                    <Typography>
+                      {row.dyeNumber || "NO"}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                    <Typography>
+                      {row.dyeSize || "NO"}
                     </Typography>
                   </TableCell>
                    <TableCell sx={{ backgroundColor: rowBackgroundColor }}>

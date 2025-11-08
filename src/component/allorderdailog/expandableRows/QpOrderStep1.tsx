@@ -189,7 +189,7 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                                     name="pasting"
                                 />
                             }
-                            label="Pasting"
+                            label="M. Pasting"
                             disabled={isCompleted || formData.isPunching === false}
                         />
                     </FormGroup>

@@ -7,7 +7,8 @@ import { ORDER_STATUSES } from "@/constants"
 import ThemeButton from "@/component/common_component/themebutton"
 import { useEffect, useState } from "react"
 
-const statusOptions = ORDER_STATUSES
+// ✅ Constants में OPERATOR_COMPLETED add करें
+const statusOptions = ORDER_STATUSES // इसमें "Operator Completed" होना चाहिए
 
 // ✅ Process labels
 const processLabels = {
@@ -31,7 +32,7 @@ const getCurrentProcess = (row) => {
   const currentStatus = row.status || "Pending";
   
   // ✅ Agar final status mein hai to koi current process nahi
-  if (["Completed", "Canceled", "On Hold"].includes(currentStatus)) {
+  if (["Completed", "Operator Completed", "Canceled", "On Hold"].includes(currentStatus)) {
     return null;
   }
   
@@ -179,9 +180,9 @@ const calculateNextStatus = (row, updatedData = {}) => {
   const isKantanRequired = row.isKantan;
   const isScreenPrinting = row.printType === "screen_printing" || row.printType === "sterio";
 
-  // ✅ PEHLE CHECK: Agar Kanthan complete ho gaya hai to hamesha "Completed"
+  // ✅ PEHLE CHECK: Agar Kanthan complete ho gaya hai to "Operator Completed"
   if (isKantanRequired && kantanEnd) {
-    return "Completed";
+    return "Operator Completed";
   }
 
   // Sequential flow based on isPunching and printType
@@ -240,7 +241,8 @@ const calculateNextStatus = (row, updatedData = {}) => {
     if (isKantanRequired) {
       return "Kanthan";
     } else {
-      return "Completed";
+      // ✅ Kanthan nahi hai to pinning ke baad directly "Operator Completed"
+      return "Operator Completed";
     }
   } else {
     // FLOW 2: isPunching = true
@@ -313,7 +315,7 @@ const calculateNextStatus = (row, updatedData = {}) => {
         (!isPinningRequired || pinningDone);
 
       if (allProcessesDone) {
-        return "Completed";
+        return "Operator Completed";
       }
     }
   }
@@ -337,7 +339,8 @@ export const StatusCell = ({ row }: { row: any }) => {
   const operator = user?.role?.roleName?.toLowerCase()?.includes("operator") || false
   const admin = user?.role?.roleName?.toLowerCase()?.includes("admin") || false
   const canStatus = user?.role?.permissions?.all_orders?.status
-  const isStatusFinal = currentStatus === "Completed" || currentStatus === "Canceled" || currentStatus === "On Hold"
+  // ✅ Operator Completed ko bhi final status mein add karo
+  const isStatusFinal = currentStatus === "Completed" || currentStatus === "Operator Completed" || currentStatus === "Canceled" || currentStatus === "On Hold"
 
   const [elapsed, setElapsed] = useState(0);
 
@@ -375,7 +378,7 @@ export const StatusCell = ({ row }: { row: any }) => {
   const currentProcess = getCurrentProcess(row);
 
   const isOrderReadyForProcessing = () => {
-    return !["Pending", "In Progress", "Completed", "Canceled", "On Hold"].includes(currentStatus);
+    return !["Pending", "In Progress", "Completed", "Operator Completed", "Canceled", "On Hold"].includes(currentStatus);
   };
 
   const canMarkCurrentProcessDone = () => {
@@ -624,10 +627,10 @@ export const StatusCell = ({ row }: { row: any }) => {
 
     if (result.isConfirmed) {
       try {
-        // ✅ Kanthan finish hone pe hamesha "Completed" status set karo
+        // ✅ Kanthan finish hone pe "Operator Completed" status set karo
         const updateData = {
           kantanEnd: new Date(),
-          status: "Completed" // ✅ Always set to Completed when Kanthan finishes
+          status: "Operator Completed" // ✅ Changed from "Completed" to "Operator Completed"
         };
 
         await dispatch(updateQPOrderThunk({
@@ -635,7 +638,7 @@ export const StatusCell = ({ row }: { row: any }) => {
           data: updateData
         })).unwrap();
 
-        toast.success("Kanthan finished successfully. Order marked as Completed.");
+        toast.success("Kanthan finished successfully. Order marked as Operator Completed.");
       } catch (err: any) {
         toast.error(err?.message || "Failed to finish Kanthan");
       }
@@ -748,7 +751,8 @@ export const StatusCell = ({ row }: { row: any }) => {
             <MenuItem
               key={status}
               value={status}
-              disabled={status === "Completed" || status === "Canceled" || status === "On Hold"}
+              // ✅ Operator Completed ko bhi disabled karo final status mein
+              disabled={status === "Completed" || status === "Operator Completed" || status === "Canceled" || status === "On Hold"}
             >
               {status}
             </MenuItem>
@@ -778,10 +782,6 @@ export const StatusCell = ({ row }: { row: any }) => {
     return (
       <Box>
         <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: processInfo?.color || '#6B7280' }}>
-          {processInfo?.label || "Completed"}
-        </Typography>
-        
-        <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280', mb: 1 }}>
           Status: {currentStatus}
         </Typography>
 
