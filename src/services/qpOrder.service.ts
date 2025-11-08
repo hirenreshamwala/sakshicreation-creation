@@ -326,7 +326,7 @@ export const orderService = {
         error.response?.data?.message || "Failed to update order"
       );
     }
-  }
+  },
 
   async markOrderAsUrgent(orderId: string, isUrgent: boolean): Promise<ApiResponse<Order>> {
     try {
