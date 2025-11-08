@@ -664,7 +664,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 </Stack>
 
                 {/* Process Field - Pinning and Pasting as separate boolean fields */}
-                <Stack direction="row" spacing={2} mb={2}>
+                {/* <Stack direction="row" spacing={2} mb={2}>
                     <FormControl fullWidth>
                         <InputLabel>Process</InputLabel>
                         <Select
@@ -689,11 +689,10 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             <MenuItem value="pasting">Pasting</MenuItem>
                         </Select>
                     </FormControl>
-                </Stack>
+                </Stack> */}
 
                 {/* New Options Section */}
-                <Stack direction="row" spacing={2} mb={2}>
-                    {/* Lamination */}
+                {/* <Stack direction="row" spacing={2} mb={2}>
                     <FormControl fullWidth>
                         <InputLabel>Lamination</InputLabel>
                         <Select
@@ -707,7 +706,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         </Select>
                     </FormControl>
 
-                    {/* Lamination Type (only show if lamination is true) */}
                     {qpFormData.lamination && (
                         <FormControl fullWidth>
                             <InputLabel>Lamination Type</InputLabel>
@@ -722,7 +720,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         </FormControl>
                     )}
 
-                    {/* UV - Only show when lamination type is "mate" */}
                     {qpFormData.lamination && qpFormData.laminationType === "mate" && (
                         <>
                             <FormControl fullWidth>
@@ -738,7 +735,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 </Select>
                             </FormControl>
 
-                            {/* UV Type (only show if UV is true) */}
                             {qpFormData.uv && (
                                 <FormControl fullWidth>
                                     <InputLabel>UV Type</InputLabel>
@@ -754,10 +750,10 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             )}
                         </>
                     )}
-                </Stack>
+                </Stack> */}
 
                 {/* Varnish */}
-                <Stack direction="row" spacing={2} mb={2}>
+                {/* <Stack direction="row" spacing={2} mb={2}>
                     <FormControl fullWidth>
                         <InputLabel>Varnish</InputLabel>
                         <Select
@@ -769,7 +765,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             <MenuItem value="yes">Yes</MenuItem>
                         </Select>
                     </FormControl>
-                </Stack>
+                </Stack> */}
 
                 <Stack direction="row" spacing={2} mb={2}>
                     <ThemeInput

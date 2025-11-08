@@ -278,36 +278,106 @@ export const orderService = {
     }
   },
 
-  //GET DESIGNER ORDER
-  //   async getGodownOrders(): Promise<ApiResponse<Order[]>> {
-  //     try {
-  //       const token = authService.getToken();
-  //       if (!token) {
-  //         throw new Error("No authentication token found");
-  //       }
+  async sendBoxFromGodownOrFactory(
+    id: string,
+    data: Partial<CreateOrderData & {
+      printerPapers?: PaperField[];
+      binderPapers?: PaperField[];
+      bookletPapers?: PaperField[];
+    }>
 
-  //       const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
-  //         `${Endpoint.GET_DESIGNER_ORDERS}`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${token}`,
-  //             "Content-Type": "application/json",
-  //           },
-  //           withCredentials: true,
-  //         }
-  //       );
+  ): Promise<ApiResponse<Order>> {
+    try {
 
-  //       return {
-  //         success: response.data.success,
-  //         data: response.data.data || [],
-  //         message: response.data.message,
-  //       };
-  //     } catch (error: any) {
-  //       console.error("Service: Get designer orders error:", error);
-  //       throw new Error(
-  //         error.response?.data?.message || "Failed to fetch designer orders"
-  //       );
-  //     }
-  //   },
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
+        `${Endpoint.SEND_BOX_FROM_GODOWN_OR_FACTORY}/${id}`,
+        data);
 
-};
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Update order error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to update order"
+      );
+    }
+  },
+  async driverSelectAndManageInventory(
+    id: string,
+    data: any
+  ): Promise<ApiResponse<Order>> {
+    try {
+
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
+        `${Endpoint.DRIVER_SELECT_AND_INVENTORY_MANAGE}/${id}`,
+        data);
+
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Update order error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to update order"
+      );
+    }
+  },
+
+  async markOrderAsUrgent(orderId: string, isUrgent: boolean): Promise<ApiResponse<Order>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
+        `${Endpoint.MARK_ORDER_AS_URGENT}/${orderId}`,{ isUrgent }
+      );
+
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Mark order as urgent error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to mark order as urgent"
+      );
+    }
+  }
+
+
+    //GET DESIGNER ORDER
+    //   async getGodownOrders(): Promise<ApiResponse<Order[]>> {
+    //     try {
+    //       const token = authService.getToken();
+    //       if (!token) {
+    //         throw new Error("No authentication token found");
+    //       }
+
+    //       const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
+    //         `${Endpoint.GET_DESIGNER_ORDERS}`,
+    //         {
+    //           headers: {
+    //             Authorization: `Bearer ${token}`,
+    //             "Content-Type": "application/json",
+    //           },
+    //           withCredentials: true,
+    //         }
+    //       );
+
+    //       return {
+    //         success: response.data.success,
+    //         data: response.data.data || [],
+    //         message: response.data.message,
+    //       };
+    //     } catch (error: any) {
+    //       console.error("Service: Get designer orders error:", error);
+    //       throw new Error(
+    //         error.response?.data?.message || "Failed to fetch designer orders"
+    //       );
+    //     }
+    //   },
+
+  };

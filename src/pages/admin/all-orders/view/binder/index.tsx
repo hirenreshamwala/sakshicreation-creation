@@ -403,8 +403,6 @@ const BinderForm = () => {
       printer: `${singleOrder.printer.firstName} ${singleOrder.printer.lastName}`,
       remark: singleOrder.remarks,
       rate: singleOrder.rate,
-      haste: "",
-      gstin: "",
       partyName: singleOrder?.party?.partyName || "",
       address: "",
     };

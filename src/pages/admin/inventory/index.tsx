@@ -1,7 +1,7 @@
 import TabComponent from '@/component/Dialog/TabComponent';
 import QpInventoryPage from '@/component/Inventory/QpInventory';
 import SakshiInventoryPage from '@/component/Inventory/SakshiInventory';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const InventoryPage = () => {
   const [activeTab, setActiveTab] = useState(1);

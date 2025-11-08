@@ -64,6 +64,18 @@ export const inventoryService = {
     }
   },
 
+  async getInventoryBoxSummery(data: any): Promise<ApiResponse<Inventory[]>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Inventory[]>> = await Request.post(
+        Endpoint.GET_INVENTORY_BOX,data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 'Failed to fetch inventory'
+      );
+    }
+  },
+
   // NEW: Update inventory item service
   async updateInventoryItem(id: string, updateData: Partial<Inventory>): Promise<ApiResponse<Inventory>> {
     try {

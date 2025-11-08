@@ -3,22 +3,19 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { updateQPOrderThunk } from "@/store/slices/qpOrderSlice";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
 import { getAllInventoryThunk } from "@/store/slices/inventorySlice";
-import {
-    Box,
-    MenuItem,
-    Stack,
-    TextField,
-} from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import moment from "moment";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "react-toastify";
 import { calculateKantan, calculatePaperKg } from "@/utills/qpCalculations";
-import { ORDER_STATUSES } from "@/constants";
 import ViewRemark from "./ViewRemark";
 import RemarkModal from "./RemarkModal";
-import { ExpandedRowFormProps, Remark, PaperAllocationsResult, PaperAllocation, InventoryPaper } from "@/constants/interface";
+import { ExpandedRowFormProps, PaperAllocationsResult, PaperAllocation, InventoryPaper } from "@/constants/interface";
 import PaperSelection from "./PaperSelection";
 import PaperAssign from "./PaperAssign";
+import QpOrderStep1 from "./QpOrderStep1";
+import StackSelection from "./StackSelection";
+import DriverSelection from "./DriverSelection";
 
 export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
     const dispatch = useAppDispatch();
@@ -28,9 +25,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [remarkModalOpen, setRemarkModalOpen] = useState(false);
     const [viewRemarksOpen, setViewRemarksOpen] = useState(false);
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
-    const [selectedBinder, setSelectedBinder] = useState(null);
-    const [selectedPrinter, setSelectedPrinter] = useState(null);
-    const [selectedDesigner, setSelectedDesigner] = useState(null);
+    const [selectedBinder, setSelectedBinder] = useState(row.binder?._id || null);
+    const [selectedPrinter, setSelectedPrinter] = useState(row.printer?._id || null);
+    const [selectedDesigner, setSelectedDesigner] = useState(row.designer?._id || null);
     const { allInventory } = useAppSelector(state => state.inventory);
     const [isCompleted, setIsCompleted] = useState(row.status === "Completed");
     const [isPaperSelectionRequired, setIsPaperSelectionRequired] = useState(false);
@@ -54,29 +51,26 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         paper2: [],
         paper3: [],
     });
+
     const [formData, setFormData] = useState({
-        _id: row._id,
-        unitNo: row.unitNo || "",
-        startDate: row.startDate || "",
-        deliveryDate: row.deliveryDate || "",
-        dyeNumber: row.dyeNumber || "",
-        dyeSize: row.dyeSize || "",
-        glue: row.glue || "",
-        wire: row.wire || "",
+        ...row,
         actualNoOfPieces: row.actualNoOfPieces || row.operatorNoOfPieces || "",
-        dyeRemark: row.dyeRemark || "",
-        godownRemark: row.godownRemark || "",
-        factoryRemark: row.factoryRemark || "",
-        status: row.status || "Pending",
-        remarks: (row.remarks as Remark[]) || [],
         printer: row.printer?._id || null,
         binder: row.binder?._id || null,
+        designer: row.designer?._id || null,
         selectedPapers: row.selectedPapers || {
             paper1: [],
             paper2: [],
             paper3: []
         },
+        lamination: row.lamination || false,
+        uv: row.uv || false,
+        varnish: row.varnish || false,
+        isPinning: row.isPinning || false,
+        isPasting: row.isPasting || false,
+        isPunching: row.isPunching || false
     });
+
     const [initialFormData, setInitialFormData] = useState(formData);
 
     useEffect(() => {
@@ -84,7 +78,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         if (!allInventory.length) dispatch(getAllInventoryThunk());
     }, []);
 
-    // Improved helper function to safely extract inventory IDs from selected papers
     const extractInventoryIds = useCallback((selectedPapers: any) => {
         const result = {
             paper1: [] as string[],
@@ -94,12 +87,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
         if (!selectedPapers) return result;
 
-        // Helper function to extract IDs from different formats
         const extractIds = (paperData: any): string[] => {
             if (!paperData) return [];
 
             if (Array.isArray(paperData)) {
-                // New format: array of allocations
+
                 const ids = paperData
                     .filter((alloc: any) => alloc && (alloc.inventoryId || alloc._id || alloc.paperId))
                     .map((alloc: any) => alloc.inventoryId || alloc._id || alloc.paperId);
@@ -113,7 +105,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             return [];
         };
 
-        // Extract from each paper type
         result.paper1 = extractIds(selectedPapers?.paper1);
         result.paper2 = extractIds(selectedPapers?.paper2);
         result.paper3 = extractIds(selectedPapers?.paper3);
@@ -121,7 +112,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         return result;
     }, []);
 
-    // Initialize everything in one effect to avoid timing issues
     useEffect(() => {
         const initialSelections: any = extractInventoryIds(row.selectedPapers);
 
@@ -136,27 +126,23 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         }
 
         const newFormData = {
-            _id: row._id,
-            unitNo: row.unitNo || "",
-            startDate: row.startDate || "",
-            deliveryDate: row.deliveryDate || "",
-            dyeNumber: row.dyeNumber || "",
-            dyeSize: row.dyeSize || "",
-            glue: row.glue || "",
-            wire: row.wire || "",
+            ...row,
             actualNoOfPieces: row.actualNoOfPieces || row.operatorNoOfPieces || "",
-            dyeRemark: row.dyeRemark || "",
-            godownRemark: row.godownRemark || "",
-            factoryRemark: row.factoryRemark || "",
-            status: row.status || "Pending",
-            remarks: (row.remarks as Remark[]) || [],
             printer: row.printer?._id || null,
             binder: row.binder?._id || null,
+            designer: row.designer?._id || null,
             selectedPapers: row.selectedPapers || {
                 paper1: [],
                 paper2: [],
                 paper3: []
             },
+
+            lamination: Boolean(row.lamination),
+            uv: Boolean(row.uv),
+            varnish: Boolean(row.varnish),
+            isPinning: Boolean(row.isPinning),
+            isPasting: Boolean(row.isPasting),
+            isPunching: Boolean(row.isPunching)
         };
 
         setFormData(newFormData);
@@ -169,8 +155,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         });
         setIsInitialUnitSet(!!row.unitNo);
         setIsCompleted(row.status === "Completed");
-        // setIsActualNoOfPiecesUpdated(!!row.actualNoOfPieces);
-        // setIsInitialized(true);
+
+        setSelectedBinder(row.binder?._id || null);
+        setSelectedPrinter(row.printer?._id || null);
+        setSelectedDesigner(row.designer?._id || null);
     }, [row, extractInventoryIds]);
 
     useEffect(() => {
@@ -193,26 +181,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         }
     }, [formData.status, row.status, paperRequirements]);
 
-    // useEffect(() => {
-    //     if (isInitialized) {
-    //         Object.entries(paperSelections).forEach(([paperType, paperIds]) => {
-    //             if (paperIds.length > 0) {
-    //                 const foundPapers:any = paperIds.map((id:any) => availablePapers.find(p => p._id === id));
-    //                 const foundCount = foundPapers.filter(Boolean).length;
-    //             }
-    //         });
-    //     }
-    // }, [paperSelections, paperRequirements, availablePapers, isInitialized]);
-
-    // Filter staff with role "printer" or "binder" (case-insensitive)
     const designers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "designer");
     const printers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "printer");
     const binders = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "binder");
 
-    // Calculate all paper allocations at once to avoid circular dependency
     const calculateAllPaperAllocations = useCallback((): PaperAllocationsResult => {
 
-        // Create a map to track available quantities for each paper
         const paperQuantities: Record<string, number> = {};
         availablePapers.forEach((paper: any) => {
             paperQuantities[paper._id] =
@@ -224,7 +198,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     : 0);
         });
 
-        // Function to calculate allocations for a single paper type
         const calculateForType = (
             paperType: keyof typeof paperSelections,
             requiredKg: number
@@ -244,13 +217,14 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 };
             }
 
-            // Greedy allocation
             for (const paper of papers) {
                 if (remainingRequired <= 0) {
                     allocations.push({
                         paperId: paper._id,
                         allocatedKg: 0,
-                        bf: paper.bf
+                        bf: paper.bf,
+                        color: paper.color,
+                        reelBatchNo: paper.reelBatchNo,
                     });
                     continue;
                 }
@@ -260,7 +234,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                     allocations.push({
                         paperId: paper._id,
                         allocatedKg: 0,
-                        bf: paper.bf
+                        bf: paper.bf,
+                        color: paper.color,
+                        reelBatchNo: paper.reelBatchNo,
                     });
                     continue;
                 }
@@ -270,7 +246,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 allocations.push({
                     paperId: paper._id,
                     allocatedKg,
-                    bf: paper.bf
+                    bf: paper.bf,
+                    color: paper.color,
+                    reelBatchNo: paper.reelBatchNo,
                 });
 
                 paperQuantities[paper._id] -= allocatedKg;
@@ -284,12 +262,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             };
         };
 
-        // Calculate allocations for all paper types
         const paper1Result = calculateForType("paper1", paperRequirements?.paper1 || 0);
         const paper2Result = calculateForType("paper2", paperRequirements?.paper2 || 0);
         const paper3Result = calculateForType("paper3", paperRequirements?.paper3 || 0);
 
-        // ✅ FIXED: Include bf also in allocations map
         const paperAllocationsMap: Record<
             string,
             { allocatedKg: number; bf: number | string }
@@ -303,7 +279,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             if (!paperAllocationsMap[allocation.paperId]) {
                 paperAllocationsMap[allocation.paperId] = {
                     allocatedKg: 0,
-                    bf: allocation.bf
+                    bf: allocation.bf,
+                    color: allocation.color,
+                    reelBatchNo: allocation.reelBatchNo,
                 };
             }
             paperAllocationsMap[allocation.paperId].allocatedKg += allocation.allocatedKg;
@@ -348,66 +326,120 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         });
     }, [isPaperSelectionRequired, paperRequirements, isPaperSelectionValid]);
 
-    const handleFormChange = useCallback((field: string, value: string) => {
-        if (field === "startDate") {
-            if (formData.startDate) {
-                setTempStartDate(value);
-                setRemarkType("startDate");
-                setRemarkModalOpen(true);
-                return;
-            } else {
-                setFormData((prev) => ({ ...prev, startDate: value }));
-                return;
-            }
-        }
+    const handleFormChange = useCallback((field: string, value: any) => {
+        setFormData((prev) => {
+            let newState = { ...prev };
 
-        if (field === "status") {
-            if (value === "Completed") {
-                if (!formData.actualNoOfPieces || parseInt(formData.actualNoOfPieces) === 0) {
-                    toast.error("You need to fill the actual number of pieces before marking as completed");
-                    return;
+            if (field === "startDate" && row.startDate === "") {
+                if (prev.startDate) {
+                    setTempStartDate(value);
+                    setRemarkType("startDate");
+                    setRemarkModalOpen(true);
+                    return prev;
+                } else {
+                    newState.startDate = value;
+                    return newState;
                 }
+            }
+
+            if (field === "status") {
+                if (value === "Completed") {
+                    if (!prev.actualNoOfPieces || parseInt(prev.actualNoOfPieces) === 0) {
+                        toast.error("You need to fill the actual number of pieces before marking as completed");
+                        return prev;
+                    }
+                    const currentDate = new Date().toISOString().split("T")[0];
+                    newState.status = value;
+                    newState.deliveryDate = currentDate;
+                    return newState;
+                }
+
+                if (value === "In Progress" && row.status === "Pending") {
+                    const hasPaperRequirements =
+                        paperRequirements?.paper1 > 0 ||
+                        paperRequirements?.paper2 > 0 ||
+                        paperRequirements?.paper3 > 0;
+
+                    if (hasPaperRequirements && !arePaperSelectionsValid()) {
+                        toast.error("Please select valid papers from inventory before changing status to In Progress");
+                        return prev;
+                    }
+                }
+
+                if (value === "On Hold") {
+                    setRemarkType("onHold");
+                    setRemarkModalOpen(true);
+                    return prev;
+                }
+
+                if (value === "Canceled") {
+                    setRemarkType("canceled");
+                    setRemarkModalOpen(true);
+                    return prev;
+                }
+
+                newState.status = value;
+            }
+
+            if (field === "unitNo" && value && !isInitialUnitSet && !prev.startDate) {
                 const currentDate = new Date().toISOString().split("T")[0];
-                setFormData((prev) => ({ ...prev, status: value, deliveryDate: currentDate }));
-                return;
-            }
+                newState.unitNo = value;
+                newState.startDate = currentDate;
+                setIsInitialUnitSet(true);
 
-            if (value === "In Progress" && row.status === "Pending") {
-                const hasPaperRequirements = paperRequirements?.paper1 > 0 || paperRequirements?.paper2 > 0 || paperRequirements?.paper3 > 0;
-
-                if (hasPaperRequirements && !arePaperSelectionsValid()) {
-                    toast.error("Please select valid papers from inventory before changing status to In Progress");
-                    return;
+                if (prev.status === "Pending" && !isPaperSelectionRequired) {
+                    newState.status = "In Progress";
                 }
+                return newState;
             }
 
-            if (value === "On Hold") {
-                setRemarkType("onHold");
-                setRemarkModalOpen(true);
-                return;
+            if (field === "varnish" && value === true) {
+                newState.varnish = true;
+                newState.lamination = false;
+                newState.laminationType = "";
+                newState.uv = false;
+                newState.uvType = "";
+            } else if (field === "lamination") {
+                newState.lamination = value;
+                if (!value) {
+                    newState.laminationType = "";
+                    newState.uv = false;
+                    newState.uvType = "";
+                }
+            } else if (field === "laminationType") {
+                newState.laminationType = value;
+                if (value !== "mate") {
+                    newState.uv = false;
+                    newState.uvType = "";
+                }
+            } else if (field === "uv") {
+                newState.uv = value;
+                if (!value) newState.uvType = "";
             }
-            if (value === "Canceled") {
-                setRemarkType("canceled");
-                setRemarkModalOpen(true);
-                return;
+            // Process checkboxes - allow multiple selection
+            else if (field === "isPinning" || field === "isPasting" || field === "isPunching") {
+                newState[field] = value;
+            } else {
+                newState[field] = value;
             }
-        }
 
-        if (field === "unitNo" && value && !isInitialUnitSet && !formData.startDate) {
-            const currentDate = new Date().toISOString().split("T")[0];
-            setFormData((prev) => ({ ...prev, unitNo: value, startDate: currentDate }));
-            setIsInitialUnitSet(true);
+            return newState;
+        });
+    }, [
+        formData,
+        row.status,
+        isInitialUnitSet,
+        isPaperSelectionRequired,
+        paperRequirements,
+        arePaperSelectionsValid,
+        row.printer,
+        row.binder
+    ]);
 
-            // Auto-change status to In Progress if paper selection is not required
-            if (formData.status === "Pending" && !isPaperSelectionRequired)
-                setFormData((prev) => ({ ...prev, status: "In Progress" }));
-            return;
-        }
-
-        // if (field === "actualNoOfPieces") setIsActualNoOfPiecesUpdated(true);
-
-        setFormData((prev) => ({ ...prev, [field]: value }));
-    }, [formData, row.status, isInitialUnitSet, isPaperSelectionRequired, paperRequirements, arePaperSelectionsValid, row.printer, row.binder]);
+    // Handle process checkbox changes
+    const handleProcessChange = useCallback((process: "isPinning" | "isPasting" | "isPunching", checked: boolean) => {
+        handleFormChange(process, checked);
+    }, [handleFormChange]);
 
     const handleRemarkSubmit = useCallback(() => {
         const now = new Date().toISOString();
@@ -417,7 +449,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         }
 
         if (remarkType === "startDate") {
-            setFormData((prev) => ({
+            setFormData((prev:any) => ({
                 ...prev,
                 startDate: tempStartDate,
                 status: "On Hold",
@@ -433,7 +465,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }));
             toast.success("Start date updated with remark");
         } else if (remarkType === "onHold") {
-            setFormData((prev) => ({
+            setFormData((prev:any) => ({
                 ...prev,
                 status: "On Hold",
                 remarks: [
@@ -448,7 +480,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }));
             toast.success("Order put on hold with remark");
         } else if (remarkType === "canceled") {
-            setFormData((prev) => ({
+            setFormData((prev:any) => ({
                 ...prev,
                 status: "Canceled",
                 remarks: [
@@ -537,6 +569,13 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate punching process requirements
+        if (formData.isPunching && (!formData.dyeNumber || !formData.dyeSize)) {
+            toast.error("Dye Number and Dye Sheet Size are required when Punching process is selected");
+            return;
+        }
+
         const currentDate = moment().startOf('day');
         const selectedDeliveryDate = moment(formData.deliveryDate);
         if (selectedDeliveryDate.isBefore(currentDate)) {
@@ -548,7 +587,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             return;
         }
 
-        if (formData.status === "In Progress" && row.status === "Pending") {
+        if (formData.status === "In Progress" && row.status === "Pending" && row.step > 0) {
             if (isPaperSelectionRequired && !arePaperSelectionsValid()) {
                 toast.error("Please select valid papers from inventory before submitting");
                 return;
@@ -605,19 +644,8 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             });
 
             const updateData = {
-                unitNo: formData.unitNo,
-                startDate: formData.startDate,
-                deliveryDate: formData.deliveryDate,
-                dyeNumber: formData.dyeNumber,
-                dyeSize: formData.dyeSize,
-                glue: formData.glue,
-                wire: formData.wire,
-                actualNoOfPieces: formData.actualNoOfPieces,
-                dyeRemark: formData.dyeRemark,
-                godownRemark: formData.godownRemark,
-                factoryRemark: formData.factoryRemark,
-                status: formData.status,
-                remarks: formData.remarks,
+                ...formData,
+                kantan: formData?.kantan?._id || undefined,
                 designer: selectedDesigner,
                 printer: selectedPrinter,
                 binder: selectedBinder,
@@ -657,9 +685,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 updatePapers.paper2.length > 0 &&
                 updatePapers.paper3.length > 0 &&
                 selectedDesigner
-            ) {
+            )
                 updateData.status = 'Designer';
-            }
+
             else if (
                 rowPapers.paper1.length === 0 &&
                 rowPapers.paper2.length === 0 &&
@@ -668,13 +696,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 updatePapers.paper2.length > 0 &&
                 updatePapers.paper3.length > 0 &&
                 !selectedDesigner
-            ) {
+            )
                 updateData.status = 'Paper cutting';
-            }
 
-
-
-            await dispatch(updateQPOrderThunk({ id: formData._id, data: updateData })).unwrap();
+            await dispatch(updateQPOrderThunk({ id: formData._id, data: { ...updateData, step: row.step === 0 ? row.step + 1 : row.step } })).unwrap();
 
             dispatch(getAllInventoryThunk());
 
@@ -691,13 +716,15 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const handleCancel = useCallback(() => {
         setFormData(initialFormData);
         setIsInitialUnitSet(!!initialFormData.unitNo);
-        // setIsActualNoOfPiecesUpdated(!!initialFormData.actualNoOfPieces);
-
         // Reset paper selections to initial values
         const initialSelections: any = extractInventoryIds(initialFormData.selectedPapers);
         setPaperSelections(initialSelections);
+        // ✅ CORRECTED: Reset staff selections
+        setSelectedBinder(initialFormData.binder);
+        setSelectedPrinter(initialFormData.printer);
+        setSelectedDesigner(initialFormData.designer);
         toast.info("Changes cancelled");
-    }, [initialFormData, row.printer, row.binder, extractInventoryIds]);
+    }, [initialFormData, extractInventoryIds]);
 
     useEffect(() => {
         const summaries: Record<string, string[]> = { paper1: [], paper2: [], paper3: [] };
@@ -742,191 +769,74 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setPaperUsageSummary(summaries);
     }, [paperSelections, allAllocations, availablePapers, newAllocations, row.paperKG]);
 
+    console.log(row, 'row', row.driver, row.status === "Completed" && row?.driver?._id === undefined)
 
     return (
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
             <form onSubmit={handleSubmit}>
                 <Stack spacing={2}>
-                    <Stack direction="row" spacing={2}>
-                        <TextField
-                            select
-                            label="Unit No"
-                            value={formData.unitNo || ""}
-                            onChange={(e) => {
-                                handleFormChange("unitNo", e.target.value);
-                                if (!formData.startDate) {
-                                    handleFormChange("startDate", moment().format("YYYY-MM-DD"));
-                                }
-                            }}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 80 }}
-                            disabled={isCompleted}
-                        >
-                            <MenuItem value="Unit1">Unit1</MenuItem>
-                            <MenuItem value="Unit2">Unit2</MenuItem>
-                        </TextField>
+                    {(row.step === 0 || row.step === 4) && row.status !== "Completed" ? <QpOrderStep1
+                        formData={formData}
+                        handleFormChange={handleFormChange}
+                        isCompleted={isCompleted}
+                        handleProcessChange={handleProcessChange}
+                    /> : null}
+                    {row.step === 4 && row.status !== "Completed" ? <>
+                        <PaperAssign
+                            row={row}
+                            isCompleted={isCompleted}
+                            paperRequirements={paperRequirements}
+                            allAllocations={allAllocations}
+                            paperSelections={paperSelections}
+                            isPaperSelectionRequired={isPaperSelectionRequired}
+                            newAllocations={newAllocations}
+                            availablePapers={availablePapers}
+                            setPaperSelections={setPaperSelections}
+                        />
 
-                        <TextField
-                            label="Start Date"
-                            type="date"
-                            value={formData.startDate}
-                            onChange={(e) => handleFormChange("startDate", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            InputLabelProps={{ shrink: true }}
-                            disabled={isCompleted}
+                        <PaperSelection
+                            setSelectedPrinter={setSelectedPrinter}
+                            setSelectedBinder={setSelectedBinder}
+                            setSelectedDesigner={setSelectedDesigner}
+                            isCompleted={isCompleted}
+                            selectedPrinter={selectedPrinter}
+                            printers={printers}
+                            staffLoading={staffLoading}
+                            selectedBinder={selectedBinder}
+                            selectedDesigner={selectedDesigner}
+                            binders={binders}
+                            designers={designers}
+                            data={row}
+                            formData={formData}
+                            handleFormChange={handleFormChange}
                         />
-                        <TextField
-                            label="Delivery Date"
-                            type="date"
-                            value={formData.deliveryDate}
-                            onChange={(e) => handleFormChange("deliveryDate", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            InputLabelProps={{ shrink: true }}
-                            inputProps={{
-                                min: moment().format("YYYY-MM-DD"), // Restrict to today or future dates
-                            }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Dye Number"
-                            value={formData.dyeNumber}
-                            onChange={(e) => handleFormChange("dyeNumber", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Dye Sheet Size"
-                            value={formData.dyeSize}
-                            onChange={(e) => handleFormChange("dyeSize", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            disabled={isCompleted}
-                        />
-                        {/* <TextField
-                        label="Glue KG"
-                        value={formData.glue}
-                        onChange={(e) => handleFormChange("glue", e.target.value)}
-                        variant="outlined"
-                        size="small"
-                        sx={{ minWidth: 100 }}
-                        disabled={isCompleted}
-                    />
-                    <TextField
-                        label="Wire KG"
-                        value={formData.wire}
-                        onChange={(e) => handleFormChange("wire", e.target.value)}
-                        variant="outlined"
-                        size="small"
-                        sx={{ minWidth: 100 }}
-                        disabled={isCompleted}
-                    /> */}
-                        <TextField
-                            label="Actual No. of Pieces"
-                            value={formData.actualNoOfPieces}
-                            onChange={(e) => handleFormChange("actualNoOfPieces", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            select
-                            label="Status"
-                            value={formData.status}
-                            onChange={(e) => handleFormChange("status", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            sx={{ minWidth: 100 }}
-                            disabled={isCompleted}
-                        >
-                            {ORDER_STATUSES.map((item) => (
-                                <MenuItem key={item} value={item}>
-                                    {item}
-                                </MenuItem>
-                            ))}
-                        </TextField>
-                    </Stack>
-                    <PaperAssign
+                    </> : null}
+
+                    {row.step === 1 ? <StackSelection
+                        formData={formData}
                         row={row}
                         isCompleted={isCompleted}
-                        paperRequirements={paperRequirements}
-                        allAllocations={allAllocations}
-                        paperSelections={paperSelections}
-                        isPaperSelectionRequired={isPaperSelectionRequired}
-                        newAllocations={newAllocations}
-                        availablePapers={availablePapers}
-                        setPaperSelections={setPaperSelections}
-                    />
+                        paperRequirement={paperRequirements}
+                    /> : null}
 
-                    <PaperSelection
-                        setSelectedPrinter={setSelectedPrinter}
-                        setSelectedBinder={setSelectedBinder}
-                        setSelectedDesigner={setSelectedDesigner}
-                        isCompleted={isCompleted}
-                        selectedPrinter={selectedPrinter}
-                        printers={printers}
-                        staffLoading={staffLoading}
-                        selectedBinder={selectedBinder}
-                        selectedDesigner={selectedDesigner}
-                        binders={binders}
-                        designers={designers}
-                        data={row}
-                    />
+                    {row.status === "Completed" && row?.driver?._id === undefined ? <DriverSelection row={row} /> :
+                        <Stack>  {row?.deliveryStatus ? `Delivery Status :${row?.deliveryStatus}` : `Order Will Going to ${row?.deliverTo}`}</Stack>
+                    }
 
-                    <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
-                        <TextField
-                            label="Dye Remark"
-                            value={formData.dyeRemark}
-                            onChange={(e) => handleFormChange("dyeRemark", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            multiline
-                            rows={2}
-                            sx={{ flex: 1, minWidth: 150, maxWidth: 350 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Godown Remark"
-                            value={formData.godownRemark}
-                            onChange={(e) => handleFormChange("godownRemark", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            multiline
-                            rows={2}
-                            sx={{ flex: 1, minWidth: 150, maxWidth: 350 }}
-                            disabled={isCompleted}
-                        />
-                        <TextField
-                            label="Factory Remark"
-                            value={formData.factoryRemark}
-                            onChange={(e) => handleFormChange("factoryRemark", e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            multiline
-                            rows={2}
-                            sx={{ flex: 1, minWidth: 150, maxWidth: 350 }}
-                            disabled={isCompleted}
-                        />
-                    </Stack>
+
 
                     <Stack direction="row" spacing={2}>
-                        <ThemeButton
-                            type="submit"
-                            disabled={isCompleted || (isPaperSelectionRequired && !arePaperSelectionsValid())}
-                        >
-                            Submit
-                        </ThemeButton>
-                        <ThemeButton type="button" disabled={isCompleted} onClick={handleCancel} variant="outlined">
-                            Cancel
-                        </ThemeButton>
+                        {(row.step === 0 || row.step === 4) || row.step === 4 || row.step === 1 ? <>
+                            <ThemeButton
+                                type="submit"
+                                disabled={isCompleted || (row.step > 0 && isPaperSelectionRequired && !arePaperSelectionsValid())}
+                            >
+                                Submit
+                            </ThemeButton>
+                            <ThemeButton type="button" disabled={isCompleted} onClick={handleCancel} variant="outlined">
+                                Cancel
+                            </ThemeButton>
+                        </> : null}
                         <ThemeButton
                             type="button"
                             disabled={isCompleted}

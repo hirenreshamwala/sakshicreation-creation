@@ -22,6 +22,7 @@ const columns = [
     { id: "market", label: "Market" },
     { id: "area", label: "Area" },
     { id: "noOfBox", label: "No of Box" },
+    { id: "deliverto", label: "DeliverTo" },
     { id: "status", label: "Status" },
     { id: "deliveryStatus", label: "Delivery Status" },
     { id: "actions", label: "Actions" },
@@ -259,7 +260,7 @@ const DriverView = () => {
             const uploadedPhotos = await uploadFilesToServer(dispatchPhotos, "dispatch-photos", billNumber);
             const imageUrls = uploadedPhotos.map((p) => p.path);
 
-            const response = await dispatch(
+            const response:any = await dispatch(
                 bulkUpdateQPOrderStatusThunk({
                     orderIds: [currentDispatchOrder._id],
                     deliveryStatus: "in_transit",
@@ -274,8 +275,6 @@ const DriverView = () => {
             // 🟢 Update localStorage (isDisptach = true)
             const updatedDriver = response?.data?.[0]?.driver;
             console.log("DEBUG : handleDispatchSubmit : updatedDriver:", updatedDriver);
-
-            console.log("DEBUG : handleDispatchSubmit : response:", response);
 
             if (updatedDriver) {
                 const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -307,23 +306,18 @@ const DriverView = () => {
                     orderIds: [currentDeliveredOrder._id],
                     deliveryStatus: "delivered",
                     billPhotos: imageUrls,
+                    // step:currentDeliveredOrder.step,
                     deliveryTime: new Date().toISOString(),
                 })
             ).unwrap();
-
             toast.success("Order marked as delivered successfully");
 
             // 🟡 Update localStorage (isDisptach = false when all delivered)
             const updatedDriver = response?.data?.[0]?.driver;
-            console.log("DEBUG : handleDeliveredSubmit : updatedDriver:", updatedDriver);
-
-            console.log("DEBUG : handleDeliveredSubmit : response:", response);
 
             if (updatedDriver) {
                 const storedUser = JSON.parse(localStorage.getItem("user"));
                 const updatedUser = { ...storedUser, isDisptach: updatedDriver.isDisptach };
-                console.log("DEBUG : handleDeliveredSubmit : updatedDriver.isDisptach: deliver dipstach need to be false at last order", updatedDriver.isDisptach);
-
                 localStorage.setItem("user", JSON.stringify(updatedUser));
             }
 
@@ -461,11 +455,34 @@ const DriverView = () => {
                                         }
                                     />
                                 </TableCell>
-                                <TableCell>{row.orderNo}</TableCell>
+                                <TableCell>
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                        <Typography fontSize="14px" color="#6B7280">
+                                            QP-{row.orderNo || "N/A"}
+                                        </Typography>
+                                        {row.isUrgent && (
+                                            <Box
+                                                sx={{
+                                                    backgroundColor: "#DC2626",
+                                                    color: "#FFFFFF",
+                                                    fontSize: "10px",
+                                                    fontWeight: 600,
+                                                    borderRadius: "4px",
+                                                    px: 1,
+                                                    py: 0.25,
+                                                    textTransform: "uppercase",
+                                                }}
+                                            >
+                                                URGENT
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </TableCell >
                                 <TableCell>{`${row.party?.partyName} - ${row.party?.address?.unitNo} - ${row.party?.address?.marketName?.marketName} - ${row.party?.address?.area?.area}`}</TableCell>
                                 <TableCell>{`${row.party?.address?.marketName?.marketName}`}</TableCell>
                                 <TableCell>{`${row.party?.address?.area?.area}`}</TableCell>
                                 <TableCell>{row.noOfPieces}</TableCell>
+                                <TableCell>{row.deliverTo}</TableCell>
                                 <TableCell><StatusCell row={row} /></TableCell>
                                 <TableCell>
                                     <Chip

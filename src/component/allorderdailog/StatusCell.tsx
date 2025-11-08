@@ -7,11 +7,158 @@ import { ORDER_STATUSES } from "@/constants"
 import ThemeButton from "@/component/common_component/themebutton"
 import { useEffect, useState } from "react"
 
-const statusOptions = ORDER_STATUSES
+// ✅ Constants में OPERATOR_COMPLETED add करें
+const statusOptions = ORDER_STATUSES // इसमें "Operator Completed" होना चाहिए
 
-// ✅ Sequential status calculate karne ka function
-// ✅ Sequential status calculate karne ka function - FIXED
-const calculateDynamicStatus = (row, updatedData = {}) => {
+// ✅ Process labels
+const processLabels = {
+  design: { label: "Design", color: "#8B5CF6" },
+  paper_cutting: { label: "Paper Cutting", color: "#3B82F6" },
+  printer: { label: "Printer", color: "#8B008B" },
+  lamination: { label: "Lamination", color: "#FF69B4" },
+  corrugation: { label: "Corrugation", color: "#F59E0B" },
+  pasting: { label: "Pasting", color: "#10B981" },
+  rotary: { label: "Rotary", color: "#3B82F6" },
+  slotting: { label: "Slotting/RS4", color: "#8B5CF6" },
+  manual_pasting: { label: "Manual Pasting", color: "#06B6D4" },
+  pinning: { label: "Pinning", color: "#84CC16" },
+  punching: { label: "Punching", color: "#F97316" },
+  kanthan: { label: "Kanthan", color: "#EF4444" },
+  in_progress: { label: "In Progress", color: "#6B7280" }
+};
+
+// ✅ Current process determine karne ka function - row.status ke basis pe
+const getCurrentProcess = (row) => {
+  const currentStatus = row.status || "Pending";
+  
+  // ✅ Agar final status mein hai to koi current process nahi
+  if (["Completed", "Operator Completed", "Canceled", "On Hold"].includes(currentStatus)) {
+    return null;
+  }
+  
+  // ✅ Agar status specific process mein hai to wahi return karo
+  if (currentStatus === "Kanthan") {
+    return "kanthan";
+  }
+  if (currentStatus === "Designer") {
+    return "design";
+  }
+  if (currentStatus === "Paper cutting") {
+    return "paper_cutting";
+  }
+  if (currentStatus === "Printer") {
+    return "printer";
+  }
+  if (currentStatus === "Lamination") {
+    return "lamination";
+  }
+  if (currentStatus === "Corrugation") {
+    return "corrugation";
+  }
+  if (currentStatus === "Pasting") {
+    return "pasting";
+  }
+  if (currentStatus === "Rotery") {
+    return "rotary";
+  }
+  if (currentStatus === "Sloting/rs4") {
+    return "slotting";
+  }
+  if (currentStatus === "Manual pasting") {
+    return "manual_pasting";
+  }
+  if (currentStatus === "Pinning") {
+    return "pinning";
+  }
+  if (currentStatus === "Puching") {
+    return "punching";
+  }
+  
+  // ✅ Agar status "In Progress" hai to sequential flow check karo
+  const hasDesigner = !!row.designer;
+  const hasPrinter = !!row.printer;
+  const hasBinder = !!row.binder;
+  const isPunchingRequired = row.isPunching;
+  const isKantanRequired = row.isKantan;
+  const isScreenPrinting = row.printType === "screen_printing" || row.printType === "sterio";
+
+  // ✅ FLOW 1: isPunching = false
+  if (!isPunchingRequired) {
+    if (hasDesigner && !row.designDone) return "design";
+    if (!row.paperCuttingDone) return "paper_cutting";
+
+    // ✅ SCREEN PRINTING FLOW
+    if (isScreenPrinting) {
+      if (!row.corrugationDone) return "corrugation";
+      if (!row.pastingDone) return "pasting";
+      if (hasPrinter && !row.printerDone) return "printer";
+      if (hasBinder && !row.laminationDone) return "lamination";
+    }
+    // ✅ OFFSET FLOW
+    else {
+      if (hasPrinter && !row.printerDone) return "printer";
+      if (hasBinder && !row.laminationDone) return "lamination";
+      if (!row.corrugationDone) return "corrugation";
+      if (!row.pastingDone) return "pasting";
+    }
+
+    if (!row.rotaryDone) return "rotary";
+    if (!row.slottingDone) return "slotting";
+    if (!row.pinningDone) return "pinning";
+
+    // ✅ Final step based on isKantan
+    if (isKantanRequired) {
+      return "kanthan";
+    }
+
+    return null; // All processes done
+  }
+  // ✅ FLOW 2: isPunching = true
+  else {
+    if (hasDesigner && !row.designDone) return "design";
+    if (!row.paperCuttingDone) return "paper_cutting";
+
+    // ✅ SCREEN PRINTING FLOW
+    if (isScreenPrinting) {
+      if (!row.corrugationDone) return "corrugation";
+      if (!row.pastingDone) return "pasting";
+      if (hasPrinter && !row.printerDone) return "printer";
+      if (hasBinder && !row.laminationDone) return "lamination";
+    }
+    // ✅ OFFSET FLOW
+    else {
+      if (hasPrinter && !row.printerDone) return "printer";
+      if (hasBinder && !row.laminationDone) return "lamination";
+      if (!row.corrugationDone) return "corrugation";
+      if (!row.pastingDone) return "pasting";
+    }
+
+    if (!row.punchingDone) return "punching";
+
+    // ✅ Manual Pasting & Pinning (conditional) - ONLY in Flow 2
+    const isPastingRequired = row.isPasting;
+    const isPinningRequired = row.isPinning;
+
+    if (isPastingRequired && !row.manualPastingDone) return "manual_pasting";
+    if (isPinningRequired && !row.pinningDone) return "pinning";
+
+    // ✅ Final step based on isKantan
+    if (isKantanRequired) {
+      const allPreKanthanDone =
+        (!isPastingRequired || row.manualPastingDone) &&
+        (!isPinningRequired || row.pinningDone);
+
+      if (allPreKanthanDone) {
+        return "kanthan";
+      }
+    }
+
+    return null; // All processes done
+  }
+};
+
+// ✅ Next status calculate karne ka function (process complete karne ke liye)
+const calculateNextStatus = (row, updatedData = {}) => {
   // Current values with updates
   const designDone = updatedData.designDone ?? row.designDone;
   const paperCuttingDone = updatedData.paperCuttingDone ?? row.paperCuttingDone;
@@ -24,126 +171,165 @@ const calculateDynamicStatus = (row, updatedData = {}) => {
   const manualPastingDone = updatedData.manualPastingDone ?? row.manualPastingDone;
   const pinningDone = updatedData.pinningDone ?? row.pinningDone;
   const punchingDone = updatedData.punchingDone ?? row.punchingDone;
+  const kantanEnd = updatedData.kantanEnd ?? row.kantanEnd;
 
   const hasDesigner = !!row.designer;
   const hasPrinter = !!row.printer;
   const hasBinder = !!row.binder;
-  const isPastingRequired = row.isPasting;
-  const isPinningRequired = row.isPinning;
+  const isPunchingRequired = row.isPunching;
+  const isKantanRequired = row.isKantan;
+  const isScreenPrinting = row.printType === "screen_printing" || row.printType === "sterio";
 
-  // Sequential flow - yeh order important hai
-  if (hasDesigner && !designDone) {
-    return "Designer";
+  // ✅ PEHLE CHECK: Agar Kanthan complete ho gaya hai to "Operator Completed"
+  if (isKantanRequired && kantanEnd) {
+    return "Operator Completed";
   }
 
-  if (!paperCuttingDone) {
-    return "Paper cutting";
-  }
+  // Sequential flow based on isPunching and printType
+  if (!isPunchingRequired) {
+    // FLOW 1: isPunching = false
 
-  if (hasPrinter && !printerDone) {
-    return "Printer";
-  }
+    if (hasDesigner && !designDone) {
+      return "Designer";
+    }
+    if (!paperCuttingDone) {
+      return "Paper cutting";
+    }
 
-  if (hasBinder && !laminationDone) {
-    return "Lamination";
-  }
+    // ✅ SCREEN PRINTING FLOW: corrugation → pasting → printer → lamination
+    if (isScreenPrinting) {
+      if (!corrugationDone) {
+        return "Corrugation";
+      }
+      if (!pastingDone) {
+        return "Pasting";
+      }
+      if (hasPrinter && !printerDone) {
+        return "Printer";
+      }
+      if (hasBinder && !laminationDone) {
+        return "Lamination";
+      }
+    }
+    // ✅ OFFSET FLOW: printer → lamination → corrugation → pasting
+    else {
+      if (hasPrinter && !printerDone) {
+        return "Printer";
+      }
+      if (hasBinder && !laminationDone) {
+        return "Lamination";
+      }
+      if (!corrugationDone) {
+        return "Corrugation";
+      }
+      if (!pastingDone) {
+        return "Pasting";
+      }
+    }
 
-  if (!corrugationDone) {
-    return "Corrugation";
-  }
+    if (!rotaryDone) {
+      return "Rotery";
+    }
+    if (!slottingDone) {
+      return "Sloting/rs4";
+    }
+    if (!pinningDone) {
+      return "Pinning";
+    }
 
-  if (isPastingRequired && !pastingDone) {
-    return "Pasting";
-  }
+    // ✅ Final step based on isKantan
+    if (isKantanRequired) {
+      return "Kanthan";
+    } else {
+      // ✅ Kanthan nahi hai to pinning ke baad directly "Operator Completed"
+      return "Operator Completed";
+    }
+  } else {
+    // FLOW 2: isPunching = true
 
-  if (!rotaryDone) {
-    return "Rotery";
-  }
+    if (hasDesigner && !designDone) {
+      return "Designer";
+    }
+    if (!paperCuttingDone) {
+      return "Paper cutting";
+    }
 
-  if (!slottingDone) {
-    return "Sloting/rs4";
-  }
+    // ✅ SCREEN PRINTING FLOW: corrugation → pasting → printer → lamination
+    if (isScreenPrinting) {
+      if (!corrugationDone) {
+        return "Corrugation";
+      }
+      if (!pastingDone) {
+        return "Pasting";
+      }
+      if (hasPrinter && !printerDone) {
+        return "Printer";
+      }
+      if (hasBinder && !laminationDone) {
+        return "Lamination";
+      }
+    }
+    // ✅ OFFSET FLOW: printer → lamination → corrugation → pasting
+    else {
+      if (hasPrinter && !printerDone) {
+        return "Printer";
+      }
+      if (hasBinder && !laminationDone) {
+        return "Lamination";
+      }
+      if (!corrugationDone) {
+        return "Corrugation";
+      }
+      if (!pastingDone) {
+        return "Pasting";
+      }
+    }
 
-  if (!manualPastingDone) {
-    return "Manual pasting";
-  }
+    if (!punchingDone) {
+      return "Puching";
+    }
 
-  if (isPinningRequired && !pinningDone) {
-    return "Pinning";
-  }
+    // ✅ Manual Pasting & Pinning (conditional) - ONLY in Flow 2
+    const isPastingRequired = row.isPasting;
+    const isPinningRequired = row.isPinning;
 
-  if (!punchingDone) {
-    return "Puching";
-  }
+    if (isPastingRequired && !manualPastingDone) {
+      return "Manual pasting";
+    }
+    if (isPinningRequired && !pinningDone) {
+      return "Pinning";
+    }
 
-  if (punchingDone) {
-    return "Kanthan";
+    // ✅ Final step based on isKantan
+    if (isKantanRequired) {
+      const allPreKanthanDone =
+        (!isPastingRequired || manualPastingDone) &&
+        (!isPinningRequired || pinningDone);
+
+      if (allPreKanthanDone) {
+        return "Kanthan";
+      }
+    } else {
+      const allProcessesDone =
+        (!isPastingRequired || manualPastingDone) &&
+        (!isPinningRequired || pinningDone);
+
+      if (allProcessesDone) {
+        return "Operator Completed";
+      }
+    }
   }
 
   return "In Progress";
 };
 
-// ✅ Current process determine karne ka function
-// ✅ Current process determine karne ka function - FIXED
-// ✅ Current process determine karne ka function - FIXED
-const getCurrentProcess = (row) => {
-  const hasDesigner = !!row.designer;
-  const hasPrinter = !!row.printer;
-  const hasBinder = !!row.binder;
-  const isPastingRequired = row.isPasting;
-  const isPinningRequired = row.isPinning;
-
-  console.log("DEBUG getCurrentProcess:", {
-    hasDesigner, designDone: row.designDone,
-    paperCuttingDone: row.paperCuttingDone,
-    hasPrinter, printerDone: row.printerDone,
-    hasBinder, laminationDone: row.laminationDone,
-    corrugationDone: row.corrugationDone,
-    isPastingRequired, pastingDone: row.pastingDone,
-    rotaryDone: row.rotaryDone,
-    slottingDone: row.slottingDone,
-    manualPastingDone: row.manualPastingDone,
-    isPinningRequired, pinningDone: row.pinningDone,
-    punchingDone: row.punchingDone
-  });
-
-  if (hasDesigner && !row.designDone) return "design";
-  if (!row.paperCuttingDone) return "paper_cutting";
-  if (hasPrinter && !row.printerDone) return "printer";
-  if (hasBinder && !row.laminationDone) return "lamination";
-  if (!row.corrugationDone) return "corrugation";
-  if (isPastingRequired && !row.pastingDone) return "pasting";
-  if (!row.rotaryDone) return "rotary";
-  if (!row.slottingDone) return "slotting";
-  if (!row.manualPastingDone) return "manual_pasting";
-  if (isPinningRequired && !row.pinningDone) return "pinning";
-  if (!row.punchingDone) return "punching";
-
-  // ✅ Kanthan process - yeh last process hai
-  return "kanthan";
-};
-
-// ✅ Process labels
-const processLabels = {
-  design: { label: "Design", color: "#8B5CF6" },
-  paper_cutting: { label: "Paper Cutting", color: "#3B82F6" },
-  printer: { label: "Printer", color: "#8B008B" },
-  lamination: { label: "Lamination", color: "#FF69B4" },
-  corrugation: { label: "Corrugation", color: "#F59E0B" },
-  pasting: { label: "Pasting", color: "#10B981" },
-  rotary: { label: "Rotary", color: "#3B82F6" },
-  slotting: { label: "Slotting", color: "#8B5CF6" },
-  manual_pasting: { label: "Manual Pasting", color: "#06B6D4" },
-  pinning: { label: "Pinning", color: "#84CC16" },
-  punching: { label: "Punching", color: "#F97316" },
-  kanthan: { label: "Kanthan", color: "#EF4444" }
-};
-
 export const StatusCell = ({ row }: { row: any }) => {
-
   const dispatch = useAppDispatch()
   const { user } = useAppSelector((state) => state.auth)
 
+  // ✅ Direct row.status use karo - yehi actual current status hai
+  const currentStatus = row.status || "Pending";
+  
   const isAssignedDesigner = row.designer?._id === user?.id;
   const designer = user?.role?.roleName?.toLowerCase()?.includes("designer") || false
   const cutting = user?.role?.roleName?.toLowerCase()?.includes("cutting") || false
@@ -153,7 +339,8 @@ export const StatusCell = ({ row }: { row: any }) => {
   const operator = user?.role?.roleName?.toLowerCase()?.includes("operator") || false
   const admin = user?.role?.roleName?.toLowerCase()?.includes("admin") || false
   const canStatus = user?.role?.permissions?.all_orders?.status
-  const isStatusFinal = row.status === "Completed" || row.status === "Canceled" || row.status === "On Hold"
+  // ✅ Operator Completed ko bhi final status mein add karo
+  const isStatusFinal = currentStatus === "Completed" || currentStatus === "Operator Completed" || currentStatus === "Canceled" || currentStatus === "On Hold"
 
   const [elapsed, setElapsed] = useState(0);
 
@@ -187,9 +374,23 @@ export const StatusCell = ({ row }: { row: any }) => {
   };
 
   const userActions = getUserAllowedActions();
+  const isScreenPrinting = row.printType === "screen_printing" || row.printType === "sterio";
+  const currentProcess = getCurrentProcess(row);
+
+  const isOrderReadyForProcessing = () => {
+    return !["Pending", "In Progress", "Completed", "Operator Completed", "Canceled", "On Hold"].includes(currentStatus);
+  };
 
   const canMarkCurrentProcessDone = () => {
-    const currentProcess = getCurrentProcess(row);
+    // ✅ Agar order ready nahi hai processing ke liye
+    if (!isOrderReadyForProcessing()) {
+      return false;
+    }
+
+    // ✅ Agar current process null hai (sab processes complete), to kuch mark nahi kar sakte
+    if (currentProcess === null) {
+      return false;
+    }
 
     // ✅ Kanthan process ke liye yeh function false return karega
     if (currentProcess === "kanthan") {
@@ -204,35 +405,82 @@ export const StatusCell = ({ row }: { row: any }) => {
     if (currentProcess === "lamination" && !userActions.canDoLamination) return false;
     if (currentProcess !== "design" && currentProcess !== "paper_cutting" && currentProcess !== "corrugation" && currentProcess !== "printer" && currentProcess !== "lamination" && !userActions.canDoOtherProcesses) return false;
 
-    // Sequential dependency check for other processes
+    // Sequential dependency check
     const hasDesigner = !!row.designer;
+    const isPunchingRequired = row.isPunching;
 
-    switch (currentProcess) {
-      case "design": return true;
-      case "paper_cutting": return hasDesigner ? row.designDone : true;
-      case "printer": return row.paperCuttingDone;
-      case "lamination": return row.printerDone;
-      case "corrugation": return row.paperCuttingDone;
-      case "pasting":
-        const designComplete = hasDesigner ? row.designDone : true;
-        return designComplete && row.paperCuttingDone && row.corrugationDone;
-      case "rotary":
-        const pastingComplete = row.isPasting ? row.pastingDone : true;
-        return row.paperCuttingDone && row.corrugationDone && pastingComplete;
-      case "slotting": return row.rotaryDone;
-      case "manual_pasting": return row.slottingDone;
-      case "pinning":
-        if (!row.isPinning) return false;
-        return row.manualPastingDone;
-      case "punching":
-        const pinningComplete = row.isPinning ? row.pinningDone : true;
-        return row.manualPastingDone && pinningComplete;
-      default: return false;
+    if (!isPunchingRequired) {
+      // FLOW 1: isPunching = false
+      switch (currentProcess) {
+        case "design":
+          return true;
+
+        case "paper_cutting":
+          return hasDesigner ? row.designDone : true;
+
+        case "printer":
+          return row.paperCuttingDone;
+
+        case "lamination":
+          return row.printerDone;
+
+        case "corrugation":
+          return row.paperCuttingDone;
+
+        case "pasting":
+          return row.corrugationDone;
+
+        case "rotary":
+          return row.pastingDone;
+
+        case "slotting":
+          return row.rotaryDone;
+
+        case "pinning":
+          return row.slottingDone;
+
+        default:
+          return false;
+      }
+    } else {
+      // FLOW 2: isPunching = true
+      switch (currentProcess) {
+        case "design":
+          return true;
+
+        case "paper_cutting":
+          return hasDesigner ? row.designDone : true;
+
+        case "printer":
+          return row.paperCuttingDone;
+
+        case "lamination":
+          return row.printerDone;
+
+        case "corrugation":
+          return row.paperCuttingDone;
+
+        case "pasting":
+          return row.corrugationDone;
+
+        case "punching":
+          return row.pastingDone;
+
+        case "manual_pasting":
+          return row.punchingDone;
+
+        case "pinning":
+          return row.isPasting ? row.manualPastingDone : true;
+
+        default:
+          return false;
+      }
     }
   };
 
   const handleMarkCurrentProcessDone = async () => {
-    const currentProcess = getCurrentProcess(row);
+    const isPunchingRequired = row.isPunching;
+    const isKantanRequired = row.isKantan;
 
     // ✅ Kanthan process ke liye yeh function call hi nahi hoga
     if (currentProcess === "kanthan") {
@@ -306,15 +554,17 @@ export const StatusCell = ({ row }: { row: any }) => {
           case "punching":
             updateData.punchingDone = true;
             break;
-          // ✅ Kanthan case completely removed
         }
 
-        const newStatus = calculateDynamicStatus(row, updateData);
+        // ✅ Calculate next status automatically
+        const newStatus = calculateNextStatus(row, updateData);
         updateData.status = newStatus;
 
         console.log("DEBUG: Updating with data:", {
           currentProcess,
-          updateData
+          updateData,
+          isKantanRequired,
+          newStatus
         });
 
         await dispatch(updateQPOrderThunk({
@@ -322,7 +572,7 @@ export const StatusCell = ({ row }: { row: any }) => {
           data: updateData
         })).unwrap();
 
-        toast.success(`${processLabel} marked as done. Status updated to: ${updateData.status}`);
+        toast.success(`${processLabel} marked as done. Status updated to: ${newStatus}`);
       } catch (error: any) {
         console.error("DEBUG: Update failed:", error);
         toast.error(error?.message || "Failed to update process");
@@ -350,7 +600,13 @@ export const StatusCell = ({ row }: { row: any }) => {
 
     if (result.isConfirmed) {
       try {
-        await dispatch(updateQPOrderThunk({ id: row._id, data: { kantanStart: new Date() } })).unwrap();
+        await dispatch(updateQPOrderThunk({ 
+          id: row._id, 
+          data: { 
+            kantanStart: new Date(),
+            status: "Kanthan" // ✅ Status update karo
+          } 
+        })).unwrap();
         toast.success("Kanthan started successfully");
       } catch (err: any) {
         toast.error(err?.message || "Failed to start Kanthan");
@@ -371,8 +627,18 @@ export const StatusCell = ({ row }: { row: any }) => {
 
     if (result.isConfirmed) {
       try {
-        await dispatch(updateQPOrderThunk({ id: row._id, data: { kantanEnd: new Date() } })).unwrap();
-        toast.success("Kanthan finished successfully");
+        // ✅ Kanthan finish hone pe "Operator Completed" status set karo
+        const updateData = {
+          kantanEnd: new Date(),
+          status: "Operator Completed" // ✅ Changed from "Completed" to "Operator Completed"
+        };
+
+        await dispatch(updateQPOrderThunk({
+          id: row._id,
+          data: updateData
+        })).unwrap();
+
+        toast.success("Kanthan finished successfully. Order marked as Operator Completed.");
       } catch (err: any) {
         toast.error(err?.message || "Failed to finish Kanthan");
       }
@@ -392,7 +658,10 @@ export const StatusCell = ({ row }: { row: any }) => {
 
     if (result.isConfirmed) {
       try {
-        await dispatch(updateQPOrderThunk({ id: row._id, data: { status: newStatus } })).unwrap()
+        await dispatch(updateQPOrderThunk({ 
+          id: row._id, 
+          data: { status: newStatus } 
+        })).unwrap()
         toast.success("Status updated successfully")
       } catch (err: any) {
         toast.error(err?.message || "Failed to update status")
@@ -425,7 +694,7 @@ export const StatusCell = ({ row }: { row: any }) => {
   };
 
   const renderKanthanTimer = () => {
-    if (row.status !== "Kanthan") return null;
+    if (currentStatus !== "Kanthan") return null;
 
     return (
       <Box sx={{ mt: 1, p: 1, backgroundColor: '#F3F4F6', borderRadius: 1 }}>
@@ -473,7 +742,7 @@ export const StatusCell = ({ row }: { row: any }) => {
         <TextField
           select
           size="small"
-          value={row.status || "Pending"}
+          value={currentStatus}
           onChange={(e) => handleStatusChange(e.target.value)}
           sx={{ width: '100%' }}
           disabled={isStatusFinal}
@@ -482,7 +751,8 @@ export const StatusCell = ({ row }: { row: any }) => {
             <MenuItem
               key={status}
               value={status}
-              disabled={status === "Completed" || status === "Canceled" || status === "On Hold"}
+              // ✅ Operator Completed ko bhi disabled karo final status mein
+              disabled={status === "Completed" || status === "Operator Completed" || status === "Canceled" || status === "On Hold"}
             >
               {status}
             </MenuItem>
@@ -493,28 +763,26 @@ export const StatusCell = ({ row }: { row: any }) => {
   };
 
   const renderProcessView = () => {
-    const currentProcess = getCurrentProcess(row);
     const processInfo = processLabels[currentProcess];
-    const canDo = canMarkCurrentProcessDone();
-
-    // ✅ Next process calculate karo for display
-    const nextStatus = calculateDynamicStatus(row);
+    
+    // ✅ Agar order ready nahi hai processing ke liye
+    if (currentProcess === "in_progress") {
+      return (
+        <Box>
+          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: processInfo.color }}>
+            {processInfo.label}
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+            Current Status: {currentStatus}
+          </Typography>
+        </Box>
+      );
+    }
 
     return (
-      <Box sx={{ minWidth: 200 }}>
-        <Box sx={{ mb: 1, p: 1, backgroundColor: '#F3F4F6', borderRadius: 1 }}>
-          <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
-            Current Status: {row.status || "Pending"}
-          </Typography>
-          {/* {currentProcess !== "kanthan" && (
-            <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
-              Next: {nextStatus}
-            </Typography>
-          )} */}
-        </Box>
-
-        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: processInfo.color }}>
-          {processInfo.label}
+      <Box>
+        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: processInfo?.color || '#6B7280' }}>
+          Status: {currentStatus}
         </Typography>
 
         {currentProcess === "kanthan" ? (
@@ -556,9 +824,8 @@ export const StatusCell = ({ row }: { row: any }) => {
                     </Button>
                   </Box>
                 ) : (
-                  // ✅ Kanthan finish hone ke baad koi button nahi
-                  <Typography variant="body2" sx={{ color: '#10B981', fontSize: '0.8rem', mb: 1 }}>
-                    Kanthan Completed - Order Ready
+                  <Typography sx={{ color: '#10B981', fontSize: '0.8rem' }}>
+                    Kanthan Completed
                   </Typography>
                 )}
               </>
@@ -566,51 +833,41 @@ export const StatusCell = ({ row }: { row: any }) => {
           </Box>
         ) : (
           // ✅ Other processes ke liye normal button
-          canDo ? (
+          canMarkCurrentProcessDone() ? (
             <Button
-              fullWidth
               variant="contained"
-              style={{ backgroundColor: processInfo.color }}
+              style={{ backgroundColor: processInfo?.color }}
               onClick={handleMarkCurrentProcessDone}
-              sx={{ mb: 1 }}
+              sx={{ mb: 1, p: 0 }}
             >
-              Mark {processInfo.label} Done
+              Mark {processInfo?.label} Done
             </Button>
           ) : (
-            <Typography variant="body2" sx={{ color: '#6B7280', fontSize: '0.8rem', mb: 1 }}>
-              {processInfo.label} cannot be marked as done yet
+            <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+              {currentProcess ? "Waiting for prerequisites..." : "All processes completed"}
             </Typography>
           )
         )}
-
-        {/* <Box sx={{ mt: 1, fontSize: '0.7rem', color: '#6B7280' }}>
-          {row.designer && <div>Design: {row.designDone ? '✅ Done' : '⏳ Pending'}</div>}
-          <div>Paper Cutting: {row.paperCuttingDone ? '✅ Done' : '⏳ Pending'}</div>
-          {row.printer && <div>Printer: {row.printerDone ? '✅ Done' : '⏳ Pending'}</div>}
-          {row.binder && <div>Lamination: {row.laminationDone ? '✅ Done' : '⏳ Pending'}</div>}
-          <div>Corrugation: {row.corrugationDone ? '✅ Done' : '⏳ Pending'}</div>
-          {row.isPasting && <div>Pasting: {row.pastingDone ? '✅ Done' : '⏳ Pending'}</div>}
-          <div>Rotary: {row.rotaryDone ? '✅ Done' : '⏳ Pending'}</div>
-          <div>Slotting: {row.slottingDone ? '✅ Done' : '⏳ Pending'}</div>
-          <div>Manual Pasting: {row.manualPastingDone ? '✅ Done' : '⏳ Pending'}</div>
-          {row.isPinning && <div>Pinning: {row.pinningDone ? '✅ Done' : '⏳ Pending'}</div>}
-          <div>Punching: {row.punchingDone ? '✅ Done' : '⏳ Pending'}</div>
-          {currentProcess === "kanthan" && <div>Kanthan: {row.kantanEnd ? '✅ Done' : '⏳ In Progress'}</div>}
-        </Box> */}
-
-        {/* {renderKanthanTimer()} */}
       </Box>
     );
   };
 
   const renderAdminView = () => (
-    <Box sx={{ minWidth: 220 }}>
+    <Box>
       <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
         Admin Control
       </Typography>
       <Box sx={{ mb: 1, p: 1, backgroundColor: '#F3F4F6', borderRadius: 1 }}>
         <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
-          Current: {row.status || "Pending"}
+          Current Status: {currentStatus}
+        </Typography>
+        <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+          Current Process: {processLabels[currentProcess]?.label || "None"}
+        </Typography>
+        <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+          Flow: {row.isPunching ? "With Punching" : "Without Punching"} |
+          Print: {isScreenPrinting ? "Screen/Sterio" : "Offset"} |
+          Kantan: {row.isKantan ? "Yes" : "No"}
         </Typography>
       </Box>
       {renderStatusDropdown()}
@@ -621,6 +878,5 @@ export const StatusCell = ({ row }: { row: any }) => {
   if (userActions.viewType === "admin") {
     return renderAdminView();
   }
-
   return renderProcessView();
 };

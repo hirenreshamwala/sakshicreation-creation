@@ -200,7 +200,7 @@ export const downloadVisitingCardPDF = (data: any) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-    // 🔥 Choose border type here
+  // 🔥 Choose border type here
   drawBorder(doc, "rounded"); // simple | rounded | double | dashed | thick | none
   // Draw page border
   // doc.setLineWidth(0.5);
@@ -239,28 +239,35 @@ export const downloadVisitingCardPDF = (data: any) => {
 
   const label = (label: any) => {
     return {
-      content: ` ${label.trim()}`,
+      content: ` ${label.trim()} :`,
       styles: commonStyle2,
     };
   }
 
+ const address = 
+  ((data?.party?.address?.marketName?.marketName || "") + " " +
+  (data?.party?.address?.area?.area || "") + " " +
+  (data?.party?.address?.landmark?.landmark || "") + " " +
+  (data?.party?.address?.pincode?.pincode || "")).trim();
+
   // define rows
   const allRows = [
-    [label("OD. No"), getColumn(data.odNo), label("Party Name"), getColumn(data.partyName), label("Date"), getColumn(data.date)],
+    [label("OD. No"), getColumn(data.odNo), label("Size"), getColumn(data.size), label("Date"), getColumn(data.date)],
     [label("Quantity"), getColumn(data.quantity), label("Binding"), getColumn(data.binding), label("Col"), getColumn(data.col)],
   ];
   const rows2 = [[label("Printer"), getColumn(data.printer), label("Remark"), getColumn(data.remark)]];
   const rows3 = [[label("Rate"), getColumn(`${data.rate} /-`), label("Haste"), getColumn(`${data.createdBy?.firstName} ${data.createdBy?.lastName}`), label("GSTIN"), getColumn(data.gst ? "Yes" : "No")]];
-  const rows4 = [[label("Size"), getColumn(data.size)], [label("Add"), getColumn(data.add || "")]];
+  const rows4 = [[label("Add"), getColumn(address || "")]];
+  const rows7 = [[label("Party Name"), getColumn(data.partyName)]];
 
   // column configs
   const col6 = {
-    0: { cellWidth: 13, fontStyle: "bold" },
-    1: { cellWidth: 20 },
-    2: { cellWidth: 15, fontStyle: "bold" },
-    3: { cellWidth: 20 },
-    4: { cellWidth: 10, fontStyle: "bold" },
-    5: { cellWidth: 18 },
+    0: { cellWidth: 14, fontStyle: "bold" },
+    1: { cellWidth: 19 },
+    2: { cellWidth: 14, fontStyle: "bold" },
+    3: { cellWidth: 21 },
+    4: { cellWidth: 12, fontStyle: "bold" },
+    5: { cellWidth: 1 },
   };
   const col4 = {
     0: { cellWidth: 13, fontStyle: "bold" },
@@ -269,9 +276,14 @@ export const downloadVisitingCardPDF = (data: any) => {
     3: { cellWidth: 48 },
   };
   const col2 = {
-    0: { cellWidth: 13, fontStyle: "bold" },
-    1: { cellWidth: 78 },
+    0: { cellWidth: 10, fontStyle: "bold" },
+    1: { cellWidth: 86 },
   };
+  const col8 = {
+    0: { cellWidth: 19, fontStyle: "bold" },
+    1: { cellWidth: 77 },
+  };
+
 
   const tableOptions = (startY: any, rows: any, col: any) => ({
     startY,
@@ -307,6 +319,7 @@ export const downloadVisitingCardPDF = (data: any) => {
   renderRow(allRows, col6);
   renderRow(rows2, col4);
   renderRow(rows3, col6);
+  renderRow(rows7, col8);
   renderRow(rows4, col2);
 
   doc.save("binder-job-card.pdf");

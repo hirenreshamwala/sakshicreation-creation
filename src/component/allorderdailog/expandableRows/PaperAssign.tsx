@@ -39,7 +39,6 @@ function PaperAssign({
     if (!hasPaperRequirements)
         return null;
 
-
     const addPaperToSelection = useCallback((paperType: keyof typeof paperSelections, paperId: any) => {
         if (paperSelections[paperType].includes(paperId)) {
             toast.info("This paper is already selected for this paper type");
@@ -92,7 +91,7 @@ function PaperAssign({
                         paperType
                     )}
                     getOptionLabel={(option: any) => {
-                        return `${option.label} ( BF:${option.bf || ""} ) `;
+                        return `${option.label} ( BF:${option.bf || ""} ) ( COLOR:${option.color || ""} ) ( REEL/BATCH NO:${option.reelBatchNo || ""} )`;
                     }}
                     renderInput={(params) => (
                         <TextField {...params} label="Available Papers" placeholder="Select a paper to add" />
@@ -329,6 +328,8 @@ function PaperAssign({
                 return {
                     value: item._id,
                     bf: item.bf,
+                    color: item.color,
+                    reelBatchNo: item.reelBatchNo,
                     label: `${availableKg.toFixed(2)} KG`,
                     kg: item.kg,
                     usedKg: allocatedKg,

@@ -269,6 +269,7 @@ export const ORDER_STATUSES = [
   "Pinning",
   "Puching",
   "Kanthan",
+  "Operator Completed",
   "Completed",
   "On Hold",
   "Canceled",

@@ -335,7 +335,7 @@ const IndexPage: React.FC = memo(() => {
 
   const excelData = useMemo(() => {
     return filteredAccountMasters.map((account) => {
-    console.log("DEBUG : account:", account);
+      
     return ({
         // "id": account._id,
         "Company Name": account.companyName?.name || "N/A",

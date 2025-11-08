@@ -66,6 +66,7 @@ const Endpoint = {
   UPDATE_INVENTORY: `${BaseURL}/api/inventory/update`,
   GET_ALL_INVENTORY: `${BaseURL}/api/inventory/getall`,
   GET_BY_COMPANY: `${BaseURL}/api/purchase/getbycompany`,
+  GET_INVENTORY_BOX: `${BaseURL}/api/inventory/getbox`,
 
   //staff
   GET_ROLE: `${BaseURL}/api/staff/getrol`,
@@ -185,6 +186,9 @@ const Endpoint = {
   GET_ALL_QP_ORDER: `${BaseURL}/api/qporder/getall`,
   GET_QP_ORDER_BY_STAFF_ID: `${BaseURL}/api/qporder/getbystaff`,
   REMOVE_LOADING_ORDER: `${BaseURL}/api/qporder/remove-loading`,
+  SEND_BOX_FROM_GODOWN_OR_FACTORY: `${BaseURL}/api/qporder/sendboxfromgodownorfactory`,
+  DRIVER_SELECT_AND_INVENTORY_MANAGE: `${BaseURL}/api/qporder/driverselection`,
+  MARK_ORDER_AS_URGENT: `${BaseURL}/api/qporder/mark-urgent`,
 
   CREATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/create`,
   UPDATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/update`,
@@ -212,5 +216,15 @@ const Endpoint = {
   UPDATE_KANTAN: `${BaseURL}/api/kantan/update`,
   DELETE_KANTAN: `${BaseURL}/api/kantan/delete`,
   BULK_UPLOAD_KANTANS: `${BaseURL}/api/kantan/bulk`,
+
+  CREATE_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/create`,
+  GET_ALL_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/getall`,
+  GET_SALE_QP_ORDER_BY_STAFF_ID: `${BaseURL}/api/saleqporder/getbystaff`,
+  UPDATE_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/update`,
+  UPDATE_SALE_QP_ORDER_STATUS: `${BaseURL}/api/saleqporder/updatestatus`,
+  UPDATE_SALE_QP_ORDER_BULK_STATUS: "/api/saleqporder/bulk-status/bulkupdatestatus",
+  DELETE_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/delete`,
+  REMOVE_LOADING_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/remove-loading`,
+  GET_DESIGNER_SALE_QP_ORDERS: `${BaseURL}/api/saleqporder/designer`,
 };
 export default Endpoint;

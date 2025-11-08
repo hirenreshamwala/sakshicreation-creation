@@ -29,6 +29,7 @@ import {
 } from "@/store/slices/packagingOptionSlice";
 import { getQualityPackingPartiesThunk } from "@/store/slices/partySlice";
 import { downloadSkippedRecordsAsCSV } from "@/utills/utills";
+import moment from "moment";
 
 const columns = [
   { id: "id", label: "ID" },
@@ -41,20 +42,21 @@ const columns = [
   { id: "paper1GSM", label: "Paper 1 GSM" },
   { id: "paper2GSM", label: "Paper 2 GSM" },
   { id: "paper3GSM", label: "Paper 3 GSM" },
+  { id: "noOfPieces", label: "No of Pieces" },
+  { id: "ratePerPiece", label: "Rate Per Piece" },
+  { id: "date", label: "Date" },
   { id: "options", label: "Options" },
 ];
 
 const PackagingOptionsPage = () => {
   const dispatch = useAppDispatch();
-  const { user } = useSelector((state: RootState)=> state.auth)
+  const { user } = useSelector((state: RootState) => state.auth)
   const { packagingOptions, loading, operationLoading, error, operationError } = useSelector(
     (state: RootState) => state.packagingOptions
   );
   const companyId = user?.company?._id
-  console.log("DEBUG : PackagingOptionsPage : companyId:", companyId);
 
   const { qpParties } = useSelector((state: RootState) => state.party);
-  console.log("DEBUG : PackagingOptionsPage : qpParties:", qpParties);
 
   useEffect(() => {
     dispatch(getQualityPackingPartiesThunk(companyId));
@@ -74,6 +76,8 @@ const PackagingOptionsPage = () => {
     paper1GSM: "",
     paper2GSM: "",
     paper3GSM: "",
+    noOfPieces: "",
+    ratePerPiece: "",
   });
   const [file, setFile] = useState<File | null>(null);
   const [skippedRecords, setSkippedRecords] = useState<any[]>([]);
@@ -144,6 +148,15 @@ const PackagingOptionsPage = () => {
     setDialogOpen(false);
   };
 
+   const formatDate = (dateString: string) => {
+      try {
+        const date = new Date(dateString)
+        return moment(date).format('DD/MM/YY')
+      } catch {
+        return dateString
+      }
+    }
+
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -186,7 +199,6 @@ const PackagingOptionsPage = () => {
     setIsLoading(true);
     try {
       const res = await dispatch(bulkCreatePackagingOptionThunk(formData)).unwrap();
-      console.log("DEBUG : handleFileUpload : res:", res);
 
       if (res.skippedCount > 0) {
         setSkippedRecords(res.skippedRecords);
@@ -212,8 +224,8 @@ const PackagingOptionsPage = () => {
 
   const handleDownloadSample = () => {
     const csvContent =
-      "party,ply,length,width,height,deckal,paper1GSM,paper2GSM,paper3GSM\n" +
-      `${qpParties[0]?._id || "68cbd2df0973310763a2c45b"},5,22,22,27,46,150,120,150\n`;
+      "party,ply,length,width,height,deckal,paper1GSM,paper2GSM,paper3GSM,noOfPieces,ratePerPiece\n" + // Add new headers
+      `${qpParties[0]?._id || "68cbd2df0973310763a2c45b"},5,22,22,27,46,150,120,150,1000,25\n`; // Add sample data
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -287,6 +299,9 @@ const PackagingOptionsPage = () => {
             <TableCell>{row.paper1GSM || ""}</TableCell>
             <TableCell>{row.paper2GSM || ""}</TableCell>
             <TableCell>{row.paper3GSM || ""}</TableCell>
+            <TableCell>{row.noOfPieces || ""}</TableCell>
+            <TableCell>{row.ratePerPiece || ""}</TableCell>
+            <TableCell>{formatDate(row.updatedAt)  || ""}</TableCell>
             <TableCell>
               <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                 <Edit />
@@ -396,6 +411,24 @@ const PackagingOptionsPage = () => {
               onChange={handleFormChange}
               fullWidth
               required
+            />
+          </Box>
+          <Box display="flex" gap={2}>
+            <Input
+              label="NO OF PIECES"
+              name="noOfPieces"
+              value={form.noOfPieces}
+              onChange={handleFormChange}
+              fullWidth
+              type="number"
+            />
+            <Input
+              label="RATE PER PIECE"
+              name="ratePerPiece"
+              value={form.ratePerPiece}
+              onChange={handleFormChange}
+              fullWidth
+              type="number"
             />
           </Box>
         </Box>
