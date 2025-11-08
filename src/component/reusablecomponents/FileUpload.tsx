@@ -171,10 +171,10 @@ const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
       try {
         let result: any[] = []
         if (multiple && filesToUpload.length > 1) {
-          const uploadResult = await dispatch(uploadMultipleFilesThunk({ files: filesToUpload, folder })).unwrap()
+          const uploadResult = await dispatch(uploadMultipleFilesThunk({ files: filesToUpload, folder: "general" })).unwrap()
           result = Array.isArray(uploadResult) ? uploadResult : [uploadResult]
         } else {
-          const uploadResult = await dispatch(uploadSingleFileThunk({ file: filesToUpload[0], folder })).unwrap()
+          const uploadResult = await dispatch(uploadSingleFileThunk({ file: filesToUpload[0], folder: "general" })).unwrap()
           result = [uploadResult]
         }
 
@@ -228,7 +228,7 @@ const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
     // Delete uploaded file
     const handleDeleteUploadedFile = async (file: any) => {
       try {
-        await dispatch(deleteFileThunk({ folder: file.folder, filename: file.filename })).unwrap()
+        await dispatch(deleteFileThunk({ folder: "general", filename: file.filename })).unwrap()
         toast.success("File deleted successfully")
       } catch (error: any) {
         console.error("Delete error:", error)
