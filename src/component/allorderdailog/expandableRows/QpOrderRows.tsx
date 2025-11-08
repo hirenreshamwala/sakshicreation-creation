@@ -449,7 +449,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         }
 
         if (remarkType === "startDate") {
-            setFormData((prev) => ({
+            setFormData((prev:any) => ({
                 ...prev,
                 startDate: tempStartDate,
                 status: "On Hold",
@@ -465,7 +465,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }));
             toast.success("Start date updated with remark");
         } else if (remarkType === "onHold") {
-            setFormData((prev) => ({
+            setFormData((prev:any) => ({
                 ...prev,
                 status: "On Hold",
                 remarks: [
@@ -480,7 +480,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }));
             toast.success("Order put on hold with remark");
         } else if (remarkType === "canceled") {
-            setFormData((prev) => ({
+            setFormData((prev:any) => ({
                 ...prev,
                 status: "Canceled",
                 remarks: [
@@ -685,9 +685,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 updatePapers.paper2.length > 0 &&
                 updatePapers.paper3.length > 0 &&
                 selectedDesigner
-            ) 
+            )
                 updateData.status = 'Designer';
-            
+
             else if (
                 rowPapers.paper1.length === 0 &&
                 rowPapers.paper2.length === 0 &&
@@ -696,9 +696,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 updatePapers.paper2.length > 0 &&
                 updatePapers.paper3.length > 0 &&
                 !selectedDesigner
-            ) 
+            )
                 updateData.status = 'Paper cutting';
-            
+
             await dispatch(updateQPOrderThunk({ id: formData._id, data: { ...updateData, step: row.step === 0 ? row.step + 1 : row.step } })).unwrap();
 
             dispatch(getAllInventoryThunk());
@@ -769,17 +769,19 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setPaperUsageSummary(summaries);
     }, [paperSelections, allAllocations, availablePapers, newAllocations, row.paperKG]);
 
+    console.log(row, 'row', row.driver, row.status === "Completed" && row?.driver?._id === undefined)
+
     return (
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
             <form onSubmit={handleSubmit}>
                 <Stack spacing={2}>
-                    {(row.step === 0 || row.step === 4) ? <QpOrderStep1
+                    {(row.step === 0 || row.step === 4) && row.status !== "Completed" ? <QpOrderStep1
                         formData={formData}
                         handleFormChange={handleFormChange}
                         isCompleted={isCompleted}
                         handleProcessChange={handleProcessChange}
                     /> : null}
-                    {row.step === 4 ? <>
+                    {row.step === 4 && row.status !== "Completed" ? <>
                         <PaperAssign
                             row={row}
                             isCompleted={isCompleted}
@@ -817,7 +819,11 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         paperRequirement={paperRequirements}
                     /> : null}
 
-                    {row?.driver?._id === undefined ? <DriverSelection row={row} /> : null}
+                    {row.status === "Completed" && row?.driver?._id === undefined ? <DriverSelection row={row} /> :
+                        <Stack>  {row?.deliveryStatus ? `Delivery Status :${row?.deliveryStatus}` : `Order Will Going to ${row?.deliverTo}`}</Stack>
+                    }
+
+
 
                     <Stack direction="row" spacing={2}>
                         {(row.step === 0 || row.step === 4) || row.step === 4 || row.step === 1 ? <>

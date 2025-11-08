@@ -49,7 +49,7 @@ function DriverSelection({ row }: any) {
     }
   };
 
-  const showStep4Or3WithCompleted = (row.step === 4 && row.status === "completed") || row.step === 3;
+  const showStep4Or3WithCompleted = (row.step === 4 && row.status === "Completed") || row.step === 3;
   const showStep2 = row.step === 2;
 
   return (

@@ -22,6 +22,7 @@ const columns = [
     { id: "market", label: "Market" },
     { id: "area", label: "Area" },
     { id: "noOfBox", label: "No of Box" },
+    { id: "deliverto", label: "DeliverTo" },
     { id: "status", label: "Status" },
     { id: "deliveryStatus", label: "Delivery Status" },
     { id: "actions", label: "Actions" },
@@ -259,7 +260,7 @@ const DriverView = () => {
             const uploadedPhotos = await uploadFilesToServer(dispatchPhotos, "dispatch-photos", billNumber);
             const imageUrls = uploadedPhotos.map((p) => p.path);
 
-            const response = await dispatch(
+            const response:any = await dispatch(
                 bulkUpdateQPOrderStatusThunk({
                     orderIds: [currentDispatchOrder._id],
                     deliveryStatus: "in_transit",
@@ -307,6 +308,7 @@ const DriverView = () => {
                     orderIds: [currentDeliveredOrder._id],
                     deliveryStatus: "delivered",
                     billPhotos: imageUrls,
+                    // step:currentDeliveredOrder.step,
                     deliveryTime: new Date().toISOString(),
                 })
             ).unwrap();
@@ -466,6 +468,7 @@ const DriverView = () => {
                                 <TableCell>{`${row.party?.address?.marketName?.marketName}`}</TableCell>
                                 <TableCell>{`${row.party?.address?.area?.area}`}</TableCell>
                                 <TableCell>{row.noOfPieces}</TableCell>
+                                <TableCell>{row.deliverTo}</TableCell>
                                 <TableCell><StatusCell row={row} /></TableCell>
                                 <TableCell>
                                     <Chip
