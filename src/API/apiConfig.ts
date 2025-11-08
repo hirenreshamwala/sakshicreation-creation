@@ -187,6 +187,7 @@ const Endpoint = {
   GET_QP_ORDER_BY_STAFF_ID: `${BaseURL}/api/qporder/getbystaff`,
   REMOVE_LOADING_ORDER: `${BaseURL}/api/qporder/remove-loading`,
   SEND_BOX_FROM_GODOWN_OR_FACTORY: `${BaseURL}/api/qporder/sendboxfromgodownorfactory`,
+  MARK_ORDER_AS_URGENT: `${BaseURL}/api/qporder/mark-urgent`,
 
   CREATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/create`,
   UPDATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/update`,

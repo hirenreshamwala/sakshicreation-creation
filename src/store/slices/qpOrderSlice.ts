@@ -439,6 +439,24 @@ export const removeLoadingOrderThunk = createAsyncThunk(
   }
 );
 
+export const markOrderAsUrgentThunk = createAsyncThunk(
+  "qpOrder/markAsUrgent",
+  async ({ orderId, isUrgent }: { orderId: string; isUrgent: boolean }, { rejectWithValue })  => {
+    try {
+      const response = await orderService.markOrderAsUrgent(orderId, isUrgent);
+
+      if (response.success) {
+        return response.data;
+      } else {
+        return rejectWithValue(response.message || "Failed to mark order as urgent");
+      }
+    } catch (error: any) {
+      console.error("Redux: Mark order as urgent error:", error);
+      return rejectWithValue(error.message || "Failed to mark order as urgent");
+    }
+  }
+);
+
 const qpOrderSlice = createSlice({
   name: "qpOrder",
   initialState,

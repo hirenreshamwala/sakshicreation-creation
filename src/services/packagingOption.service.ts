@@ -14,6 +14,8 @@ export interface PackagingOption {
   paper2GSM: string;
   paper3GSM: string;
   name: string;
+  noOfPieces: string;
+  ratePerPiece: string;
   party?: {
     _id: string;
     partyName: string;

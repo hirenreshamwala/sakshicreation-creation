@@ -10,7 +10,7 @@ import DateRangePicker from "@/component/daterangepicker"
 import { FiSearch } from "react-icons/fi"
 import { InputBase } from "@mui/material"
 import { getDisplayStatus } from "@/utills/utills"
-import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk } from "@/store/slices/qpOrderSlice"
+import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk, markOrderAsUrgentThunk } from "@/store/slices/qpOrderSlice"
 import { toast } from "react-toastify"
 import moment from "moment"
 import { StatusCell } from "./StatusCell"
@@ -22,6 +22,7 @@ import { getAllInventoryThunk } from "@/store/slices/inventorySlice"
 import { Label } from "@mui/icons-material"
 import ComplainDialogue from "@/pages/admin/all-complains/ComplainDialogue"
 import AddQPOrderDialog from "./QpOrderDialog"
+import Swal from 'sweetalert2';
 
 type OrderRow = {
   _id: string;
@@ -96,6 +97,7 @@ type OrderRow = {
     paper3GSM?: string;
     deckal?: string;
   }
+  isUrgent?: boolean;
 }
 
 const AdminManagerSalesView = () => {
@@ -130,6 +132,7 @@ const AdminManagerSalesView = () => {
     { id: "orderDate", label: "Order Date" },
     { id: "status", label: "Status" },
     { id: "details", label: "Details" },
+    { id: "urgent", label: "Urgent" },
     { id: "actions", label: "Actions" },
   ]
 
@@ -215,6 +218,39 @@ const AdminManagerSalesView = () => {
   const handleViewDetails = (row: OrderRow) => {
     setSelectedRow(row);
   };
+
+  // const handleMarkAsUrgent = async (rowData: OrderRow) => {
+  //   const result = await Swal.fire({
+  //     title: 'Mark as Urgent?',
+  //     text: `Are you sure you want to mark order QP-${rowData.orderNo} as urgent? This action cannot be undone.`,
+  //     icon: 'warning',
+  //     showCancelButton: true,
+  //     confirmButtonColor: '#ff6b6b',
+  //     cancelButtonColor: '#6B7280',
+  //     confirmButtonText: 'Yes, mark as urgent!',
+  //     cancelButtonText: 'Cancel'
+  //   });
+
+  //   if (result.isConfirmed) {
+  //     try {
+  //       await dispatch(markOrderAsUrgentThunk(rowData._id)).unwrap();
+  //       Swal.fire(
+  //         'Marked as Urgent!',
+  //         `Order QP-${rowData.orderNo} has been marked as urgent.`,
+  //         'success'
+  //       );
+  //       refreshData();
+  //     } catch (error: any) {
+  //       Swal.fire(
+  //         'Error!',
+  //         error || 'Failed to mark order as urgent',
+  //         'error'
+  //       );
+  //     }
+  //   }
+  // };
+
+
 
   const formatDate = (dateString: string) => {
     try {
@@ -409,6 +445,45 @@ const AdminManagerSalesView = () => {
       return matchesDateRange && matchesSearch && matchesFilters
     })
   }, [orders, startDate, endDate, searchQuery, filters])
+
+  const handleToggleUrgent = async (rowData: OrderRow) => {
+    const newUrgentStatus = !rowData.isUrgent;
+    const actionText = newUrgentStatus ? 'mark as urgent' : 'unmark as urgent';
+
+    const result = await Swal.fire({
+      title: `${newUrgentStatus ? 'Mark as Urgent' : 'Unmark as Urgent'}?`,
+      text: `Are you sure you want to ${actionText} order QP-${rowData.orderNo}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: newUrgentStatus ? '#ff6b6b' : '#6B7280',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: `Yes, ${actionText}!`,
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await dispatch(markOrderAsUrgentThunk({
+          orderId: rowData._id,
+          isUrgent: newUrgentStatus
+        })).unwrap();
+
+        Swal.fire(
+          `Order ${newUrgentStatus ? 'Marked as Urgent' : 'Unmarked'}!`,
+          `Order QP-${rowData.orderNo} has been ${newUrgentStatus ? 'marked as urgent' : 'unmarked'}.`,
+          'success'
+        );
+        refreshData();
+      } catch (error: any) {
+        Swal.fire(
+          'Error!',
+          error || `Failed to ${actionText} order`,
+          'error'
+        );
+      }
+    }
+  };
+
 
   // Prepare Excel data
   const excelData = useMemo(() => {
@@ -706,10 +781,28 @@ const AdminManagerSalesView = () => {
           renderRow={(row: any) => {
             return (<>
               <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  QP-{row.orderNo || "N/A"}
-                </Typography>
-              </TableCell>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography fontSize="14px" color="#6B7280">
+                    QP-{row.orderNo || "N/A"}
+                  </Typography>
+                  {row.isUrgent && (
+                    <Box
+                      sx={{
+                        backgroundColor: "#DC2626",
+                        color: "#FFFFFF",
+                        fontSize: "10px",
+                        fontWeight: 600,
+                        borderRadius: "4px",
+                        px: 1,
+                        py: 0.25,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      URGENT
+                    </Box>
+                  )}
+                </Box>
+              </TableCell >
               <TableCell>
                 <Box display="flex" alignItems="center" gap={2}>
                   <Avatar src={row.companyName?.avatar} sx={{ width: 32, height: 32 }} alt={row.companyName?.companyName || "Company"} />
@@ -734,17 +827,29 @@ const AdminManagerSalesView = () => {
                 </Typography>
               </TableCell>
               <TableCell>
-                <Box display="flex" gap={1} flexWrap="wrap">
                   <ThemeButton
                     size="small"
                     onClick={() => handleViewDetails(row)}
                   >
                     View Details
                   </ThemeButton>
-                </Box>
               </TableCell>
               <TableCell>
-                <Box display="flex" gap={1} flexWrap="wrap">
+                  <ThemeButton
+                    size="small"
+                    onClick={() => handleToggleUrgent(row)}
+                    sx={{
+                      backgroundColor: row.isUrgent ? '#6B7280' : '#ff6b6b',
+                      '&:hover': {
+                        backgroundColor: row.isUrgent ? '#4B5563' : '#dc2626',
+                      }
+                    }}
+                  >
+                    {row.isUrgent ? 'Unmark Urgent' : 'Mark as Urgent'}
+                  </ThemeButton>
+              </TableCell>
+              <TableCell>
+                <Box display="flex" gap={1} flexWrap="no-wrap">
                   {canCreate && (
                     <ThemeButton
                       size="small"
@@ -759,12 +864,13 @@ const AdminManagerSalesView = () => {
                   >
                     Complain
                   </ThemeButton>
+
                 </Box>
               </TableCell>
             </>);
           }}
         />
-      </Box>
+      </Box >
 
       {selectedRow && (
         <Dialog
@@ -806,50 +912,56 @@ const AdminManagerSalesView = () => {
             <Button onClick={() => setSelectedRow(null)}>Close</Button>
           </DialogActions>
         </Dialog>
-      )}
+      )
+      }
 
-      {open && (
-        <>
-          {editData === null ? (
-            <AddQPOrderDialog
-              company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
-              open={open}
-              onClose={() => {
-                setOpen(false);
-                refreshData();
-              }}
-              refreshData={refreshData}
-              orderNo={orders[0]?.orderNo}
-            />
-          ) : (
-            <AddQPOrderDialog
-              company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
-              open={open}
-              onClose={() => {
-                setOpen(false);
-                refreshData();
-              }}
-              editData={editData}
-              refreshData={refreshData}
-            />
-          )}
-        </>
-      )}
-      {complainOpen && selectedOrderForComplain && (
-        <ComplainDialogue
-          company={{
-            _id: selectedOrderForComplain.companyName._id,
-            companyName: selectedOrderForComplain.companyName.companyName
-          }}
-          open={complainOpen}
-          onClose={() => {
-            setComplainOpen(false);
-            setSelectedOrderForComplain(null);
-          }}
-          selectedOrderData={selectedOrderForComplain} // Pass the selected order data
-          refreshData={refreshData}
-        />
-      )}
+      {
+        open && (
+          <>
+            {editData === null ? (
+              <AddQPOrderDialog
+                company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
+                open={open}
+                onClose={() => {
+                  setOpen(false);
+                  refreshData();
+                }}
+                refreshData={refreshData}
+                orderNo={orders[0]?.orderNo}
+              />
+            ) : (
+              <AddQPOrderDialog
+                company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
+                open={open}
+                onClose={() => {
+                  setOpen(false);
+                  refreshData();
+                }}
+                editData={editData}
+                refreshData={refreshData}
+              />
+            )}
+          </>
+        )
+      }
+      {
+        complainOpen && selectedOrderForComplain && (
+          <ComplainDialogue
+            company={{
+              _id: selectedOrderForComplain.companyName._id,
+              companyName: selectedOrderForComplain.companyName.companyName
+            }}
+            open={complainOpen}
+            onClose={() => {
+              setComplainOpen(false);
+              setSelectedOrderForComplain(null);
+            }}
+            selectedOrderData={selectedOrderForComplain} // Pass the selected order data
+            refreshData={refreshData}
+          />
+        )
+      }
+
     </>
   );
 };
