@@ -41,6 +41,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
     const [qpFormData, setQpFormData] = useState({
         companyName: company,
+        partyName:"",
         date: "",
         orderFrom: "",
         ply: "",
@@ -82,6 +83,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         if (open && editData) {
             setQpFormData({
                 companyName: editData.companyName || company,
+                partyName: editData?.party?._id || editData?.party || "",
                 date: editData.date || "",
                 orderFrom: editData.orderFrom || "",
                 ply: editData.orderdata?.ply || "",
@@ -295,6 +297,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         setQpFormData({
             companyName: "",
             date: "",
+            partyName:"",
             orderFrom: "",
             ply: "",
             uom: "inch",
@@ -522,7 +525,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             <>
                 <Stack direction="row" spacing={2} mb={2}>
                     <Autocomplete
-                    fullWidth
+                        fullWidth
                         options={getUniquePlyOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.ply, getUniquePlyOptions())}
@@ -530,7 +533,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
-                            fullWidth
+                                fullWidth
                                 {...params}
                                 label="Ply"
                                 onChange={(e) => {
@@ -538,10 +541,10 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 }}
                             />
                         )}
-                        // sx={{ flex: 1 }}
+                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
-                    fullWidth
+                        fullWidth
                         options={getUniqueUomOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.uom, getUniqueUomOptions())}
@@ -551,15 +554,15 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         }}
                         renderInput={(params) => (
                             <TextField
-                            fullWidth
+                                fullWidth
                                 {...params}
                                 label="Unit of Measurement"
                             />
                         )}
-                        // sx={{ flex: 1 }}
+                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
-                    fullWidth
+                        fullWidth
                         options={getUniqueLengthOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.length, getUniqueLengthOptions())}
@@ -567,16 +570,16 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
-                            fullWidth
+                                fullWidth
                                 {...params}
                                 label="Length"
                                 onChange={(e) => { handleQpChange("length", e.target.value) }}
                             />
                         )}
-                        // sx={{ flex: 1 }}
+                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
-                    fullWidth
+                        fullWidth
                         options={getUniqueWidthOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.width, getUniqueWidthOptions())}
@@ -584,16 +587,16 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
-                            fullWidth
+                                fullWidth
                                 {...params}
                                 label="Width"
                                 onChange={(e) => { handleQpChange("width", e.target.value) }}
                             />
                         )}
-                        // sx={{ flex: 1 }}
+                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
-                    fullWidth
+                        fullWidth
                         options={getUniqueHeightOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.height, getUniqueHeightOptions())}
@@ -601,13 +604,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
-                            fullWidth
+                                fullWidth
                                 {...params}
                                 label="Height"
                                 onChange={(e) => { handleQpChange("height", e.target.value) }}
                             />
                         )}
-                        // sx={{ flex: 1 }}
+                    // sx={{ flex: 1 }}
                     />
                 </Stack>
                 <Stack direction="row" spacing={2} mb={2} >
@@ -685,7 +688,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
                     {/* No of Pieces */}
                     <Autocomplete
-                    fullWidth
+                        fullWidth
                         options={getUniqueNoOfPiecesOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.noOfPieces, getUniqueNoOfPiecesOptions())}
@@ -696,7 +699,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
-                            fullWidth
+                                fullWidth
                                 {...params}
                                 label="No of Pieces"
                                 onChange={(e) => handleQpChange("noOfPieces", e.target.value)}
@@ -706,7 +709,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
                     {/* Rate Per Piece */}
                     <Autocomplete
-                    fullWidth
+                        fullWidth
                         options={getUniqueRatePerPieceOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.ratePerPiece, getUniqueRatePerPieceOptions())}
@@ -717,7 +720,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         freeSolo
                         renderInput={(params) => (
                             <TextField
-                            fullWidth
+                                fullWidth
                                 {...params}
                                 label="Rate Per Piece"
                                 onChange={(e) => handleQpChange("ratePerPiece", e.target.value)}
