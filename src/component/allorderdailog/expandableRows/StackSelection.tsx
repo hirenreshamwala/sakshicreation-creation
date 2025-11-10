@@ -91,10 +91,11 @@ function StackSelection({ formData, row, isCompleted }: any) {
 
       // ✅ Include selectedBoxId in API data if applicable
       const payload: any = { step: newStep };
-      if (selectedBoxId){ payload.inventory = selectedBoxId;
+      if (selectedBoxId) {
+        payload.inventory = selectedBoxId;
         payload.qty = row.noOfPieces
       }
-      console.log(payload,'payloadpayloadpayload')
+      console.log(payload, 'payloadpayloadpayload')
 
       await dispatch(sendBoxFromGodownOrFactoryThunk({ id: formData._id, data: payload })).unwrap();
 
@@ -111,8 +112,8 @@ function StackSelection({ formData, row, isCompleted }: any) {
     const isSelected = selectedSource === source;
     const isDisabled =
       isCompleted ||
-      (source === 'godown' && !godownInventory.length) ||
-      (source === 'factory' && !factoryInventory.length);
+      (source === 'godown' && !godownInventory?.length) ||
+      (source === 'factory' && !factoryInventory?.length);
 
     const list = source === 'godown' ? godownInventory : factoryInventory;
 
@@ -159,7 +160,7 @@ function StackSelection({ formData, row, isCompleted }: any) {
               {getTitle()}
             </Typography>
 
-            {source !== 'new' && list.length > 0 && (
+            {source !== 'new' && list?.length > 0 && (
               <FormControl fullWidth size="small" sx={{ mb: 2 }}>
                 <InputLabel>
                   {source === 'godown' ? 'Select Available Batch' : 'Select Factory Batch'}
@@ -183,18 +184,19 @@ function StackSelection({ formData, row, isCompleted }: any) {
                     >
                       <Typography variant="subtitle2" fontWeight="bold">
                         <Inventory2Icon sx={{ mr: 0.5, fontSize: 18 }} />
-                        {box.boxName || 'Box'} —{' '}
+                        {box?.boxName || 'Box'} —{' '}
                         <strong>{box.quantity - (box.usedBox || 0)} pcs</strong>
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        📏 {box.boxLength}×{box.boxWidth}×{box.boxHeight} {box.uom} • GSMs:{' '}
-                        {box.paper1GSM}-{box.paper2GSM}-{box.paper3GSM}
+                        📏 {box?.boxLength}×{box?.boxWidth}×{box?.boxHeight} {box?.uom} • GSMs:{' '}
+                        {box?.paper1GSM}-{box?.paper2GSM}-{box?.paper3GSM}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Deckal: {box.deckal} | <strong>{box.ply} Ply</strong>
+                        Deckal: {box?.deckal} | <strong>{box?.ply} Ply</strong>
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         {box.lamination && 'Lamination, '}
+                        {box.isKantan && 'Kantan, '}
                         {box.uv && 'UV, '}
                         {box.varnish && 'Varnish, '}
                         MFG Date: {new Date(box.date).toLocaleDateString()}

@@ -173,12 +173,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [allInventory, row.orderdata]);
 
     useEffect(() => {
-        if (formData.status === "In Progress" && row.status === "Pending") {
-            const hasPaperRequirements = paperRequirements?.paper1 > 0 || paperRequirements?.paper2 > 0 || paperRequirements?.paper3 > 0;
-            setIsPaperSelectionRequired(hasPaperRequirements);
+        // if (formData.status === "In Progress" && row.status === "Pending") {
+        //     const hasPaperRequirements = paperRequirements?.paper1 > 0 || paperRequirements?.paper2 > 0 || paperRequirements?.paper3 > 0;
+        //     setIsPaperSelectionRequired(hasPaperRequirements);
 
-            if (hasPaperRequirements) toast.info("Please select papers from inventory before proceeding");
-        }
+        //     if (hasPaperRequirements) toast.info("Please select papers from inventory before proceeding");
+        // }
     }, [formData.status, row.status, paperRequirements]);
 
     const designers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "designer");
@@ -449,7 +449,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         }
 
         if (remarkType === "startDate") {
-            setFormData((prev:any) => ({
+            setFormData((prev: any) => ({
                 ...prev,
                 startDate: tempStartDate,
                 status: "On Hold",
@@ -465,7 +465,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }));
             toast.success("Start date updated with remark");
         } else if (remarkType === "onHold") {
-            setFormData((prev:any) => ({
+            setFormData((prev: any) => ({
                 ...prev,
                 status: "On Hold",
                 remarks: [
@@ -480,7 +480,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }));
             toast.success("Order put on hold with remark");
         } else if (remarkType === "canceled") {
-            setFormData((prev:any) => ({
+            setFormData((prev: any) => ({
                 ...prev,
                 status: "Canceled",
                 remarks: [
@@ -819,11 +819,10 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         paperRequirement={paperRequirements}
                     /> : null}
 
-                    {row.status === "Completed" && row?.driver?._id === undefined ? <DriverSelection row={row} /> :
-                        <Stack>  {row?.deliveryStatus ? `Delivery Status :${row?.deliveryStatus}` : `Order Will Going to ${row?.deliverTo}`}</Stack>
+                    {row.status === "Completed" && row?.driver?._id === undefined ? <DriverSelection row={row} /> : null}
+                    {row.status === "Completed" && row?.driver?._id !== undefined ?
+                        <Stack>  {row?.deliveryStatus ? `Delivery Status :${row?.deliveryStatus || ""}` : `Order Will Going to ${row?.deliverTo || ""}`}</Stack> : null
                     }
-
-
 
                     <Stack direction="row" spacing={2}>
                         {(row.step === 0 || row.step === 4) || row.step === 4 || row.step === 1 ? <>
