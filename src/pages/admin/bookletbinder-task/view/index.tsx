@@ -462,10 +462,10 @@ const BookletBinderTaskView = () => {
       </Paper>
 
       {/* Design Files Section */}
-      {singleOrder.designFiles && singleOrder.designFiles.length > 0 && (
+      {singleOrder.approvedFiles && singleOrder.approvedFiles.length > 0 && (
         <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           <Typography variant="h6" fontWeight={600} mb={2} color="#4CAF50">
-            Design Files ({singleOrder.designFiles.length})
+            Design Files ({singleOrder.approvedFiles.length})
           </Typography>
           <Button
             variant="outlined"
@@ -483,7 +483,7 @@ const BookletBinderTaskView = () => {
             }}
             startIcon={<AiOutlineEye />}
           >
-            View All Design Files ({singleOrder.designFiles.length})
+            View All Design Files ({singleOrder.approvedFiles.length})
           </Button>
         </Paper>
       )}
@@ -981,7 +981,7 @@ const BookletBinderTaskView = () => {
       <ViewFilesDialog
         open={openDesignFilesDialog}
         onClose={handleCloseDesignFilesDialog}
-        files={singleOrder?.designFiles?.map((file: any) => file.path) || []}
+        files={singleOrder?.approvedFiles?.map((file: any) => file) || []}
         title="Design Files"
         showDownload={true}
         showView={true}

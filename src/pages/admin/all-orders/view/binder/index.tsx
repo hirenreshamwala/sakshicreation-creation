@@ -810,7 +810,7 @@ const BinderForm = () => {
                 </svg>
               }
             >
-              View Designer Files ({singleOrder?.designFiles?.length || 0})
+              View Designer Files ({singleOrder?.approvedFiles?.length || 0})
             </Button>
           </Box>
 
@@ -943,7 +943,7 @@ const BinderForm = () => {
       <ViewFilesDialog
         open={openDesignFilesDialog}
         onClose={() => setOpenDesignFilesDialog(false)}
-        files={singleOrder?.designFiles?.map((file: any) => file.path) || []}
+        files={singleOrder?.approvedFiles?.map((file: any) => file) || []}
         title="Designer Files"
         showDownload={true}
         showView={true}

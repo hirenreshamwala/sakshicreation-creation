@@ -57,6 +57,8 @@ const ViewFilesDialog: React.FC<ViewFilesDialogProps> = ({
         downloadUrl = `${BaseURL}${filePath}`;
       } else if (filePath.startsWith("design/")) {
         downloadUrl = `${BaseURL}/uploads/${filePath}`;
+      } else if (filePath.startsWith("general/")) {
+        downloadUrl = `${BaseURL}/uploads/${filePath}`;
       } else {
         downloadUrl = `${BaseURL}/api/filedownload/download/${encodeURIComponent(filePath)}`;
       }
@@ -87,6 +89,8 @@ const ViewFilesDialog: React.FC<ViewFilesDialogProps> = ({
       } else if (filePath.startsWith("/uploads")) {
         viewUrl = `${BaseURL}${filePath}`;
       } else if (filePath.startsWith("design/")) {
+        viewUrl = `${BaseURL}/uploads/${filePath}`;
+      } else if (filePath.startsWith("general/")) {
         viewUrl = `${BaseURL}/uploads/${filePath}`;
       } else {
         viewUrl = `${BaseURL}/api/filedownload/download/${encodeURIComponent(filePath)}?view=true`;

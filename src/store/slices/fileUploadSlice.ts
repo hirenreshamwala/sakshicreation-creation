@@ -112,7 +112,7 @@ const fileUploadSlice = createSlice({
       .addCase(uploadSingleFileThunk.fulfilled, (state, action: PayloadAction<UploadedFile>) => {
         state.uploading = false
         state.uploadedFiles = [action.payload, ...state.uploadedFiles]
-        state.successMessage = "File uploaded successfully"
+        // state.successMessage = "File uploaded successfully"
         state.uploadProgress = 100
         state.error = null
       })

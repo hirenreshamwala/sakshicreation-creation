@@ -16,6 +16,8 @@ import {
   DialogContent,
   DialogActions,
   Chip,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material"
 import { MdEmail, MdRemoveRedEye, MdArrowBack, MdClose, MdEdit, MdDelete, MdDownload } from "react-icons/md"
 import { AiOutlineEye } from "react-icons/ai"
@@ -75,12 +77,15 @@ const DesignFile: React.FC<{
     try {
       const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
 
+
       if (file.path.startsWith("http")) {
         window.open(file.path, "_blank")
       } else if (file.path.startsWith("/uploads")) {
         window.open(`${BaseURL}${file.path}`, "_blank")
       } else {
         if (file.path.startsWith("design/")) {
+          window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
+        } else if (file.path.startsWith("general/")) {
           window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
         } else {
           window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
@@ -153,10 +158,11 @@ const DesignFile: React.FC<{
   )
 }
 
-const ReworkEntry: React.FC<{ entry: any }> = ({ entry }) => (
-  <Box sx={{ borderBottom: "1px solid #ccc", pb: 2, mb: 2 }}>
+const ReworkEntry: React.FC<{ entry: any }> = ({ entry }) => {
+  console.log("DEBUG : ReworkEntry : entry:", entry);
+  return <Box sx={{ borderBottom: "1px solid #ccc", pb: 2, mb: 2 }}>
     <Typography sx={{ color: "#333", fontSize: 14, mb: 1 }}>
-      Date: {new Date(entry.createdAt).toLocaleString()}
+      Date: {new Date(entry.date).toLocaleString()}
     </Typography>
     <Typography sx={{ color: "#666", fontSize: 13, mb: 1 }}>
       Remark: {entry.remark}
@@ -172,6 +178,8 @@ const ReworkEntry: React.FC<{ entry: any }> = ({ entry }) => (
             window.open(`${BaseURL}${file.path}`, "_blank")
           } else {
             if (file.path.startsWith("design/")) {
+              window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
+            } else if (file.path.startsWith("general/")) {
               window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
             } else {
               window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
@@ -203,8 +211,8 @@ const ReworkEntry: React.FC<{ entry: any }> = ({ entry }) => (
         </Button>
       );
     })}
-  </Box>
-);
+  </Box>;
+};
 
 const ReworkDialog = ({
   open,
@@ -273,8 +281,8 @@ const ReworkDialog = ({
               onFilesSelected={() => { }}
               onUploadError={(error) => toast.error(error)}
               showPreview={false}
-              showUploadButton={true} // Changed to true
-              autoUpload={true} // Changed to true
+              showUploadButton={false}
+              autoUpload={false}
               label="Attach Order Files"
               helperText="Select order documents, images, or any related files "
             />
@@ -561,6 +569,250 @@ const InvoiceValidProofDialog = ({
   )
 }
 
+const FileSelectionDialog = ({
+  open,
+  onClose,
+  onSubmit,
+  loading,
+  designFiles = [],
+  reworkFiles = [],
+}: {
+  open: boolean
+  onClose: () => void
+  onSubmit: (selectedFiles: string[]) => void
+  loading: boolean
+  designFiles: any[]
+  reworkFiles: any[]
+}) => {
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([])
+
+  useEffect(() => {
+    // Auto-select all files when dialog opens
+    const allFilePaths = [
+      ...designFiles.map(file => file.path),
+      ...reworkFiles.map(file => file.path)
+    ];
+    setSelectedFiles(allFilePaths);
+  }, [open, designFiles, reworkFiles]);
+
+  const handleFileToggle = (filePath: string) => {
+    setSelectedFiles(prev =>
+      prev.includes(filePath)
+        ? prev.filter(path => path !== filePath)
+        : [...prev, filePath]
+    )
+  }
+
+  const handleSelectAll = () => {
+    const allFilePaths = [
+      ...designFiles.map(file => file.path),
+      ...reworkFiles.map(file => file.path)
+    ];
+    setSelectedFiles(allFilePaths);
+  }
+
+  const handleDeselectAll = () => {
+    setSelectedFiles([]);
+  }
+
+  const handleSubmit = () => {
+    if (selectedFiles.length === 0) {
+      toast.error("Please select at least one file for printing");
+      return;
+    }
+    onSubmit(selectedFiles);
+  }
+
+  const handleViewFile = (file: any) => {
+    try {
+      const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
+
+      if (file.path.startsWith("http")) {
+        window.open(file.path, "_blank")
+      } else if (file.path.startsWith("/uploads")) {
+        window.open(`${BaseURL}${file.path}`, "_blank")
+      } else {
+        if (file.path.startsWith("design/")) {
+          window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
+        } else if (file.path.startsWith("general/")) {
+          window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
+        } else {
+          window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
+        }
+      }
+    } catch (error) {
+      console.error("Error opening file:", error)
+      toast.error("Failed to open file")
+    }
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        <Box display="flex" alignItems="center" gap={1}>
+          <IconButton onClick={onClose} size="small" sx={{ mr: 1 }}>
+            <MdArrowBack />
+          </IconButton>
+          <Typography fontWeight={600} fontSize={18}>
+            Select Files for Printing
+          </Typography>
+        </Box>
+      </DialogTitle>
+      <DialogContent>
+        <Box pt={1}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography fontWeight={500}>
+              Select files to send for printing ({selectedFiles.length} selected)
+            </Typography>
+            <Box display="flex" gap={1}>
+              <Button size="small" onClick={handleSelectAll}>
+                Select All
+              </Button>
+              <Button size="small" onClick={handleDeselectAll}>
+                Deselect All
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Design Files Section */}
+          {designFiles.length > 0 && (
+            <Box mb={3}>
+              <Typography fontWeight={600} fontSize={16} mb={2} color="#1976D2">
+                Design Files ({designFiles.length})
+              </Typography>
+              <Stack spacing={1}>
+                {designFiles.map((file, index) => (
+                  <Box
+                    key={`design-${index}`}
+                    sx={{
+                      p: 2,
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 1,
+                      backgroundColor: selectedFiles.includes(file.path) ? "#E3F2FD" : "white",
+                    }}
+                  >
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={selectedFiles.includes(file.path)}
+                            onChange={() => handleFileToggle(file.path)}
+                            color="primary"
+                          />
+                        }
+                        label=""
+                      />
+                      <Box flex={1}>
+                        <Typography fontWeight={500} fontSize={14}>
+                          {file.path?.split("/").pop() || `Design File ${index + 1}`}
+                        </Typography>
+                        {file.remark && (
+                          <Typography fontSize={12} color="#666" mt={0.5}>
+                            {file.remark}
+                          </Typography>
+                        )}
+                        {file.uploadedAt && (
+                          <Typography fontSize={11} color="#999" mt={0.5}>
+                            Uploaded: {new Date(file.uploadedAt).toLocaleString()}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<AiOutlineEye />}
+                        onClick={() => handleViewFile(file)}
+                      >
+                        View
+                      </Button>
+                    </Box>
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+          )}
+
+          {/* Rework Files Section */}
+          {reworkFiles.length > 0 && (
+            <Box mb={3}>
+              <Typography fontWeight={600} fontSize={16} mb={2} color="#F79009">
+                Rework Files ({reworkFiles.length})
+              </Typography>
+              <Stack spacing={1}>
+                {reworkFiles.map((file, index) => (
+                  <Box
+                    key={`rework-${index}`}
+                    sx={{
+                      p: 2,
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 1,
+                      backgroundColor: selectedFiles.includes(file.path) ? "#FFF4E6" : "white",
+                    }}
+                  >
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={selectedFiles.includes(file.path)}
+                            onChange={() => handleFileToggle(file.path)}
+                            color="primary"
+                          />
+                        }
+                        label=""
+                      />
+                      <Box flex={1}>
+                        <Typography fontWeight={500} fontSize={14}>
+                          {file.path?.split("/").pop() || `Rework File ${index + 1}`}
+                        </Typography>
+                        {file.remark && (
+                          <Typography fontSize={12} color="#666" mt={0.5}>
+                            {file.remark}
+                          </Typography>
+                        )}
+                        {file.uploadedAt && (
+                          <Typography fontSize={11} color="#999" mt={0.5}>
+                            Uploaded: {new Date(file.uploadedAt).toLocaleString()}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<AiOutlineEye />}
+                        onClick={() => handleViewFile(file)}
+                      >
+                        View
+                      </Button>
+                    </Box>
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+          )}
+
+          {designFiles.length === 0 && reworkFiles.length === 0 && (
+            <Typography textAlign="center" color="#666" py={4}>
+              No files available for selection
+            </Typography>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={loading || selectedFiles.length === 0}
+        >
+          {loading ? "Processing..." : `Confirm Selection (${selectedFiles.length} files)`}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
 const ViewOrderDesigner = () => {
   const fileUploadRef = useRef<any>(null)
   const router = useRouter()
@@ -584,6 +836,7 @@ const ViewOrderDesigner = () => {
   const [reworkOpen, setReworkOpen] = useState(false)
   const [approvalOpen, setApprovalOpen] = useState(false)
   const [redesignOpen, setRedesignOpen] = useState(false)
+  const [fileSelectionOpen, setFileSelectionOpen] = useState(false)
   const [currentRedesignFile, setCurrentRedesignFile] = useState<any>(null)
   const [currentRedesignIndex, setCurrentRedesignIndex] = useState<number>(-1)
   const [remarks, setRemarks] = useState("")
@@ -603,7 +856,7 @@ const ViewOrderDesigner = () => {
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false)
   const [newSelectedDesigner, setNewSelectedDesigner] = useState<any>(null)
   const isEditingDisabled = singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0;
-const handleUpdateDesigner = async () => {
+  const handleUpdateDesigner = async () => {
     if (!selectedStaff) {
       toast.error("Please select a designer");
       return;
@@ -623,16 +876,16 @@ const handleUpdateDesigner = async () => {
           : `Assigned to ${selectedStaff.label}`,
         reassignHistory: singleOrder?.designer
           ? [
-              ...(singleOrder?.reassignHistory || []),
-              {
-                fromDesigner: singleOrder.designer._id,
-                fromDesignerName: singleOrder.designer.name,
-                toDesigner: selectedStaff.value,
-                toDesignerName: selectedStaff.label,
-                reassignedAt: new Date().toISOString(),
-                reason: "Manual reassignment via Update Designer",
-              },
-            ]
+            ...(singleOrder?.reassignHistory || []),
+            {
+              fromDesigner: singleOrder.designer._id,
+              fromDesignerName: singleOrder.designer.name,
+              toDesigner: selectedStaff.value,
+              toDesignerName: selectedStaff.label,
+              reassignedAt: new Date().toISOString(),
+              reason: "Manual reassignment via Update Designer",
+            },
+          ]
           : singleOrder?.reassignHistory || [],
       };
 
@@ -1101,12 +1354,45 @@ const handleUpdateDesigner = async () => {
       toast.success("Order approved successfully")
       setApprovalOpen(false)
       await dispatch(getOrderByIdThunk(orderId)).unwrap()
+
+      // Open file selection modal after approval
+      setFileSelectionOpen(true)
     } catch (error: any) {
       toast.error(error || "Failed to approve order")
     } finally {
       setLoading(false)
     }
   }
+
+  const handleFileSelectionSubmit = async (selectedFiles: string[]) => {
+    if (!orderId || typeof orderId !== "string") return
+    setLoading(true)
+    try {
+      const updateData = {
+        approvedFiles: selectedFiles, // This will be the array of selected file paths
+      }
+      await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
+      toast.success(`Selected ${selectedFiles.length} files for printing`)
+      setFileSelectionOpen(false)
+      await dispatch(getOrderByIdThunk(orderId)).unwrap()
+    } catch (error: any) {
+      toast.error(error || "Failed to save file selection")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getAllAvailableFiles = () => {
+    const designFiles = singleOrder?.designFiles || []
+    const reworkFiles = singleOrder?.reworkFiles || []
+    return {
+      designFiles,
+      reworkFiles,
+      allFiles: [...designFiles, ...reworkFiles]
+    }
+  }
+
+  const { designFiles, reworkFiles } = getAllAvailableFiles()
 
   const handleInvoiceValidProofSubmit = async (files: File[], remark: string) => {
     if (!orderId || typeof orderId !== "string") return
@@ -1169,6 +1455,8 @@ const handleUpdateDesigner = async () => {
           window.open(`${BaseURL}${file.path}`, "_blank")
         } else {
           if (file.path.startsWith("design/")) {
+            window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
+          } else if (file.path.startsWith("general/")) {
             window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
           } else {
             window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
@@ -1434,7 +1722,7 @@ const handleUpdateDesigner = async () => {
                 InputProps={{ readOnly: true }}
               />
             </Box>
-           <Box flex={1} minWidth={240} display="flex" alignItems="center" gap={2}>
+            <Box flex={1} minWidth={240} display="flex" alignItems="center" gap={2}>
               <Box flex={1}>
                 <RoleStaffSelect
                   label="Select Designers"
@@ -1655,6 +1943,116 @@ const handleUpdateDesigner = async () => {
                       ))}
                     </Box>
                   )}
+                  {/* Rework Files by Designer - Detailed View */}
+                  {singleOrder?.reworkFiles && singleOrder.reworkFiles.length > 0 && (
+                    <Box
+                      sx={{
+                        background: "#FFF4E6",
+                        p: 3,
+                        borderRadius: 2,
+                        mb: 2,
+                        border: "1px solid #F79009",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: 15, color: "#B54708" }}>
+                          Rework Files by Designer
+                        </Typography>
+                        <Chip
+                          label={`${singleOrder.reworkFiles.length} files`}
+                          size="small"
+                          sx={{ backgroundColor: "#F79009", color: "white" }}
+                        />
+                      </Box>
+
+                      <Stack spacing={2}>
+                        {singleOrder.reworkFiles.map((file: any, index: number) => {
+                          const handleViewReworkFile = () => {
+                            try {
+                              const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
+
+                              let fileUrl = file.path;
+
+                              if (file.path.startsWith("http")) {
+                                fileUrl = file.path;
+                              } else if (file.path.startsWith("/uploads")) {
+                                fileUrl = `${BaseURL}${file.path}`;
+                              } else {
+                                if (file.path.startsWith("design/") ||
+                                  file.path.startsWith("general/") ||
+                                  file.path.startsWith("rework/") ||
+                                  file.path.startsWith("orders/")) {
+                                  fileUrl = `${BaseURL}/uploads/${file.path}`;
+                                } else {
+                                  fileUrl = `${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`;
+                                }
+                              }
+
+                              window.open(fileUrl, "_blank");
+                            } catch (error) {
+                              console.error("Error opening rework file:", error);
+                              toast.error("Failed to open rework file");
+                            }
+                          };
+
+                          const fileName = file.path?.split("/").pop() || `Rework_File_${index + 1}`;
+
+                          return (
+                            <Box
+                              key={index}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 2,
+                                p: 2,
+                                backgroundColor: "white",
+                                borderRadius: 1,
+                                border: "1px solid #e0e0e0"
+                              }}
+                            >
+                              <Button
+                                variant="outlined"
+                                startIcon={<AiOutlineEye />}
+                                onClick={handleViewReworkFile}
+                                sx={{
+                                  minWidth: 200,
+                                  textTransform: "none",
+                                  fontWeight: 500,
+                                  backgroundColor: "#fff",
+                                  borderColor: "#F79009",
+                                  color: "#B54708",
+                                  "&:hover": {
+                                    backgroundColor: "#FFF4E6",
+                                    borderColor: "#F79009",
+                                  },
+                                }}
+                              >
+                                {fileName}
+                              </Button>
+
+                              <Box sx={{ flex: 1 }}>
+                                {file.remark && (
+                                  <>
+                                    <Typography sx={{ fontSize: 12, fontWeight: 500, color: "#666" }}>
+                                      Remarks:
+                                    </Typography>
+                                    <Typography sx={{ fontSize: 12, color: "#666" }}>
+                                      {file.remark}
+                                    </Typography>
+                                  </>
+                                )}
+                                {file.uploadedAt && (
+                                  <Typography sx={{ fontSize: 11, color: "#999", mt: 0.5 }}>
+                                    Uploaded: {new Date(file.uploadedAt).toLocaleString()}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+                    </Box>
+                  )}
                   {!isApproved && (
                     <>
                       <Typography fontWeight={600} mb={2}>
@@ -1746,6 +2144,14 @@ const handleUpdateDesigner = async () => {
               )}
             </Box>
           </Collapse>
+          <FileSelectionDialog
+            open={fileSelectionOpen}
+            onClose={() => setFileSelectionOpen(false)}
+            onSubmit={handleFileSelectionSubmit}
+            loading={loading}
+            designFiles={designFiles}
+            reworkFiles={reworkFiles}
+          />
           <Collapse in={shouldShowGenerateInvoiceButton} timeout="auto" unmountOnExit>
             <Box mt={4}>
               <Typography fontWeight={600} mb={2} color="#12B76A">
@@ -1767,6 +2173,8 @@ const handleUpdateDesigner = async () => {
                           window.open(`${BaseURL}${file.path}`, "_blank")
                         } else {
                           if (file.path.startsWith("design/")) {
+                            window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
+                          } else if (file.path.startsWith("general/")) {
                             window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
                           } else {
                             window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
@@ -1854,6 +2262,8 @@ const handleUpdateDesigner = async () => {
                             window.open(`${BaseURL}${file.path}`, "_blank")
                           } else {
                             if (file.path.startsWith("design/")) {
+                              window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
+                            } else if (file.path.startsWith("general/")) {
                               window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
                             } else {
                               window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")

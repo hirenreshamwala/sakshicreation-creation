@@ -1042,7 +1042,7 @@ const BookletFolderBinderForm = () => {
               }}
               startIcon={<AiOutlineEye />}
             >
-              View Designer Files ({singleOrder?.designFiles?.length || 0})
+              View Designer Files ({singleOrder?.approvedFiles?.length || 0})
             </Button>
 
             <Button
@@ -1180,7 +1180,7 @@ const BookletFolderBinderForm = () => {
       <ViewFilesDialog
         open={openDesignFilesDialog}
         onClose={handleCloseDesignFilesDialog}
-        files={singleOrder?.designFiles?.map((file: any) => file.path) || []}
+        files={singleOrder?.approvedFiles?.map((file: any) => file) || []}
         title="Designer Files"
         showDownload={true}
         showView={true}

@@ -114,7 +114,8 @@ const DesignerViewTask = () => {
       const updateData: any = {
         designerStatus: "In Progress",
         designerRemarks: designerRemarks,
-        designFiles: [...(singleOrder?.designFiles || []), ...designFiles],
+        // designFiles: [...(singleOrder?.designFiles || []), ...designFiles],
+        reworkFiles: designFiles,
       }
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
       toast.success("Design files uploaded successfully!")
