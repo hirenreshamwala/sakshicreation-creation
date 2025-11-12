@@ -182,9 +182,20 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [formData.status, row.status, paperRequirements]);
 
     const designers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "designer");
-    const printers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "printer");
-    const binders = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "binder");
-
+    const printers = staffList.filter((staff) =>
+        staff.role?.roleName?.toLowerCase() === "printer" &&
+        staff.CompanyName?.some(
+            (company) =>
+                company.companyName?.toLowerCase() === "quality packaging"
+        )
+    );
+    const binders = staffList.filter((staff) =>
+        staff.role?.roleName?.toLowerCase() === "lamination" &&
+        staff.CompanyName?.some(
+            (company) =>
+                company.companyName?.toLowerCase() === "quality packaging"
+        )
+    );
     const calculateAllPaperAllocations = useCallback((): PaperAllocationsResult => {
 
         const paperQuantities: Record<string, number> = {};
@@ -449,7 +460,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         }
 
         if (remarkType === "startDate") {
-            setFormData((prev:any) => ({
+            setFormData((prev: any) => ({
                 ...prev,
                 startDate: tempStartDate,
                 status: "On Hold",
@@ -465,7 +476,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }));
             toast.success("Start date updated with remark");
         } else if (remarkType === "onHold") {
-            setFormData((prev:any) => ({
+            setFormData((prev: any) => ({
                 ...prev,
                 status: "On Hold",
                 remarks: [
@@ -480,7 +491,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }));
             toast.success("Order put on hold with remark");
         } else if (remarkType === "canceled") {
-            setFormData((prev:any) => ({
+            setFormData((prev: any) => ({
                 ...prev,
                 status: "Canceled",
                 remarks: [

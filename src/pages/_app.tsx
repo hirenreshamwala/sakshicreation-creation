@@ -17,8 +17,8 @@ export default function App({ Component, pageProps }: AppProps) {
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <ThemeProvider theme={theme}>
-{router.pathname === "/login" ? <Component {...pageProps} />:<Dashboard>
-  <Component {...pageProps} /></Dashboard>}
+          {router.pathname === "/login" ? <Component {...pageProps} /> : <Dashboard>
+            <Component {...pageProps} /></Dashboard>}
           {/* <Component {...pageProps} />; */}
           <ToastContainer />
         </ThemeProvider>

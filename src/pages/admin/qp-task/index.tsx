@@ -32,9 +32,9 @@ const OrdersList: React.FC = () => {
   );
 
   const [page, setPage] = useState(1);
-  const designer = user?.role?.roleName === "Designer"
-  const printer = user?.role?.roleName === "Printer"
-  const binder = user?.role?.roleName === "Binder"
+  const designer = user?.role?.roleName.toLowerCase() === "designer"
+  const printer = user?.role?.roleName.toLowerCase() === "printer"
+  const binder = user?.role?.roleName.toLowerCase() === "lamination"
   // Filter orders where printer._id matches user?.id
   const filteredOrders = orders.filter((order: Order) => {
     if (designer) {
@@ -59,6 +59,9 @@ const OrdersList: React.FC = () => {
     { id: "orderNo", label: "Order Number" },
     { id: "companyName", label: "Company" },
     { id: "partyName", label: "Party" },
+    { id: "size", label: "Size" },
+    { id: "ply", label: "Ply" },
+    { id: "deckal", label: "Deckal" },
     { id: "varnish", label: "Varnish" },
     { id: "lamination", label: "Lamination" },
     { id: "uv", label: "UV" },
@@ -77,6 +80,9 @@ const OrdersList: React.FC = () => {
             <TableCell>QP-{row.orderNo}</TableCell>
             <TableCell>{row.companyName.companyName}</TableCell>
             <TableCell>{row.party.partyName}</TableCell>
+            <TableCell>{row.orderdata?.length} x {row.orderdata?.width} x {row.orderdata?.height}</TableCell>
+            <TableCell>{row.orderdata?.ply}</TableCell>
+            <TableCell>{row.orderdata?.deckal}</TableCell>
             <TableCell>{row.varnish ? "YES" : "NO"}</TableCell>
             <TableCell>{row.lamination ? row.laminationType : "NO"}</TableCell>
             <TableCell>{row.uv ? row.uvType : "NO"}</TableCell>
