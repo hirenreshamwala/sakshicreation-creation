@@ -42,7 +42,7 @@ const QpInventoryPage = () => {
     const { allInventory } = useAppSelector(state => state.inventory);
     const permissions = user.role.permissions;
     const paperKeys = ['deckal', 'gsm', 'bf', 'color']
-    const boxKeys = ['paper3GSM', 'paper2GSM', 'paper1GSM', 'boxHeight', 'boxLength', 'boxWidth', 'ply', 'uom', 'length', 'width', 'height', 'isKantan', 'printType', 'varnish', 'lamination', 'laminationType', 'uv', 'uvType'];
+    const boxKeys = ['paper3GSM', 'paper2GSM', 'paper1GSM', 'boxHeight', 'boxLength', 'boxWidth', 'ply', 'uom', 'length', 'width', 'height', 'isKantan'];
 
     const [subData, setSubData] = useState<any>([])
     const [allSubData, setAllSubData] = useState<any>([])
@@ -101,14 +101,10 @@ const QpInventoryPage = () => {
                 { id: "boxType", label: "TYPE" },
                 { id: "lwh", label: "SIZE" },
                 { id: "gsm", label: "GSM" },
+                { id: "deckal", label: "deckal" },
                 { id: "qty", label: "QUANTITY" },
                 { id: "ply", label: "PLY" },
-                { id: "varnish", label: "VARNISH" },
                 { id: "kantan", label: "kantan" },
-                { id: "lamination", label: "LAMINATION" },
-                { id: "print type", label: "printType" },
-                { id: "uv", label: "UV" },
-                { id: "deckal", label: "deckal" },
                 detailOpen !== null && { id: "pcs", label: "pcs" },
                 { id: "date", label: "DATE" },
             ].filter(Boolean),
@@ -117,14 +113,10 @@ const QpInventoryPage = () => {
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.boxType || "Box"}</TableCell>
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.boxLength} x {row?.boxWidth} x {row?.boxHeight}</TableCell>
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.paper1GSM} - {row?.paper2GSM} - {row?.paper3GSM}</TableCell>
+                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.deckal ? row?.deckal : "no"}</TableCell>
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.quantity}</TableCell>
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.ply}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.varnish ? "yes" : "no"}</TableCell>
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.isKantan ? "yes" : "no"}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.lamination ? row?.laminationType : "no"}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.printType}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.uv ? row?.uvType : "no"}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.deckal ? row?.deckal : "no"}</TableCell>
                     {detailOpen !== null ? <TableCell sx={{ cursor: 'pointer' }}>{row?.quantity}</TableCell> : null}
                     <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
                 </>
@@ -267,14 +259,14 @@ const QpInventoryPage = () => {
                 </Box> : null}
             </Box>
 
-            <Stack>
-                balance - {
+            {detailOpen !== null ? <Stack sx={{ m: 1 }}>
+                Balance - {
                     allSubData?.reduce((sum: number, item: any) =>
                         sum + (item?.type === 'inward' ? item?.quantity || 0 : 0) -
                         (item?.type === 'outward' ? item?.quantity || 0 : 0), 0
                     )
                 }
-            </Stack>
+            </Stack> : null}
 
             {detailOpen === null ? <BasicTable
                 tableHeader={tableConfigs[activeMaterialTab].header}
