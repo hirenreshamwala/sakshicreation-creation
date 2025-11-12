@@ -182,9 +182,20 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [formData.status, row.status, paperRequirements]);
 
     const designers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "designer");
-    const printers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "printer");
-    const binders = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "binder");
-
+    const printers = staffList.filter((staff) =>
+        staff.role?.roleName?.toLowerCase() === "printer" &&
+        staff.CompanyName?.some(
+            (company) =>
+                company.companyName?.toLowerCase() === "quality packaging"
+        )
+    );
+    const binders = staffList.filter((staff) =>
+        staff.role?.roleName?.toLowerCase() === "lamination" &&
+        staff.CompanyName?.some(
+            (company) =>
+                company.companyName?.toLowerCase() === "quality packaging"
+        )
+    );
     const calculateAllPaperAllocations = useCallback((): PaperAllocationsResult => {
 
         const paperQuantities: Record<string, number> = {};

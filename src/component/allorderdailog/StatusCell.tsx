@@ -335,7 +335,7 @@ export const StatusCell = ({ row }: { row: any }) => {
   const cutting = user?.role?.roleName?.toLowerCase()?.includes("cutting") || false
   const corrugation = user?.role?.roleName?.toLowerCase()?.includes("corrugation") || false
   const printer = user?.role?.roleName?.toLowerCase()?.includes("printer") || false
-  const binder = user?.role?.roleName?.toLowerCase()?.includes("binder") || false
+  const binder = user?.role?.roleName?.toLowerCase()?.includes("lamination") || user?.role?.roleName?.toLowerCase()?.includes("binder") || false
   const operator = user?.role?.roleName?.toLowerCase()?.includes("operator") || false
   const admin = user?.role?.roleName?.toLowerCase()?.includes("admin") || false
   const canStatus = user?.role?.permissions?.all_orders?.status
