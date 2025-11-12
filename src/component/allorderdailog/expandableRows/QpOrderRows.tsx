@@ -775,7 +775,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
             <form onSubmit={handleSubmit}>
                 <Stack spacing={2}>
-                    {(row.step === 0 || row.step === 4) && row.status !== "Completed" ? <QpOrderStep1
+                    {row.step === 4 && row.status !== "Completed" ? <QpOrderStep1
                         formData={formData}
                         handleFormChange={handleFormChange}
                         isCompleted={isCompleted}
@@ -812,7 +812,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         />
                     </> : null}
 
-                    {row.step === 1 ? <StackSelection
+                    {row.step === 0 ? <StackSelection
                         formData={formData}
                         row={row}
                         isCompleted={isCompleted}

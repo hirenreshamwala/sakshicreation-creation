@@ -107,11 +107,11 @@ const menuItems = [
     icon: <MdAssignment size={18} />,
     path: "/admin/all-orders",
   },
-  {
-    label: "Quality Sale Orders",
-    icon: <MdAssignment size={18} />,
-    path: "/admin/sell-order",
-  },
+  // {
+  //   label: "Quality Sale Orders",
+  //   icon: <MdAssignment size={18} />,
+  //   path: "/admin/sell-order",
+  // },
   // {
   //   label: "Sell Orders",
   //   icon: <MdAssignment size={18} />,
