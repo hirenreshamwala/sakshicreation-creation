@@ -475,7 +475,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 autocomplete
                 options={partyOptions.map((option) => `${option.partyName} - ${option.address.unitNo || ""}, ${option.address.marketName?.marketName || ""}`)}
                 onOptionSelect={async (selectedValue) => {
-                  const selectedPartyName = selectedValue.split(" - ")[0];
+                  const selectedPartyName = selectedValue?.split(" - ")[0];
                   formik.setFieldValue("partyName", selectedPartyName)
                   setInputValue(selectedPartyName)
 
@@ -769,7 +769,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                     )}
                     value={formik.values.reference}
                     onChange={(event, newValue) => {
-                      const selectedPartyName = newValue ? newValue.split(" - ")[0] : "";
+                      const selectedPartyName = newValue ? newValue?.split(" - ")[0] : "";
                       formik.setFieldValue("reference", selectedPartyName);
                     }}
                     onInputChange={(event, newInputValue) => {

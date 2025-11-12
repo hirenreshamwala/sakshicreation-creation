@@ -44,8 +44,8 @@ const StaffView = () => {
     const staff = staffList1[idx];
     if (staff) {
       editData = {
-        firstName: staff.name.split(' ')[0] || '',
-        lastName: staff.name.split(' ')[1] || '',
+        firstName: staff.name?.split(' ')[0] || '',
+        lastName: staff.name?.split(' ')[1] || '',
         email: '',
         mobile: '',
         mobileCode: '91',
@@ -53,7 +53,7 @@ const StaffView = () => {
         whatsappCode: '91',
         address: '',
         aadhar: '',
-        joining: staff.joining.split('/').reverse().join('-'),
+        joining: staff.joining?.split('/').reverse().join('-'),
         birth: '',
       };
     }

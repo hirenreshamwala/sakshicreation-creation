@@ -218,8 +218,8 @@ const StaffView = () => {
         whatsappCode: newData.whatsappCode || "91",
         address: newData.address || "",
         aadharNo: newData.aadharNo || "",
-        joiningDate: newData.joiningDate ? new Date(newData.joiningDate).toISOString().split("T")[0] : "",
-        birthDay: newData.birthDay ? new Date(newData.birthDay).toISOString().split("T")[0] : "",
+        joiningDate: newData.joiningDate ? new Date(newData.joiningDate).toISOString()?.split("T")[0] : "",
+        birthDay: newData.birthDay ? new Date(newData.birthDay).toISOString()?.split("T")[0] : "",
         role: newData.role?._id || "",
         companyName: newData.CompanyName?.map((item) => item._id),
         password: user?.role?.roleName === 'Admin' && user?.role?.isDelete === false ? decryptData(newData?.password) : "",
@@ -246,7 +246,7 @@ const StaffView = () => {
 
   const handleCompanyChange = (event: any) => {
     const value = event.target.value;
-    formik.setFieldValue("companyName", typeof value === 'string' ? value.split(',') : value);
+    formik.setFieldValue("companyName", typeof value === 'string' ? value?.split(',') : value);
   };
 
   const handleMobileChange = (field: "mobileNo" | "whatsappNo", value: string) => {
@@ -279,7 +279,7 @@ const StaffView = () => {
   };
 
   const handleDeleteExistingFile = async (fileType: "aadhar" | "address", filePathToDelete: string) => {
-    const parts = filePathToDelete.split("/")
+    const parts = filePathToDelete?.split("/")
     const folder = parts[parts.length - 2]
     const filename = parts[parts.length - 1]
 
@@ -318,8 +318,8 @@ const StaffView = () => {
         whatsappCode: staffData.whatsappCode || "91",
         address: staffData.address || "",
         aadharNo: staffData.aadharNo || "",
-        joiningDate: staffData.joiningDate ? new Date(staffData.joiningDate).toISOString().split("T")[0] : "",
-        birthDay: staffData.birthDay ? new Date(staffData.birthDay).toISOString().split("T")[0] : "",
+        joiningDate: staffData.joiningDate ? new Date(staffData.joiningDate).toISOString()?.split("T")[0] : "",
+        birthDay: staffData.birthDay ? new Date(staffData.birthDay).toISOString()?.split("T")[0] : "",
         role: staffData.role?._id || "",
         companyName: staffData.CompanyName?.map((item) => item._id),
         password: "",
@@ -514,7 +514,7 @@ const StaffView = () => {
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
               {existingAadharFiles.map((filePath, index) => {
-                const fileName = filePath.split("/").pop();
+                const fileName = filePath?.split("/").pop();
                 const fileUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/fileDownload/download?filePath=${encodeURIComponent(filePath)}&view=true`;
 
                 return (
@@ -607,7 +607,7 @@ const StaffView = () => {
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
               {existingAddressFiles.map((filePath, index) => {
-                const fileName = filePath.split("/").pop();
+                const fileName = filePath?.split("/").pop();
                 const fileUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/fileDownload/download?filePath=${encodeURIComponent(filePath)}&view=true`;
 
                 return (

@@ -219,7 +219,7 @@ const BinderTaskView = () => {
       }
 
       const allBinderFiles = [...(singleOrder?.binderFiles || []), ...newBinderFiles.filter((f) => !f.isNew)]
-      const currentDate = new Date().toISOString().split('T')[0]
+      const currentDate = new Date().toISOString()?.split('T')[0]
 
       const updateData: any = {
         binderStatus: "Done",

@@ -279,7 +279,7 @@ const BookletBinderTaskView = () => {
       }
 
       const allBookletFiles = [...(singleOrder?.bookletBinderFiles || []), ...newBookletFiles.filter((f) => !f.isNew)]
-      const currentDate = new Date().toISOString().split('T')[0]
+      const currentDate = new Date().toISOString()?.split('T')[0]
 
       const updateData: any = {
         bookletBinderStatus: "Done",

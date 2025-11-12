@@ -359,7 +359,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         toast.error("You need to fill the actual number of pieces before marking as completed");
                         return prev;
                     }
-                    const currentDate = new Date().toISOString().split("T")[0];
+                    const currentDate = new Date().toISOString()?.split("T")[0];
                     newState.status = value;
                     newState.deliveryDate = currentDate;
                     return newState;
@@ -393,7 +393,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }
 
             if (field === "unitNo" && value && !isInitialUnitSet && !prev.startDate) {
-                const currentDate = new Date().toISOString().split("T")[0];
+                const currentDate = new Date().toISOString()?.split("T")[0];
                 newState.unitNo = value;
                 newState.startDate = currentDate;
                 setIsInitialUnitSet(true);

@@ -437,7 +437,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
                                                 py: 0.5
                                             }}
                                         >
-                                            {filePath.split('/').pop()}
+                                            {filePath?.split('/').pop()}
                                         </Typography>
                                     ))}
                                 </Box>

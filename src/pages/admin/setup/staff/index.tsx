@@ -88,8 +88,8 @@ const StaffPage = () => {
   };
   // Function to open the file viewer modal
   const handleFileClick = (filePath: string) => {
-    const extension = filePath.split(".").pop()?.toLowerCase()
-    const fileName = filePath.split("/").pop()
+    const extension = filePath?.split(".").pop()?.toLowerCase()
+    const fileName = filePath?.split("/").pop()
 
     // Ensure NEXT_PUBLIC_BACKEND_URL is correctly set and is an absolute URL
     const baseUrl = process.env.NEXT_PUBLIC_API_URL
@@ -175,8 +175,8 @@ const StaffPage = () => {
                 {row.aadharFiles.length > 0 ? (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
                     {row.aadharFiles.map((filePath: string, idx: number) => {
-                      const extension = filePath.split(".").pop()?.toLowerCase()
-                      const fileName = filePath.split("/").pop()
+                      const extension = filePath?.split(".").pop()?.toLowerCase()
+                      const fileName = filePath?.split("/").pop()
 
                       return (
                         <Box
@@ -215,8 +215,8 @@ const StaffPage = () => {
                 {row.addressFiles.length > 0 ? (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
                     {row.addressFiles.map((filePath: string, idx: number) => {
-                      const extension = filePath.split(".").pop()?.toLowerCase()
-                      const fileName = filePath.split("/").pop()
+                      const extension = filePath?.split(".").pop()?.toLowerCase()
+                      const fileName = filePath?.split("/").pop()
 
                       return (
                         <Box

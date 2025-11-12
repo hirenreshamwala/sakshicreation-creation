@@ -92,7 +92,7 @@ const DeliveryForm = () => {
       // Populate Formik values
       formik.setValues({
         remarks: singleOrder.remarks || "",
-        date: singleOrder.deliveryDate ? new Date(singleOrder.deliveryDate).toISOString().split("T")[0] : "",
+        date: singleOrder.deliveryDate ? new Date(singleOrder.deliveryDate).toISOString()?.split("T")[0] : "",
         time: singleOrder.deliveryTime || "",
       })
 

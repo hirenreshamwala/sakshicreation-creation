@@ -178,7 +178,7 @@ const SakshiInventoryPage = () => {
     const allCategoryItems = getPermissionWiseInventory().filter(item => item.category === activeMainTab);
 
     Object.keys(aggregated).forEach(key => {
-      const [printerId, materialId] = key.split('-');
+      const [printerId, materialId] = key?.split('-');
 
       // Calculate total inward for this printer/material
       const totalInward = allCategoryItems

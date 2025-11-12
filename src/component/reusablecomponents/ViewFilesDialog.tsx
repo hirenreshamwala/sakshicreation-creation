@@ -41,9 +41,9 @@ const ViewFilesDialog: React.FC<ViewFilesDialogProps> = ({
 }) => {
   const [downloading, setDownloading] = useState<string | null>(null);
 
-  const getFileName = (filePath: string) => filePath.split("/").pop() || filePath;
+  const getFileName = (filePath: string) => filePath?.split("/").pop() || filePath;
   const getFileExtension = (fileName: string) =>
-    fileName.split(".").pop()?.toLowerCase() || "";
+    fileName?.split(".").pop()?.toLowerCase() || "";
 
   const handleDownloadFile = (filePath: string) => {
     try {
@@ -139,7 +139,7 @@ const ViewFilesDialog: React.FC<ViewFilesDialogProps> = ({
       <DialogContent>
         {files && files.length > 0 ? (
           <List sx={{ maxHeight: 400, overflow: "auto" }}>
-            {files.map((filePath, index) => {
+            {files?.map((filePath, index) => {
               const fileName = getFileName(filePath);
               const isDownloading = downloading === filePath;
 

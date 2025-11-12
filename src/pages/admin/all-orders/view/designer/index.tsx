@@ -647,10 +647,10 @@ const FileSelectionDialog = ({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box display="flex" alignItems="center" gap={1}>
-          <IconButton onClick={onClose} size="small" sx={{ mr: 1 }}>
+          <IconButton size="small" sx={{ mr: 1 }}>
             <MdArrowBack />
           </IconButton>
           <Typography fontWeight={600} fontSize={18}>
@@ -798,9 +798,9 @@ const FileSelectionDialog = ({
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+        {/* <Button onClick={onClose} disabled={loading}>
           Cancel
-        </Button>
+        </Button> */}
         <Button
           onClick={handleSubmit}
           variant="contained"
@@ -1093,7 +1093,7 @@ const ViewOrderDesigner = () => {
     } else if (fileToDelete.isExisting) {
       try {
         setLoading(true)
-        const pathParts = fileToDelete.path.split("/")
+        const pathParts = fileToDelete.path?.split("/")
         const filename = pathParts.pop() || ""
         const folder = pathParts.join("/") || "orders"
         await dispatch(deleteFileThunk({ folder, filename })).unwrap()
@@ -1424,7 +1424,7 @@ const ViewOrderDesigner = () => {
   }
 
   const getFileNameFromPath = (path: string) => {
-    return path.split("/").pop() || "File"
+    return path?.split("/").pop() || "File"
   }
 
   const canAssignToDesigner = singleOrder?.designerStatus === "Pending" && !singleOrder?.designer

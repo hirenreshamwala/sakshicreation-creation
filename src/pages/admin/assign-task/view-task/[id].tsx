@@ -144,7 +144,7 @@ const formatDateOnly = (dateString: string): string => {
 // Check if a date is today
 const isToday = (dateString: string): boolean => {
   const today = new Date();
-  const [day, month, year] = dateString.split('/');
+  const [day, month, year] = dateString?.split('/');
   const compareDate = new Date(`${year}-${month}-${day}`);
   return (
     compareDate.getDate() === today.getDate() &&
@@ -404,16 +404,16 @@ const partyTasks = assignTasks.filter((task) => {
   // Sort dates in descending order
   const sortedPendingDates = useMemo(() => {
     return Object.keys(groupedPendingTasks).sort((a, b) => {
-      const dateA = new Date(a.split('/').reverse().join('-'));
-      const dateB = new Date(b.split('/').reverse().join('-'));
+      const dateA = new Date(a?.split('/').reverse().join('-'));
+      const dateB = new Date(b?.split('/').reverse().join('-'));
       return dateB.getTime() - dateA.getTime();
     });
   }, [groupedPendingTasks]);
 
   const sortedCompletedDates = useMemo(() => {
     return Object.keys(groupedCompletedTasks).sort((a, b) => {
-      const dateA = new Date(a.split('/').reverse().join('-'));
-      const dateB = new Date(b.split('/').reverse().join('-'));
+      const dateA = new Date(a?.split('/').reverse().join('-'));
+      const dateB = new Date(b?.split('/').reverse().join('-'));
       return dateB.getTime() - dateA.getTime();
     });
   }, [groupedCompletedTasks]);

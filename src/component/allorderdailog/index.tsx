@@ -60,7 +60,9 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
     color: "",
     number: "",
     endNumber: "",
-    startNumber: ""
+    startNumber: "",
+    color1: "",
+    color2: "",
   })
 
   // Memoized item options
@@ -198,7 +200,9 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         number: sakshiFormData.number,
         endNumber: sakshiFormData.endNumber,
         startNumber: sakshiFormData.startNumber,
-        color: sakshiFormData.color
+        color: sakshiFormData.color,
+        color1: sakshiFormData.color1 || "",
+        color2: sakshiFormData.color2 || "",
       }
       await dispatch(createOrderThunk(orderData)).unwrap()
       if (refreshData) refreshData()
@@ -231,7 +235,9 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
       color: "",
       number: "",
       endNumber: "",
-      startNumber: ""
+      startNumber: "",
+      color1: "",
+      color2: "",
     })
     setGstNotApplicable(false)
     setSelectedFiles([])
@@ -355,6 +361,8 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
             ))}
           </Select>
         </FormControl>
+
+
         <FormControl sx={{ flex: 1, minWidth: 120 }}>
           <InputLabel id="number-label">Number</InputLabel>
           <Select
@@ -370,6 +378,58 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
           </Select>
         </FormControl>
       </Stack>
+
+      {sakshiFormData.color === "1" && (
+        <Stack direction="row" spacing={2} mb={2}>
+          <ThemeInput
+            labelName="Color 1 Type"
+            placeholder="Enter color 1 type"
+            fullWidth
+            value={sakshiFormData.color1}
+            onChange={(e) => handleSakshiChange("color1", e.target.value)}
+          />
+        </Stack>
+      )}
+
+      {sakshiFormData.color === "2" && (
+        <Stack direction="row" spacing={2} mb={2}>
+          <ThemeInput
+            labelName="Color 1 Type"
+            placeholder="Enter color 1 type"
+            fullWidth
+            value={sakshiFormData.color1}
+            onChange={(e) => handleSakshiChange("color1", e.target.value)}
+          />
+          <ThemeInput
+            labelName="Color 2 Type"
+            placeholder="Enter color 2 type"
+            fullWidth
+            value={sakshiFormData.color2}
+            onChange={(e) => handleSakshiChange("color2", e.target.value)}
+          />
+        </Stack>
+      )}
+
+
+      {sakshiFormData.number === 'Yes' ? (
+        <Stack direction="row" spacing={2} mb={2}>
+          <ThemeInput
+            labelName="Start Number"
+            name="startNumber"
+            value={sakshiFormData.startNumber}
+            onChange={(e) => handleSakshiChange("startNumber", e.target.value)}
+            sx={{ flex: 1, minWidth: 120 }}
+          />
+          <ThemeInput
+            labelName="End Number"
+            name="endNumber"
+            value={sakshiFormData.endNumber}
+            onChange={(e) => handleSakshiChange("endNumber", e.target.value)}
+            sx={{ flex: 1, minWidth: 120 }}
+          />
+        </Stack>
+      ) : null}
+
       <Stack direction="row" spacing={2} mb={2}>
         <Box sx={{ width: "100%" }}>
           <ThemeInput
@@ -411,24 +471,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         </Box>
       </Stack>
 
-      {sakshiFormData.number === 'Yes' ? (
-        <Stack direction="row" spacing={2}>
-          <ThemeInput
-            labelName="Start Number"
-            name="startNumber"
-            value={sakshiFormData.startNumber}
-            onChange={(e) => handleSakshiChange("startNumber", e.target.value)}
-            sx={{ flex: 1, minWidth: 120 }}
-          />
-          <ThemeInput
-            labelName="End Number"
-            name="endNumber"
-            value={sakshiFormData.endNumber}
-            onChange={(e) => handleSakshiChange("endNumber", e.target.value)}
-            sx={{ flex: 1, minWidth: 120 }}
-          />
-        </Stack>
-      ) : null}
+
       <ThemeInput
         labelName="Remarks"
         placeholder="Enter Remarks"

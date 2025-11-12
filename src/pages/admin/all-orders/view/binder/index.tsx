@@ -184,9 +184,9 @@ const BinderForm = () => {
     if (singleOrder) {
       formik.setValues({
         issuedDate: singleOrder.issuedDate
-          ? new Date(singleOrder.issuedDate).toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0],
-        receivedDate: singleOrder.receivedDate ? new Date(singleOrder.receivedDate).toISOString().split("T")[0] : "",
+          ? new Date(singleOrder.issuedDate).toISOString()?.split("T")[0]
+          : new Date().toISOString()?.split("T")[0],
+        receivedDate: singleOrder.receivedDate ? new Date(singleOrder.receivedDate).toISOString()?.split("T")[0] : "",
         remarks: singleOrder.binderRemarks || singleOrder.remarks || "",
         size: singleOrder.size || "",
         binding: singleOrder.binding || "",
