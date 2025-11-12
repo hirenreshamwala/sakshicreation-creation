@@ -308,7 +308,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             result.partyAddress?.area?.area || "",
             result.partyAddress?.pincode?.pincode || "",
           ]
-            .filter((part) => part.trim() !== "")
+            .filter((part) => part?.trim() !== "")
             .join(", ");
 
           const assignedToValue = result.assignedTo?._id
@@ -381,7 +381,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       markets.find((item) => item._id === selectedOrder.party.address?.area)?.area || "",
       markets.find((item) => item._id === selectedOrder.party.address?.pincode)?.pincode || "",
     ]
-      .filter((part) => part.trim() !== "")
+      .filter((part) => part?.trim() !== "")
       .join(", ");
 
     // Get last quotation data
@@ -408,7 +408,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             existingInvoice.partyAddress?.area?.area || "",
             existingInvoice.partyAddress?.pincode?.pincode || "",
           ]
-            .filter((part) => part.trim() !== "")
+            .filter((part) => part?.trim() !== "")
             .join(", ");
 
           const assignedToValue = existingInvoice.assignedTo?._id

@@ -173,12 +173,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     }, [allInventory, row.orderdata]);
 
     useEffect(() => {
-        if (formData.status === "In Progress" && row.status === "Pending") {
-            const hasPaperRequirements = paperRequirements?.paper1 > 0 || paperRequirements?.paper2 > 0 || paperRequirements?.paper3 > 0;
-            setIsPaperSelectionRequired(hasPaperRequirements);
+        // if (formData.status === "In Progress" && row.status === "Pending") {
+        //     const hasPaperRequirements = paperRequirements?.paper1 > 0 || paperRequirements?.paper2 > 0 || paperRequirements?.paper3 > 0;
+        //     setIsPaperSelectionRequired(hasPaperRequirements);
 
-            if (hasPaperRequirements) toast.info("Please select papers from inventory before proceeding");
-        }
+        //     if (hasPaperRequirements) toast.info("Please select papers from inventory before proceeding");
+        // }
     }, [formData.status, row.status, paperRequirements]);
 
     const designers = staffList.filter((staff) => staff.role?.roleName?.toLowerCase() === "designer");
@@ -786,7 +786,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
             <form onSubmit={handleSubmit}>
                 <Stack spacing={2}>
-                    {(row.step === 0 || row.step === 4) && row.status !== "Completed" ? <QpOrderStep1
+                    {row.step === 4 && row.status !== "Completed" ? <QpOrderStep1
                         formData={formData}
                         handleFormChange={handleFormChange}
                         isCompleted={isCompleted}
@@ -823,18 +823,17 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         />
                     </> : null}
 
-                    {row.step === 1 ? <StackSelection
+                    {row.step === 0 ? <StackSelection
                         formData={formData}
                         row={row}
                         isCompleted={isCompleted}
                         paperRequirement={paperRequirements}
                     /> : null}
 
-                    {row.status === "Completed" && row?.driver?._id === undefined ? <DriverSelection row={row} /> :
-                        <Stack>  {row?.deliveryStatus ? `Delivery Status :${row?.deliveryStatus}` : `Order Will Going to ${row?.deliverTo}`}</Stack>
+                    {row.status === "Completed" && row?.driver?._id === undefined ? <DriverSelection row={row} /> : null}
+                    {row.status === "Completed" && row?.driver?._id !== undefined ?
+                        <Stack>  {row?.deliveryStatus ? `Delivery Status :${row?.deliveryStatus || ""}` : `Order Will Going to ${row?.deliverTo || ""}`}</Stack> : null
                     }
-
-
 
                     <Stack direction="row" spacing={2}>
                         {(row.step === 0 || row.step === 4) || row.step === 4 || row.step === 1 ? <>

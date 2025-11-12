@@ -470,10 +470,9 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                   // required
                   placeholder="Enter reel/batch number"
                 />
-                <Box sx={{ width: '100%', flex: ''}} />
-                <Typography sx={{ alignSelf: 'center', fontWeight: '500' }}>COLOR</Typography>
                 <Autocomplete
                   freeSolo
+                  fullWidth
                   options={[...colorOptions.map(opt => opt.label), "White"]}
                   value={formData.color || ""}
                   sx={{ width: '100%' }}
@@ -484,9 +483,10 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                     setFormData(prev => ({ ...prev, color: newValue || '' }));
                   }}
                   renderInput={(params) => (
-                    <TextField {...params} label="COLOR" required fullWidth />
+                    <ThemeInput {...params} labelName="COLOR" required />
                   )}
                 />
+
 
               </>
             )}

@@ -315,22 +315,8 @@ const AllOrdersPage = () => {
         remarks: row?.remarks || "",
         ownerMobileNo: row?.party?.ownerMobileNo || "",
         partyName: row?.party?.partyName || "N/A",
-        addressName: [
-          row?.party?.address?.unitNo || "",
-          typeof row?.party?.address?.marketName === "object"
-            ? row?.party?.address?.marketName?.marketName
-            : markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || "",
-          markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || "",
-          typeof row?.party?.address?.area === "object"
-            ? row?.party?.address?.area?.area
-            : markets?.find((item) => item._id === row?.party?.address?.area)?.area || "",
-          typeof row?.party?.address?.area === "object"
-            ? row?.party?.address?.pincode?.area
-            : markets?.find((item) => item._id === row?.party?.address?.pincode)?.area || "",
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .trim(),
+        addressName: 
+          `${row?.party?.address?.unitNo}, ${row?.party?.address?.marketName?.marketName}, ${row?.party?.address?.area?.area}, ${row?.party?.address?.pincode?.pincode}`, 
         GSTNo: row?.party?.GSTNo || "N/A",
         servicePerformance: row?.productItem?.itemName || "N/A",
         quantity: quantity,
@@ -373,22 +359,7 @@ const AllOrdersPage = () => {
         remarks: row?.remarks || "",
         ownerMobileNo: row?.party?.ownerMobileNo || "",
         partyName: row?.party?.partyName || "N/A",
-        addressName: [
-          row?.party?.address?.unitNo || "",
-          typeof row?.party?.address?.marketName === "object"
-            ? row?.party?.address?.marketName?.marketName
-            : markets?.find((item) => item._id === row?.party?.address?.marketName)?.marketName || "",
-          markets?.find((item) => item._id === row?.party?.address?.landMark)?.landmark || "",
-          typeof row?.party?.address?.area === "object"
-            ? row?.party?.address?.area?.area
-            : markets?.find((item) => item._id === row?.party?.address?.area)?.area || "",
-          typeof row?.party?.address?.area === "object"
-            ? row?.party?.address?.pincode?.pincode
-            : markets?.find((item) => item._id === row?.party?.address?.pincode)?.pincode || "",
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .trim(),
+        addressName: `${row?.party?.address?.unitNo}, ${row?.party?.address?.marketName?.marketName}, ${row?.party?.address?.area?.area}, ${row?.party?.address?.pincode?.pincode}`,
         GSTNo: row?.party?.GSTNo || "N/A",
         servicePerformance: row?.productItem?.itemName || "N/A",
         quantity: quantity,
