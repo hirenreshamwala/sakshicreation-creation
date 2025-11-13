@@ -268,7 +268,7 @@ const IndexPage: React.FC = memo(() => {
           staffId: si,
           startDate: st,
           endDate: e,
-          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+          partyTag: p?.toString()?.split(",").map((x) => x.toLowerCase()),
         }))).unwrap();
         Swal.fire({
           title: "Approved!",
@@ -309,7 +309,7 @@ const IndexPage: React.FC = memo(() => {
           staffId: si,
           startDate: st,
           endDate: e,
-          partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+          partyTag: p?.toString()?.split(",").map((x) => x.toLowerCase()),
         })
       );
     } else if (canViewOwn && user?.id) dispatch(getAccountMasterByStaffIdThunk(user?.id));
@@ -576,7 +576,7 @@ const IndexPage: React.FC = memo(() => {
               staffId: si,
               startDate: st,
               endDate: e,
-              partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+              partyTag: p?.toString()?.split(",").map((x) => x.toLowerCase()),
             }));
           } else if (canViewOwn && user?.id) {
             dispatch(getAccountMasterByStaffIdThunk(user?.id));
@@ -602,7 +602,7 @@ const IndexPage: React.FC = memo(() => {
               staffId: si,
               startDate: st,
               endDate: e,
-              partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+              partyTag: p?.toString()?.split(",").map((x) => x.toLowerCase()),
             }));
           } else if (canViewOwn && user?.id) {
             dispatch(getAccountMasterByStaffIdThunk(user?.id));
@@ -625,7 +625,7 @@ const IndexPage: React.FC = memo(() => {
               staffId: si,
               startDate: st,
               endDate: e,
-              partyTag: p?.toString().split(",").map((x) => x.toLowerCase()),
+              partyTag: p?.toString()?.split(",").map((x) => x.toLowerCase()),
             }));
           } else if (canViewOwn && user?.id) {
             dispatch(getAccountMasterByStaffIdThunk(user?.id));

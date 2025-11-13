@@ -121,7 +121,7 @@ const AssignTaskPage: React.FC = () => {
   const hasBothCompanies = hasSakshi && hasQP;
   const isToday = (dateString: string): boolean => {
     const today = new Date();
-    const [day, month, year] = dateString.split("/");
+    const [day, month, year] = dateString?.split("/");
     const compareDate = new Date(`${year}-${month}-${day}`);
     return (
       compareDate.getDate() === today.getDate() &&
@@ -161,7 +161,7 @@ const AssignTaskPage: React.FC = () => {
     if (st) setStartDate(new Date(st as string));
     if (e) setEndDate(new Date(e as string));
     if (s) {
-      const statuses = (s as string).split(",");
+      const statuses = (s as string)?.split(",");
       if (statuses.includes("completed") || statuses.includes("cancelled")) {
         setStatusTab(1);
       } else {
@@ -451,8 +451,8 @@ const AssignTaskPage: React.FC = () => {
 
   const filteredSortedDates = useMemo(() => {
     return Object.keys(filteredGroupedTasks).sort((a, b) => {
-      const dateA = new Date(a.split("/").reverse().join("-"));
-      const dateB = new Date(b.split("/").reverse().join("-"));
+      const dateA = new Date(a?.split("/").reverse().join("-"));
+      const dateB = new Date(b?.split("/").reverse().join("-"));
       return dateB.getTime() - dateA.getTime();
     });
   }, [filteredGroupedTasks]);

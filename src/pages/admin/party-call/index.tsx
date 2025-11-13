@@ -174,7 +174,7 @@ const LeadManagementPage: React.FC = () => {
 
     const isToday = (dateString: string): boolean => {
     const today = new Date();
-    const [day, month, year] = dateString.split("/");
+    const [day, month, year] = dateString?.split("/");
     const compareDate = new Date(`${year}-${month}-${day}`);
     return (
       compareDate.getDate() === today.getDate() &&
@@ -198,7 +198,7 @@ const LeadManagementPage: React.FC = () => {
     if (st) setStartDate(new Date(st as string));
     if (e) setEndDate(new Date(e as string));
     if (s) {
-      const statuses = (s as string).split(",");
+      const statuses = (s as string)?.split(",");
       setTab(
         statuses.some((status) => ["completed", "cancelled"].includes(status))
           ? 1
@@ -220,7 +220,7 @@ const LeadManagementPage: React.FC = () => {
         staffId: si,
         startDate: st,
         endDate: e,
-        status: s?.toString().split(",").map((x) => x.toLowerCase()),
+        status: s?.toString()?.split(",").map((x) => x.toLowerCase()),
         reason: r,
       }));
     } else if (canViewOwn && user?.id) {
@@ -427,8 +427,8 @@ const filteredLeads = useMemo(() => {
 
   const filteredSortedDates = useMemo(() => {
     return Object.keys(filteredGroupedLeads).sort((a, b) => {
-      const dateA = new Date(a.split("/").reverse().join("-"));
-      const dateB = new Date(b.split("/").reverse().join("-"));
+      const dateA = new Date(a?.split("/").reverse().join("-"));
+      const dateB = new Date(b?.split("/").reverse().join("-"));
       return dateB.getTime() - dateA.getTime();
     });
   }, [filteredGroupedLeads]);
@@ -498,7 +498,7 @@ const filteredLeads = useMemo(() => {
           staffId: si,
           startDate: st,
           endDate: e,
-          status: s?.toString().split(",").map((x) => x.toLowerCase()),
+          status: s?.toString()?.split(",").map((x) => x.toLowerCase()),
           reason: r,
         }));
       } else if (canViewOwn && user?.id) {

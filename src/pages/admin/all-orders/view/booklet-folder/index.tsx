@@ -70,7 +70,7 @@ const BookletFolderBinderForm = () => {
   const { allInventory } = useAppSelector(state => state.inventory);
   const formik = useFormik({
     initialValues: {
-      issuedDate: new Date().toISOString().split("T")[0],
+      issuedDate: new Date().toISOString()?.split("T")[0],
       receivedDate: "",
       remarks: "",
       size: "",
@@ -221,9 +221,9 @@ const BookletFolderBinderForm = () => {
     if (singleOrder) {
       formik.setValues({
         issuedDate: singleOrder.issuedDate
-          ? new Date(singleOrder.issuedDate).toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0],
-        receivedDate: singleOrder.receivedDate ? new Date(singleOrder.receivedDate).toISOString().split("T")[0] : "",
+          ? new Date(singleOrder.issuedDate).toISOString()?.split("T")[0]
+          : new Date().toISOString()?.split("T")[0],
+        receivedDate: singleOrder.receivedDate ? new Date(singleOrder.receivedDate).toISOString()?.split("T")[0] : "",
         remarks: singleOrder.bookletBinderRemarks || singleOrder.remarks || "",
         size: singleOrder.size || "",
         qty: singleOrder.qty?.toString() || "",

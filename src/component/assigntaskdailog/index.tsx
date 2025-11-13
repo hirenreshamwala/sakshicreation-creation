@@ -387,16 +387,16 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
           ? singleAssignTask.companyName
           : singleAssignTask.companyName?._id || "";
       const visitDate = singleAssignTask.visitDate
-        ? new Date(singleAssignTask.visitDate).toISOString().split("T")[0]
+        ? new Date(singleAssignTask.visitDate).toISOString()?.split("T")[0]
         : "";
       const rescheduleDate = singleAssignTask.rescheduleDate
-        ? new Date(singleAssignTask.rescheduleDate).toISOString().split("T")[0]
+        ? new Date(singleAssignTask.rescheduleDate).toISOString()?.split("T")[0]
         : "";
 
       const newValues = {
         companyName: companyNameId,
         partyName: partyNameId,
-        date: singleAssignTask.date ? new Date(singleAssignTask.date).toISOString().split("T")[0] : "",
+        date: singleAssignTask.date ? new Date(singleAssignTask.date).toISOString()?.split("T")[0] : "",
         time: singleAssignTask.time || "",
         reasonForVisit: singleAssignTask.reasonForVisit || "",
         remarks: singleAssignTask.remarks || "",

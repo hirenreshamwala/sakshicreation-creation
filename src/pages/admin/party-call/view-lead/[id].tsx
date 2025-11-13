@@ -363,16 +363,16 @@ const ViewLeadPage: React.FC = () => {
   // Sort dates in descending order
   const sortedPendingDates = useMemo(() => {
     return Object.keys(groupedPendingLeads).sort((a, b) => {
-      const dateA = new Date(a.split('/').reverse().join('-'));
-      const dateB = new Date(b.split('/').reverse().join('-'));
+      const dateA = new Date(a?.split('/').reverse().join('-'));
+      const dateB = new Date(b?.split('/').reverse().join('-'));
       return dateB.getTime() - dateA.getTime();
     });
   }, [groupedPendingLeads]);
 
   const sortedCompletedDates = useMemo(() => {
     return Object.keys(groupedCompletedLeads).sort((a, b) => {
-      const dateA = new Date(a.split('/').reverse().join('-'));
-      const dateB = new Date(b.split('/').reverse().join('-'));
+      const dateA = new Date(a?.split('/').reverse().join('-'));
+      const dateB = new Date(b?.split('/').reverse().join('-'));
       return dateB.getTime() - dateA.getTime();
     });
   }, [groupedCompletedLeads]);
@@ -380,7 +380,7 @@ const ViewLeadPage: React.FC = () => {
   // Check if a date is today
   const isToday = (dateString: string): boolean => {
     const today = new Date();
-    const [day, month, year] = dateString.split('/');
+    const [day, month, year] = dateString?.split('/');
     const compareDate = new Date(`${year}-${month}-${day}`);
     return (
       compareDate.getDate() === today.getDate() &&

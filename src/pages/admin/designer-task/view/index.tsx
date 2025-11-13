@@ -35,6 +35,8 @@ const DesignerViewTask = () => {
     color: "",
     pType: "",
     remarks: "",
+    color1: "",
+    color2: "",
   })
   const [designerRemarks, setDesignerRemarks] = useState("")
 
@@ -72,6 +74,8 @@ const DesignerViewTask = () => {
         color: singleOrder.color || "",
         pType: singleOrder.pType || "",
         remarks: singleOrder.remarks || "",
+        color1: singleOrder.color1 || "",
+        color2: singleOrder.color2 || "",
       })
       setDesignerRemarks(singleOrder.designerRemarks || "")
     }
@@ -114,8 +118,13 @@ const DesignerViewTask = () => {
       const updateData: any = {
         designerStatus: "In Progress",
         designerRemarks: designerRemarks,
+        ...(hasReworkHistory
+          ? { reworkFiles: [...(singleOrder?.reworkFiles || []), ...designFiles] }
+          : { designFiles: [...(singleOrder?.designFiles || []), ...designFiles] }
+        ),
         // designFiles: [...(singleOrder?.designFiles || []), ...designFiles],
-        reworkFiles: designFiles,
+        // designFiles: !singleOrder.reworkHistory.length ? [...singleOrder.designFiles, designFiles] : singleOrder.designFiles,
+        // reworkFiles: singleOrder.reworkHistory.length ? [...singleOrder.reworkFiles, designFiles] : singleOrder.reworkFiles,
       }
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
       toast.success("Design files uploaded successfully!")
@@ -130,7 +139,7 @@ const DesignerViewTask = () => {
   }
 
   const getFileNameFromPath = (path: string) => {
-    return path.split("/").pop() || "File"
+    return path?.split("/").pop() || "File"
   }
 
   if (pageLoading) {
@@ -149,33 +158,33 @@ const DesignerViewTask = () => {
     )
   }
   const handleViewFile = (file: any) => {
-  try {
-    const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
-    
-    // Handle different file path formats
-    if (file.path.startsWith('http')) {
-      // Direct URL - open as is
-      window.open(file.path, '_blank');
-    } else if (file.path.startsWith('/uploads')) {
-      // Relative path - construct URL
-      window.open(`${BaseURL}${file.path}`, '_blank');
-    } else {
-      // For files in specific folders like 'orders/', 'design/', or 'rework/'
-      if (file.path.startsWith('orders/') || file.path.startsWith('design/') || file.path.startsWith('rework/')) {
-        window.open(`${BaseURL}/uploads/${file.path}`, '_blank');
+    try {
+      const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
+
+      // Handle different file path formats
+      if (file.path.startsWith('http')) {
+        // Direct URL - open as is
+        window.open(file.path, '_blank');
+      } else if (file.path.startsWith('/uploads')) {
+        // Relative path - construct URL
+        window.open(`${BaseURL}${file.path}`, '_blank');
       } else {
-        // Fallback to download endpoint
-        window.open(
-          `${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`,
-          '_blank'
-        );
+        // For files in specific folders like 'orders/', 'design/', or 'rework/'
+        if (file.path.startsWith('orders/') || file.path.startsWith('design/') || file.path.startsWith('rework/')) {
+          window.open(`${BaseURL}/uploads/${file.path}`, '_blank');
+        } else {
+          // Fallback to download endpoint
+          window.open(
+            `${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`,
+            '_blank'
+          );
+        }
       }
+    } catch (error) {
+      console.error('Error opening file:', error);
+      toast.error('Failed to open file');
     }
-  } catch (error) {
-    console.error('Error opening file:', error);
-    toast.error('Failed to open file');
-  }
-};
+  };
 
   // Check designer status and permissions
   const canEdit = singleOrder.designerStatus === "Pending" || singleOrder.designerStatus === "Rework"
@@ -215,9 +224,9 @@ const DesignerViewTask = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-        {/* </Box> */}
-        {/* Row 2: Order Number, Quantity */}
-        {/* <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}> */}
+          {/* </Box> */}
+          {/* Row 2: Order Number, Quantity */}
+          {/* <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}> */}
           <ThemeInput
             labelName="Order Number"
             value={formData.orderNumber}
@@ -265,6 +274,7 @@ const DesignerViewTask = () => {
           />
         </Box>
         {/* Row 4: Color, PType */}
+        {/* Row 4: Color, PType, and conditional Color1/Color2 */}
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <ThemeInput
             labelName="Color"
@@ -273,6 +283,28 @@ const DesignerViewTask = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
+
+
+          {/* Conditional Color1 field */}
+          {(formData.color === "1" || formData.color === "2") && (
+            <ThemeInput
+              labelName="Color 1 Type"
+              value={formData.color1}
+              onChange={(e) => handleInputChange("color1", e.target.value)}
+              sx={{ flex: 1 }}
+              InputProps={{ readOnly: true }}
+            />
+          )}
+
+          {formData.color === "2" && (
+            <ThemeInput
+              labelName="Color 2 Type"
+              value={formData.color2}
+              onChange={(e) => handleInputChange("color2", e.target.value)}
+              sx={{ flex: 1 }}
+              InputProps={{ readOnly: true }}
+            />
+          )}
           <ThemeInput
             labelName="PType"
             value={formData.pType}
@@ -296,65 +328,65 @@ const DesignerViewTask = () => {
       </Paper>
       {/* Original Files - Show each file with its remark */}
       {singleOrder.filePaths && singleOrder.filePaths.length > 0 && (
-  <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-    <Typography variant="h6" fontWeight={600} mb={2} color="#1976D2">
-      Original Files ({singleOrder.filePaths.length})
-    </Typography>
-    <Stack spacing={2} mb={2}>
-      {singleOrder.filePaths.map((file: any, index: number) => (
-        <Box key={index} display="flex" gap={2} alignItems="flex-end" flexWrap="wrap">
+        <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+          <Typography variant="h6" fontWeight={600} mb={2} color="#1976D2">
+            Original Files ({singleOrder.filePaths.length})
+          </Typography>
+          <Stack spacing={2} mb={2}>
+            {singleOrder.filePaths.map((file: any, index: number) => (
+              <Box key={index} display="flex" gap={2} alignItems="flex-end" flexWrap="wrap">
+                <Button
+                  variant="outlined"
+                  startIcon={<MdRemoveRedEye />}
+                  onClick={() => handleViewFile(file)} // Use the reusable function
+                  sx={{
+                    minWidth: 160,
+                    height: 45,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    backgroundColor: "#fff",
+                    borderColor: "#ccc",
+                    color: "#333",
+                  }}
+                >
+                  {file.path?.split("/").pop() || `File ${index + 1}`}
+                </Button>
+                <Box flex={1} width="100%">
+                  <Typography fontSize={14} fontWeight={500} mb={0.5}>
+                    File Remarks
+                  </Typography>
+                  <TextField
+                    placeholder="Remarks…."
+                    fullWidth
+                    size="small"
+                    variant="outlined"
+                    value={file.remark || ""}
+                    InputProps={{ style: { backgroundColor: "#fff" }, readOnly: true }}
+                  />
+                </Box>
+              </Box>
+            ))}
+          </Stack>
           <Button
             variant="outlined"
-            startIcon={<MdRemoveRedEye />}
-            onClick={() => handleViewFile(file)} // Use the reusable function
+            fullWidth
+            onClick={handleViewFiles}
             sx={{
-              minWidth: 160,
-              height: 45,
-              textTransform: "none",
+              color: "#344054",
+              borderColor: "#D0D5DD",
               fontWeight: 600,
-              backgroundColor: "#fff",
-              borderColor: "#ccc",
-              color: "#333",
+              textTransform: "none",
+              fontSize: 16,
+              py: 1.2,
+              background: "#fff",
+              "&:hover": { background: "#f6fef9", borderColor: "#D0D5DD" },
             }}
+            startIcon={<AiOutlineEye />}
           >
-            {file.path?.split("/").pop() || `File ${index + 1}`}
+            View All Original Files ({singleOrder.filePaths.length})
           </Button>
-          <Box flex={1} width="100%">
-            <Typography fontSize={14} fontWeight={500} mb={0.5}>
-              File Remarks
-            </Typography>
-            <TextField
-              placeholder="Remarks…."
-              fullWidth
-              size="small"
-              variant="outlined"
-              value={file.remark || ""}
-              InputProps={{ style: { backgroundColor: "#fff" }, readOnly: true }}
-            />
-          </Box>
-        </Box>
-      ))}
-    </Stack>
-    <Button
-      variant="outlined"
-      fullWidth
-      onClick={handleViewFiles}
-      sx={{
-        color: "#344054",
-        borderColor: "#D0D5DD",
-        fontWeight: 600,
-        textTransform: "none",
-        fontSize: 16,
-        py: 1.2,
-        background: "#fff",
-        "&:hover": { background: "#f6fef9", borderColor: "#D0D5DD" },
-      }}
-      startIcon={<AiOutlineEye />}
-    >
-      View All Original Files ({singleOrder.filePaths.length})
-    </Button>
-  </Paper>
-)}
+        </Paper>
+      )}
       {/* Design Files Section - Show when In Progress, Done, or Approved */}
       {(isInProgress || isDone || isApproved) && hasDesignFiles && (
         <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
@@ -460,7 +492,7 @@ const DesignerViewTask = () => {
               </Typography>
             </Box>
           )}
-           {/* File Upload for Design Files */}
+          {/* File Upload for Design Files */}
           <Box mb={3}>
             <Typography fontWeight={500} mb={1}>
               Upload Design Files
@@ -471,7 +503,7 @@ const DesignerViewTask = () => {
               multiple={true}
               accept="*/*"
               variant="dropzone"
-              onFilesSelected={() => {}}
+              onFilesSelected={() => { }}
               onUploadError={(error) => toast.error(error)}
               showPreview={true}
               showUploadButton={false}
@@ -492,7 +524,7 @@ const DesignerViewTask = () => {
               sx={{ width: "100%" }}
             />
           </Box>
-         
+
           {/* Submit Button */}
           <ThemeButton
             sx={{

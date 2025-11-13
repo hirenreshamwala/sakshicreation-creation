@@ -89,6 +89,8 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     const { user } = useAppSelector((state) => state.auth);
     const { companies } = useAppSelector((state) => state.company);
     const { staffList } = useAppSelector((state) => state.staff);
+    console.log("DEBUG : ComplainDialogue : staffList:", staffList);
+
     const { orders } = useAppSelector((state) => state.orders);
     const { orders: qporders } = useAppSelector((state) => state.qpOrders);
 
@@ -101,6 +103,11 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
 
     const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
     const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
+
+    const isAdminOrManager =
+        user?.role?.roleName?.includes("Admin") ||
+        user?.role?.roleName?.includes("Manager");
+
 
     useEffect(() => {
         if (selectedOrderData && open) {
@@ -131,16 +138,16 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
         validationSchema: (values) => getValidationSchema(!!editData, values?.status),
         onSubmit: async (values) => {
             setFileLoading(true);
-            
+
             try {
                 let newFilePaths: string[] = [];
-                
+
                 // File upload logic
                 if (fileUploadRef.current && typeof fileUploadRef.current.getSelectedFiles === "function") {
                     const selectedFiles = fileUploadRef.current.getSelectedFiles() || [];
                     if (selectedFiles.length > 0) {
                         const uploadedFileResults = await fileUploadRef.current.uploadSelectedFiles();
-                        newFilePaths = uploadedFileResults.map((file: any) => 
+                        newFilePaths = uploadedFileResults.map((file: any) =>
                             file.path || `/${file.folder}/${file.filename}`
                         );
                         setUploadedFiles((prev) => [...prev, ...newFilePaths]);
@@ -181,12 +188,16 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     });
 
     const filteredStaffIds = staffList
-        ?.filter((staff: any) => {
-            const isAdminOrManager = staff.role?.roleName === "Admin" || staff.role?.roleName === "Manager";
+    ?.filter((staff: any) => {
+            console.log("DEBUG : ComplainDialogue : staff:", staff);
+            const isAdminOrManager = staff.role?.roleName.includes("Admin")  || staff.role?.roleName.includes("manager") ;
+            
             const matchesCompany = staff.CompanyName?._id === company._id;
             return isAdminOrManager && matchesCompany;
         })
         ?.map((staff: any) => staff._id) || [];
+    console.log("DEBUG : ComplainDialogue : filteredStaffIds:", filteredStaffIds);
+
 
     const handleClose = () => {
         formik.resetForm();
@@ -218,10 +229,10 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     useEffect(() => {
         if (editData && open && !initialized) {
             console.log("Edit Data:", editData);
-            
+
             // Party set करें
             const partyId = editData.party?._id || editData.party;
-            
+
             // Order set करें
             let orderId = "";
             if (company.companyName === "Sakshi Creation") {
@@ -265,7 +276,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     const orderOptions = (company.companyName === StaticCompanyOptions[0] ? orders : qporders)
         ?.filter((order: any) => {
             if (!formik.values.party) return false;
-            
+
             const orderPartyId = order.party?._id || order.party;
             return orderPartyId === formik.values.party;
         })
@@ -282,7 +293,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
                 const partyName = order.party.partyName || "Unknown Party";
                 const marketName = order.party.address?.marketName?.marketName || "";
                 const area = order.party.address?.area?.area || "";
-                
+
                 if (!unique.find(item => item.value === partyId)) {
                     unique.push({
                         value: partyId,
@@ -426,18 +437,18 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
                                 </Box>
                                 <Box sx={{ maxHeight: 100, overflow: 'auto', border: '1px solid #e0e0e0', borderRadius: 1, p: 1 }}>
                                     {uploadedFiles.map((filePath, index) => (
-                                        <Typography 
-                                            key={index} 
-                                            variant="caption" 
+                                        <Typography
+                                            key={index}
+                                            variant="caption"
                                             display="block"
-                                            sx={{ 
+                                            sx={{
                                                 fontFamily: 'monospace',
                                                 fontSize: '0.75rem',
                                                 color: '#666',
                                                 py: 0.5
                                             }}
                                         >
-                                            {filePath.split('/').pop()}
+                                            {filePath?.split('/').pop()}
                                         </Typography>
                                     ))}
                                 </Box>
@@ -445,7 +456,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
                         )}
 
                         {/* Status and Response - Show for edit mode */}
-                        {editData && (
+                        {editData && isAdminOrManager && (
                             <>
                                 <ThemeSelect
                                     label="Status"

@@ -1,6 +1,6 @@
 "use client"
 import { useRef, useState, useEffect } from "react"
-import { Box, Typography, Paper, Button, CircularProgress, Alert, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, List, ListItem, Chip, Divider, Table, TableContainer, TableHead, TableRow, TableCell, TableBody } from "@mui/material"
+import { Box, Typography, Paper, Button, CircularProgress, Alert, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, List, ListItem, Chip, Divider, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Stack } from "@mui/material"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import StepperProgress from "@/component/common_component/stepperprogress"
@@ -17,6 +17,7 @@ import { MdDownload } from "react-icons/md"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
 import Image from "next/image"
+import { color } from "framer-motion"
 
 const activeStep = 0
 
@@ -33,6 +34,8 @@ interface FormValues {
   pType: string
   customPType: string
   remarks: string
+  color1: String,
+  color2: String,
 }
 
 const ViewOrderPage = () => {
@@ -71,6 +74,8 @@ const ViewOrderPage = () => {
       pType: "",
       customPType: "",
       remarks: "",
+      color1: "",
+      color2: "",
     },
     validationSchema: Yup.object({
       size: Yup.string().required("Size is required"),
@@ -129,6 +134,8 @@ const ViewOrderPage = () => {
           color: values.color,
           pType: values.pType === "Other" ? values.customPType : values.pType,
           remarks: values.remarks,
+          color1: values.color1,
+          color2: values.color2,
           filePaths: [
             ...(Array.isArray(singleOrder?.filePaths)
               ? singleOrder.filePaths.map(f => typeof f === 'string' ? f : f.path)
@@ -316,6 +323,8 @@ const ViewOrderPage = () => {
           pType,
           customPType,
           remarks: typeof singleOrder.remarks === "string" ? singleOrder.remarks : "",
+          color1: typeof singleOrder.color1 === "string" ? singleOrder.color1 : "",
+          color2: typeof singleOrder.color2 === "string" ? singleOrder.color2 : "",
         })
       } catch (error) {
         console.error("Error setting form values:", error)
@@ -495,6 +504,42 @@ const ViewOrderPage = () => {
                 </Typography>
               )}
             </FormControl>
+            {formik.values.color === "1" && (
+              <Box sx={{ width: "100%" }}>
+                <ThemeInput
+                  labelName="Color 1 Type"
+                  placeholder="Enter color 1 type"
+                  fullWidth
+                  name="color1"
+                  value={formik.values.color1}
+                  onChange={formik.handleChange}
+                  sx={{ mb: 2 }}
+                />
+              </Box>
+            )}
+
+            {formik.values.color === "2" && (
+              <Box sx={{ width: "100%" }}>
+                <Stack direction="row" spacing={2} mb={2}>
+                  <ThemeInput
+                    labelName="Color 1 Type"
+                    placeholder="Enter color 1 type"
+                    fullWidth
+                    name="color1"
+                    value={formik.values.color1}
+                    onChange={formik.handleChange}
+                  />
+                  <ThemeInput
+                    labelName="Color 2 Type"
+                    placeholder="Enter color 2 type"
+                    fullWidth
+                    name="color2"
+                    value={formik.values.color2}
+                    onChange={formik.handleChange}
+                  />
+                </Stack>
+              </Box>
+            )}
             <FormControl sx={{ flex: 1, minWidth: 120 }} error={formik.touched.pType && Boolean(formik.errors.pType)}>
               <InputLabel id="pType-label">PrinterType</InputLabel>
               <Select

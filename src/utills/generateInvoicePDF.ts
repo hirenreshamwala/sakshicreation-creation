@@ -143,7 +143,7 @@
 
     const splitAddressIntoLines = (address: string, maxLength: number = 40): string[] => {
       if (!address) return [];
-      const words = address.split(" ");
+      const words = address?.split(" ");
       const lines: string[] = [];
       let currentLine = "";
 
@@ -441,7 +441,7 @@
     const maxTotalLines = Math.floor(availableHeight / lineHeightTerms);
 
     for (const term of termsList) {
-      const wrappedTerm = doc.splitTextToSize(term, termsInnerWidth);
+      const wrappedTerm = doc?.splitTextToSize(term, termsInnerWidth);
       const linesForThisTerm = wrappedTerm.length;
 
       if (totalLinesUsed + linesForThisTerm > maxTotalLines) {
@@ -491,6 +491,6 @@
     // Save PDF
     const invoiceType = formData.quotation ? "Quotation" : "Proforma_Invoice";
     doc.save(
-      `${invoiceType}_${formData.orderNumber || "N_A"}_${new Date().toISOString().split("T")[0]}.pdf`
+      `${invoiceType}_${formData.orderNumber || "N_A"}_${new Date().toISOString()?.split("T")[0]}.pdf`
     );
   };

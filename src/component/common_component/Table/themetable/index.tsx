@@ -238,7 +238,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
         // For driver email, show only the part before @ in filter dropdown
         const email = row[key] as string;
         if (!email || email === "Not Started Delivery") return "Not Started Delivery";
-        return email.split("@")[0];
+        return email?.split("@")[0];
       }
       if (key === "orderid") {
         return String(row[key] || "N/A");
@@ -312,7 +312,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
             if (!email || email === "Not Started Delivery") {
               value = "Not Started Delivery";
             } else {
-              value = email.split("@")[0];
+              value = email?.split("@")[0];
             }
           } else if (key === "orderid") {
             value = String(row[key] || "N/A");
