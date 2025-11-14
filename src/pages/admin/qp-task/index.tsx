@@ -76,10 +76,12 @@ const OrdersList: React.FC = () => {
         tableHeader={columns}
         rowData={filteredOrders}
         renderRow={(row: Order, index: number) => {
+          console.log("DEBUG : OrdersList : row:", row);
+
           return <>
             <TableCell>QP-{row.orderNo}</TableCell>
             <TableCell>{row.companyName.companyName}</TableCell>
-            <TableCell>{row.party.partyName}</TableCell>
+            <TableCell>{row.party?.partyName}</TableCell>
             <TableCell>{row.orderdata?.length} x {row.orderdata?.width} x {row.orderdata?.height}</TableCell>
             <TableCell>{row.orderdata?.ply}</TableCell>
             <TableCell>{row.orderdata?.deckal}</TableCell>
