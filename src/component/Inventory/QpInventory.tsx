@@ -28,13 +28,12 @@ const wardTabs: TabItem[] = [
 ];
 
 const MaterialCategory = {
-    KANTAN: "kantan",
     BOX: "box",
+    KANTAN: "kantan",
+    PAPER: "paper",
     WIRE: "wire",
     GLUE: "glue",
-    PAPER: "paper",
 }
-
 
 const QpInventoryPage = () => {
     const dispatch = useAppDispatch();
@@ -48,8 +47,8 @@ const QpInventoryPage = () => {
     const [allSubData, setAllSubData] = useState<any>([])
     const [detailOpen, setDetailOpen] = useState<any>(null)
     const [activeWardTab, setActiveWardTab] = useState<WardTab>(WardTab.INWARD);
-    const [activeMainTab, setActiveMainTab] = useState<InventoryCategory>(InventoryCategory.GODOWN);
-    const [activeMaterialTab, setActiveMaterialTab] = useState(MaterialCategory.PAPER);
+    const [activeMainTab, setActiveMainTab] = useState<InventoryCategory>(InventoryCategory.FACTORY);
+    const [activeMaterialTab, setActiveMaterialTab] = useState(MaterialCategory.BOX);
 
     const handleRowClick = (data: any) => detailOpen !== null ? null : setDetailOpen(data)
 
@@ -67,16 +66,23 @@ const QpInventoryPage = () => {
         dispatch(getAllInventoryThunk());
     }, []);
 
-    const handleMainTabChange = (_: React.SyntheticEvent, newValue: string | number) => setActiveMainTab(newValue as InventoryCategory);
+    const handleMainTabChange = (_: React.SyntheticEvent, newValue: string | number) => {
+        setActiveMainTab(newValue as InventoryCategory);
+        if (newValue.toLowerCase() === 'godown') setActiveMaterialTab("box")
+    }
 
     const handleWardTabChange = (_: React.SyntheticEvent, newValue: string | number) => setActiveWardTab(newValue as WardTab);
 
     const materialTabs: TabItem[] = [
-        { label: "Kantan", value: MaterialCategory.KANTAN },
         { label: "Box", value: MaterialCategory.BOX },
+        ...(activeMainTab.toLowerCase() !== "godown"
+            ? [
+                { label: "Paper", value: MaterialCategory.PAPER },
+                { label: "Kantan", value: MaterialCategory.KANTAN },
+            ]
+            : []),
         // { label: "Wire", value: MaterialCategory.WIRE },
         // { label: "Glue", value: MaterialCategory.GLUE },
-        { label: "Paper", value: MaterialCategory.PAPER },
     ];
 
     const handleMaterialTabChange = (_: React.SyntheticEvent, newValue: string | number) => setActiveMaterialTab(newValue as any);
@@ -101,27 +107,52 @@ const QpInventoryPage = () => {
                 { id: "boxType", label: "TYPE" },
                 { id: "lwh", label: "SIZE" },
                 { id: "gsm", label: "GSM" },
-                { id: "deckal", label: "deckal" },
-                { id: "qty", label: "QUANTITY" },
+                { id: "deckal", label: "DECKAL" },
+                { id: "qty", label: "BALANCE" }, // 👈 changed QUANTITY to BALANCE
                 { id: "ply", label: "PLY" },
-                { id: "kantan", label: "kantan" },
-                detailOpen !== null && { id: "pcs", label: "pcs" },
+                { id: "kantan", label: "KANTAN" },
+                detailOpen !== null && { id: "pcs", label: "PCS" },
                 { id: "date", label: "DATE" },
             ].filter(Boolean),
-            render: (row) => (
-                <>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.boxType || "Box"}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.boxLength} x {row?.boxWidth} x {row?.boxHeight}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.paper1GSM} - {row?.paper2GSM} - {row?.paper3GSM}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.deckal ? row?.deckal : "no"}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.quantity}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.ply}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.isKantan ? "yes" : "no"}</TableCell>
-                    {detailOpen !== null ? <TableCell sx={{ cursor: 'pointer' }}>{row?.quantity}</TableCell> : null}
-                    <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
-                </>
-            ),
+            render: (row) => {
+                const type = row?.inventoryType?.toLowerCase();
+                const category = row?.category;
+
+                let keys: string[] = [];
+                if (type === "box") keys = boxKeys;
+                else if (type === "paper") keys = paperKeys;
+
+                // ✅ Filter all inventory matching this row’s key combination
+                const filteredInventory = allInventory?.filter((item: any) =>
+                    item?.inventoryType?.toLowerCase() === type &&
+                    item?.category === category &&
+                    keys?.every((key) => item[key] === row[key])
+                );
+
+                // ✅ Calculate total inward - outward
+                const balance = filteredInventory?.reduce((sum: number, item: any) => {
+                    const qty = Number(item?.quantity) || 0;
+                    return sum + (item?.type === "inward" ? qty : 0) - (item?.type === "outward" ? qty : 0);
+                }, 0);
+
+                return (
+                    <>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>{row?.boxType || "Box"}</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>{row?.boxLength} x {row?.boxWidth} x {row?.boxHeight}</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>{row?.paper1GSM} - {row?.paper2GSM} - {row?.paper3GSM}</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>{row?.deckal || "no"}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: balance > 0 ? "green" : "red" }}>{detailOpen ? row.quantity : balance ?? 0}</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>{row?.ply}</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>{row?.isKantan ? "yes" : "no"}</TableCell>
+                        {detailOpen !== null ? (
+                            <TableCell sx={{ cursor: "pointer" }}>{row?.quantity}</TableCell>
+                        ) : null}
+                        <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
+                    </>
+                );
+            },
         },
+
         wire: {
             header: [
                 { id: "type", label: "TYPE" },
@@ -259,14 +290,39 @@ const QpInventoryPage = () => {
                 </Box> : null}
             </Box>
 
-            {detailOpen !== null ? <Stack sx={{ m: 1 }}>
-                Balance - {
-                    allSubData?.reduce((sum: number, item: any) =>
-                        sum + (item?.type === 'inward' ? item?.quantity || 0 : 0) -
-                        (item?.type === 'outward' ? item?.quantity || 0 : 0), 0
-                    )
-                }
-            </Stack> : null}
+            {detailOpen !== null ? (
+                <Stack sx={{ m: 1 }}>
+                    <span>
+                        Balance: {" "}
+                        <Box
+                            component="span"
+                            sx={{
+                                fontWeight: 600,
+                                color:
+                                    allSubData?.reduce(
+                                        (sum: number, item: any) =>
+                                            sum +
+                                            (item?.type === "inward" ? item?.quantity || 0 : 0) -
+                                            (item?.type === "outward" ? item?.quantity || 0 : 0),
+                                        0
+                                    ) > 0
+                                        ? "green"
+                                        : "red",
+                            }}
+                        >
+                            {
+                                allSubData?.reduce(
+                                    (sum: number, item: any) =>
+                                        sum +
+                                        (item?.type === "inward" ? item?.quantity || 0 : 0) -
+                                        (item?.type === "outward" ? item?.quantity || 0 : 0),
+                                    0
+                                ) ?? 0
+                            }
+                        </Box>
+                    </span>
+                </Stack>
+            ) : null}
 
             {detailOpen === null ? <BasicTable
                 tableHeader={tableConfigs[activeMaterialTab].header}

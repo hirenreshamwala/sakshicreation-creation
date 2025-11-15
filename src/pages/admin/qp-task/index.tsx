@@ -6,6 +6,8 @@ import BasicTable from "@/component/common_component/Table/themetable"; // Adjus
 import { TableCell } from "@mui/material";
 import Loader from "@/component/common_component/loader";
 import { StatusCell } from "@/component/allorderdailog/StatusCell";
+import DesignerTaskExpandable from "@/component/QpTask/DesignerTaskExpandable";
+import PrinterTaskExpandable from "@/component/QpTask/PrinterTaskExpandable";
 
 interface Order {
   _id: string;
@@ -32,6 +34,7 @@ const OrdersList: React.FC = () => {
   );
 
   const [page, setPage] = useState(1);
+
   const designer = user?.role?.roleName.toLowerCase() === "designer"
   const printer = user?.role?.roleName.toLowerCase() === "printer"
   const binder = user?.role?.roleName.toLowerCase() === "lamination"
@@ -39,7 +42,7 @@ const OrdersList: React.FC = () => {
   const filteredOrders = orders.filter((order: Order) => {
     if (designer) {
       return order.designer?._id === user?.id;
-    }else if (printer) {
+    } else if (printer) {
       return order.printer?._id === user?.id;
     } else if (binder) {
       return order.binder?._id === user?.id;
@@ -65,7 +68,7 @@ const OrdersList: React.FC = () => {
     { id: "varnish", label: "Varnish" },
     { id: "lamination", label: "Lamination" },
     { id: "uv", label: "UV" },
-    { id: "status", label: "Status"},
+    { id: "status", label: "Status" },
   ];
 
   if (loading) return <Loader />
@@ -75,7 +78,13 @@ const OrdersList: React.FC = () => {
       <BasicTable
         tableHeader={columns}
         rowData={filteredOrders}
-        renderRow={(row: Order, index: number) => {
+        renderExpandedRow={(row: Order) =>
+          designer ? <DesignerTaskExpandable row={row} /> :
+            printer ? <PrinterTaskExpandable row={row} /> :
+              binder ? <PrinterTaskExpandable row={row} /> :
+                null
+        }
+        renderRow={(row: any, index: number) => {
           return <>
             <TableCell>QP-{row.orderNo}</TableCell>
             <TableCell>{row.companyName.companyName}</TableCell>
@@ -86,7 +95,7 @@ const OrdersList: React.FC = () => {
             <TableCell>{row.varnish ? "YES" : "NO"}</TableCell>
             <TableCell>{row.lamination ? row.laminationType : "NO"}</TableCell>
             <TableCell>{row.uv ? row.uvType : "NO"}</TableCell>
-            <TableCell><StatusCell row={row}/></TableCell>
+            <TableCell><StatusCell row={row} /></TableCell>
           </>;
         }}
         showDatePicker={false}
@@ -94,7 +103,7 @@ const OrdersList: React.FC = () => {
         showFillter={false}
         showExcelDownload={false}
         totalCount={totalCount}
-        onPageChange={(newPage: number) => setPage(newPage)} 
+        onPageChange={(newPage: number) => setPage(newPage)}
       />
     </div>
   );
