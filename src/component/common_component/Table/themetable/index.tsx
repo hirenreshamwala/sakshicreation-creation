@@ -54,6 +54,7 @@ interface BasicTableProps<T> {
     hasPrev: boolean;
   };
   renderExpandedRow?: (row: T) => React.ReactNode;
+  showHeaderCheckbox?: boolean;
 }
 
 // Debounce hook
@@ -97,6 +98,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
   excelData,
   onSelectAll,
   onSelectRow,
+  showHeaderCheckbox = true,
   selectedRows = [],
   totalCount = rowData.length,
   pagination = {
@@ -677,11 +679,15 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
                         }}
                       >
                         {col.id === "checkbox" ? (
-                          <Checkbox
-                            checked={selectedRows.length === rowData.length && rowData.length > 0}
-                            onChange={onSelectAll}
-                            disabled={!onSelectAll}
-                          />
+                          showHeaderCheckbox ? (
+                            <Checkbox
+                              checked={selectedRows.length === rowData.length && rowData.length > 0}
+                              onChange={onSelectAll}
+                              disabled={!onSelectAll}
+                            />
+                          ) : (
+                            <></>
+                          )
                         ) : (
                           col.label
                         )}

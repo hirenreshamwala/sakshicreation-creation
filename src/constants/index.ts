@@ -50,6 +50,13 @@ export const permissionsArray = {
     edit: false,
     delete: false,
   },
+  // payment_folders: {
+  //   view_global: false,
+  //   view_own: false,
+  //   create: false,
+  //   edit: false,
+  //   delete: false,
+  // },
   quality_packaging: {
     view_global: false,
     view_own: false,

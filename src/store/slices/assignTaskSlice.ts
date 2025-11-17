@@ -94,12 +94,33 @@ export const deleteAssignTaskThunk = createAsyncThunk(
   }
 );
 
+export const bulkDeleteAssignTasksThunk = createAsyncThunk(
+  'assignTasks/bulkDelete',
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      const response = await assignTaskService.bulkDeleteAssignTasks(ids);
+      if (response.success) {
+        return {
+          deletedIds: ids,
+          message: response.message,
+          deletedCount: response.data?.deletedCount || 0
+        };
+      } else {
+        return rejectWithValue('Invalid response format: bulk deletion failed');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to delete assigned tasks');
+    }
+  }
+);
+
 interface AssignTaskState {
   assignTasks: AssignTask[];
   singleAssignTask: AssignTask | null;
   loading: boolean;
   error: string | null;
   successMessage: string | null;
+  selectedTasks: string[];
 }
 
 const initialState: AssignTaskState = {
@@ -108,6 +129,7 @@ const initialState: AssignTaskState = {
   loading: false,
   error: null,
   successMessage: null,
+  selectedTasks: [],
 };
 
 const assignTaskSlice = createSlice({
@@ -119,6 +141,28 @@ const assignTaskSlice = createSlice({
     },
     clearSuccessMessage(state) {
       state.successMessage = null;
+    },
+    selectTask(state, action: PayloadAction<string>) {
+      if (!state.selectedTasks.includes(action.payload)) {
+        state.selectedTasks.push(action.payload);
+      }
+    },
+    deselectTask(state, action: PayloadAction<string>) {
+      state.selectedTasks = state.selectedTasks.filter(id => id !== action.payload);
+    },
+    selectAllTasks(state, action: PayloadAction<string[]>) {
+      state.selectedTasks = action.payload;
+    },
+    clearSelectedTasks(state) {
+      state.selectedTasks = [];
+    },
+    toggleTaskSelection(state, action: PayloadAction<string>) {
+      const taskId = action.payload;
+      if (state.selectedTasks.includes(taskId)) {
+        state.selectedTasks = state.selectedTasks.filter(id => id !== taskId);
+      } else {
+        state.selectedTasks.push(taskId);
+      }
     },
   },
   extraReducers: (builder) => {
@@ -203,9 +247,33 @@ const assignTaskSlice = createSlice({
       .addCase(deleteAssignTaskThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(bulkDeleteAssignTasksThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(bulkDeleteAssignTasksThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.assignTasks = state.assignTasks.filter((task) =>
+          !action.payload.deletedIds.includes(task._id)
+        );
+        state.selectedTasks = [];
+        state.successMessage = action.payload.message;
+      })
+      .addCase(bulkDeleteAssignTasksThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
 
-export const { clearError, clearSuccessMessage } = assignTaskSlice.actions;
+export const {
+  clearError,
+  clearSuccessMessage,
+  selectTask,
+  deselectTask,
+  selectAllTasks,
+  clearSelectedTasks,
+  toggleTaskSelection
+} = assignTaskSlice.actions;
 export default assignTaskSlice.reducer;

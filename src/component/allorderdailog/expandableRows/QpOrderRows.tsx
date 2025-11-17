@@ -16,6 +16,7 @@ import PaperAssign from "./PaperAssign";
 import QpOrderStep1 from "./QpOrderStep1";
 import StackSelection from "./StackSelection";
 import DriverSelection from "./DriverSelection";
+import { fileUploadService } from "@/services/fileUpload.service";
 
 export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormProps) => {
     const dispatch = useAppDispatch();
@@ -25,9 +26,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const [remarkModalOpen, setRemarkModalOpen] = useState(false);
     const [viewRemarksOpen, setViewRemarksOpen] = useState(false);
     const [isInitialUnitSet, setIsInitialUnitSet] = useState(false);
-    const [selectedBinder, setSelectedBinder] = useState(row.binder?._id || null);
-    const [selectedPrinter, setSelectedPrinter] = useState(row.printer?._id || null);
-    const [selectedDesigner, setSelectedDesigner] = useState(row.designer?._id || null);
+    // const [selectedBinder, setSelectedBinder] = useState(row.binder?._id || null);
+    // const [selectedPrinter, setSelectedPrinter] = useState(row.printer?._id || null);
+    // const [selectedDesigner, setSelectedDesigner] = useState(row.designer?._id || null);
     const { allInventory } = useAppSelector(state => state.inventory);
     const [isCompleted, setIsCompleted] = useState(row.status === "Completed");
     const [isPaperSelectionRequired, setIsPaperSelectionRequired] = useState(false);
@@ -156,9 +157,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setIsInitialUnitSet(!!row.unitNo);
         setIsCompleted(row.status === "Completed");
 
-        setSelectedBinder(row.binder?._id || null);
-        setSelectedPrinter(row.printer?._id || null);
-        setSelectedDesigner(row.designer?._id || null);
+        // setSelectedBinder(row.binder?._id || null);
+        // setSelectedPrinter(row.printer?._id || null);
+        // setSelectedDesigner(row.designer?._id || null);
     }, [row, extractInventoryIds]);
 
     useEffect(() => {
@@ -581,38 +582,66 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate punching process requirements
-        if (formData.isPunching && (!formData.dyeNumber || !formData.dyeSize)) {
-            toast.error("Dye Number and Dye Sheet Size are required when Punching process is selected");
-            return;
-        }
-
-        const currentDate = moment().startOf('day');
-        const selectedDeliveryDate = moment(formData.deliveryDate);
-        if (selectedDeliveryDate.isBefore(currentDate)) {
-            toast.error("Delivery date cannot be before the current date");
-            return;
-        }
-        if (!formData._id) {
-            toast.error("Cannot submit: Invalid order ID");
-            return;
-        }
-
-        if (formData.status === "In Progress" && row.status === "Pending" && row.step > 0) {
-            if (isPaperSelectionRequired && !arePaperSelectionsValid()) {
-                toast.error("Please select valid papers from inventory before submitting");
-                return;
-            }
-        }
-
-        if (formData.status === "Completed") {
-            if (!formData.actualNoOfPieces || parseInt(formData.actualNoOfPieces) === 0) {
-                toast.error("You need to fill the actual number of pieces before marking as completed");
-                return;
-            }
-        }
-
         try {
+            // ✅ 1. Basic validations
+            if (formData.isPunching && (!formData.dyeNumber || !formData.dyeSize)) {
+                toast.error("Dye Number and Dye Sheet Size are required when Punching process is selected");
+                return;
+            }
+
+            const currentDate = moment().startOf("day");
+            const selectedDeliveryDate = moment(formData.deliveryDate);
+            if (selectedDeliveryDate.isBefore(currentDate)) {
+                toast.error("Delivery date cannot be before the current date");
+                return;
+            }
+
+            if (!formData._id) {
+                toast.error("Cannot submit: Invalid order ID");
+                return;
+            }
+
+            if (formData.status === "In Progress" && row.status === "Pending" && row.step > 0) {
+                if (isPaperSelectionRequired && !arePaperSelectionsValid()) {
+                    toast.error("Please select valid papers from inventory before submitting");
+                    return;
+                }
+            }
+
+            if (formData.status === "Completed") {
+                if (!formData.actualNoOfPieces || parseInt(formData.actualNoOfPieces) === 0) {
+                    toast.error("You need to fill the actual number of pieces before marking as completed");
+                    return;
+                }
+            }
+
+            // ✅ 2. Designer file validation and upload
+            let uploadedDesignerFiles = [];
+
+            if (formData.designer) {
+                if (!formData.designerFiles.length && !(formData.designerFiles && formData.designerFiles.length)) {
+                    toast.error("Please upload at least one designer file since a designer is selected.");
+                    return;
+                }
+
+                // Separate new files (File objects) from already uploaded file URLs
+                const newFiles = formData.designerFiles.filter((f: any) => f instanceof File);
+                const existingFiles = (formData.designerFiles || []).filter((f: any) => typeof f === "string");
+
+                if (newFiles.length > 0) {
+                    toast.info("Uploading designer files...");
+                    const uploadRes = await fileUploadService.uploadMultipleFiles(newFiles, "designer");
+                    if (!uploadRes.success) {
+                        toast.error(uploadRes.message || "Failed to upload designer files");
+                        return;
+                    }
+                    uploadedDesignerFiles = uploadRes.data.map((file) => file.url);
+                }
+
+                formData.designerFiles = [...existingFiles, ...uploadedDesignerFiles];
+            }
+
+            // ✅ 3. Kantan and Paper calculations
             const { kantanPerUnit, reel, inch } = calculateKantan(
                 parseFloat(row.orderdata.length),
                 parseFloat(row.orderdata.width),
@@ -631,21 +660,18 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 parseFloat(formData.actualNoOfPieces || row.noOfPieces)
             );
 
-            // Calculate paper allocations for each paper type
             const paper1Allocations = calculatePaperAllocations("paper1", paperRequirements?.paper1);
             const paper2Allocations = calculatePaperAllocations("paper2", paperRequirements?.paper2);
             const paper3Allocations = calculatePaperAllocations("paper3", paperRequirements?.paper3);
 
-            // Prepare paper selections for API using the calculated allocations
             const selectedPapersForApi = {
                 paper1: paper1Allocations,
                 paper2: paper2Allocations,
-                paper3: paper3Allocations
+                paper3: paper3Allocations,
             };
 
             const newActuals1: any = { paper1: [], paper2: [], paper3: [] };
-
-            (["paper1", "paper2", "paper3"] as const).forEach(pt => {
+            (["paper1", "paper2", "paper3"] as const).forEach((pt) => {
                 paperSelections[pt].forEach((paperId: any) => {
                     const allocation: any = allAllocations[pt]?.allocations?.find((a: any) => a.paperId === paperId);
                     if (allocation) {
@@ -657,9 +683,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             const updateData = {
                 ...formData,
                 kantan: formData?.kantan?._id || undefined,
-                designer: selectedDesigner,
-                printer: selectedPrinter,
-                binder: selectedBinder,
                 selectedPapers: row.selectedPapers.paper1.length ? row.selectedPapers : newActuals1,
                 paperUsageSummary,
                 actualTotalKantan: {
@@ -686,19 +709,19 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 actualTotalKg: totalKgss?.toFixed(2).toString(),
             };
 
-            const rowPapers = row.selectedPapers
-            const updatePapers = updateData.selectedPapers
+            const rowPapers = row.selectedPapers;
+            const updatePapers = updateData.selectedPapers;
 
-            if (rowPapers.paper1.length === 0 &&
+            if (
+                rowPapers.paper1.length === 0 &&
                 rowPapers.paper2.length === 0 &&
                 rowPapers.paper3.length === 0 &&
                 updatePapers.paper1.length > 0 &&
                 updatePapers.paper2.length > 0 &&
                 updatePapers.paper3.length > 0 &&
-                selectedDesigner
+                formData.designer
             )
-                updateData.status = 'Designer';
-
+                updateData.status = "Designer";
             else if (
                 rowPapers.paper1.length === 0 &&
                 rowPapers.paper2.length === 0 &&
@@ -706,23 +729,28 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 updatePapers.paper1.length > 0 &&
                 updatePapers.paper2.length > 0 &&
                 updatePapers.paper3.length > 0 &&
-                !selectedDesigner
+                !formData.designer
             )
-                updateData.status = 'Paper cutting';
+                updateData.status = "Paper cutting";
 
-            await dispatch(updateQPOrderThunk({ id: formData._id, data: { ...updateData, step: row.step === 0 ? row.step + 1 : row.step } })).unwrap();
+            // ✅ 4. Dispatch update
+            await dispatch(
+                updateQPOrderThunk({
+                    id: formData._id,
+                    data: { ...updateData, step: row.step === 0 ? row.step + 1 : row.step },
+                })
+            ).unwrap();
 
             dispatch(getAllInventoryThunk());
-
             setInitialFormData({ ...formData, selectedPapers: selectedPapersForApi });
             if (formData.status === "Completed") setIsCompleted(true);
-
             toast.success("Order updated successfully");
         } catch (err: any) {
             console.error("ExpandedRowForm: Update failed:", err);
             toast.error(err?.message || "Failed to update order");
         }
-    }
+    };
+
 
     const handleCancel = useCallback(() => {
         setFormData(initialFormData);
@@ -731,9 +759,9 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         const initialSelections: any = extractInventoryIds(initialFormData.selectedPapers);
         setPaperSelections(initialSelections);
         // ✅ CORRECTED: Reset staff selections
-        setSelectedBinder(initialFormData.binder);
-        setSelectedPrinter(initialFormData.printer);
-        setSelectedDesigner(initialFormData.designer);
+        // setSelectedBinder(initialFormData.binder);
+        // setSelectedPrinter(initialFormData.printer);
+        // setSelectedDesigner(initialFormData.designer);
         toast.info("Changes cancelled");
     }, [initialFormData, extractInventoryIds]);
 
@@ -806,19 +834,20 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         />
 
                         <PaperSelection
-                            setSelectedPrinter={setSelectedPrinter}
-                            setSelectedBinder={setSelectedBinder}
-                            setSelectedDesigner={setSelectedDesigner}
+                            // setSelectedPrinter={setSelectedPrinter}
+                            // setSelectedBinder={setSelectedBinder}
+                            // setSelectedDesigner={setSelectedDesigner}
                             isCompleted={isCompleted}
-                            selectedPrinter={selectedPrinter}
+                            // selectedPrinter={selectedPrinter}
                             printers={printers}
                             staffLoading={staffLoading}
-                            selectedBinder={selectedBinder}
-                            selectedDesigner={selectedDesigner}
+                            // selectedBinder={selectedBinder}
+                            // selectedDesigner={selectedDesigner}
                             binders={binders}
                             designers={designers}
                             data={row}
                             formData={formData}
+                            setFormData={setFormData}
                             handleFormChange={handleFormChange}
                         />
                     </> : null}
