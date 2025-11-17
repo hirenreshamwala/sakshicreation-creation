@@ -10,15 +10,22 @@ import {
   InputBase,
   Tooltip,
   TableRow,
+  Checkbox,
 } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   getAllAssignTasksThunk,
   getAssignTaskByStaffIdThunk,
   deleteAssignTaskThunk,
+  bulkDeleteAssignTasksThunk,
   clearError,
   clearSuccessMessage,
-  } from "@/store/slices/assignTaskSlice";
+  selectTask,
+  deselectTask,
+  selectAllTasks,
+  clearSelectedTasks,
+  toggleTaskSelection,
+} from "@/store/slices/assignTaskSlice";
 import FilterDropdown from "@/component/fillter";
 import BasicTable from "@/component/common_component/Table/themetable";
 import ThemeButton from "@/component/common_component/themebutton";
@@ -62,21 +69,7 @@ interface RowData {
   highlightYellow?: boolean;
 }
 
-const columns = [
-  { id: "company", label: "Company" },
-  { id: "date", label: "Created Date" },
-  { id: "party", label: "Party" },
-  { id: "address", label: "Unit No" },
-  { id: "market", label: "Market Name" },
-  { id: "area", label: "Area" },
-  { id: "mobile", label: "Mobile No." },
-  { id: "reason", label: "Reason to Visit" },
-  { id: "assignBy", label: "Assign By" },
-  { id: "assignTo", label: "Assign To" },
-  { id: "remarks", label: "Remarks" },
-  { id: "status", label: "Status" },
-  { id: "action", label: "Action" },
-];
+
 
 const tabLabels = ["Pending", "History"];
 
@@ -88,6 +81,7 @@ const AssignTaskPage: React.FC = () => {
     loading = false,
     error = null,
     successMessage = null,
+    selectedTasks = [],
   } = useAppSelector((state) => state.assignTasks || {});
   const { user } = useAppSelector((state) => state.auth);
   const [open, setOpen] = useState(false);
@@ -113,7 +107,82 @@ const AssignTaskPage: React.FC = () => {
   const canedit = user?.role?.permissions?.assign_task?.edit;
   const candelete = user?.role?.permissions?.assign_task?.delete;
 
+  const selectedTasksCount = selectedTasks.length;
+
+  const columns = useMemo(() => {
+    const baseColumns = [
+      ...(candelete ? [{ id: "checkbox", label: "" }] : []),
+      { id: "company", label: "Company" },
+      { id: "date", label: "Created Date" },
+      { id: "party", label: "Party" },
+      { id: "address", label: "Unit No" },
+      { id: "market", label: "Market Name" },
+      { id: "area", label: "Area" },
+      { id: "mobile", label: "Mobile No." },
+      { id: "reason", label: "Reason to Visit" },
+      { id: "assignBy", label: "Assign By" },
+      { id: "assignTo", label: "Assign To" },
+      { id: "remarks", label: "Remarks" },
+      { id: "status", label: "Status" },
+    ];
+
+    if (canedit || candelete) {
+      baseColumns.push({ id: "action", label: "Action" });
+    }
+
+    return baseColumns;
+  }, [canedit, candelete]);
+
   console.log(assignTasks, 'assignTasks')
+
+  const handleSelectTask = (taskId: string) => {
+    dispatch(toggleTaskSelection(taskId));
+  };
+
+  const handleSelectAllTasks = () => {
+    const currentTaskIds = filteredTasks.map(task => task._id);
+    if (selectedTasks.length === currentTaskIds.length) {
+      // If all are selected, deselect all
+      dispatch(clearSelectedTasks());
+    } else {
+      // Select all current tasks
+      dispatch(selectAllTasks(currentTaskIds));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTasks.length === 0) return;
+
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `You are about to delete ${selectedTasks.length} task(s). This action cannot be undone!`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#7F56D9",
+      cancelButtonColor: "#d33",
+      confirmButtonText: `Yes, delete ${selectedTasks.length} task(s)!`,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await dispatch(bulkDeleteAssignTasksThunk(selectedTasks)).unwrap();
+        Swal.fire({
+          title: "Deleted!",
+          text: `${selectedTasks.length} task(s) deleted successfully`,
+          icon: "success",
+          confirmButtonColor: "#7F56D9",
+        });
+      } catch (err: any) {
+        Swal.fire({
+          title: "Error!",
+          text: err.message || "Failed to delete tasks",
+          icon: "error",
+          confirmButtonColor: "#7F56D9",
+        });
+      }
+    }
+  };
+
 
   // Determine company permissions
   const hasSakshi = !!getCompanyWisePermission(5);
@@ -470,6 +539,8 @@ const AssignTaskPage: React.FC = () => {
   };
 
   const renderRow = (row: RowData) => {
+    const isSelected = selectedTasks.includes(row.id);
+
     const getCellSx = (baseSx?: any) => ({
       ... (row.highlightYellow ? { backgroundColor: '#fff3cd' } : {}),
       ...baseSx
@@ -477,6 +548,15 @@ const AssignTaskPage: React.FC = () => {
 
     return (
       <>
+        {/* {candelete && (
+          <TableCell sx={getCellSx()}>
+            <Checkbox
+              checked={isSelected}
+              onChange={() => handleSelectTask(row.id)}
+              color="primary"
+            />
+          </TableCell>
+        )} */}
         <TableCell sx={getCellSx()}>
           <Box display="flex" alignItems="center" gap={1}>
             <Avatar
@@ -681,6 +761,18 @@ const AssignTaskPage: React.FC = () => {
               + Assign New Task
             </ThemeButton>
           )}
+          {candelete && (
+            <ThemeButton
+              onClick={handleBulkDelete}
+              disabled={selectedTasksCount === 0}
+              sx={{
+                opacity: selectedTasksCount === 0 ? 0.6 : 1,
+                cursor: selectedTasksCount === 0 ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Delete Selected ({selectedTasksCount})
+            </ThemeButton>
+          )}
         </Box>
       </Box>
 
@@ -728,17 +820,20 @@ const AssignTaskPage: React.FC = () => {
                 border: isToday(date) ? "1px solid #D1FADF" : "none",
               }}
             >
-              <Typography variant="subtitle1" fontWeight={600}>
-                Task - <span style={{ color: "red" }}>{date}</span>
-                {isToday(date) && (
-                  <ThemeChip
-                    label="Today"
-                    color="success"
-                    size="small"
-                    sx={{ ml: 1, background: "#3a43beff" }}
-                  />
-                )}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Task - <span style={{ color: "red" }}>{date}</span>
+                  {isToday(date) && (
+                    <ThemeChip
+                      label="Today"
+                      color="success"
+                      size="small"
+                      sx={{ ml: 1, background: "#3a43beff" }}
+                    />
+                  )}
+                </Typography>
+
+              </Box>
               <BasicTable
                 tableHeader={columns}
                 rowData={mapTasksToRows(filteredGroupedTasks[date])}
@@ -746,6 +841,10 @@ const AssignTaskPage: React.FC = () => {
                 showSearch={false}
                 showFillter={false}
                 renderRow={renderRow}
+                onSelectAll={handleSelectAllTasks}
+                onSelectRow={handleSelectTask}
+                selectedRows={selectedTasks}
+                showHeaderCheckbox={false}
               />
             </Box>
           ))

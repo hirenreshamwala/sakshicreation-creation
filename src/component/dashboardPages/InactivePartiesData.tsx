@@ -170,7 +170,7 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
 
                             return `${totalAmount.toFixed(2)}`;
                         })()
-                        : "New party"
+                        : "NA"
                     }
                 </TableCell>
             </>);

@@ -25,6 +25,7 @@ const Endpoint = {
   CREATE_ASSIGN_TASK: `${BaseURL}/api/assign-task/create`,
   UPDATE_ASSIGN_TASK: `${BaseURL}/api/assign-task/update`,
   DELETE_ASSIGN_TASK: `${BaseURL}/api/assign-task/delete`,
+  BULK_DELETE_ASSIGN_TASKS: `${BaseURL}/api/assign-task/bulkdelete`,
   GET_ALL_LEADS: `${BaseURL}/api/lead/getall`,
   GET_LEAD_BY_ID: `${BaseURL}/api/lead/getbyid`,
   GET_LEAD_BY_STAFF_ID: `${BaseURL}/api/lead/getbystaffid`,
@@ -226,5 +227,12 @@ const Endpoint = {
   DELETE_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/delete`,
   REMOVE_LOADING_SALE_QP_ORDER: `${BaseURL}/api/saleqporder/remove-loading`,
   GET_DESIGNER_SALE_QP_ORDERS: `${BaseURL}/api/saleqporder/designer`,
+
+  CREATE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/create`,
+  GET_ALL_PAYMENT_FOLDERS: `${BaseURL}/api/payment-folders/getall`,
+  GET_PAYMENT_FOLDER_BY_ID: `${BaseURL}/api/payment-folders/getbyid`,
+  UPDATE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/update`,
+  DELETE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/delete`,
+
 };
 export default Endpoint;

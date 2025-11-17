@@ -46,14 +46,14 @@ const CustomerData: React.FC<Props> = ({ activeTab, startDate, endDate, staffFil
         data: data.map((row) => Number(row.newparty) || 0),
         backgroundColor: '#3b82f6', // Blue
         borderColor: '#ffffff',
-        borderWidth: 16,
+        // borderWidth: 16,
       },
       {
         label: 'New To Customer',
         data: data.map((row) => Number(row.customerparty) || 0),
         backgroundColor: '#22c55e', // Green
         borderColor: '#ffffff',
-        borderWidth: 16,
+        // borderWidth: 16,
       },
     ],
   };

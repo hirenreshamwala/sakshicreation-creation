@@ -169,5 +169,21 @@ export const assignTaskService = {
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to delete assigned task');
     }
+  },
+
+  async bulkDeleteAssignTasks(ids: string[]): Promise<ApiResponse<{ deletedCount: number }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ deletedCount: number }>> = await Request.post(
+        `${Endpoint.BULK_DELETE_ASSIGN_TASKS}`,
+        { ids }
+      );
+      return {
+        success: response.data.success,
+        message: response.data.message,
+        data: response.data.data,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to delete assigned tasks');
+    }
   }
 };
