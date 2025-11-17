@@ -9,7 +9,6 @@ import {
   Stack,
   Collapse,
   IconButton,
-  TextField,
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -18,8 +17,10 @@ import {
   Chip,
   FormControlLabel,
   Checkbox,
+  List,
+  ListItem,
 } from "@mui/material"
-import { MdEmail, MdRemoveRedEye, MdArrowBack, MdClose, MdEdit, MdDelete, MdDownload } from "react-icons/md"
+import { MdEmail, MdRemoveRedEye, MdArrowBack, MdClose, MdDelete, MdDownload } from "react-icons/md"
 import { AiOutlineEye } from "react-icons/ai"
 import { FaWhatsapp } from "react-icons/fa6"
 import { useRouter } from "next/router"
@@ -39,8 +40,7 @@ import { performanceInvoiceService } from "@/services/performanceInvoice.service
 import Request from "@/services/axios"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
-
-// Helper function to upload files to server
+import AddNewQuotation from "@/component/PerformanceInvoice/AddQuotationDialog"
 
 const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]> => {
   const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
@@ -63,100 +63,6 @@ const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]
     throw error;
   }
 };
-
-
-const DesignFile: React.FC<{
-  file: any
-  index: number
-  onRemarkChange: (index: number, remark: string) => void
-  onRedesign: (index: number) => void
-  onDelete: (index: number) => void
-  canEdit: boolean
-}> = ({ file, index, onRemarkChange, onRedesign, onDelete, canEdit }) => {
-  const handleViewFile = () => {
-    try {
-      const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
-
-
-      if (file.path.startsWith("http")) {
-        window.open(file.path, "_blank")
-      } else if (file.path.startsWith("/uploads")) {
-        window.open(`${BaseURL}${file.path}`, "_blank")
-      } else {
-        if (file.path.startsWith("design/")) {
-          window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
-        } else if (file.path.startsWith("general/")) {
-          window.open(`${BaseURL}/uploads/${file.path}`, "_blank")
-        } else {
-          window.open(`${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`, "_blank")
-        }
-      }
-    } catch (error) {
-      console.error("Error opening file:", error)
-      toast.error("Failed to open file")
-    }
-  }
-
-  return (
-    <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-end" mb={2}>
-      <Button
-        variant="outlined"
-        startIcon={<AiOutlineEye />}
-        onClick={handleViewFile}
-        sx={{
-          minWidth: 160,
-          height: 45,
-          textTransform: "none",
-          fontWeight: 600,
-          backgroundColor: "#fff",
-          borderColor: "#ccc",
-          color: "#333",
-          "&:hover": {
-            backgroundColor: "#f5f5f5",
-          },
-        }}
-      >
-        {file.path?.split("/").pop() || `Design File ${index + 1}`}
-      </Button>
-      <Box flex={1} width="100%">
-        <Typography fontSize={14} fontWeight={500} mb={0.5}>
-          Design Remarks
-        </Typography>
-        <TextField
-          placeholder="Remarks…."
-          fullWidth
-          size="small"
-          variant="outlined"
-          value={file.remark || ""}
-          onChange={(e) => onRemarkChange(index, e.target.value)}
-          InputProps={{ style: { backgroundColor: "#fff" }, readOnly: !canEdit }}
-        />
-      </Box>
-      {canEdit && (
-        <Box display="flex" gap={1}>
-          <IconButton
-            onClick={() => onRedesign(index)}
-            sx={{
-              color: "#1976D2",
-              "&:hover": { backgroundColor: "#E3F2FD" },
-            }}
-          >
-            <MdEdit />
-          </IconButton>
-          <IconButton
-            onClick={() => onDelete(index)}
-            sx={{
-              color: "#F04438",
-              "&:hover": { backgroundColor: "#FEF2F2" },
-            }}
-          >
-            <MdDelete />
-          </IconButton>
-        </Box>
-      )}
-    </Stack>
-  )
-}
 
 const ReworkEntry: React.FC<{ entry: any }> = ({ entry }) => {
   console.log("DEBUG : ReworkEntry : entry:", entry);
@@ -840,12 +746,14 @@ const ViewOrderDesigner = () => {
   const [currentRedesignFile, setCurrentRedesignFile] = useState<any>(null)
   const [currentRedesignIndex, setCurrentRedesignIndex] = useState<number>(-1)
   const [remarks, setRemarks] = useState("")
+   const [quoteDialog, setQuoteDialog] = useState(false)
   const [designFileRemarks, setDesignFileRemarks] = useState<{
     [key: number]: string
   }>({})
   const [newFileRemarks, setNewFileRemarks] = useState<{
     [key: string]: string
   }>({})
+    const quotationProofUploadRef = useRef<any>(null)
   const [openFilesDialog, setOpenFilesDialog] = useState(false)
   const [openDesignFilesDialog, setOpenDesignFilesDialog] = useState(false)
   const [deletedFiles, setDeletedFiles] = useState<string[]>([])
@@ -855,7 +763,14 @@ const ViewOrderDesigner = () => {
   const { markets } = useAppSelector((state) => state.markets);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false)
   const [newSelectedDesigner, setNewSelectedDesigner] = useState<any>(null)
+    const [quotationProofLoading, setQuotationProofLoading] = useState(false)
+    const [uploadedQuotationProofs, setUploadedQuotationProofs] = useState<any[]>([])
+      const [quotationHistoryDialog, setQuotationHistoryDialog] = useState(false)
   const isEditingDisabled = singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0;
+  const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
+  const hasValidProof = Array.isArray(singleOrder?.invoiceValidProof) && singleOrder?.invoiceValidProof?.length > 0;
+
+
   const handleUpdateDesigner = async () => {
     if (!selectedStaff) {
       toast.error("Please select a designer");
@@ -995,14 +910,10 @@ const ViewOrderDesigner = () => {
       [index]: remark,
     }))
   }
-
-  // Handle redesign file
-  const handleRedesignFile = (index: number) => {
-    setCurrentRedesignFile(singleOrder.designFiles[index])
-    setCurrentRedesignIndex(index)
-    setRedesignOpen(true)
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
-
   // Handle delete design file
   const handleDeleteDesignFile = async (index: number) => {
     if (!orderId || typeof orderId !== "string") return
@@ -1024,6 +935,15 @@ const ViewOrderDesigner = () => {
     }
   }
 
+    const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'final': return 'success'
+      case 'revised': return 'warning'
+      case 'canceled': return 'error'
+      // case 'pending': return 'info'
+      default: return 'default'
+    }
+  }
   // Handle redesign submission
   const handleRedesignSubmit = async (file: File, remark: string) => {
     if (!orderId || typeof orderId !== "string") return
@@ -1467,6 +1387,10 @@ const ViewOrderDesigner = () => {
         toast.error("Failed to open design file")
       }
     }
+    
+      const handleViewQuotationProofs = () => {
+    setOpenQuotationProofDialog(true)
+  }
 
     return (
       <Box key={index} sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0", borderRadius: 2 }}>
@@ -2208,6 +2132,82 @@ const ViewOrderDesigner = () => {
                   })}
                 </Box>
               )}
+                 <Box mt={3} pt={3} borderTop={1} borderColor="#E5E7EB">
+                        <Typography variant="h6" fontWeight={600} mb={2}>
+                          Quotation Proof
+                        </Typography>
+              
+                        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                          <ThemeButton
+                            sx={{
+                              flex: 1,
+                              background: "#667085",
+                              color: "#fff",
+                              fontWeight: 600,
+                              fontSize: 16,
+                              borderRadius: 2,
+                              py: 1.2,
+                            }}
+                            disabled={Boolean(singleOrder?.quotationProof) || hasValidProof}
+                            onClick={() => setQuoteDialog(true)}
+                          >
+                            Generate Quotation
+                          </ThemeButton>
+              
+                          {/* View Quotation History – condition पर */}
+                          {singleOrder?.quotation?.length ? (
+                            <Button
+                              variant="contained"
+                              onClick={() => setQuotationHistoryDialog(true)}
+                              sx={{ flex: 1 }}
+                            >
+                              View Quotation History
+                            </Button>
+                          ) : (
+                            <Box sx={{ flex: 1 }} />
+                          )}
+              
+                          {/* Download Quotation – condition पर */}
+                          {singleOrder?.quotation?.length ? (
+                            <ThemeButton
+                              sx={{
+                                flex: 1,
+                                background: "#2196F3",
+                                color: "#fff",
+                                fontWeight: 600,
+                                fontSize: 16,
+                                borderRadius: 2,
+                                py: 1.2,
+                                "&:hover": { background: "#1976D2" },
+                              }}
+                              onClick={handleDownloadInvoice}
+                            >
+                              <MdDownload style={{ marginRight: "8px" }} />
+                              Download Quotation
+                            </ThemeButton>
+                          ) : (
+                            <Box sx={{ flex: 1 }} />
+                          )}
+                        </Box>             
+              
+                        {/* Next Button - ALWAYS VISIBLE and ALWAYS ACTIVE */}
+                        {/* <ThemeButton
+                          fullWidth
+                          sx={{
+                            mt: 2,
+                            background: "#12B76A",
+                            color: "#fff",
+                            fontWeight: 600,
+                            fontSize: 16,
+                            borderRadius: 2,
+                            py: 1.2,
+                            "&:hover": { background: "#079455" },
+                          }}
+                          onClick={handleNextStep}
+                        >
+                          Next
+                        </ThemeButton> */}
+                      </Box>
               <Box display="flex" gap={2} mb={2}>
                 <ThemeButton
                   fullWidth
@@ -2487,6 +2487,88 @@ const ViewOrderDesigner = () => {
         orderId={orderId as string}
         onInvoiceSaved={() => setIsPerformaInvoiceSaved(true)}
       />
+       <AddNewQuotation
+              open={quoteDialog}
+              onClose={() => setQuoteDialog(false)}
+              invoiceId={undefined}
+              data={singleOrder}
+              orderId={orderId as string}
+              isQuote={true}
+              quoteUpdate={singleOrder?.quotation?.length ? true : false}
+            />
+
+              <Dialog
+                    open={quotationHistoryDialog}
+                    onClose={() => setQuotationHistoryDialog(false)}
+                    maxWidth="md"
+                    fullWidth
+                  >
+                    <DialogTitle>
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="h6" fontWeight={600}>
+                          Quotation History
+                        </Typography>
+                        <Button onClick={() => setQuotationHistoryDialog(false)}>
+                          X
+                        </Button>
+                      </Box>
+                    </DialogTitle>
+                    <DialogContent>
+                      <List>
+                        {singleOrder?.quotation?.map((item, index) => (
+                          <Box key={item.id}>
+                            <ListItem alignItems="flex-start">
+                              <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                  <Typography variant="subtitle1" fontWeight={600}>
+                                    Quotation - {index + 1}
+                                  </Typography>
+                                  <Box display="flex" gap={1}>
+                                    <Chip
+                                      label={singleOrder?.quotationProof === "" ? "Pending" : index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled"}
+                                      color={getStatusColor(singleOrder?.quotationProof === "" ? "Pending" : index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled") as any}
+                                      size="small"
+                                    />
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      onClick={() => handlePreviewQuotation(item)}
+                                      sx={{ textTransform: 'none' }}
+                                    >
+                                      Preview
+                                    </Button>
+                                  </Box>
+                                </Box>
+            
+                                <Typography variant="body2" color="textSecondary">
+                                  Date: {formatDate(item.createdAt)}
+                                </Typography>
+            
+                                <Typography variant="body2" color="textSecondary">
+                                  Amount: ₹{item.unitPrice.toLocaleString()}
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary">
+                                  Total: ₹
+                                  {item.gst > 0
+                                    ? (Number(item.unitPrice) * Number(item.qty)) * (1 + Number(item.gst) / 100)
+                                    : (Number(item.unitPrice) * Number(item.qty))}
+                                </Typography>
+            
+            
+            
+                                {item.notes && (
+                                  <Typography variant="body2" sx={{ mt: 1 }}>
+                                    Notes: {item.notes}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </ListItem>
+                            {index < singleOrder?.quotation?.length - 1 && <Divider variant="inset" component="li" />}
+                          </Box>
+                        ))}
+                      </List>
+                    </DialogContent>
+                  </Dialog>
     </>
   )
 }

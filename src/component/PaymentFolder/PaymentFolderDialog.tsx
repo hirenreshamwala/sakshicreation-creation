@@ -21,6 +21,35 @@ import { useRouter } from "next/router";
 import { toast } from "react-toastify";
 import { StaticCompanyOptions } from "@/constants";
 import Swal from "sweetalert2";
+import moment from "moment";
+
+const areaOptions = [
+  { label: "K-1", value: "K-1" },
+  { label: "K-2", value: "K-2" },
+  { label: "K-3", value: "K-3" },
+  { label: "K-4", value: "K-4" },
+]
+
+const monthOptions = [
+  { label: "Jan", value: "Jan" },
+  { label: "Feb", value: "Feb" },
+  { label: "Mar", value: "Mar" },
+  { label: "Apr", value: "Apr" },
+  { label: "May", value: "May" },
+  { label: "Jun", value: "Jun" },
+  { label: "Jul", value: "Jul" },
+  { label: "Aug", value: "Aug" },
+  { label: "Sep", value: "Sep" },
+  { label: "Oct", value: "Oct" },
+  { label: "Nov", value: "Nov" },
+  { label: "Dec", value: "Dec" },
+]
+
+const paymentTypeOptions = [
+  { label: "NEFT", value: "NEFT" },
+  { label: "Cash", value: "Cash" },
+  { label: "Cheque", value: "Cheque" },
+]
 
 interface OptionType {
   label: string;
@@ -39,60 +68,20 @@ interface PaymentFolderDialogProps {
 const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
   open,
   onClose,
-  folderId,
-  refreshData,
-  companyTab,
-  company,
+  rowData,
+  modalType
 }) => {
-  const router = useRouter();
+
   const dispatch = useAppDispatch();
-  const {
-    accountMasters = [],
-    loading: accountLoading,
-  } = useAppSelector((state) => state.accountMasters || {});
-  const { staffList = [], loading: staffLoading } = useAppSelector((state) => state.staff || {});
-  const {
-    currentPaymentFolder,
-    loading: folderLoading,
-  } = useAppSelector((state) => state.paymentFolders || {});
-
+  const { accountMasters } = useAppSelector((state) => state.accountMasters || {});
+  const { staffList } = useAppSelector((state) => state.staff || {});
   const [isLoading, setIsLoading] = useState(false);
-  const isEditMode = !!folderId;
+  const isEditMode = modalType === 'Edit';
 
-  const areaOptions = useMemo(() => [
-    { label: "K-1", value: "K-1" },
-    { label: "K-2", value: "K-2" },
-    { label: "K-3", value: "K-3" },
-    { label: "K-4", value: "K-4" },
-  ], []);
-
-  const monthOptions = useMemo(() => [
-    { label: "Jan", value: "Jan" },
-    { label: "Feb", value: "Feb" },
-    { label: "Mar", value: "Mar" },
-    { label: "Apr", value: "Apr" },
-    { label: "May", value: "May" },
-    { label: "Jun", value: "Jun" },
-    { label: "Jul", value: "Jul" },
-    { label: "Aug", value: "Aug" },
-    { label: "Sep", value: "Sep" },
-    { label: "Oct", value: "Oct" },
-    { label: "Nov", value: "Nov" },
-    { label: "Dec", value: "Dec" },
-  ], []);
-
-  const paymentTypeOptions = useMemo(() => [
-    { label: "NEFT", value: "NEFT" },
-    { label: "Cash", value: "Cash" },
-    { label: "Cheque", value: "Cheque" },
-  ], []);
-
-  const staffOptions = useMemo(() => 
-    staffList.map((staff) => ({
-      label: `${staff.firstName} ${staff.lastName}`,
-      value: staff._id,
-    }))
-  , [staffList]);
+  const staffOptions = staffList.map((staff) => ({
+    label: `${staff.firstName} ${staff.lastName}`,
+    value: staff._id,
+  }))
 
   const validationSchema = Yup.object({
     companyName: Yup.string().required("Company Name is required"),
@@ -104,7 +93,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     assignTo: Yup.string().required("Assign To is required"),
     assignedDate: Yup.string().required("Assigned Date is required"),
     remarks: Yup.string(),
-    ...(isEditMode && {
+    ...(modalType === 'Edit' && {
       receivedAmount: Yup.number()
         .min(0, "Received Amount cannot be negative")
         .max(Yup.ref('paymentAmount'), "Received Amount cannot exceed Payment Amount")
@@ -112,8 +101,23 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     }),
   });
 
-  const formik = useFormik({
-    initialValues: {
+  // Get initial values based on modal type and rowData
+  const getInitialValues = () => {
+    if (isEditMode && rowData) {
+      return {
+        companyName: rowData?.company?._id || "",
+        partyName: rowData?.party?._id || "",
+        area: rowData?.area || "",
+        month: rowData?.month || "",
+        paymentAmount: rowData?.paymentAmount || 0,
+        paymentType: rowData?.paymentType || "",
+        assignTo: rowData?.assignedTo?._id || "",
+        assignedDate: moment(rowData?.assignedDate).format('YYYY-MM-DD') || "",
+        remarks: rowData?.remarks || "",
+        receivedAmount: rowData?.receivedAmount || 0,
+      };
+    }
+    return {
       companyName: "",
       partyName: "",
       area: "",
@@ -124,8 +128,13 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
       assignedDate: "",
       remarks: "",
       receivedAmount: 0,
-    },
+    };
+  };
+
+  const formik = useFormik({
+    initialValues: getInitialValues(),
     validationSchema,
+    enableReinitialize: true, // This is important to update form when props change
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
@@ -143,15 +152,14 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
           ...(isEditMode && { receivedAmount: values.receivedAmount }),
         };
 
-        if (isEditMode && folderId) {
-          await dispatch(updatePaymentFolderThunk({ id: folderId, data: submitData })).unwrap();
+        if (isEditMode) {
+          await dispatch(updatePaymentFolderThunk({ id: rowData._id, data: submitData })).unwrap();
           toast.success("Payment folder updated successfully");
         } else {
           await dispatch(createPaymentFolderThunk(submitData)).unwrap();
           toast.success("Payment folder created successfully");
         }
 
-        if (refreshData) refreshData();
         handleClose();
       } catch (err: any) {
         Swal.fire({
@@ -167,52 +175,16 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
   });
 
   useEffect(() => {
-    if (!open) return;
+    if (!accountMasters?.length) dispatch(getAllAccountMastersThunk());
+    if (!staffList?.length) dispatch(getAllStaffThunk());
+  }, []);
 
-    if (!isEditMode) {
-      formik.resetForm({
-        values: {
-          companyName: company?._id || "",
-          partyName: "",
-          area: "",
-          month: "",
-          paymentAmount: 0,
-          paymentType: "",
-          assignTo: "",
-          assignedDate: "",
-          remarks: "",
-          receivedAmount: 0,
-        },
-      });
-    } else if (currentPaymentFolder && folderId === currentPaymentFolder._id) {
-      formik.setValues({
-        companyName: currentPaymentFolder.company?._id || "",
-        partyName: currentPaymentFolder.party?._id || "",
-        area: currentPaymentFolder.area || "",
-        month: currentPaymentFolder.month || "",
-        paymentAmount: currentPaymentFolder.paymentAmount || 0,
-        paymentType: currentPaymentFolder.paymentType || "",
-        assignTo: currentPaymentFolder.assignedTo?._id || "",
-        assignedDate: currentPaymentFolder.assignedDate ? new Date(currentPaymentFolder.assignedDate).toISOString().split("T")[0] : "",
-        remarks: currentPaymentFolder.remarks || "",
-        receivedAmount: currentPaymentFolder.receivedAmount || 0,
-      });
-    }
-  }, [open, isEditMode, currentPaymentFolder, folderId, company]);
-
+  // Reset form when modal opens/closes or mode changes
   useEffect(() => {
     if (open) {
-      if (!accountMasters?.length) {
-        dispatch(getAllAccountMastersThunk());
-      }
-      if (!staffList?.length) {
-        dispatch(getAllStaffThunk());
-      }
-      if (isEditMode && folderId && currentPaymentFolder?._id !== folderId) {
-        dispatch(getPaymentFolderByIdThunk(folderId));
-      }
+      formik.resetForm({ values: getInitialValues() });
     }
-  }, [open, isEditMode, folderId, dispatch, currentPaymentFolder?._id]);
+  }, [open, modalType, rowData]);
 
   const handleCompanyChange = (event: any, newValue: any) => {
     const companyId = newValue ? newValue.value : "";
@@ -234,13 +206,11 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     return options.find((option) => option.value === value) || null;
   };
 
-            console.log("DEBUG : monthOptions:", monthOptions);
-
   return (
     <CustomDialog
       open={open}
       onClose={handleClose}
-      title={isEditMode ? "Edit Payment Folder" : "Add New Payment Folder"}
+      title={`${modalType} Payment Folder`}
       maxWidth="md"
       fullWidth
     >
@@ -276,7 +246,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
           <ThemeSelect
             label="Area"
             options={areaOptions}
-            value={getSelectedOption(formik.values.area, areaOptions)}
+            value={areaOptions.find((item) => item.value === formik.values.area)}
             onChange={(event, newValue) => formik.setFieldValue("area", newValue ? newValue.value : "")}
             error={formik.touched.area && Boolean(formik.errors.area)}
             helperText={formik.touched.area && formik.errors.area}
@@ -286,7 +256,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
           <ThemeSelect
             label="Month"
             options={monthOptions}
-            value={getSelectedOption(formik.values.month, monthOptions)}
+            value={monthOptions.find((item) => item.value === formik.values.month)}
             onChange={(event, newValue) => formik.setFieldValue("month", newValue ? newValue.value : "")}
             error={formik.touched.month && Boolean(formik.errors.month)}
             helperText={formik.touched.month && formik.errors.month}
@@ -306,7 +276,17 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             required
             fullWidth
           />
-          {isEditMode && (
+           <ThemeInput
+            labelName="Assigned Date"
+            type="date"
+            value={formik.values.assignedDate}
+            onChange={(e) => formik.setFieldValue("assignedDate", e.target.value)}
+            error={formik.touched.assignedDate && Boolean(formik.errors.assignedDate)}
+            helperText={formik.touched.assignedDate && formik.errors.assignedDate}
+            required
+            fullWidth
+          />
+          {/* {isEditMode && (
             <ThemeInput
               labelName="Received Amount"
               type="number"
@@ -317,7 +297,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
               required
               fullWidth
             />
-          )}
+          )} */}
         </Stack>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
@@ -343,18 +323,18 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
           />
         </Stack>
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
-          <ThemeInput
-            labelName="Assigned Date"
-            type="date"
-            value={formik.values.assignedDate}
-            onChange={(e) => formik.setFieldValue("assignedDate", e.target.value)}
-            error={formik.touched.assignedDate && Boolean(formik.errors.assignedDate)}
-            helperText={formik.touched.assignedDate && formik.errors.assignedDate}
-            required
-            fullWidth
-          />
-        </Stack>
+          {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
+            <ThemeInput
+              labelName="Assigned Date"
+              type="date"
+              value={formik.values.assignedDate}
+              onChange={(e) => formik.setFieldValue("assignedDate", e.target.value)}
+              error={formik.touched.assignedDate && Boolean(formik.errors.assignedDate)}
+              helperText={formik.touched.assignedDate && formik.errors.assignedDate}
+              required
+              fullWidth
+            />
+          </Stack> */}
 
         <Box mb={2}>
           <ThemeInput

@@ -7,29 +7,23 @@ import {
   TableCell,
   Avatar,
   IconButton,
-  InputBase,
 } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   getAllPaymentFoldersThunk,
   deletePaymentFolderThunk,
 } from "@/store/slices/paymentFolderSlice";
-import FilterDropdown from "@/component/fillter";
 import BasicTable from "@/component/common_component/Table/themetable";
-import ThemeButton from "@/component/common_component/themebutton";
 import ThemeChip from "@/component/common_component/themechip";
 import PaymentFolderDialog from "./PaymentFolderDialog";
-import { authService } from "@/services/auth.service";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import DateRangePicker from "@/component/daterangepicker";
 import Swal from "sweetalert2";
-import { FiSearch } from "react-icons/fi";
 import { getCompanyWisePermission } from "@/utills/utills";
-import { useRouter } from "next/router";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { StaticCompanyOptions } from "@/constants";
 import TabComponent from "@/component/Dialog/TabComponent";
+import ThemeButton from "../common_component/themebutton";
 
 interface RowData {
   id: string;
@@ -47,20 +41,13 @@ interface RowData {
 }
 
 const PaymentFolderPage: React.FC = () => {
-  const router = useRouter();
   const dispatch = useAppDispatch();
-  const {
-    paymentFolders = [],
-  } = useAppSelector((state) => state.paymentFolders || {});
+  const { paymentFolders } = useAppSelector((state) => state.paymentFolders || {});
   const { user } = useAppSelector((state) => state.auth);
   const [open, setOpen] = useState(false);
   const [companyTab, setCompanyTab] = useState(0);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
-  const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
+  const [rowData, setRowData] = useState<any>(null)
+  const [modalType, setModalType] = useState('Add')
   const { companies } = useAppSelector((state) => state.company);
   const canViewGlobal = user?.role?.permissions?.payment_folders?.view_global;
   const canViewOwn = user?.role?.permissions?.payment_folders?.view_own;
@@ -111,8 +98,10 @@ const PaymentFolderPage: React.FC = () => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true));
   }, []);
 
-  const handleEdit = (id: string) => {
-    setEditId(id);
+  const handleEdit = (row: string) => {
+    const data = paymentFolders.find((item) => item._id === row.id)
+    setRowData(data)
+    setModalType('Edit')
     setOpen(true);
   };
 
@@ -148,71 +137,22 @@ const PaymentFolderPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const token = authService.getToken();
-    if (!token) {
-      router.push("/login");
-      return;
-    }
+    if (!paymentFolders.length) dispatch(getAllPaymentFoldersThunk());
+  }, []);
 
-    dispatch(getAllPaymentFoldersThunk());
+  console.log(paymentFolders, 'paymentFolders')
 
-    return () => {
-      // No clear needed
-    };
-  }, [dispatch, router.isReady]);
-
-  // Filter by company
-  const foldersFilteredByCompany = useMemo(() => {
-    return paymentFolders.filter(folder =>
-      folder.company?._id === selectedCompanyId
-    );
-  }, [paymentFolders, selectedCompanyId]);
-
-  // Simple filters (no status/date tabs)
-  const filteredFolders = useMemo(() => {
-    let filtered = foldersFilteredByCompany;
-
-    // Apply date range if needed (optional)
-    if (startDate || endDate) {
-      filtered = filtered.filter((folder) => {
-        const folderDate = new Date(folder.assignedDate);
-        const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
-        const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-        return (!start || folderDate >= start) && (!end || folderDate <= end);
-      });
-    }
-
-    // Apply search query
-    if (searchQuery.trim()) {
-      filtered = filtered.filter((folder) =>
-        [
-          folder.party?.partyName,
-          folder.company?.companyName,
-          folder.area,
-          folder.month,
-        ].some((value) =>
-          value?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-    }
-
-    // Apply multiple filters
-    if (Object.keys(filters).length > 0) {
-      // Implement similar to assignTask if needed
-    }
-
-    return filtered;
-  }, [foldersFilteredByCompany, startDate, endDate, searchQuery, filters]);
-
-  const mapFoldersToRows = (folders: any[]): RowData[] =>
-    folders.map((folder) => ({
+  const mapFoldersToRows = () =>
+    paymentFolders?.map((folder) => ({
+      ...folder,
       id: folder._id,
       company: {
         name: folder.company?.companyName || "Unknown",
         avatar: folder.company?.avatar || ""
       },
       party: folder.party?.partyName || "Unknown",
-      area: folder.area || "N/A",
+      area: folder.area.area || "N/A",
+      areaId: folder.area._id,
       month: folder.month || "N/A",
       paymentAmount: folder.paymentAmount || 0,
       receivedAmount: folder.receivedAmount || 0,
@@ -267,7 +207,7 @@ const PaymentFolderPage: React.FC = () => {
       </TableCell>
       <TableCell sx={{ display: "flex" }}>
         {canedit && (
-          <IconButton color="primary" onClick={() => handleEdit(row.id)}>
+          <IconButton color="primary" onClick={() => handleEdit(row)}>
             <EditIcon />
           </IconButton>
         )}
@@ -288,7 +228,6 @@ const PaymentFolderPage: React.FC = () => {
           <TabComponent
             activeTab={companyTab}
             setActiveTab={setCompanyTab}
-            tabs={companyTabs.map((c) => c.name)}
           />
         </Box>
       )}
@@ -301,78 +240,16 @@ const PaymentFolderPage: React.FC = () => {
           </Typography>
         </Box>
       )}
-
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          mb: 2,
-          gap: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={(date) => setStartDate(date)}
-            onEndDateChange={(date) => setEndDate(date)}
-          />
-          <ThemeButton
-            onClick={() => {
-              setStartDate(null);
-              setEndDate(null);
-            }}
-          >
-            Clear Date Range
-          </ThemeButton>
-        </Box>
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              border: "1px solid #D0D5DD",
-              borderRadius: 2,
-              px: 1.5,
-              width: 200,
-              height: 35,
-            }}
-          >
-            <IconButton size="small" sx={{ color: "#98A2B3" }}>
-              <FiSearch size={18} />
-            </IconButton>
-            <InputBase
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ ml: 1, fontSize: 14 }}
-            />
-          </Box>
-          <FilterDropdown
-            filterOptions={columns
-              .filter((col) => col.id !== "action")
-              .map((col) => col.label)}
-            uniqueValues={[]} // Implement if needed
-            onFiltersChange={setFilters}
-            filters={filters}
-            selectedField={selectedFilterField}
-            onFieldSelect={setSelectedFilterField}
-          />
-          {cancreate && (
-            <ThemeButton
-              onClick={() => {
-                setEditId(null);
-                setOpen(true);
-              }}
-            >
-              + Add New Payment Folder
-            </ThemeButton>
-          )}
-        </Box>
-      </Box>
-
+      {cancreate && (
+        <ThemeButton
+          onClick={() => {
+            setModalType('Add')
+            setOpen(true);
+          }}
+        >
+          + Add New Payment Folder
+        </ThemeButton>
+      )}
       <Box
         sx={{
           maxHeight: "70vh",
@@ -394,17 +271,17 @@ const PaymentFolderPage: React.FC = () => {
           },
         }}
       >
-        {filteredFolders.length === 0 ? (
+        {paymentFolders.length === 0 ? (
           <Typography>
             No payment folders found for {hasBothCompanies ? companyTabs[companyTab]?.name : (hasSakshi ? 'Sakshi' : 'QP')}.
           </Typography>
         ) : (
           <BasicTable
             tableHeader={columns}
-            rowData={mapFoldersToRows(filteredFolders)}
-            showDatePicker={false}
-            showSearch={false}
-            showFillter={false}
+            rowData={mapFoldersToRows()}
+            showDatePicker={true}
+            showSearch={true}
+            showFillter={true}
             renderRow={renderRow}
           />
         )}
@@ -412,14 +289,12 @@ const PaymentFolderPage: React.FC = () => {
 
       <PaymentFolderDialog
         open={open}
-        onClose={() => {
-          setOpen(false);
-          setEditId(null);
-        }}
-        folderId={editId}
-        refreshData={() => dispatch(getAllPaymentFoldersThunk())}
-        companyTab={companyTab}
-        company={companies?.find((item) => item.companyName === StaticCompanyOptions[companyTab])}
+        onClose={() => setOpen(false)}
+        // folderId={editId}
+        rowData={rowData}
+        modalType={modalType}
+      // refreshData={() => dispatch(getAllPaymentFoldersThunk())}
+      // company={companies?.find((item) => item.companyName === StaticCompanyOptions[companyTab])}
       />
     </>
   );

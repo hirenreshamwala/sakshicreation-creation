@@ -12,15 +12,8 @@ import { getOrderByIdThunk, updateOrderThunk } from "@/store/slices/orderSlice"
 import { toast } from "react-toastify"
 import { useFormik } from "formik"
 import * as Yup from "yup"
-import AddNewQuotation from "@/component/PerformanceInvoice/AddQuotationDialog"
-import { MdDownload } from "react-icons/md"
-import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
 import Image from "next/image"
-import { color } from "framer-motion"
-
-const activeStep = 0
-
 interface FormValues {
   companyName: string
   partyName: string
@@ -40,16 +33,12 @@ interface FormValues {
 
 const ViewOrderPage = () => {
   const fileUploadRef = useRef<any>(null)
-  const quotationProofUploadRef = useRef<any>(null)
   const [openFilesDialog, setOpenFilesDialog] = useState(false)
   const [openQuotationProofDialog, setOpenQuotationProofDialog] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [quotationProofLoading, setQuotationProofLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
-  const [quoteDialog, setQuoteDialog] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([])
   const [quotationHistoryDialog, setQuotationHistoryDialog] = useState(false)
-  const [uploadedQuotationProofs, setUploadedQuotationProofs] = useState<any[]>([])
   const [previewDialog, setPreviewDialog] = useState(false)
   const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
   const router = useRouter()
@@ -57,9 +46,7 @@ const ViewOrderPage = () => {
   const { markets } = useAppSelector((state) => state.markets);
   const { id: orderId } = router.query
   const { singleOrder } = useAppSelector((state: any) => state.orders)
-  console.log("object", singleOrder)
-  const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
-  console.log(singleOrder, 'singleOrder?.quotationProof')
+  
   const formik = useFormik<FormValues>({
     initialValues: {
       companyName: "",
@@ -159,47 +146,7 @@ const ViewOrderPage = () => {
   useEffect(() => {
     if (!markets.length) dispatch(getAllMarketsThunk())
   }, [])
-  const hasValidProof = Array.isArray(singleOrder?.invoiceValidProof) && singleOrder?.invoiceValidProof?.length > 0;
 
-
-  const handleUploadQuotationProof = async () => {
-    if (!orderId || typeof orderId !== "string") {
-      toast.error("Order ID not found");
-      return;
-    }
-
-    setQuotationProofLoading(true);
-    try {
-      let newQuotationProofPaths: any[] = [];
-      if (quotationProofUploadRef.current && typeof quotationProofUploadRef.current.getSelectedFiles === "function") {
-        const selectedFiles = quotationProofUploadRef.current.getSelectedFiles() || [];
-        if (selectedFiles.length > 0) {
-          const uploadedFileResults = await quotationProofUploadRef.current.uploadSelectedFiles();
-          newQuotationProofPaths = uploadedFileResults.map((file: any) => ({
-            path: file.path || `/${file.folder}/${file.filename}`,
-            remark: "Quotation Proof",
-            uploadedAt: new Date(),
-          }));
-          setUploadedQuotationProofs((prev) => [...prev, ...newQuotationProofPaths]);
-
-          // Update order with quotation proof
-          const updateData = {
-            quotationProof: newQuotationProofPaths[0].path
-          };
-
-          await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap();
-          toast.success("Quotation proof uploaded successfully");
-        } else {
-          toast.error("Please select a file to upload");
-        }
-      }
-    } catch (error: any) {
-      console.error("Error uploading quotation proof:", error);
-      toast.error(error.message || "Failed to upload quotation proof");
-    } finally {
-      setQuotationProofLoading(false);
-    }
-  }
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -243,44 +190,6 @@ const ViewOrderPage = () => {
 
     fetchOrderData()
   }, [dispatch, orderId])
-  const handleDownloadInvoice = () => {
-    try {
-      const latestQuotation = singleOrder?.quotation?.[singleOrder?.quotation?.length - 1]
-      const quantity = Number(singleOrder?.qty) || 0
-      const unitPrice = Number(latestQuotation?.unitPrice) || 0
-      const subtotal = quantity * unitPrice
-      const gstValue = Number(latestQuotation?.gst) || 0
-      const applyGST = gstValue > 0
-      const gstPercentage = gstValue
-      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0
-      const totalAmount = subtotal + gstAmount
-
-      const formData = {
-        quotation: true,
-        orderNumber: singleOrder?.orderNumber || "N/A",
-        companyName: singleOrder?.companyName?.companyName || "N/A",
-        remarks: singleOrder?.remarks || "",
-        ownerMobileNo: singleOrder?.party?.ownerMobileNo || "",
-        partyName: singleOrder?.party?.partyName || "N/A",
-        addressName: `${singleOrder?.party?.address?.unitNo || ""}, ${singleOrder?.party?.address?.marketName?.marketName || ""}, ${singleOrder?.party?.address?.area?.area || ""}, ${singleOrder?.party?.address?.pincode?.pincode || ""}`,
-        GSTNo: singleOrder?.party?.GSTNo || "N/A",
-        servicePerformance: singleOrder?.productItem?.itemName || "N/A",
-        quantity: quantity,
-        unitPrice: unitPrice,
-        total: subtotal, // Use calculated subtotal
-        finalAmount: totalAmount, // Use calculated total
-        applyGST: applyGST,
-        gstPercentage: gstPercentage,
-        daysAfterConfirmation: singleOrder?.daysAfterConfirmation || 0,
-      };
-
-      generateInvoicePDF(formData)
-      toast.success("Quotation downloaded successfully")
-    } catch (error) {
-      console.error("Error downloading Quotation:", error)
-      toast.error("Failed to download Quotation")
-    }
-  }
 
   const handlePreviewQuotation = (quotation: any) => {
     setSelectedQuotation(quotation)
@@ -333,21 +242,9 @@ const ViewOrderPage = () => {
     }
   }, [singleOrder])
 
-  const handleViewFiles = () => {
-    setOpenFilesDialog(true)
-  }
+  const handleViewFiles = () => setOpenFilesDialog(true)
 
-  const handleViewQuotationProofs = () => {
-    setOpenQuotationProofDialog(true)
-  }
-
-  const handleCloseFilesDialog = () => {
-    setOpenFilesDialog(false)
-  }
-
-  const handleCloseQuotationProofDialog = () => {
-    setOpenQuotationProofDialog(false)
-  }
+  const handleCloseFilesDialog = () => setOpenFilesDialog(false)
 
   const handleFilesSelected = (files: File[]) => {
     console.log("Files selected:", files)
@@ -646,131 +543,6 @@ const ViewOrderPage = () => {
             {loading ? "Updating..." : "Save"}
           </ThemeButton>
         </Box>
-
-        {/* Quotation Proof Section */}
-        <Box mt={3} pt={3} borderTop={1} borderColor="#E5E7EB">
-          <Typography variant="h6" fontWeight={600} mb={2}>
-            Quotation Proof
-          </Typography>
-
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <ThemeButton
-              sx={{
-                flex: 1,
-                background: "#667085",
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: 16,
-                borderRadius: 2,
-                py: 1.2,
-              }}
-              disabled={Boolean(singleOrder?.quotationProof) || hasValidProof}
-              onClick={() => setQuoteDialog(true)}
-            >
-              Generate Quotation
-            </ThemeButton>
-
-            {/* View Quotation History – condition पर */}
-            {singleOrder?.quotation?.length ? (
-              <Button
-                variant="contained"
-                onClick={() => setQuotationHistoryDialog(true)}
-                sx={{ flex: 1 }}
-              >
-                View Quotation History
-              </Button>
-            ) : (
-              <Box sx={{ flex: 1 }} />
-            )}
-
-            {/* Download Quotation – condition पर */}
-            {singleOrder?.quotation?.length ? (
-              <ThemeButton
-                sx={{
-                  flex: 1,
-                  background: "#2196F3",
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  borderRadius: 2,
-                  py: 1.2,
-                  "&:hover": { background: "#1976D2" },
-                }}
-                onClick={handleDownloadInvoice}
-              >
-                <MdDownload style={{ marginRight: "8px" }} />
-                Download Quotation
-              </ThemeButton>
-            ) : (
-              <Box sx={{ flex: 1 }} />
-            )}
-          </Box>
-
-          {/* Upload section - only show if no quotation proof exists */}
-          {!hasQuotationProof ? (
-            <>
-              <FileUpload
-                ref={quotationProofUploadRef}
-                folder="quotation_proofs"
-                multiple={false}
-                accept="*/*"
-                variant="dropzone"
-                onFilesSelected={handleFilesSelected}
-                onUploadError={handleUploadError}
-                showPreview={false}
-                showUploadButton={false}
-                autoUpload={false}
-                label="Upload Quotation Proof"
-                helperText="Upload the quotation proof document"
-              />
-
-              <ThemeButton
-                fullWidth
-                sx={{
-                  mt: 2,
-                  background: "#12B76A",
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  borderRadius: 2,
-                  py: 1.2,
-                }}
-                onClick={handleUploadQuotationProof}
-                disabled={quotationProofLoading}
-              >
-                {quotationProofLoading ? "Uploading..." : "Upload Quotation Proof"}
-              </ThemeButton>
-            </>
-          ) : (
-            <Box mb={2}>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={handleViewQuotationProofs}
-                sx={{
-                  color: "#344054",
-                  borderColor: "#D0D5DD",
-                  fontWeight: 600,
-                  mb: 1,
-                  textTransform: "none",
-                  fontSize: 16,
-                  py: 1.2,
-                  background: "#fff",
-                  "&:hover": { background: "#f6fef9", borderColor: "#D0D5DD" },
-                }}
-                startIcon={
-                  <svg width="20" height="20" fill="none" style={{ marginRight: 4 }}>
-                    <circle cx="10" cy="10" r="9" stroke="#98A2B3" strokeWidth="2" />
-                    <circle cx="10" cy="10" r="3" fill="#98A2B3" />
-                  </svg>
-                }
-              >
-                View Quotation Proof
-              </Button>
-            </Box>
-          )}
-
-          {/* Next Button - ALWAYS VISIBLE and ALWAYS ACTIVE */}
           <ThemeButton
             fullWidth
             sx={{
@@ -787,8 +559,6 @@ const ViewOrderPage = () => {
           >
             Next
           </ThemeButton>
-        </Box>
-
       </Paper>
 
       <ViewFilesDialog
@@ -809,19 +579,6 @@ const ViewOrderPage = () => {
         downloadEndpoint={`${process.env.NEXT_PUBLIC_API_URL}/api/filedownload/download`}
       />
 
-      <ViewFilesDialog
-        open={openQuotationProofDialog}
-        onClose={handleCloseQuotationProofDialog}
-        files={
-          singleOrder?.quotationProof
-            ? [singleOrder.quotationProof]
-            : uploadedQuotationProofs.map(proof => proof.path)
-        }
-        title="Quotation Proof"
-        showDownload
-        showView
-        downloadEndpoint={`${process.env.NEXT_PUBLIC_API_URL}/api/filedownload/download`}
-      />
       <Dialog
         open={quotationHistoryDialog}
         onClose={() => setQuotationHistoryDialog(false)}
@@ -939,7 +696,6 @@ const ViewOrderPage = () => {
                       fill
                     />
                   </Box>
-
                   <Typography
                     variant="h5"
                     fontWeight={800}
@@ -951,7 +707,6 @@ const ViewOrderPage = () => {
                     QUOTATION
                   </Typography>
                 </Box>
-
               </Box>
 
               {/* Right: GST + address — add left padding to create space in front of address */}
@@ -980,7 +735,6 @@ const ViewOrderPage = () => {
                 </Box>
               </Box>
             </Box>
-
 
             <Divider sx={{ my: 2 }} />
 
@@ -1078,7 +832,6 @@ const ViewOrderPage = () => {
               </Table>
             </TableContainer>
 
-
             <Divider sx={{ my: 2 }} />
             <Typography variant="h6" fontWeight={600} mb={1}>Terms & Conditions:</Typography>
             <Typography variant="body2" component="div">
@@ -1099,16 +852,6 @@ const ViewOrderPage = () => {
           </Paper>
         </DialogContent>
       </Dialog>
-
-      <AddNewQuotation
-        open={quoteDialog}
-        onClose={() => setQuoteDialog(false)}
-        invoiceId={undefined}
-        data={singleOrder}
-        orderId={orderId as string}
-        isQuote={true}
-        quoteUpdate={singleOrder?.quotation?.length ? true : false}
-      />
     </Box>
   )
 }

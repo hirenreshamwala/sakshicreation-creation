@@ -710,8 +710,8 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
 
             <TableBody>
               {paginatedRows.length > 0 ? (
-                paginatedRows.map((row, index) => (
-                  <React.Fragment key={row.id}>
+                paginatedRows?.map((row, index) => (
+                  <React.Fragment key={row?.id}>
                     <TableRow
                       hover
                       sx={{
@@ -727,7 +727,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
                         },
                       }}
                     >
-                      {tableHeader[0].id === "checkbox" && (
+                      {tableHeader[0]?.id === "checkbox" && (
                         <TableCell>
                           <Checkbox
                             checked={selectedRows.includes(row.id)}
