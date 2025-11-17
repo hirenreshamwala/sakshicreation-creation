@@ -54,6 +54,7 @@ const permissionMapping: { [key: string]: string } = {
   "All Complains": "all_complains",
   "Quality Packaging": "quality_packaging",
   "Performance invoice": "proforma_invoice",
+  "Payment Folders": "payment_folders",
   Reports: "reports",
   Inventory: "inventory",
   Purchase: "purchase",
@@ -122,6 +123,11 @@ const menuItems = [
     label: "All Complains",
     icon: <MdAssignment size={18} />,
     path: "/admin/all-complains",
+  },
+  {
+    label: "Payment Folders",
+    icon: <MdAssignment size={18} />,
+    path: "/admin/payment-folder",
   },
   {
     label: "Quality Packaging",
@@ -260,7 +266,7 @@ useEffect(() => {
     dispatch(getBinderOrdersThunk());
     dispatch(getBookletBinderThunk());
   }
-}, [user, dispatch]); // 👈 Added `user` dependency
+}, [user]);
 
   // Function to get current page title
   const getCurrentPageTitle = () => {

@@ -122,12 +122,15 @@ const IndexPage: React.FC = () => {
 
   // Initialize date range
   useEffect(() => {
-    const { startDate: s, endDate: e } = getDateRange(selectedPreset);
-    setStartDate(s);
-    setEndDate(e);
-    setCustomStartDate(s);
-    setCustomEndDate(e);
-  }, [selectedPreset]);
+  if (selectedPreset === "custom") return; 
+
+  const { startDate: s, endDate: e } = getDateRange(selectedPreset);
+  setStartDate(s);
+  setEndDate(e);
+  setCustomStartDate(s);
+  setCustomEndDate(e);
+}, [selectedPreset]);
+
 
   // Main API Call Function
   const fetchData = async () => {
@@ -325,7 +328,6 @@ const IndexPage: React.FC = () => {
           gap: 2,
         }}
       >
-        {/* Date Picker (Left) */}
         <Box>
           <Button
             aria-describedby={id}
@@ -387,7 +389,6 @@ const IndexPage: React.FC = () => {
           </Popover>
         </Box>
 
-        {/* Filter (Right) */}
         <Box>
           <FilterDropdown
             filterOptions={["Staff Name"]}
