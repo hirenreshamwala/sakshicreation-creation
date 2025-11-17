@@ -56,18 +56,7 @@ function PrinterTaskExpandable({ row }: any) {
             </div>
 
             {/* Order Information */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-                <h4 className="font-medium mb-2">Order Information:</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>Order No: QP-{row.orderNo}</div>
-                    <div>Company: {row.companyName?.companyName}</div>
-                    <div>Party: {row.party?.partyName}</div>
-                    <div>Status: {row.status}</div>
-                    <div className="col-span-2">
-                        Total Printer Files: {row.printerFiles?.length || 0}
-                    </div>
-                </div>
-            </div>
+          
         </div>
     )
 }
