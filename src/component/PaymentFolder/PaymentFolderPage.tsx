@@ -16,12 +16,13 @@ import {
 import BasicTable from "@/component/common_component/Table/themetable";
 import ThemeChip from "@/component/common_component/themechip";
 import PaymentFolderDialog from "./PaymentFolderDialog";
+import PaymentAddDialog from "./PaymentAddDialog"; // Import the new dialog
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import PaymentIcon from "@mui/icons-material/Payment"; // Add payment icon
 import Swal from "sweetalert2";
 import { getCompanyWisePermission } from "@/utills/utills";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
-import { StaticCompanyOptions } from "@/constants";
 import TabComponent from "@/component/Dialog/TabComponent";
 import ThemeButton from "../common_component/themebutton";
 
@@ -45,8 +46,10 @@ const PaymentFolderPage: React.FC = () => {
   const { paymentFolders } = useAppSelector((state) => state.paymentFolders || {});
   const { user } = useAppSelector((state) => state.auth);
   const [open, setOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false); // State for payment dialog
   const [companyTab, setCompanyTab] = useState(0);
   const [rowData, setRowData] = useState<any>(null)
+  const [selectedFolder, setSelectedFolder] = useState<any>(null); // State for selected folder
   const [modalType, setModalType] = useState('Add')
   const { companies } = useAppSelector((state) => state.company);
   const canViewGlobal = user?.role?.permissions?.payment_folders?.view_global;
@@ -95,14 +98,20 @@ const PaymentFolderPage: React.FC = () => {
       : getCompanyWisePermission(6);
 
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true));
+    if (!companies.length) dispatch(getAllCompaniesThunk(true as any));
   }, []);
 
-  const handleEdit = (row: string) => {
+  const handleEdit = (row: any) => {
     const data = paymentFolders.find((item) => item._id === row.id)
     setRowData(data)
     setModalType('Edit')
     setOpen(true);
+  };
+
+  const handleAddPayment = (row: any) => {
+    const folderData = paymentFolders.find((item) => item._id === row.id);
+    setSelectedFolder(folderData);
+    setPaymentDialogOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -145,26 +154,11 @@ const PaymentFolderPage: React.FC = () => {
   const mapFoldersToRows = () =>
     paymentFolders?.map((folder) => ({
       ...folder,
-      id: folder._id,
-      company: {
-        name: folder.company?.companyName || "Unknown",
-        avatar: folder.company?.avatar || ""
-      },
       party: folder.party?.partyName || "Unknown",
-      area: folder.area.area || "N/A",
-      areaId: folder.area._id,
-      month: folder.month || "N/A",
-      paymentAmount: folder.paymentAmount || 0,
-      receivedAmount: folder.receivedAmount || 0,
-      pendingAmount: folder.pendingAmount || 0,
-      paymentType: folder.paymentType || "N/A",
       assignTo: folder.assignedTo
         ? `${folder.assignedTo.firstName} ${folder.assignedTo.lastName}`
         : "Unassigned",
-      assignedDate: folder.assignedDate
-        ? new Date(folder.assignedDate).toLocaleDateString("en-GB")
-        : "N/A",
-      remarks: folder.remarks || "N/A",
+      assignedDate: folder.assignedDate,
     }));
 
   const truncateText = (text: string, maxLength: number) => {
@@ -173,17 +167,17 @@ const PaymentFolderPage: React.FC = () => {
     return `${text.substring(0, maxLength)}...`;
   };
 
-  const renderRow = (row: RowData) => (
+  const renderRow = (row: any) => (
     <>
       <TableCell>
         <Box display="flex" alignItems="center" gap={1}>
           <Avatar
             sx={{ width: 32, height: 32 }}
             src={row.company.avatar}
-            alt={row.company.name}
+            alt={row.company.companyName}
           />
           <Typography fontWeight={500} sx={{ fontSize: 14 }}>
-            {row.company.name}
+            {row.company.companyName}
           </Typography>
         </Box>
       </TableCell>
@@ -196,7 +190,7 @@ const PaymentFolderPage: React.FC = () => {
         ₹{row.pendingAmount}
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>
-        <ThemeChip label={row.paymentType} color="primary" size="small" />
+        <ThemeChip label={row.paymentType} color="primary" sx={{ size: "small" }} />
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.assignedDate}</TableCell>
@@ -205,20 +199,34 @@ const PaymentFolderPage: React.FC = () => {
           {truncateText(row.remarks, 20)}
         </Typography>
       </TableCell>
-      <TableCell sx={{ display: "flex" }}>
+      <TableCell sx={{ display: "flex", gap: 1 }}>
+        {/* Add Payment Button - Show only if there's pending amount */}
+        {row.pendingAmount > 0 && (
+          <IconButton
+            color="success"
+            onClick={() => handleAddPayment(row)}
+            title="Add Payment"
+          >
+            <PaymentIcon />
+          </IconButton>
+        )}
         {canedit && (
-          <IconButton color="primary" onClick={() => handleEdit(row)}>
+          <IconButton color="primary" onClick={() => handleEdit(row)} title="Edit">
             <EditIcon />
           </IconButton>
         )}
         {candelete && (
-          <IconButton color="error" onClick={() => handleDelete(row.id)}>
+          <IconButton color="error" onClick={() => handleDelete(row.id)} title="Delete">
             <DeleteIcon />
           </IconButton>
         )}
       </TableCell>
     </>
   );
+
+  const refreshData = () => {
+    dispatch(getAllPaymentFoldersThunk());
+  };
 
   return (
     <>
@@ -240,16 +248,21 @@ const PaymentFolderPage: React.FC = () => {
           </Typography>
         </Box>
       )}
+
       {cancreate && (
-        <ThemeButton
-          onClick={() => {
-            setModalType('Add')
-            setOpen(true);
-          }}
-        >
-          + Add New Payment Folder
-        </ThemeButton>
+        <Box sx={{ mb: 2 }}>
+          <ThemeButton
+            onClick={() => {
+              setModalType('Add')
+              setRowData(null)
+              setOpen(true);
+            }}
+          >
+            + Add New Payment Folder
+          </ThemeButton>
+        </Box>
       )}
+
       <Box
         sx={{
           maxHeight: "70vh",
@@ -287,15 +300,20 @@ const PaymentFolderPage: React.FC = () => {
         )}
       </Box>
 
-      <PaymentFolderDialog
+      {/* Payment Folder Dialog for Add/Edit */}
+      {open ? <PaymentFolderDialog
         open={open}
         onClose={() => setOpen(false)}
-        // folderId={editId}
-        rowData={rowData}
+        rowData={rowData as any}
         modalType={modalType}
-      // refreshData={() => dispatch(getAllPaymentFoldersThunk())}
-      // company={companies?.find((item) => item.companyName === StaticCompanyOptions[companyTab])}
-      />
+      /> : null}
+
+      {/* Payment Add Dialog for adding payments */}
+      {paymentDialogOpen ? <PaymentAddDialog
+        open={paymentDialogOpen}
+        onClose={() => setPaymentDialogOpen(false)}
+        folderData={selectedFolder}
+      /> : null}
     </>
   );
 };

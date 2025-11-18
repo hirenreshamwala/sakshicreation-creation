@@ -77,6 +77,19 @@ export const paymentFolderService = {
             throw new Error(error.response?.data?.message || 'Failed to update payment folder');
         }
     },
+    async addPaymentFolder(id: string, data: Partial<PaymentFolder>): Promise<PaymentFolder> {
+        try {
+            const response: AxiosResponse<{ data: PaymentFolder; message: string }> = await Request.post(
+                `${Endpoint.ADD_PAYMENT_FOLDER}/${id}`,
+                data
+            );
+            console.log("last respoinse",response.data.data)
+            return response.data.data;
+        } catch (error: any) {
+            console.log(error,';error in service')
+            throw new Error(error.response?.data?.message || 'Failed to update payment folder');
+        }
+    },
 
     async deletePaymentFolder(id: string): Promise<void> {
         try {

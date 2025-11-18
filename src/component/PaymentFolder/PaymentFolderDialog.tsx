@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, memo } from "react";
-import { Box, Button, Stack, Typography } from "@mui/material";
+import React, { useState, useEffect, memo } from "react";
+import { Box, Stack } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import CustomDialog from "@/component/customdialog";
@@ -12,14 +12,11 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import {
   createPaymentFolderThunk,
   updatePaymentFolderThunk,
-  getPaymentFolderByIdThunk,
 } from "@/store/slices/paymentFolderSlice";
 import { getAllAccountMastersThunk } from "@/store/slices/accountMasterSlice";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
 import CompanySelect from "@/component/reusablecomponents/CompanyWithPartyName";
-import { useRouter } from "next/router";
 import { toast } from "react-toastify";
-import { StaticCompanyOptions } from "@/constants";
 import Swal from "sweetalert2";
 import moment from "moment";
 
@@ -70,7 +67,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
   onClose,
   rowData,
   modalType
-}) => {
+}: any) => {
 
   const dispatch = useAppDispatch();
   const { accountMasters } = useAppSelector((state) => state.accountMasters || {});
@@ -78,7 +75,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
   const [isLoading, setIsLoading] = useState(false);
   const isEditMode = modalType === 'Edit';
 
-  const staffOptions = staffList.map((staff) => ({
+  const staffOptions = staffList.map((staff: any) => ({
     label: `${staff.firstName} ${staff.lastName}`,
     value: staff._id,
   }))
@@ -93,12 +90,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     assignTo: Yup.string().required("Assign To is required"),
     assignedDate: Yup.string().required("Assigned Date is required"),
     remarks: Yup.string(),
-    ...(modalType === 'Edit' && {
-      receivedAmount: Yup.number()
-        .min(0, "Received Amount cannot be negative")
-        .max(Yup.ref('paymentAmount'), "Received Amount cannot exceed Payment Amount")
-        .required("Received Amount is required")
-    }),
   });
 
   // Get initial values based on modal type and rowData
@@ -231,14 +222,14 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             value={formik.values.companyName}
             onChange={handleCompanyChange}
             error={formik.touched.companyName && Boolean(formik.errors.companyName)}
-            helperText={formik.touched.companyName && formik.errors.companyName}
+            helperText={formik.touched.companyName && formik.errors.companyName as any}
             hasParties={true}
             required
             showPartyName={true}
             partyName={formik.values.partyName}
             onPartyChange={handlePartyChange}
             partyError={formik.touched.partyName && Boolean(formik.errors.partyName)}
-            partyHelperText={formik.touched.partyName && formik.errors.partyName}
+            partyHelperText={formik.touched.partyName && formik.errors.partyName as any}
           />
         </Box>
 
@@ -251,7 +242,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             error={formik.touched.area && Boolean(formik.errors.area)}
             helperText={formik.touched.area && formik.errors.area}
             required
-            fullWidth
           />
           <ThemeSelect
             label="Month"
@@ -261,7 +251,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             error={formik.touched.month && Boolean(formik.errors.month)}
             helperText={formik.touched.month && formik.errors.month}
             required
-            fullWidth
           />
         </Stack>
 
@@ -274,9 +263,8 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             error={formik.touched.paymentAmount && Boolean(formik.errors.paymentAmount)}
             helperText={formik.touched.paymentAmount && formik.errors.paymentAmount}
             required
-            fullWidth
           />
-           <ThemeInput
+          <ThemeInput
             labelName="Assigned Date"
             type="date"
             value={formik.values.assignedDate}
@@ -284,7 +272,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             error={formik.touched.assignedDate && Boolean(formik.errors.assignedDate)}
             helperText={formik.touched.assignedDate && formik.errors.assignedDate}
             required
-            fullWidth
           />
           {/* {isEditMode && (
             <ThemeInput
@@ -309,7 +296,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             error={formik.touched.paymentType && Boolean(formik.errors.paymentType)}
             helperText={formik.touched.paymentType && formik.errors.paymentType}
             required
-            fullWidth
           />
           <ThemeSelect
             label="Assign To"
@@ -319,11 +305,10 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             error={formik.touched.assignTo && Boolean(formik.errors.assignTo)}
             helperText={formik.touched.assignTo && formik.errors.assignTo}
             required
-            fullWidth
           />
         </Stack>
 
-          {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
+        {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
             <ThemeInput
               labelName="Assigned Date"
               type="date"
@@ -336,7 +321,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             />
           </Stack> */}
 
-        <Box mb={2}>
+        {/* <Box mb={2}>
           <ThemeInput
             labelName="Remarks"
             type="text"
@@ -346,7 +331,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             rows={3}
             fullWidth
           />
-        </Box>
+        </Box> */}
 
         <ThemeButton
           type="submit"

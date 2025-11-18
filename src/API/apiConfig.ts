@@ -232,6 +232,7 @@ const Endpoint = {
   GET_ALL_PAYMENT_FOLDERS: `${BaseURL}/api/payment-folders/getall`,
   GET_PAYMENT_FOLDER_BY_ID: `${BaseURL}/api/payment-folders/getbyid`,
   UPDATE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/update`,
+  ADD_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/payments`,
   DELETE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/delete`,
 
 };
