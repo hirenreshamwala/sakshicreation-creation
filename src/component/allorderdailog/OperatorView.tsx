@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { authService } from "@/services/auth.service"
 import FilterDropdown from "@/component/fillter"
 import DateRangePicker from "@/component/daterangepicker"
-import { FiSearch } from "react-icons/fi"
+import { FiSearch, FiSave } from "react-icons/fi"
 import { InputBase } from "@mui/material"
 import { getDisplayStatus } from "@/utills/utills"
 import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk, updateQPOrderThunk } from "@/store/slices/qpOrderSlice"
@@ -98,17 +98,21 @@ type OrderRow = {
     paper2?: { totalKg?: string };
     paper3?: { totalKg?: string };
   };
+  cuttingLength?: string; // Add this optional field
+  operatorNoOfSheet?: string;
+  operatorNoOfPieces?: string;
+  operatorPaperKG?: any;
+  operatorTotalKg?: string;
 }
-
 const OperatorView = () => {
   const [open, setOpen] = React.useState(false)
   const [jobSheetOpen, setJobSheetOpen] = React.useState(false)
   const [selectedRow, setSelectedRow] = React.useState<OrderRow | null>(null)
   const [pieceInputs, setPieceInputs] = useState<{ [key: string]: string }>({});
+  const [cuttingLengthInputs, setCuttingLengthInputs] = useState<{ [key: string]: string }>({});
   const [remarksOpen, setRemarksOpen] = useState(false);
   const [remarksRow, setRemarksRow] = useState<OrderRow | null>(null);
-  const [selectedUnit, setSelectedUnit] = useState<string | null>(null); // 'Unit1', 'Unit2', or null for all
-
+  const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const router = useRouter()
   const dispatch = useAppDispatch()
   const [editData, setEditData] = useState<OrderRow | null>(null)
@@ -211,9 +215,12 @@ const OperatorView = () => {
       case "deckal":
         return order.orderdata?.deckal || "N/A";
       case "cuttingLength":
-        return order.orderdata?.length && order.orderdata?.width
-          ? (Number(order.orderdata.length) + Number(order.orderdata.width) + 2).toString()
-          : "N/A";
+        // Use stored cutting length if available, otherwise calculate
+        return order.cuttingLength
+          ? order.cuttingLength
+          : order.orderdata?.length && order.orderdata?.width
+            ? (Number(order.orderdata.length) + Number(order.orderdata.width) + 2).toString()
+            : "N/A";
       case "noOfSheetut":
         return order.noOfPieces
           ? (Number(order.noOfPieces) * 2).toString()
@@ -294,7 +301,8 @@ const OperatorView = () => {
         safeToString(order.kantanDeckal).toLowerCase().includes(searchQuery.toLowerCase()) ||
         safeToString(order.salesRemark).toLowerCase().includes(searchQuery.toLowerCase()) ||
         safeToString(order.status).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        safeToString(order.unitNo).toLowerCase().includes(searchQuery.toLowerCase())
+        safeToString(order.unitNo).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.cuttingLength).toLowerCase().includes(searchQuery.toLowerCase())
         : true
 
       // Column filters
@@ -408,12 +416,53 @@ const OperatorView = () => {
           data: payloadData,
         })
       ).unwrap();
+      // Set local input to the saved value for immediate UI feedback
+      setPieceInputs(prev => ({ ...prev, [row._id]: value }));
+      // Refresh data to update the table with new values from backend
+      refreshData();
       toast.success("Data saved successfully");
     } catch (err: any) {
       toast.error(err?.message || "Failed to save pieces");
     }
   };
-
+  // Handle saving cutting length
+  const handleSaveCuttingLength = async (row: OrderRow) => {
+    const cuttingLength = cuttingLengthInputs[row._id];
+   
+    if (!cuttingLength) {
+      toast.error("Please enter a cutting length before saving");
+      return;
+    }
+    // Validate that it's a positive number
+    const cuttingLengthNum = parseFloat(cuttingLength);
+    if (isNaN(cuttingLengthNum) || cuttingLengthNum <= 0) {
+      toast.error("Please enter a valid positive number for cutting length");
+      return;
+    }
+    try {
+      await dispatch(
+        updateQPOrderThunk({
+          id: row._id,
+          data: {
+            cuttingLength: cuttingLength,
+          },
+        })
+      ).unwrap();
+     
+      // Set local input to the saved value for immediate UI feedback
+      setCuttingLengthInputs(prev => ({
+        ...prev,
+        [row._id]: cuttingLength
+      }));
+     
+      // Refresh data to update the table with new values from backend
+      refreshData();
+      toast.success("Cutting length updated successfully");
+     
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update cutting length");
+    }
+  };
   // Function to get row background color based on unit
   const getRowBackgroundColor = (row: OrderRow) => {
     if (row?.unitNo === 'Unit1') {
@@ -627,11 +676,45 @@ const OperatorView = () => {
                 <Typography>{row.orderdata?.deckal || "N/A"}</Typography>
               </TableCell>
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>
-                  {row.orderdata?.length && row.orderdata?.width
-                    ? Number(row.orderdata.length) + Number(row.orderdata.width) + 2
-                    : "N/A"}
-                </Typography>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <ThemeInput
+                    placeholder="Cutting length"
+                    type="number"
+                    sx={{
+                      width: 100,
+                      padding: "4px 8px",
+                      fontSize: "14px",
+                      '& .MuiInputBase-input': {
+                        padding: '4px 8px',
+                      }
+                    }}
+                    value={
+                      cuttingLengthInputs[row._id] !== undefined
+                        ? cuttingLengthInputs[row._id]
+                        : row.cuttingLength ||
+                          (row.orderdata?.length && row.orderdata?.width
+                            ? (Number(row.orderdata.length) + Number(row.orderdata.width) + 2).toString()
+                            : "")
+                    }
+                    onChange={(e) =>
+                      setCuttingLengthInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
+                    }
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() => handleSaveCuttingLength(row)}
+                    sx={{
+                      padding: '4px',
+                      color: 'primary.main',
+                      '&:hover': {
+                        backgroundColor: 'primary.light',
+                        color: 'white'
+                      }
+                    }}
+                  >
+                    <FiSave size={16} />
+                  </IconButton>
+                </Box>
               </TableCell>
 
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
