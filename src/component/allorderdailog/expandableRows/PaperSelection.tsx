@@ -76,15 +76,33 @@ function PaperSelection({
     if (data?.printType) {
       handleFormChange("printType", data.printType);
     }
+    // Initialize printer details if they exist
+    if (data?.paperSize) {
+      handleFormChange("paperSize", data.paperSize);
+    }
+    if (data?.boxSize) {
+      handleFormChange("boxSize", data.boxSize);
+    }
+    if (data?.printerQty) {
+      handleFormChange("printerQty", data.printerQty);
+    }
   }, [data]);
 
   // Handle printer change
   const handlePrinterChange = (value: string) => {
     handleFormChange("printer", value);
-    // Reset print type when printer changes
+    // Reset print type and printer details when printer changes
     if (!value) {
       handleFormChange("printType", "");
+      handleFormChange("paperSize", "");
+      handleFormChange("boxSize", "");
+      handleFormChange("printerQty", "");
     }
+  };
+
+  // Handle printer details change
+  const handlePrinterDetailChange = (field: string, value: string) => {
+    handleFormChange(field, value);
   };
 
   // File upload handlers
@@ -131,18 +149,13 @@ function PaperSelection({
       const updateData = {
         _id: data._id,
         approveDesign: true,
-        // status: "Design Approved",
-        printerFiles: selectedFiles, // Add selected files to printerFiles array
-        // updatedAt: new Date().toISOString()
+        printerFiles: selectedFiles,
       };
 
-      // if (onUpdateOrder) {
       await dispatch(updateQPOrderThunk({
         id: data._id,
         data: updateData
       })).unwrap();
-      // await onUpdateOrder(updateData);
-      // }
 
       setApproveDesignDialogOpen(false);
       console.log("Design approved successfully with printer files");
@@ -276,6 +289,10 @@ function PaperSelection({
                       handleFormChange("printType", "");
                       handleFormChange("designerFiles", []);
                       handleFormChange("designerRemark", "");
+                      // Reset printer details
+                      handleFormChange("paperSize", "");
+                      handleFormChange("boxSize", "");
+                      handleFormChange("printerQty", "");
                     }
                   }}
                   disabled={isCompleted}
@@ -393,7 +410,7 @@ function PaperSelection({
                     <Button
                       variant="contained"
                       color="success"
-                      onClick={handleApproveDesignClick} // Changed to open modal
+                      onClick={handleApproveDesignClick}
                       disabled={isCompleted}
                     >
                       Approve Design
@@ -434,7 +451,6 @@ function PaperSelection({
             </Box>
           )}
 
-          {/* Rest of the component remains same */}
           {isDesignerAdded && (
             <Box sx={{ mt: 3 }}>
               <FormControlLabel
@@ -451,6 +467,10 @@ function PaperSelection({
                         handleFormChange("binder", null);
                         handleFormChange("printType", "");
                         handleFormChange("printerRemark", "");
+                        // Reset printer details
+                        handleFormChange("paperSize", "");
+                        handleFormChange("boxSize", "");
+                        handleFormChange("printerQty", "");
                       }
                     }}
                     disabled={isCompleted}
@@ -508,18 +528,63 @@ function PaperSelection({
                     </Select>
                   </FormControl>
                 )}
-                <TextField
-                  label="Printer Remark"
-                  value={formData.printerRemark || ""}
-                  onChange={(e) => handleFormChange("printerRemark", e.target.value)}
-                  variant="outlined"
-                  size="small"
-                  multiline
-                  rows={2}
-                  fullWidth
-                  disabled={isCompleted}
-                />
               </Box>
+
+              {/* Printer Details - Show only when printer is selected */}
+              {formData.printer && (
+                <Box sx={{ mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 1, border: '1px solid #e0e0e0' }}>
+                  <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold', color: '#1976d2' }}>
+                    Printer Details
+                  </Typography>
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
+                    <TextField
+                      label="Paper Size"
+                      value={formData.paperSize || ""}
+                      onChange={(e) => handlePrinterDetailChange("paperSize", e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      placeholder="e.g., A4, A3, Custom Size"
+                      disabled={isCompleted}
+                    />
+                    <TextField
+                      label="Box Size"
+                      value={formData.boxSize || ""}
+                      onChange={(e) => handlePrinterDetailChange("boxSize", e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      placeholder="e.g., 10x10x10 cm"
+                      disabled={isCompleted}
+                    />
+                    <TextField
+                      label="Quantity"
+                      type="number"
+                      value={formData.printerQty || ""}
+                      onChange={(e) => handlePrinterDetailChange("printerQty", e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      placeholder="e.g., 1000"
+                      InputProps={{ inputProps: { min: 0 } }}
+                      disabled={isCompleted}
+                    />
+                  </Stack>
+                </Box>
+              )}
+
+              <TextField
+                label="Printer Remark"
+                value={formData.printerRemark || ""}
+                onChange={(e) => handleFormChange("printerRemark", e.target.value)}
+                variant="outlined"
+                size="small"
+                multiline
+                rows={2}
+                fullWidth
+                disabled={isCompleted}
+                sx={{ mt: 2 }}
+              />
             </Box>
           )}
 
@@ -591,7 +656,7 @@ function PaperSelection({
         </CardContent>
       </Card>
 
-      {/* Approve Design Modal */}
+      {/* Rest of the dialogs remain same */}
       <Dialog open={approveDesignDialogOpen} onClose={() => setApproveDesignDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           Select Files for Printer

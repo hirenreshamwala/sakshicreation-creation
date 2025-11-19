@@ -63,13 +63,15 @@ const OrdersList: React.FC = () => {
     { id: "companyName", label: "Company" },
     { id: "partyName", label: "Party" },
     { id: "size", label: "Size" },
+    printer && { id: "printerQty", label: "Printer Qty" },
+    printer && { id: "paperSize", label: "Paper Size" },
     { id: "ply", label: "Ply" },
     { id: "deckal", label: "Deckal" },
     { id: "varnish", label: "Varnish" },
     { id: "lamination", label: "Lamination" },
     { id: "uv", label: "UV" },
     { id: "status", label: "Status" },
-  ];
+  ].filter(Boolean);
 
   if (loading) return <Loader />
 
@@ -89,7 +91,9 @@ const OrdersList: React.FC = () => {
             <TableCell>QP-{row.orderNo}</TableCell>
             <TableCell>{row.companyName.companyName}</TableCell>
             <TableCell>{row.party?.partyName}</TableCell>
-            <TableCell>{row.orderdata?.length} x {row.orderdata?.width} x {row.orderdata?.height}</TableCell>
+            <TableCell>{printer ? `${row?.boxSize || ""}` : `${row.orderdata?.length} x ${row.orderdata?.width} x ${row.orderdata?.height}`}</TableCell>
+            {printer ? <TableCell>{row.printerQty}</TableCell> : null}
+            {printer ? <TableCell>{row.paperSize}</TableCell> : null}
             <TableCell>{row.orderdata?.ply}</TableCell>
             <TableCell>{row.orderdata?.deckal}</TableCell>
             <TableCell>{row.varnish ? "YES" : "NO"}</TableCell>
