@@ -34,7 +34,7 @@ export const paymentFolderService = {
                 Endpoint.CREATE_PAYMENT_FOLDER,
                 data
             );
-            return response.data.data;
+            return response.data;
         } catch (error: any) {
             throw new Error(error.response?.data?.message || 'Failed to create payment folder');
         }
