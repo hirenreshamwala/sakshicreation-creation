@@ -805,7 +805,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             fullWidth
                             value={
                                 qpFormData.totalKantan.reel && qpFormData.totalKantan.inch
-                                    ? `${qpFormData.totalKantan.reel} reel ${qpFormData.totalKantan.inch} inch`
+                                    ? `${qpFormData.totalKantan.reel} Taka ${qpFormData.totalKantan.inch} inch`
                                     : ""
                             }
                             disabled

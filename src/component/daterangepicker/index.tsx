@@ -42,7 +42,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         ...sx,
       }}
     >
-        <Box width={150}>
+        <Box width={160}>
         <ThemeInput
           type="date"
           value={formatDateForInput(startDate)}
@@ -63,7 +63,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       >
         <BiRightArrowAlt size={22} color="#98A2B3" />
       </Box>
-      <Box width={150}>
+      <Box width={160}>
         <ThemeInput
           type="date"
           value={formatDateForInput(endDate)}
