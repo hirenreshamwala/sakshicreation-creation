@@ -70,8 +70,15 @@ export const updateAssignTaskThunk = createAsyncThunk(
   'assignTasks/update',
   async ({ id, data }: { id: string; data: Partial<UpdateAssignTask> }, { rejectWithValue }) => {
     try {
-      const response = await assignTaskService.updateAssignTask(id, data);
-      return response;
+      const apiResponse = await assignTaskService.updateAssignTask(id, data);
+      if (!apiResponse.success) {
+        return rejectWithValue(apiResponse.message || 'Update failed');
+      }
+      const { originalTask, newTask } = apiResponse.data;
+      return {
+        original: originalTask,
+        new: newTask ? newTask.data : null
+      };
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to update assigned task');
     }
@@ -225,11 +232,16 @@ const assignTaskSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateAssignTaskThunk.fulfilled, (state, action: PayloadAction<AssignTask>) => {
+      .addCase(updateAssignTaskThunk.fulfilled, (state, action: PayloadAction<{ original: AssignTask; new: AssignTask | null }>) => {
         state.loading = false;
+        // Update the original task in the list
         state.assignTasks = state.assignTasks.map((task) =>
-          task._id === action.payload._id ? action.payload : task
+          task._id === action.payload.original._id ? action.payload.original : task
         );
+        // If rescheduled, add the new task to the list
+        if (action.payload.new) {
+          state.assignTasks.push(action.payload.new);
+        }
       })
       .addCase(updateAssignTaskThunk.rejected, (state, action) => {
         state.loading = false;

@@ -310,7 +310,7 @@ useEffect(() => {
     const storedUser = authService.getUser();
 
     if (token && !user && !loading && storedUser?.id) {
-      dispatch(fetchUserThunk({ token, userId: storeduser?.id }));
+      dispatch(fetchUserThunk({ token, userId: storedUser?.id }));
     }
 
     if (!token || (!user && !loading)) {
