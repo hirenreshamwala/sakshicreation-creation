@@ -19,6 +19,7 @@ import {
   Checkbox,
   List,
   ListItem,
+  Divider,
 } from "@mui/material"
 import { MdEmail, MdRemoveRedEye, MdArrowBack, MdClose, MdDelete, MdDownload } from "react-icons/md"
 import { AiOutlineEye } from "react-icons/ai"
