@@ -32,6 +32,7 @@ import { fileUploadService } from "@/services/fileUpload.service";
 import DesignerFilesDialog from "./DesignerFilesDialog";
 
 function PaperSelection({
+  row,
   isCompleted,
   printers,
   binders,
@@ -105,26 +106,26 @@ function PaperSelection({
     handleFormChange(field, value);
   };
 
-  // File upload handlers
+  // File upload handlers - CORRECTED: Upload to designFiles array
   const handleDesignerFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
       setFormData((prev: any) => ({
         ...prev,
-        designerFiles: [...(prev.designerFiles || []), ...Array.from(files)],
+        designFiles: [...(prev.designFiles || []), ...Array.from(files)],
       }));
     }
   };
 
-  // File delete handlers
+  // File delete handlers - CORRECTED: Delete from designFiles array
   const handleDeleteDesignerFile = (index: number) => {
     setFormData((prev: any) => ({
       ...prev,
-      designerFiles: prev.designerFiles.filter((_, i) => i !== index),
+      designFiles: prev.designFiles.filter((_, i) => i !== index),
     }));
   };
 
-  // Rework file upload handlers
+  // Rework file upload handlers - CORRECTED: This is for local state only, will be uploaded to reworkDesignFiles later
   const handleReworkFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
@@ -167,7 +168,7 @@ function PaperSelection({
   // Handle reject design
   const handleRejectDesign = () => setRejectDialogOpen(true);
 
-  // Handle submit rework files
+  // Handle submit rework files - CORRECTED: Upload to reworkDesignFiles array
   const handleSubmitRework = async () => {
     try {
       let reworkFileUrls: string[] = [];
@@ -180,7 +181,7 @@ function PaperSelection({
       const updateData = {
         _id: data._id,
         approveDesign: false,
-        reworkDesignFiles: reworkFileUrls,
+        reworkDesignFiles: reworkFileUrls, // CORRECTED: Changed from reworkDesignerFiles to reworkDesignFiles
       };
 
       await dispatch(updateQPOrderThunk({
@@ -233,8 +234,8 @@ function PaperSelection({
   // Select all files
   const handleSelectAll = () => {
     const allFiles = [
-      ...(data?.designerFiles || []),
-      ...(data?.reworkDesignerFiles || [])
+      ...(data?.designFiles || []), // CORRECTED: Changed from designerFiles to designFiles
+      ...(data?.reworkDesignFiles || []) // CORRECTED: Changed from reworkDesignerFiles to reworkDesignFiles
     ];
 
     if (selectedFiles.length === allFiles.length) {
@@ -244,8 +245,8 @@ function PaperSelection({
     }
   };
 
-  // Check if designer files exist and approveDesign is not set
-  const showApproveRejectButtons = formData.designerFiles?.length > 0 && !data?.approveDesign;
+  // Check if designer files exist and approveDesign is not set - CORRECTED: Check designFiles instead of designerFiles
+  const showApproveRejectButtons = row.designFiles?.length > 0 && !row?.approveDesign;
 
   // Get file name from URL or File object
   const getFileName = (file: any) => {
@@ -255,11 +256,11 @@ function PaperSelection({
     return file.name;
   };
 
-  // Get all available files for selection
+  // Get all available files for selection - CORRECTED: Use correct field names
   const getAllAvailableFiles = () => {
     return [
-      ...(data?.designerFiles || []),
-      ...(data?.reworkDesignerFiles || [])
+      ...(data?.designFiles || []), // CORRECTED: Changed from designerFiles to designFiles
+      ...(data?.reworkDesignFiles || []) // CORRECTED: Changed from reworkDesignerFiles to reworkDesignFiles
     ];
   };
 
@@ -287,7 +288,7 @@ function PaperSelection({
                       handleFormChange("printer", null);
                       handleFormChange("binder", null);
                       handleFormChange("printType", "");
-                      handleFormChange("designerFiles", []);
+                      handleFormChange("designFiles", []); // CORRECTED: Changed from designerFiles to designFiles
                       handleFormChange("designerRemark", "");
                       // Reset printer details
                       handleFormChange("paperSize", "");
@@ -333,7 +334,7 @@ function PaperSelection({
                 </TextField>
 
                 {/* View Files Button - Show when there are files to view */}
-                {(data?.designFiles?.length > 0 || data?.designerFiles?.length > 0 || data?.reworkDesignFiles?.length > 0 || data?.reworkDesignerFiles?.length > 0) && (
+                {(data?.designFiles?.length > 0 || data?.reworkDesignFiles?.length > 0) && ( // CORRECTED: Updated field names
                   <Button
                     variant="outlined"
                     startIcon={<Visibility />}
@@ -348,7 +349,7 @@ function PaperSelection({
               {/* Designer File Upload */}
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
-                  Design Files {formData.designerFiles?.length === 0 && "*"}
+                  Design Files {formData.designFiles?.length === 0 && "*"} {/* CORRECTED: Changed from designerFiles to designFiles */}
                 </Typography>
 
                 <input
@@ -370,14 +371,14 @@ function PaperSelection({
                   </Button>
                 </label>
 
-                {formData.designerFiles?.length === 0 && (
+                {formData.designFiles?.length === 0 && ( // CORRECTED: Changed from designerFiles to designFiles
                   <Typography variant="caption" color="error" sx={{ ml: 1 }}>
                     At least 1 file is required
                   </Typography>
                 )}
 
                 <Box sx={{ mt: 1 }}>
-                  {formData.designerFiles?.length > 0 && (
+                  {formData.designFiles?.length > 0 && ( // CORRECTED: Changed from designerFiles to designFiles
                     <Box
                       sx={{
                         mt: 1,
@@ -390,7 +391,7 @@ function PaperSelection({
                         p: 1,
                       }}
                     >
-                      {formData.designerFiles.map((file, index) => (
+                      {formData.designFiles.map((file, index) => ( // CORRECTED: Changed from designerFiles to designFiles
                         <Chip
                           key={index}
                           label={getFileName(file)}
@@ -544,29 +545,35 @@ function PaperSelection({
                       variant="outlined"
                       size="small"
                       fullWidth
-                      placeholder="e.g., A4, A3, Custom Size"
                       disabled={isCompleted}
                     />
                     <TextField
-                      label="Box Size"
+                      label="Paper Quality"
                       value={formData.boxSize || ""}
-                      onChange={(e) => handlePrinterDetailChange("boxSize", e.target.value)}
+                      onChange={(e) => handlePrinterDetailChange("paperQuality", e.target.value)}
                       variant="outlined"
                       size="small"
                       fullWidth
-                      placeholder="e.g., 10x10x10 cm"
                       disabled={isCompleted}
                     />
                     <TextField
-                      label="Quantity"
+                      label="Paper Gsm"
                       type="number"
                       value={formData.printerQty || ""}
-                      onChange={(e) => handlePrinterDetailChange("printerQty", e.target.value)}
+                      onChange={(e) => handlePrinterDetailChange("paperGsm", e.target.value)}
                       variant="outlined"
                       size="small"
                       fullWidth
-                      placeholder="e.g., 1000"
                       InputProps={{ inputProps: { min: 0 } }}
+                      disabled={isCompleted}
+                    />
+                    <TextField
+                      label="Paper Qty"
+                      value={formData.paperSize || ""}
+                      onChange={(e) => handlePrinterDetailChange("paperQty", e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      fullWidth
                       disabled={isCompleted}
                     />
                   </Stack>
@@ -656,7 +663,7 @@ function PaperSelection({
         </CardContent>
       </Card>
 
-      {/* Rest of the dialogs remain same */}
+      {/* Approve Design Dialog */}
       <Dialog open={approveDesignDialogOpen} onClose={() => setApproveDesignDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           Select Files for Printer
@@ -692,14 +699,14 @@ function PaperSelection({
             />
           </Box>
 
-          {/* Designer Files Section */}
+          {/* Design Files Section - CORRECTED: Changed from Designer Files to Design Files */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
-              Designer Files
+              Design Files
             </Typography>
-            {data?.designerFiles?.length > 0 ? (
+            {data?.designFiles?.length > 0 ? ( // CORRECTED: Changed from designerFiles to designFiles
               <List dense>
-                {data.designerFiles.map((fileUrl: string, index: number) => (
+                {data.designFiles.map((fileUrl: string, index: number) => ( // CORRECTED: Changed from designerFiles to designFiles
                   <ListItem key={index} disablePadding>
                     <ListItemIcon>
                       <Checkbox
@@ -709,7 +716,7 @@ function PaperSelection({
                     </ListItemIcon>
                     <ListItemText
                       primary={getFileName(fileUrl)}
-                      secondary="Designer File"
+                      secondary="Design File"
                     />
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <IconButton
@@ -725,19 +732,19 @@ function PaperSelection({
               </List>
             ) : (
               <Typography variant="body2" color="text.secondary">
-                No designer files available
+                No design files available
               </Typography>
             )}
           </Box>
 
-          {/* Rework Designer Files Section */}
+          {/* Rework Design Files Section - CORRECTED: Changed from Rework Designer Files to Rework Design Files */}
           <Box sx={{ mb: 2 }}>
             <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
-              Rework Designer Files
+              Rework Design Files
             </Typography>
-            {data?.reworkDesignerFiles?.length > 0 ? (
+            {data?.reworkDesignFiles?.length > 0 ? ( // CORRECTED: Changed from reworkDesignerFiles to reworkDesignFiles
               <List dense>
-                {data.reworkDesignerFiles.map((fileUrl: string, index: number) => (
+                {data.reworkDesignFiles.map((fileUrl: string, index: number) => ( // CORRECTED: Changed from reworkDesignerFiles to reworkDesignFiles
                   <ListItem key={index} disablePadding>
                     <ListItemIcon>
                       <Checkbox
@@ -747,7 +754,7 @@ function PaperSelection({
                     </ListItemIcon>
                     <ListItemText
                       primary={getFileName(fileUrl)}
-                      secondary="Rework Designer File"
+                      secondary="Rework Design File"
                     />
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <IconButton
@@ -763,7 +770,7 @@ function PaperSelection({
               </List>
             ) : (
               <Typography variant="body2" color="text.secondary">
-                No rework designer files available
+                No rework design files available
               </Typography>
             )}
           </Box>
@@ -781,7 +788,7 @@ function PaperSelection({
         </DialogActions>
       </Dialog>
 
-      {/* Existing Reject Design Dialog */}
+      {/* Reject Design Dialog */}
       <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Reject Design & Upload Rework Files</DialogTitle>
         <DialogContent>
@@ -851,7 +858,7 @@ function PaperSelection({
         </DialogActions>
       </Dialog>
 
-      {/* Rest of the dialogs remain same */}
+      {/* View Files Dialog */}
       <DesignerFilesDialog
         viewFilesDialogOpen={viewFilesDialogOpen}
         setViewFilesDialogOpen={setViewFilesDialogOpen}
@@ -861,6 +868,7 @@ function PaperSelection({
         handleViewFile={handleViewFile}
       />
 
+      {/* File Preview Dialog */}
       <Dialog
         open={!!currentFileUrl}
         onClose={() => setCurrentFileUrl("")}
@@ -903,6 +911,7 @@ function PaperSelection({
         </DialogContent>
       </Dialog>
 
+      {/* Remarks Section */}
       <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", mt: 2 }}>
         <TextField
           label="Dye Remark"

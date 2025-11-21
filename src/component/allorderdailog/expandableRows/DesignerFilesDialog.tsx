@@ -9,7 +9,7 @@ import {
     DialogContent,
     IconButton,
 } from "@mui/material";
-import { Delete, Visibility, Download } from "@mui/icons-material";
+import { Close, Visibility, Download } from "@mui/icons-material";
 
 function DesignerFilesDialog({ viewFilesDialogOpen, setViewFilesDialogOpen, data, getFileName, handleDownloadFile, handleViewFile }:any) {
       const isFileUrl = (file: any) => typeof file === 'string';
@@ -38,7 +38,7 @@ function DesignerFilesDialog({ viewFilesDialogOpen, setViewFilesDialogOpen, data
                             color: (theme) => theme.palette.grey[500],
                         }}
                     >
-                        <Delete />
+                        <Close />
                     </IconButton>
                 </DialogTitle>
                 <DialogContent dividers>

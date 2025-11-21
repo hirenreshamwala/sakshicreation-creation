@@ -834,6 +834,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         />
 
                         <PaperSelection
+                        row={row}
                             // setSelectedPrinter={setSelectedPrinter}
                             // setSelectedBinder={setSelectedBinder}
                             // setSelectedDesigner={setSelectedDesigner}

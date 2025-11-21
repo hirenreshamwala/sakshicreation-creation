@@ -48,6 +48,7 @@ const PaymentFolderPage: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false); // State for payment dialog
   const [companyTab, setCompanyTab] = useState(0);
+  const [areaTab, setAreaTab] = useState(0);
   const [rowData, setRowData] = useState<any>(null)
   const [selectedFolder, setSelectedFolder] = useState<any>(null); // State for selected folder
   const [modalType, setModalType] = useState('Add')
@@ -86,8 +87,8 @@ const PaymentFolderPage: React.FC = () => {
 
   const companyTabs = useMemo(() => {
     const tabs = [];
-    if (hasSakshi) tabs.push({ id: 'sakshi', name: 'Sakshi', companyId: getCompanyWisePermission(5) });
-    if (hasQP) tabs.push({ id: 'qp', name: 'QP', companyId: getCompanyWisePermission(6) });
+    if (hasSakshi) tabs.push({ id: 'sakshi', name: 'Sakshi Creation', companyId: getCompanyWisePermission(5) });
+    if (hasQP) tabs.push({ id: 'qp', name: 'Quality Packaging', companyId: getCompanyWisePermission(6) });
     return tabs;
   }, [user, hasSakshi, hasQP]);
 
@@ -96,6 +97,26 @@ const PaymentFolderPage: React.FC = () => {
     : hasSakshi
       ? getCompanyWisePermission(5)
       : getCompanyWisePermission(6);
+
+  const companyFilteredFolders = useMemo(() => {
+    if (!selectedCompanyId) return paymentFolders;
+    return paymentFolders.filter((folder: any) => folder.company?._id === selectedCompanyId || folder.company === selectedCompanyId);
+  }, [paymentFolders, selectedCompanyId]);
+
+  const areaTabs = useMemo(() => {
+    const areas = new Set(companyFilteredFolders.map((folder: any) => folder.area).filter(Boolean));
+    return ['All', "K-1", "K-2", "K-3", "K-4"];
+  }, [companyFilteredFolders]);
+
+  useEffect(() => {
+    setAreaTab(0);
+  }, [selectedCompanyId]);
+
+  const finalFilteredFolders = useMemo(() => {
+    if (areaTab === 0) return companyFilteredFolders;
+    const selectedArea = areaTabs[areaTab];
+    return companyFilteredFolders.filter((folder: any) => folder.area === selectedArea);
+  }, [companyFilteredFolders, areaTab, areaTabs]);
 
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true as any));
@@ -152,7 +173,7 @@ const PaymentFolderPage: React.FC = () => {
   console.log(paymentFolders, 'paymentFolders')
 
   const mapFoldersToRows = () =>
-    paymentFolders?.map((folder) => ({
+    finalFilteredFolders?.map((folder: any) => ({
       ...folder,
       party: folder.party?.partyName || "Unknown",
       assignTo: folder.assignedTo
@@ -236,6 +257,7 @@ const PaymentFolderPage: React.FC = () => {
           <TabComponent
             activeTab={companyTab}
             setActiveTab={setCompanyTab}
+            tabList={companyTabs.map(t => t.name)}
           />
         </Box>
       )}
@@ -248,6 +270,15 @@ const PaymentFolderPage: React.FC = () => {
           </Typography>
         </Box>
       )}
+
+      <Box sx={{ mb: 2 }}>
+        <TabComponent
+          activeTab={areaTab}
+          setActiveTab={setAreaTab}
+          tabList={areaTabs as string[]}
+          align="left"
+        />
+      </Box>
 
       {cancreate && (
         <Box sx={{ mb: 2 }}>
@@ -284,7 +315,7 @@ const PaymentFolderPage: React.FC = () => {
           },
         }}
       >
-        {paymentFolders.length === 0 ? (
+        {finalFilteredFolders.length === 0 ? (
           <Typography>
             No payment folders found for {hasBothCompanies ? companyTabs[companyTab]?.name : (hasSakshi ? 'Sakshi' : 'QP')}.
           </Typography>

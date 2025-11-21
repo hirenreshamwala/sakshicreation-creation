@@ -117,12 +117,12 @@ const PrinterForm = () => {
         // Default first paper field
         setPaperFields([{
           paperName: "Paper-1",
-          numberOfSheetsUsed: "",
-          sheetSize: "",
-          paperType: "",
-          gsm: "",
-          ratePerUnit: "",
-          paperSize: "",
+          numberOfSheetsUsed: null,
+          sheetSize: null,
+          paperType: null,
+          gsm: null,
+          ratePerUnit: null,
+          paperSize: null,
         }]);
       }
     }
@@ -151,22 +151,22 @@ const PrinterForm = () => {
     validationSchema: Yup.object({
       size: Yup.string().required("Size is required"),
       binding: Yup.string().required("Binding is required"),
-      subPaper: Yup.string().required("Sub Paper is required"),
-      usedPaper: Yup.string().required("Used Paper is required"),
+      // subPaper: Yup.string().required("Sub Paper is required"),
+      // usedPaper: Yup.string().required("Used Paper is required"),
       pType: Yup.string().required("Product Type is required"),
-      printingrate: Yup.string().required("Printing Rate is required"),
-      printingratePerUnit: Yup.string().required("Printing Rate Per Unit is required"),
+      // printingrate: Yup.string().required("Printing Rate is required"),
+      // printingratePerUnit: Yup.string().required("Printing Rate Per Unit is required"),
       // gsm: Yup.string().required("GSM is required"),
       // rowPaperSize: Yup.string().required("Raw Paper Size is required"),
       // rowPaperUser: Yup.string().required("Raw Paper User is required"),
-      printerRemarks: Yup.string().required("Remarks are required"),
+      // printerRemarks: Yup.string().required("Remarks are required"),
       printerPapers: Yup.array().of(
         Yup.object().shape({
           numberOfSheetsUsed: Yup.string().required("Number of Sheets Used is required"),
           sheetSize: Yup.string().required("Sheet Size is required"),
           paperType: Yup.string().required("Paper Type is required"),
           gsm: Yup.string().required("GSM is required"),
-          ratePerUnit: Yup.string().required("Rate Per Unit is required"),
+          // ratePerUnit: Yup.string().required("Rate Per Unit is required"),
         })
       ),
     }),
@@ -598,8 +598,8 @@ const PrinterForm = () => {
                   onChange={(e) => handlePaperFieldChange(index, 'ratePerUnit', e.target.value)}
                   fullWidth
                   required
-                  error={!paper.ratePerUnit && formik.submitCount > 0}
-                  helperText={!paper.ratePerUnit && formik.submitCount > 0 ? "This field is required" : ""}
+                  // error={!paper.ratePerUnit && formik.submitCount > 0}
+                  // helperText={!paper.ratePerUnit && formik.submitCount > 0 ? "This field is required" : ""}
                   InputProps={{ readOnly: areFieldsReadOnly }}
                 />
               </Stack>
