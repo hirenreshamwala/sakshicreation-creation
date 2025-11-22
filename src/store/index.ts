@@ -31,6 +31,7 @@ import marketDataReducer from '@/store/slices/marketDataSlice';
 import kantanReducer from '@/store/slices/kantanSlice';
 import complainReducer from '@/store/slices/complainSlice';
 import paymentReducer from '@/store/slices/paymentFolderSlice';
+import lowStockReducer from '@/store/slices/lowStockSlice';
 // Persist configuration
 export const persistConfig = {
   key: 'auth',
@@ -69,6 +70,7 @@ export const store = configureStore({
     companyNames: companyNameReducer,
     vendors: vendorReducer,
     inventory: inventoryReducer,
+    lowStock: lowStockReducer,
     binderType: binderTypeReducer,
     markets: marketDataReducer,
     kantans: kantanReducer,

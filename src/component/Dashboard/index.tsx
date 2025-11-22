@@ -56,6 +56,7 @@ const permissionMapping: { [key: string]: string } = {
   "Performance invoice": "proforma_invoice",
   "Payment Folders": "payment_folders",
   Reports: "reports",
+  LowStockManagement:"inventory",
   Inventory: "inventory",
   Purchase: "purchase",
   Task: "task",
@@ -176,6 +177,11 @@ const menuItems = [
     icon: <MdInventory size={18} />,
     path: "/admin/inventory",
   },
+  // {
+  //   label: "LowStockManagement",
+  //   icon: <MdInventory size={18} />,
+  //   path: "/admin/LowStockManagement",
+  // },
   {
     label: "Purchase",
     icon: <MdShoppingCart size={18} />,

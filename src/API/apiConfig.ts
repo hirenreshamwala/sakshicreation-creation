@@ -69,6 +69,14 @@ const Endpoint = {
   GET_BY_COMPANY: `${BaseURL}/api/purchase/getbycompany`,
   GET_INVENTORY_BOX: `${BaseURL}/api/inventory/getbox`,
 
+  GETALLOWSTOCKS: `${BaseURL}/api/lowstock/getall`,
+GETLOWSTOCKBYID: (id: string) => `${BaseURL}/api/lowstock/getbyid/${id}`,
+CREATELOWSTOCK: `${BaseURL}/api/lowstock/create`,
+UPDATELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/update/${id}`,
+DELETELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/delete/${id}`,
+CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
+
+  
   //staff
   GET_ROLE: `${BaseURL}/api/staff/getrol`,
 
