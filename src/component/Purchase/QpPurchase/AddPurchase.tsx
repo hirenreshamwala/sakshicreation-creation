@@ -462,13 +462,13 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                   placeholder="Enter BF"
                 />
                 <ThemeInput
-                  labelName="REEL/BATCH NO"
+                  labelName="TAKA/BATCH NO"
                   name="reelBatchNo"
                   value={formData.reelBatchNo}
                   onChange={handleChange}
                   fullWidth
                   // required
-                  placeholder="Enter reel/batch number"
+                  placeholder="Enter TAKA/batch number"
                 />
                 <Autocomplete
                   freeSolo

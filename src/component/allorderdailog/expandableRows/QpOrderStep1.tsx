@@ -86,7 +86,7 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                     helperText={formData.isPunching && !formData.dyeNumber ? "Required for punching" : ""}
                 />
                 <TextField
-                    label="Dye Sheet Size"
+                    label="Sheet Size"
                     value={formData.dyeSize}
                     onChange={(e) => handleFormChange("dyeSize", e.target.value)}
                     variant="outlined"
@@ -195,17 +195,7 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                     </FormGroup>
                 </FormControl>
 
-                <FormControl sx={{ width: 200 }}>
-                    <InputLabel>Varnish</InputLabel>
-                    <Select
-                        value={formData.varnish ? "yes" : "no"}
-                        label="Varnish"
-                        onChange={(e) => handleFormChange("varnish", e.target.value === "yes")}
-                    >
-                        <MenuItem value="no">No</MenuItem>
-                        <MenuItem value="yes">Yes</MenuItem>
-                    </Select>
-                </FormControl>
+                
                 <FormControl sx={{ width: 200 }}>
                     <InputLabel>Lamination</InputLabel>
                     <Select
@@ -218,14 +208,20 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                         <MenuItem value="yes">Yes</MenuItem>
                     </Select>
                 </FormControl>
-
+                            
                 {formData.lamination && (
                     <FormControl sx={{ width: 200 }}>
                         <InputLabel>Lamination Type</InputLabel>
                         <Select
                             value={formData.laminationType}
                             label="Lamination Type"
-                            onChange={(e) => handleFormChange("laminationType", e.target.value)}
+                            onChange={(e) => {
+                                handleFormChange("laminationType", e.target.value);
+                                // Default UV Type to "uv_mate" when switching to "mate" and UV is enabled
+                                if (e.target.value === "mate" && formData.uv) {
+                                    handleFormChange("uvType", "uv_mate");
+                                }
+                            }}
                         >
                             <MenuItem value="glossy">Glossy</MenuItem>
                             <MenuItem value="mate">Mate</MenuItem>
@@ -240,7 +236,13 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                             <Select
                                 value={formData.uv ? "yes" : "no"}
                                 label="UV"
-                                onChange={(e) => handleFormChange("uv", e.target.value === "yes")}
+                                onChange={(e) => {
+                                    handleFormChange("uv", e.target.value === "yes");
+                                    // Default UV Type to "uv_mate" when UV is enabled and laminationType is "mate"
+                                    if (e.target.value === "yes" && formData.laminationType === "mate") {
+                                        handleFormChange("uvType", "uv_mate");
+                                    }
+                                }}
                                 disabled={formData.varnish}
                             >
                                 <MenuItem value="no">No</MenuItem>
@@ -252,17 +254,29 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                             <FormControl sx={{ width: 220 }}>
                                 <InputLabel>UV Type</InputLabel>
                                 <Select
-                                    value={formData.uvType}
+                                    value={formData.uvType || "uv_mate"} // Default to "uv_mate" if not set
                                     label="UV Type"
                                     onChange={(e) => handleFormChange("uvType", e.target.value)}
                                 >
-                                    <MenuItem value="uv">UV</MenuItem>
+                                    {/* <MenuItem value="uv">UV</MenuItem> */}
                                     <MenuItem value="uv_mate">UV + Mate Lamination</MenuItem>
                                 </Select>
                             </FormControl>
                         )}
+                       
                     </>
                 )}
+                 <FormControl sx={{ width: 200 }}>
+                    <InputLabel>Varnish</InputLabel>
+                    <Select
+                        value={formData.varnish ? "yes" : "no"}
+                        label="Varnish"
+                        onChange={(e) => handleFormChange("varnish", e.target.value === "yes")}
+                    >
+                        <MenuItem value="no">No</MenuItem>
+                        <MenuItem value="yes">Yes</MenuItem>
+                    </Select>
+                </FormControl>
             </Stack>
         </>
     )

@@ -175,6 +175,8 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
               } as UpdateAssignTask,
             })
           ).unwrap();
+          // Refetch the single task to update singleAssignTask in state
+          dispatch(getAssignTaskByIdThunk(taskId));
           toast.success("Task updated successfully")
           // Swal.fire({
           //   title: "Success!",
@@ -342,7 +344,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
       if (!staffList?.length) {
         dispatch(getAllStaffThunk());
       }
-      if (isEditMode && taskId && singleAssignTask?._id !== taskId) {
+      if (isEditMode && taskId) {
         dispatch(getAssignTaskByIdThunk(taskId));
       }
       if (!isEditMode && !isBulkMode) {
