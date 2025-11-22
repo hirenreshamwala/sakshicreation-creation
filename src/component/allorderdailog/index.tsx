@@ -257,7 +257,6 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
   }
 
 
-  console.log("DEBUG : singleAccountMaster:", singleAccountMaster);
   const renderSakshiForm = () => (
     <>
       <Stack direction="row" spacing={2} mb={2}>

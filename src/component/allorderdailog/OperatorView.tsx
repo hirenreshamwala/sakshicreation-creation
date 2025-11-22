@@ -357,7 +357,6 @@ const OperatorView = () => {
   }, [error, dispatch]);
 
   const handleSavePieces = async (row: OrderRow) => {
-    console.log("DEBUG : handleSavePieces : row:", row);
 
     const value = pieceInputs[row._id];
     if (!value) {

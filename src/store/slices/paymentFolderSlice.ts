@@ -35,6 +35,19 @@ export interface PaymentFolderState {
   error: string | null;
 }
 
+// Add this multiple delete thunk
+export const deleteMultiplePaymentFoldersThunk = createAsyncThunk(
+  'paymentFolders/deleteMultiple',
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      const response = await paymentFolderService.deleteMultiplePaymentFolders(ids);
+      return { deletedIds: ids, response };
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to delete payment folders');
+    }
+  }
+);
+
 export const createPaymentFolderThunk = createAsyncThunk(
   'paymentFolders/create',
   async (data: Partial<PaymentFolder>, { rejectWithValue }) => {
@@ -201,13 +214,36 @@ const paymentFolderSlice = createSlice({
           }
         }
       })
-      // Delete Payment Folder
+      // Delete Payment Folder (Single)
       .addCase(deletePaymentFolderThunk.fulfilled, (state, action: PayloadAction<string>) => {
         state.paymentFolders = state.paymentFolders.filter((folder) => folder._id !== action.payload);
         if (state.currentPaymentFolder && state.currentPaymentFolder._id === action.payload) {
           state.currentPaymentFolder = null;
         }
       })
+      // Delete Multiple Payment Folders
+      .addCase(deleteMultiplePaymentFoldersThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteMultiplePaymentFoldersThunk.fulfilled, (state, action: PayloadAction<{ deletedIds: string[]; response: any }>) => {
+        state.loading = false;
+        const { deletedIds } = action.payload;
+        
+        // Remove all deleted folders from state
+        state.paymentFolders = state.paymentFolders.filter(
+          (folder) => !deletedIds.includes(folder._id)
+        );
+        
+        // Clear current payment folder if it was deleted
+        if (state.currentPaymentFolder && deletedIds.includes(state.currentPaymentFolder._id)) {
+          state.currentPaymentFolder = null;
+        }
+      })
+      .addCase(deleteMultiplePaymentFoldersThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
     // Add Payment to Folder
     // .addCase(addPaymentToFolderThunk.pending, (state) => {
     //   state.loading = true;
@@ -237,7 +273,8 @@ export const {
   clearCurrentPaymentFolder,
   setCurrentPaymentFolder,
   clearError,
-  updatePaymentFolderInState
+  updatePaymentFolderInState,
+  addPaymentToFolderInState
 } = paymentFolderSlice.actions;
 
 export default paymentFolderSlice.reducer;

@@ -45,7 +45,7 @@ const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]
 };
 
 export const driverService = {
-    backToFactory: async (driverId, factoryPhotos) => {
+    backToFactory: async (driverId:any, factoryPhotos:any) => {
         const BaseURL = process.env.NEXT_PUBLIC_API_URL;
         const response = await Request.post(`${BaseURL}/api/factoryReturn/create`, {
             driverId,
@@ -72,7 +72,7 @@ const DriverView = () => {
     const [selectionType, setSelectionType] = useState<"completed" | "loading" | null>(null);
     const [factoryModalOpen, setFactoryModalOpen] = useState(false);
     const [factoryPhotos, setFactoryPhotos] = useState<File[]>([]);
-    const [billNumber, setBillNumber] = useState("");
+    const [billNumber, setBillNumber] = useState<any>("");
 
     const dispatch = useAppDispatch();
     const { companies } = useAppSelector((state) => state.company);
@@ -199,7 +199,6 @@ const DriverView = () => {
     };
 
     const handleLoadOrders = async () => {
-        console.log("DEBUG : handleLoadOrders : user:", user);
 
         if (user?.isDisptach) {
             toast.error("You are currently on delivery. Complete all deliveries before loading new orders.");
@@ -274,12 +273,10 @@ const DriverView = () => {
 
             // 🟢 Update localStorage (isDisptach = true)
             const updatedDriver = response?.data?.[0]?.driver;
-            console.log("DEBUG : handleDispatchSubmit : updatedDriver:", updatedDriver);
 
             if (updatedDriver) {
                 const storedUser = JSON.parse(localStorage.getItem("user"));
                 const updatedUser = { ...storedUser, isDisptach: updatedDriver.isDisptach };
-                console.log("DEBUG : handleDispatchSubmit : updatedDriver.isDisptach: ispe true hoga ", updatedDriver.isDisptach);
                 localStorage.setItem("user", JSON.stringify(updatedUser));
             }
 
@@ -360,7 +357,6 @@ const DriverView = () => {
     };
 
     const handleRemoveLoading = async (orderId: string) => {
-        console.log("DEBUG : handleRemoveLoading : orderId:", orderId);
 
         try {
             const result = await dispatch(removeLoadingOrderThunk(orderId)).unwrap();

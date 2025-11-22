@@ -83,19 +83,36 @@ export const paymentFolderService = {
                 `${Endpoint.ADD_PAYMENT_FOLDER}/${id}`,
                 data
             );
-            console.log("last respoinse",response.data.data)
+            console.log("last respoinse", response.data.data)
             return response.data.data;
         } catch (error: any) {
-            console.log(error,';error in service')
+            console.log(error, ';error in service')
             throw new Error(error.response?.data?.message || 'Failed to update payment folder');
         }
     },
 
     async deletePaymentFolder(id: string): Promise<void> {
         try {
-            await Request.delete(`${Endpoint.DELETE_PAYMENT_FOLDER}/${id}`);
+            await Request.post(`${Endpoint.DELETE_PAYMENT_FOLDER}/${id}`);
         } catch (error: any) {
             throw new Error(error.response?.data?.message || 'Failed to delete payment folder');
         }
     },
+    async deleteMultiplePaymentFolders(ids: string[]): Promise<MultipleDeleteResponse> {
+        try {
+            const response: AxiosResponse<MultipleDeleteResponse> = await Request.post(
+                Endpoint.DELETE_MULTIPLE_PAYMENT_FOLDER, // Make sure this endpoint supports multiple deletion
+                { ids }  // Send IDs in request body
+            );
+
+            return {
+                success: true,
+                message: response.data.message || `${ids.length} payment folder(s) deleted successfully`,
+                deletedCount: response.data.deletedCount || ids.length,
+                deletedIds: ids
+            };
+        } catch (error: any) {
+            throw new Error(error.response?.data?.message || 'Failed to delete payment folders');
+        }
+    }
 };

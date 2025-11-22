@@ -146,7 +146,6 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
 
     // Conditional renderRow based on companyName
     const renderRow = (row: any) => {
-        console.log("DEBUG : row:", row);
         if (companyName === 'Sakshi') {
             return (<>
                 <TableCell onClick={() => handleNewcClick(row._id)} sx={{ cursor: 'pointer' }}>{row.partyName || 'N/A'}</TableCell>

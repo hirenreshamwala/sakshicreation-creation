@@ -180,7 +180,6 @@ const StaffPage = () => {
   const [selectedLeadReasons, setSelectedLeadReasons] = useState<string[]>(LEAD_REASONS);
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const [selectedField, setSelectedField] = useState<string | null>(null);
-  console.log("DEBUG : StaffPage : selectedLeadReasons:", selectedLeadReasons);
 
   const [taskFilterAnchorEl, setTaskFilterAnchorEl] = useState<null | HTMLElement>(null);
   const [leadFilterAnchorEl, setLeadFilterAnchorEl] = useState<null | HTMLElement>(null);
@@ -224,7 +223,6 @@ const StaffPage = () => {
     staffList.filter((staff: any) => staff.role?.roleName?.includes('Sales Staff')),
     [staffList]
   );
-  console.log("DEBUG : StaffPage : salesStaff:", salesStaff);
 
 
   const uniqueStaffNames = useMemo(() =>

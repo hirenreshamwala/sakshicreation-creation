@@ -89,7 +89,6 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     const { user } = useAppSelector((state) => state.auth);
     const { companies } = useAppSelector((state) => state.company);
     const { staffList } = useAppSelector((state) => state.staff);
-    console.log("DEBUG : ComplainDialogue : staffList:", staffList);
 
     const { orders } = useAppSelector((state) => state.orders);
     const { orders: qporders } = useAppSelector((state) => state.qpOrders);
@@ -189,15 +188,12 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
 
     const filteredStaffIds = staffList
     ?.filter((staff: any) => {
-            console.log("DEBUG : ComplainDialogue : staff:", staff);
             const isAdminOrManager = staff.role?.roleName.includes("Admin")  || staff.role?.roleName.includes("manager") ;
             
             const matchesCompany = staff.CompanyName?._id === company._id;
             return isAdminOrManager && matchesCompany;
         })
         ?.map((staff: any) => staff._id) || [];
-    console.log("DEBUG : ComplainDialogue : filteredStaffIds:", filteredStaffIds);
-
 
     const handleClose = () => {
         formik.resetForm();

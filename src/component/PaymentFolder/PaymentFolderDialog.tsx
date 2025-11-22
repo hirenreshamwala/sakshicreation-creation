@@ -86,7 +86,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     area: Yup.string().required("Area is required"),
     month: Yup.string().required("Month is required"),
     paymentAmount: Yup.number().required("Payment Amount is required").positive("Must be positive"),
-    paymentType: Yup.string().required("Payment Type is required"),
+    // paymentType: Yup.string().required("Payment Type is required"),
     assignTo: Yup.string().required("Assign To is required"),
     assignedDate: Yup.string().required("Assigned Date is required"),
     remarks: Yup.string(),
@@ -288,7 +288,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
         </Stack>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
-          <ThemeSelect
+          {/* <ThemeSelect
             label="Payment Type"
             options={paymentTypeOptions}
             value={getSelectedOption(formik.values.paymentType, paymentTypeOptions)}
@@ -296,7 +296,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             error={formik.touched.paymentType && Boolean(formik.errors.paymentType)}
             helperText={formik.touched.paymentType && formik.errors.paymentType}
             required
-          />
+          /> */}
           <ThemeSelect
             label="Assign To"
             options={staffOptions}

@@ -7,24 +7,30 @@ import {
   TableCell,
   Avatar,
   IconButton,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   getAllPaymentFoldersThunk,
   deletePaymentFolderThunk,
+  deleteMultiplePaymentFoldersThunk, // Add this import
 } from "@/store/slices/paymentFolderSlice";
 import BasicTable from "@/component/common_component/Table/themetable";
-import ThemeChip from "@/component/common_component/themechip";
 import PaymentFolderDialog from "./PaymentFolderDialog";
-import PaymentAddDialog from "./PaymentAddDialog"; // Import the new dialog
+import PaymentAddDialog from "./PaymentAddDialog";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import PaymentIcon from "@mui/icons-material/Payment"; // Add payment icon
+import PaymentIcon from "@mui/icons-material/Payment";
 import Swal from "sweetalert2";
 import { getCompanyWisePermission } from "@/utills/utills";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import TabComponent from "@/component/Dialog/TabComponent";
 import ThemeButton from "../common_component/themebutton";
+import moment from "moment";
 
 interface RowData {
   id: string;
@@ -46,12 +52,14 @@ const PaymentFolderPage: React.FC = () => {
   const { paymentFolders } = useAppSelector((state) => state.paymentFolders || {});
   const { user } = useAppSelector((state) => state.auth);
   const [open, setOpen] = useState(false);
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false); // State for payment dialog
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [companyTab, setCompanyTab] = useState(0);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [areaTab, setAreaTab] = useState(0);
   const [rowData, setRowData] = useState<any>(null)
-  const [selectedFolder, setSelectedFolder] = useState<any>(null); // State for selected folder
+  const [selectedFolder, setSelectedFolder] = useState<any>(null);
   const [modalType, setModalType] = useState('Add')
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false); // Add delete dialog state
   const { companies } = useAppSelector((state) => state.company);
   const canViewGlobal = user?.role?.permissions?.payment_folders?.view_global;
   const canViewOwn = user?.role?.permissions?.payment_folders?.view_own;
@@ -61,6 +69,7 @@ const PaymentFolderPage: React.FC = () => {
 
   const columns = useMemo(() => {
     const baseColumns = [
+      { id: "checkbox", label: "" },
       { id: "company", label: "Company" },
       { id: "party", label: "Party" },
       { id: "area", label: "Area" },
@@ -68,7 +77,7 @@ const PaymentFolderPage: React.FC = () => {
       { id: "paymentAmount", label: "Payment Amount" },
       { id: "receivedAmount", label: "Received Amount" },
       { id: "pendingAmount", label: "Pending Amount" },
-      { id: "paymentType", label: "Payment Type" },
+      // { id: "paymentType", label: "Payment Type" },
       { id: "assignTo", label: "Assigned To" },
       { id: "assignedDate", label: "Assigned Date" },
       { id: "remarks", label: "Remarks" },
@@ -104,7 +113,6 @@ const PaymentFolderPage: React.FC = () => {
   }, [paymentFolders, selectedCompanyId]);
 
   const areaTabs = useMemo(() => {
-    const areas = new Set(companyFilteredFolders.map((folder: any) => folder.area).filter(Boolean));
     return ['All', "K-1", "K-2", "K-3", "K-4"];
   }, [companyFilteredFolders]);
 
@@ -121,6 +129,29 @@ const PaymentFolderPage: React.FC = () => {
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true as any));
   }, []);
+
+  const handleMultipleDelete = async () => {
+    try {
+      await dispatch(deleteMultiplePaymentFoldersThunk(selectedRows)).unwrap();
+
+      Swal.fire({
+        title: "Deleted!",
+        text: `${selectedRows.length} payment folder(s) deleted successfully`,
+        icon: "success",
+        confirmButtonColor: "#7F56D9",
+      });
+
+      setSelectedRows([]);
+      setDeleteDialogOpen(false);
+    } catch (err: any) {
+      Swal.fire({
+        title: "Error!",
+        text: err.message || "Failed to delete payment folders",
+        icon: "error",
+        confirmButtonColor: "#7F56D9",
+      });
+    }
+  };
 
   const handleEdit = (row: any) => {
     const data = paymentFolders.find((item) => item._id === row.id)
@@ -170,11 +201,10 @@ const PaymentFolderPage: React.FC = () => {
     if (!paymentFolders.length) dispatch(getAllPaymentFoldersThunk());
   }, []);
 
-  console.log(paymentFolders, 'paymentFolders')
-
   const mapFoldersToRows = () =>
     finalFilteredFolders?.map((folder: any) => ({
       ...folder,
+      id: folder._id,
       party: folder.party?.partyName || "Unknown",
       assignTo: folder.assignedTo
         ? `${folder.assignedTo.firstName} ${folder.assignedTo.lastName}`
@@ -206,22 +236,21 @@ const PaymentFolderPage: React.FC = () => {
       <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.month}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>₹{row.paymentAmount}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>₹{row.receivedAmount}</TableCell>
+      <TableCell sx={{ fontSize: 14, color: "success.main" }}>₹{row.receivedAmount}</TableCell>
       <TableCell sx={{ fontSize: 14, color: row.pendingAmount > 0 ? "error.main" : "success.main" }}>
         ₹{row.pendingAmount}
       </TableCell>
-      <TableCell sx={{ fontSize: 14 }}>
+      {/* <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip label={row.paymentType} color="primary" sx={{ size: "small" }} />
-      </TableCell>
+      </TableCell> */}
       <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.assignedDate}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{moment(row.assignedDate).format('DD-MM-YYYY')}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>
         <Typography title={row.remarks} noWrap>
           {truncateText(row.remarks, 20)}
         </Typography>
       </TableCell>
       <TableCell sx={{ display: "flex", gap: 1 }}>
-        {/* Add Payment Button - Show only if there's pending amount */}
         {row.pendingAmount > 0 && (
           <IconButton
             color="success"
@@ -245,13 +274,29 @@ const PaymentFolderPage: React.FC = () => {
     </>
   );
 
-  const refreshData = () => {
-    dispatch(getAllPaymentFoldersThunk());
+  const handleSelectRow = (id: string) =>
+    setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]));
+
+  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) setSelectedRows(finalFilteredFolders.map((row: any) => row._id));
+    else setSelectedRows([]);
   };
 
   return (
     <>
-      {/* Company Tabs - Only show if user has both companies */}
+      {selectedRows.length > 0 && candelete && (
+        <Box sx={{ mb: 2 }}>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            Delete Selected ({selectedRows.length})
+          </Button>
+        </Box>
+      )}
+
       {hasBothCompanies && (
         <Box sx={{ mb: 2 }}>
           <TabComponent
@@ -262,7 +307,6 @@ const PaymentFolderPage: React.FC = () => {
         </Box>
       )}
 
-      {/* Show current company name when user has only one permission */}
       {!hasBothCompanies && selectedCompanyId && (
         <Box sx={{ mb: 2, p: 2, backgroundColor: 'primary.light', color: 'primary.contrastText', borderRadius: 1 }}>
           <Typography variant="h6">
@@ -326,10 +370,43 @@ const PaymentFolderPage: React.FC = () => {
             showDatePicker={true}
             showSearch={true}
             showFillter={true}
+            showExcelDownload={true}
             renderRow={renderRow}
+            onSelectAll={handleSelectAll}
+            onSelectRow={handleSelectRow}
+            selectedRows={selectedRows}
+            title="Payment Folder"
           />
         )}
       </Box>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete {selectedRows.length} selected payment folder(s)?
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleMultipleDelete}
+            color="error"
+            variant="contained"
+            startIcon={<DeleteIcon />}
+          >
+            Delete {selectedRows.length} Items
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Payment Folder Dialog for Add/Edit */}
       {open ? <PaymentFolderDialog

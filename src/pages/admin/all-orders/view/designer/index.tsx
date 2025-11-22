@@ -66,7 +66,6 @@ const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]
 };
 
 const ReworkEntry: React.FC<{ entry: any }> = ({ entry }) => {
-  console.log("DEBUG : ReworkEntry : entry:", entry);
   return <Box sx={{ borderBottom: "1px solid #ccc", pb: 2, mb: 2 }}>
     <Typography sx={{ color: "#333", fontSize: 14, mb: 1 }}>
       Date: {new Date(entry.date).toLocaleString()}
