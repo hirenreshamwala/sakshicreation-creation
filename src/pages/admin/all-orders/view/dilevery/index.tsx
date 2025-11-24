@@ -44,7 +44,7 @@ const DeliveryForm = () => {
         return
       }
       if (!selectedDeliveryStaff) {
-        toast.error("Please select a staff for delivery.")
+        toast.error("Please select a driver for delivery.")
         return
       }
 
@@ -100,7 +100,7 @@ const DeliveryForm = () => {
       if (singleOrder.deliveryStaff && singleOrder.deliveryStaff._id) {
         setSelectedDeliveryStaff({
           value: singleOrder.deliveryStaff._id,
-          label: singleOrder.deliveryStaff.name || `Staff ${singleOrder.deliveryStaff._id}`,
+          label: singleOrder.deliveryStaff.name || `Driver ${singleOrder.deliveryStaff._id}`,
         })
       } else {
         setSelectedDeliveryStaff(null)
@@ -174,12 +174,12 @@ const DeliveryForm = () => {
               InputProps={{ readOnly: true }}
             />
             <RoleStaffSelect
-              label="Assign Sales Staff"
+              label="Assign Driver"
               name="deliveryStaff"
               value={selectedDeliveryStaff}
               onChange={handleDeliveryStaffChange}
               onStaffChange={handleDeliveryStaffChange}
-              roleFilter="Sales Staff"
+              roleFilter="Driver"
               showStaff={true}
               disabled={!!singleOrder.deliveryStaff || loading} // Disable if already assigned or loading
             />
@@ -238,7 +238,7 @@ const DeliveryForm = () => {
               onClick={() => formik.handleSubmit()}
               disabled={loading || !!singleOrder.deliveryStaff || formik.isSubmitting}
             >
-              {loading || formik.isSubmitting ? "Assigning..." : "Assign to Staff →"}
+              {loading || formik.isSubmitting ? "Assigning..." : "Assign to Driver →"}
             </ThemeButton>
           </Stack>
         </Box>

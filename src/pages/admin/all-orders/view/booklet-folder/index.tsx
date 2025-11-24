@@ -15,6 +15,7 @@ import {
   Grid,
   IconButton
 } from "@mui/material"
+import { MdEmail } from "react-icons/md"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import StepperProgress from "@/component/common_component/stepperprogress"
@@ -457,6 +458,65 @@ const BookletFolderBinderForm = () => {
       sheetSize: id, // store _id
     };
     setBookletPapers(updatedPapers);
+  };
+
+  // Email functionality implementation
+  const handleEmailClick = (type: 'booklet' = 'booklet') => {
+    const recipientEmail = singleOrder?.party?.email || ''; // Add party.email to your data if not exists
+    const contactPerson = singleOrder?.party?.contactPerson || 'Customer';
+    const orderNumber = singleOrder?.orderNumber || 'N/A';
+    const companyName = singleOrder?.companyName?.companyName || 'N/A';
+    const partyName = singleOrder?.party?.partyName || 'N/A';
+    const itemName = singleOrder?.productItem?.itemName || 'N/A';
+    const quantity = singleOrder?.qty || 0;
+    const totalAmount = singleOrder?.total || 0;
+    const finalAmount = singleOrder?.finalAmount || 0;
+    const gstPercentage = singleOrder?.gstPercentage || 0;
+    const remarks = singleOrder?.remarks || 'No remarks';
+   
+    // Address formatting
+    const address = [
+      singleOrder?.party?.address?.unitNo || '',
+      singleOrder?.party?.address?.marketName?.marketName || '',
+      singleOrder?.party?.address?.area?.area || '',
+      singleOrder?.party?.address?.pincode?.pincode || '',
+    ].filter(part => part?.trim() !== '').join(', ') || 'N/A';
+   
+    const gstText = gstPercentage > 0 ? ` (incl. ${gstPercentage}% GST)` : '';
+   
+    // Dynamic subject based on type
+    const subject = `Order ${orderNumber} - Booklet Binder Work Completed`;
+   
+    // Dynamic body with all details
+    const body = `Dear ${contactPerson},
+
+Booklet binder work for the following order has been completed. Please review the details and proceed to the next step (Delivery).
+
+---
+ORDER DETAILS:
+-------------
+
+Order Number: ${orderNumber}
+Company Name: ${companyName}
+Party Name: ${partyName}
+Contact Person: ${contactPerson}
+
+
+Address:
+${address}
+
+Remarks:
+${remarks}
+
+---
+Please let us know if you have any questions or need adjustments.
+
+Best regards,
+Your Team
+`;
+
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(gmailUrl, '_blank');
   };
 
 
@@ -1145,7 +1205,33 @@ const BookletFolderBinderForm = () => {
                     Download PDF
                   </Button>
                 </Stack>
-
+                <Typography fontWeight={600} mb={2}>
+                  Send for Next Step Approval via
+                </Typography>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={4}>
+                  <Box
+                    onClick={() => handleEmailClick('booklet')}
+                    sx={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                      border: "1px solid #D0D5DD",
+                      borderRadius: 2,
+                      px: 2,
+                      py: 1.2,
+                      backgroundColor: "#fff",
+                      cursor: "pointer",
+                      "&:hover": { backgroundColor: "#F9FAFB" },
+                    }}
+                  >
+                    <MdEmail size={18} color="#F04438" />
+                    <Typography fontWeight={500} fontSize={14} color="#344054">
+                      Email
+                    </Typography>
+                  </Box>
+                </Stack>
                 <ThemeButton
                   sx={{
                     background: isHeld ? "#ccc" : "#12B76A",

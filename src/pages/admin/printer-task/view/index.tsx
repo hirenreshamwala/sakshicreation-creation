@@ -454,13 +454,13 @@ const PrinterTaskView = () => {
             InputProps={{ readOnly: true }}
           />
           <ThemeInput
-            labelName="Raw Paper Size"
+            labelName="Paper Size"
             value={singleOrder.rowPaperSize || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
           <ThemeInput
-            labelName="Raw Paper User"
+            labelName="Paper User"
             value={singleOrder.rowPaperUser || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}

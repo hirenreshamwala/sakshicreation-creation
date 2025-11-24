@@ -13,6 +13,7 @@ import {
   FormControlLabel,
   Switch,
 } from "@mui/material";
+import { MdEmail } from "react-icons/md";
 import ThemeInput from "@/component/common_component/themeinput";
 import ThemeButton from "@/component/common_component/themebutton";
 import StepperProgress from "@/component/common_component/stepperprogress";
@@ -404,6 +405,73 @@ const PrinterForm = () => {
     setPaperFields(updatedFields);
   };
 
+  // Email functionality implementation
+  const handleEmailClick = (type: 'printer' = 'printer') => {
+    const recipientEmail = singleOrder?.party?.email || ''; // Add party.email to your data if not exists
+    const contactPerson = singleOrder?.party?.contactPerson || 'Customer';
+    const orderNumber = singleOrder?.orderNumber || 'N/A';
+    const companyName = singleOrder?.companyName?.companyName || 'N/A';
+    const partyName = singleOrder?.party?.partyName || 'N/A';
+    const itemName = singleOrder?.productItem?.itemName || 'N/A';
+    const quantity = singleOrder?.qty || 0;
+    const totalAmount = singleOrder?.total || 0;
+    const finalAmount = singleOrder?.finalAmount || 0;
+    const gstPercentage = singleOrder?.gstPercentage || 0;
+    const remarks = singleOrder?.remarks || 'No remarks';
+   
+    // Address formatting
+    const address = [
+      singleOrder?.party?.address?.unitNo || '',
+      singleOrder?.party?.address?.marketName?.marketName || '',
+      singleOrder?.party?.address?.area?.area || '',
+      singleOrder?.party?.address?.pincode?.pincode || '',
+    ].filter(part => part?.trim() !== '').join(', ') || 'N/A';
+   
+    const gstText = gstPercentage > 0 ? ` (incl. ${gstPercentage}% GST)` : '';
+   
+    // Dynamic subject based on type
+    const subject = `Order ${orderNumber} - Printer Work Completed`;
+   
+    // Dynamic body with all details
+    const body = `Dear ${contactPerson},
+
+Printer work for the following order has been completed. Please review the details and proceed to the next step (Binder or Delivery).
+
+---
+ORDER DETAILS:
+-------------
+
+Order Number: ${orderNumber}
+Company Name: ${companyName}
+Party Name: ${partyName}
+Contact Person: ${contactPerson}
+
+Item: ${itemName}
+Quantity: ${quantity}
+Unit Price: ₹${(totalAmount / quantity).toLocaleString()} ${gstText}
+Total Amount: ₹${totalAmount.toLocaleString()} ${gstText}
+Final Amount: ₹${finalAmount.toLocaleString()}
+
+Address:
+${address}
+
+Remarks:
+${remarks}
+
+---
+Please let us know if you have any questions or need adjustments.
+
+Best regards,
+Your Team
+[Your Company Name]
+[Contact: +91-XXXXXXXXXX]
+[Email: your.email@company.com]
+`;
+
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(gmailUrl, '_blank');
+  };
+
   if (pageLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -726,7 +794,33 @@ const PrinterForm = () => {
               InputProps={{ readOnly: areFieldsReadOnly }}
             />
           </Box>
-
+            <Typography fontWeight={600} mb={2}>
+                Send for Next Step Approval via
+              </Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={4}>
+                <Box
+                  onClick={() => handleEmailClick('printer')}
+                  sx={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 1,
+                    border: "1px solid #D0D5DD",
+                    borderRadius: 2,
+                    px: 2,
+                    py: 1.2,
+                    backgroundColor: "#fff",
+                    cursor: "pointer",
+                    "&:hover": { backgroundColor: "#F9FAFB" },
+                  }}
+                >
+                  <MdEmail size={18} color="#F04438" />
+                  <Typography fontWeight={500} fontSize={14} color="#344054">
+                    Email
+                  </Typography>
+                </Box>
+              </Stack>
           {/* View Design Files */}
           <Stack direction="row" gap={2} mb={3}>
             <ThemeButton
@@ -795,6 +889,7 @@ const PrinterForm = () => {
               <Typography fontWeight={600} mb={2} color="#12B76A">
                 ✅ Printer Work Done
               </Typography>
+              
               <Stack direction="row" spacing={2}>
                 <ThemeButton
                   sx={{
