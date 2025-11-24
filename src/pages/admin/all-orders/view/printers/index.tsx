@@ -10,6 +10,8 @@ import {
   Alert,
   CircularProgress,
   IconButton,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import ThemeInput from "@/component/common_component/themeinput";
 import ThemeButton from "@/component/common_component/themebutton";
@@ -20,6 +22,7 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getOrderByIdThunk, updateOrderThunk } from "@/store/slices/orderSlice";
+import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice";
 import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog";
 import RoleStaffSelect from "@/component/reusablecomponents/RoleStaffSelect";
 import AddIcon from '@mui/icons-material/Add';
@@ -46,6 +49,7 @@ const PrinterForm = () => {
   const { id: orderId } = router.query;
   const dispatch = useAppDispatch();
   const { singleOrder } = useAppSelector((state) => state.orders);
+  const { binderTypes } = useAppSelector((state) => state.binderType);
   const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -78,23 +82,26 @@ const PrinterForm = () => {
 
   useEffect(() => {
     if (!materials.length) dispatch(getAllMaterialsThunk());
-  }, [])
-
+    if (!binderTypes.length) dispatch(getAllBinderTypesThunk());
+  }, [dispatch, materials.length, binderTypes.length]);
   // Initialize formik values and selected staff when singleOrder changes
   useEffect(() => {
     if (singleOrder) {
+      // Safely convert binding to boolean: handles boolean false/true, string "false"/"true", undefined/null/empty as false
+      const bindingValue = !!singleOrder.binding && singleOrder.binding !== "false";
       formik.setValues({
         companyName: singleOrder.companyName?.companyName || "",
         partyName: singleOrder.party?.partyName || "",
         itemName: singleOrder.productItem?.itemName || "",
         qty: singleOrder.qty?.toString() || "",
         size: singleOrder.size || "",
-        binding: singleOrder.binding || "",
-        subPaper: singleOrder.subPaper || "",
-        usedPaper: singleOrder.usedPaper || "",
+        binding: bindingValue,
+        bindingType: singleOrder.bindingType?._id || "",
+        // subPaper: singleOrder.subPaper || "",
+        // usedPaper: singleOrder.usedPaper || "",
         pType: singleOrder.pType || "",
         printingrate: singleOrder.printingrate || "",
-        printingratePerUnit: singleOrder.printingratePerUnit || "",
+        // printingratePerUnit: singleOrder.printingratePerUnit || "",
         gsm: singleOrder.gsm || "",
         rowPaperSize: singleOrder.rowPaperSize || "",
         rowPaperUser: singleOrder.rowPaperUser || "",
@@ -121,15 +128,15 @@ const PrinterForm = () => {
           sheetSize: null,
           paperType: null,
           gsm: null,
-          ratePerUnit: null,
+          // ratePerUnit: null, // Hidden field - Commented out
           paperSize: null,
         }]);
       }
     }
   }, [singleOrder]);
-
-
-
+  const getSelectedOption = (value: string, options: OptionType[]) => {
+    return options.find((option) => option.value === value) || null;
+  };
   const formik = useFormik({
     initialValues: {
       companyName: "",
@@ -137,12 +144,13 @@ const PrinterForm = () => {
       itemName: "",
       qty: "",
       size: "",
-      binding: "",
-      subPaper: "",
-      usedPaper: "",
+      binding: false,
+      bindingType: "",
+      // subPaper: "", // Hidden field - Commented out
+      // usedPaper: "", // Hidden field - Commented out
       pType: "",
       printingrate: "",
-      printingratePerUnit: "",
+      // printingratePerUnit: "", // Hidden field - Commented out
       gsm: "",
       rowPaperSize: "",
       rowPaperUser: "",
@@ -150,7 +158,12 @@ const PrinterForm = () => {
     },
     validationSchema: Yup.object({
       size: Yup.string().required("Size is required"),
-      binding: Yup.string().required("Binding is required"),
+      // binding: Yup.boolean().required("Binding is required"),
+      // bindingType: Yup.string().when('binding', {
+      // is: true,
+      // then: (schema) => schema.required("Binding Type is required"),
+      // otherwise: (schema) => schema.notRequired(),
+      // }),
       // subPaper: Yup.string().required("Sub Paper is required"),
       // usedPaper: Yup.string().required("Used Paper is required"),
       pType: Yup.string().required("Product Type is required"),
@@ -188,11 +201,12 @@ const PrinterForm = () => {
         const updateData = {
           size: values.size,
           binding: values.binding,
-          subPaper: values.subPaper,
-          usedPaper: values.usedPaper,
+          bindingType: values.binding ? values.bindingType : null,
+          // subPaper: values.subPaper,
+          // usedPaper: values.usedPaper,
           pType: values.pType,
           printingrate: values.printingrate,
-          printingratePerUnit: values.printingratePerUnit,
+          // printingratePerUnit: values.printingratePerUnit,
           gsm: values.gsm,
           rowPaperSize: values.rowPaperSize,
           rowPaperUser: values.rowPaperUser,
@@ -200,7 +214,10 @@ const PrinterForm = () => {
           printer: selectedPrinterStaff.value,
           printerStatus: "Pending",
           status: "Printer",
-          printerPapers: paperFields, // Save paper fields to order
+          printerPapers: paperFields.map(paper => ({
+            ...paper,
+            // ratePerUnit: paper.ratePerUnit,
+          })),
         };
         await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap();
         toast.success(`Order assigned to Printer successfully`);
@@ -365,7 +382,7 @@ const PrinterForm = () => {
       sheetSize: "",
       paperType: "",
       gsm: "",
-      ratePerUnit: ""
+      // ratePerUnit: "" // Hidden field - Commented out
     }]);
   };
 
@@ -487,17 +504,8 @@ const PrinterForm = () => {
               fullWidth
               InputProps={{ readOnly: true }}
             />
-            <ThemeInput
-              labelName="Binding"
-              value={formik.values.binding}
-              name="binding"
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.binding && Boolean(formik.errors.binding)}
-              helperText={formik.touched.binding && formik.errors.binding}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            />
-            <ThemeInput
+           
+            {/* <ThemeInput
               labelName="Sub Paper"
               name="subPaper"
               value={formik.values.subPaper}
@@ -506,8 +514,8 @@ const PrinterForm = () => {
               error={formik.touched.subPaper && Boolean(formik.errors.subPaper)}
               helperText={formik.touched.subPaper && formik.errors.subPaper}
               InputProps={{ readOnly: areFieldsReadOnly }}
-            />
-            <ThemeInput
+            /> */}
+            {/* <ThemeInput
               labelName="Used Paper"
               name="usedPaper"
               value={formik.values.usedPaper}
@@ -516,7 +524,7 @@ const PrinterForm = () => {
               error={formik.touched.usedPaper && Boolean(formik.errors.usedPaper)}
               helperText={formik.touched.usedPaper && formik.errors.usedPaper}
               InputProps={{ readOnly: areFieldsReadOnly }}
-            />
+            /> */}
             <ThemeInput
               labelName="Printing Type"
               name="pType"
@@ -528,7 +536,28 @@ const PrinterForm = () => {
               InputProps={{ readOnly: areFieldsReadOnly }}
             />
           </Stack>
-
+          <Stack direction="row" spacing={2} mb={2} sx={{ flex: 1 }}>
+               <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formik.values.binding}
+                      onChange={(e) => formik.setFieldValue("binding", e.target.checked)}
+                      color="primary"
+                      // disabled={areFieldsReadOnly}
+                    />
+                  }
+                  label="Binding"
+                />
+              {formik.values.binding ? (
+                <ThemeSelect
+                  label="Binding Type"
+                  value={getSelectedOption(formik.values.bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
+                  options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
+                  onChange={(_, v) => formik.setFieldValue("bindingType", v ? v.value : "")}
+                  // disabled={areFieldsReadOnly}
+                />
+              ) : null}
+          </Stack>
           {/* Paper Fields Section */}
           {paperFields?.map((paper, index) => (
             <Box key={index} mb={3} p={2} border={1} borderRadius={2} borderColor="#ddd">
@@ -591,8 +620,7 @@ const PrinterForm = () => {
                   fullWidth
                   InputProps={{ readOnly: areFieldsReadOnly }}
                 />
-
-                <ThemeInput
+                {/* <ThemeInput
                   labelName="Rate / Unit"
                   value={paper.ratePerUnit}
                   onChange={(e) => handlePaperFieldChange(index, 'ratePerUnit', e.target.value)}
@@ -601,7 +629,7 @@ const PrinterForm = () => {
                   // error={!paper.ratePerUnit && formik.submitCount > 0}
                   // helperText={!paper.ratePerUnit && formik.submitCount > 0 ? "This field is required" : ""}
                   InputProps={{ readOnly: areFieldsReadOnly }}
-                />
+                /> */}
               </Stack>
             </Box>
           ))}
@@ -636,7 +664,7 @@ const PrinterForm = () => {
               helperText={formik.touched.printingrate && formik.errors.printingrate}
               InputProps={{ readOnly: areFieldsReadOnly }}
             />
-            <ThemeInput
+            {/* <ThemeInput
               labelName="Printing Rate Per Unit"
               name="printingratePerUnit"
               value={formik.values.printingratePerUnit}
@@ -645,7 +673,7 @@ const PrinterForm = () => {
               error={formik.touched.printingratePerUnit && Boolean(formik.errors.printingratePerUnit)}
               helperText={formik.touched.printingratePerUnit && formik.errors.printingratePerUnit}
               InputProps={{ readOnly: areFieldsReadOnly }}
-            />
+            /> */}
             {/* <ThemeInput
               labelName="Raw Paper Size"
               name="rowPaperSize"

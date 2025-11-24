@@ -2011,7 +2011,7 @@ const ViewOrderDesigner = () => {
                             Email
                           </Typography>
                         </Box>
-                        <Box
+                        {/* <Box
                           onClick={handleWhatsAppClick}
                           sx={{
                             width: "100%",
@@ -2033,7 +2033,7 @@ const ViewOrderDesigner = () => {
                           <Typography fontWeight={500} fontSize={14} color="#344054">
                             WhatsApp
                           </Typography>
-                        </Box>
+                        </Box> */}
                       </Stack>
                       <Stack direction="row" spacing={2}>
                         <ThemeButton
@@ -2346,7 +2346,7 @@ const ViewOrderDesigner = () => {
                       Email
                     </Typography>
                   </Box>
-                  <Box
+                  {/* <Box
                     onClick={handleWhatsAppClick}
                     sx={{
                       width: "100%",
@@ -2368,7 +2368,7 @@ const ViewOrderDesigner = () => {
                     <Typography fontWeight={500} fontSize={14} color="#344054">
                       WhatsApp
                     </Typography>
-                  </Box>
+                  </Box> */}
                 </Stack>
                 <Button
                   fullWidth

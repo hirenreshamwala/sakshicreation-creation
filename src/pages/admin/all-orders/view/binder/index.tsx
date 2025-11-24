@@ -1,6 +1,6 @@
 "use client"
 import { useRef, useEffect, useState } from "react"
-import { Box, Typography, Paper, Button, CircularProgress, Stack, IconButton } from "@mui/material"
+import { Box, Typography, Paper, Button, CircularProgress, Stack, IconButton, FormControlLabel, Switch } from "@mui/material"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import StepperProgress from "@/component/common_component/stepperprogress"
@@ -21,6 +21,12 @@ import { Download } from "@mui/icons-material"
 import moment from "moment"
 import ThemeSelect from "@/component/common_component/themeselect"
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice"
+import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice"
+
+type OptionType = {
+  label: string;
+  value: string | number;
+};
 
 type PaperField = {
   paperName: string;
@@ -37,6 +43,7 @@ const BinderForm = () => {
   const { id: orderId } = router.query
   const dispatch = useAppDispatch()
   const { singleOrder } = useAppSelector((state) => state.orders)
+  const { binderTypes } = useAppSelector((state) => state.binderType);
   const fileUploadRef = useRef<any>(null)
   const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
@@ -47,14 +54,18 @@ const BinderForm = () => {
   const [openDesignFilesDialog, setOpenDesignFilesDialog] = useState(false)
   const [binderPapers, setBinderPapers] = useState<PaperField[]>([])
 
+  const getSelectedOption = (value: string, options: OptionType[]) => {
+    return options.find((option) => option.value === value) || null;
+  };
+
   const formik = useFormik({
     initialValues: {
       issuedDate: "",
       receivedDate: "",
       remarks: "",
       size: "",
-      binding: "",
-      pagesPerBook: "",
+      binding: false, // Boolean
+      bindingType: "", // String _id
       qty: "",
       subPaper: "",
       usedPaper: "",
@@ -67,34 +78,36 @@ const BinderForm = () => {
       rowPaperUser: "",
     },
     validationSchema: Yup.object({
-      issuedDate: Yup.string().required("Issued Date is required"),
+      issuedDate: Yup.string(),
       receivedDate: Yup.string()
         .test("is-greater-or-equal", "Received Date must be on or after Issued Date", function (value) {
           const { issuedDate } = this.parent
           if (!issuedDate || !value) return true
           return new Date(value) >= new Date(issuedDate)
         }),
-      remarks: Yup.string().required("Remarks are required"),
-      size: Yup.string().required("Size is required"),
-      binding: Yup.string().required("Binding is required"),
-      pagesPerBook: Yup.number()
-        .typeError("Must be a number")
-        .required("Pages / book is required")
-        .min(1, "Must be at least 1"),
-      qty: Yup.number().typeError("Must be a number").required("Quantity is required").min(1, "Must be at least 1"),
-      usedPaper: Yup.string().required("Used Paper is required"),
-      rateBook: Yup.string().required("Rate / book is required"),
-      totalAmount: Yup.string().required("Total Amount is required"),
-      gsm: Yup.string().required("GSM is required"),
-      rowPaperSize: Yup.string().required("Raw Paper Size is required"),
-      rowPaperUser: Yup.string().required("Raw Paper Used is required"),
+      remarks: Yup.string(),
+      size: Yup.string(),
+      // binding: Yup.boolean().required("Binding is required"),
+      // bindingType: Yup.string().when('binding', {
+      //   is: true,
+      //   then: (schema) => schema.required("Binding Type is required"),
+      //   otherwise: (schema) => schema.notRequired(),
+      // }),
+      qty: Yup.number().typeError("Must be a number"),
+      subPaper: Yup.string(),
+      usedPaper: Yup.string(),
+      rateBook: Yup.string(),
+      totalAmount: Yup.string(),
+      gsm: Yup.string(),
+      rowPaperSize: Yup.string(),
+      rowPaperUser: Yup.string(),
       binderPapers: Yup.array().of(
         Yup.object().shape({
-          numberOfSheetsUsed: Yup.string().required("Number of Sheets Used is required"),
-          sheetSize: Yup.string().required("Sheet Size is required"),
-          paperType: Yup.string().required("Paper Type is required"),
-          gsm: Yup.string().required("GSM is required"),
-          ratePerUnit: Yup.string().required("Rate Per Unit is required"),
+          numberOfSheetsUsed: Yup.string(),
+          sheetSize: Yup.string(),
+          paperType: Yup.string(),
+          gsm: Yup.string(),
+          ratePerUnit: Yup.string(),
         })
       ),
     }),
@@ -131,8 +144,8 @@ const BinderForm = () => {
           issuedDate: values.issuedDate,
           binderRemarks: values.remarks,
           size: values.size,
-          binding: values.binding,
-          pagesPerBook: values.pagesPerBook,
+          binding: values.binding, // Boolean
+          bindingType: values.binding ? values.bindingType : null, // Conditional
           qty: values.qty,
           subPaper: values.subPaper,
           usedPaper: values.usedPaper,
@@ -159,6 +172,14 @@ const BinderForm = () => {
     },
   })
 
+  // Auto-calculate Total Amount = qty * rateBook
+  useEffect(() => {
+    const qty = parseFloat(formik.values.qty) || 0;
+    const rateBook = parseFloat(formik.values.rateBook) || 0;
+    const total = qty * rateBook;
+    formik.setFieldValue("totalAmount", total.toString());
+  }, [formik.values.qty, formik.values.rateBook]);
+
   useEffect(() => {
     const fetchOrderData = async () => {
       if (orderId && typeof orderId === "string") {
@@ -178,10 +199,15 @@ const BinderForm = () => {
 
   useEffect(() => {
     if (!materials.length) dispatch(getAllMaterialsThunk());
-  }, [])
+    if (!binderTypes.length) dispatch(getAllBinderTypesThunk());
+  }, [dispatch, materials.length, binderTypes.length])
 
   useEffect(() => {
     if (singleOrder) {
+      // Safely convert binding to boolean: handles boolean false/true, string "false"/"true", undefined/null/empty as false
+      const bindingValue = !!singleOrder.binding && singleOrder.binding !== "false";
+      console.log("DEBUG: Order binding value:", singleOrder.binding, typeof singleOrder.binding);
+      console.log("DEBUG: Formik binding value after set:", bindingValue);
       formik.setValues({
         issuedDate: singleOrder.issuedDate
           ? new Date(singleOrder.issuedDate).toISOString()?.split("T")[0]
@@ -189,8 +215,8 @@ const BinderForm = () => {
         receivedDate: singleOrder.receivedDate ? new Date(singleOrder.receivedDate).toISOString()?.split("T")[0] : "",
         remarks: singleOrder.binderRemarks || singleOrder.remarks || "",
         size: singleOrder.size || "",
-        binding: singleOrder.binding || "",
-        pagesPerBook: singleOrder.pagesPerBook?.toString() || "",
+        binding: bindingValue,
+        bindingType: singleOrder.bindingType?._id || "",
         qty: singleOrder.qty?.toString() || "",
         subPaper: singleOrder.subPaper || "",
         usedPaper: singleOrder.usedPaper || "",
@@ -308,13 +334,14 @@ const BinderForm = () => {
   }
 
   const handleBinderPaperChange = (index: number, field: keyof PaperField, value: string) => {
-    const updatedPapers = [...binderPapers]
+    const updatedPapers = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
-      [field]: value
-    }
-    setBinderPapers(updatedPapers)
-  }
+      [field]: value.trim() === "" ? null : value // Convert empty strings to null
+    };
+    setBinderPapers(updatedPapers);
+  };
+
 
   const handleDeleteBinderPaper = (index: number) => {
     if (binderPapers.length === 1) {
@@ -362,9 +389,9 @@ const BinderForm = () => {
     const updatedPapers = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
-      paperType: id, // store _id
-      gsm: "",       // reset gsm
-      sheetSize: "", // reset size
+      paperType: id || null, // Use null for empty values
+      gsm: null,       
+      sheetSize: null,
     };
     setBinderPapers(updatedPapers);
   };
@@ -374,8 +401,8 @@ const BinderForm = () => {
     const updatedPapers = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
-      gsm: id,       // store _id
-      sheetSize: "", // reset size
+      gsm: id || null, // Use null for empty values
+      sheetSize: null,
     };
     setBinderPapers(updatedPapers);
   };
@@ -385,7 +412,7 @@ const BinderForm = () => {
     const updatedPapers = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
-      sheetSize: id, // store _id
+      sheetSize: id || null, // store _id
     };
     setBinderPapers(updatedPapers);
   };
@@ -560,10 +587,9 @@ const BinderForm = () => {
               helperText={formik.touched.qty && (formik.errors.qty as string)}
               InputProps={{ readOnly: areFieldsReadOnly || !!singleOrder.qty }}
             />
-
           </Box>
           <Box display="flex" gap={2} mb={2} justifyContent={"space-between"}>
-            <ThemeInput
+            {/* <ThemeInput
               labelName="Pages / item"
               name="pagesPerBook"
               value={formik.values.pagesPerBook}
@@ -592,7 +618,33 @@ const BinderForm = () => {
               error={formik.touched.usedPaper && Boolean(formik.errors.usedPaper)}
               helperText={formik.touched.usedPaper && (formik.errors.usedPaper as string)}
               InputProps={{ readOnly: areFieldsReadOnly || !!singleOrder.usedPaper }}
+            /> */}
+            {/* Binding Switch and Conditional Select */}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formik.values.binding}
+                  onChange={(e) => formik.setFieldValue("binding", e.target.checked)}
+                  color="primary"
+                  disabled={areFieldsReadOnly}
+                />
+              }
+              label="Binding"
+              sx={{ flex: 1, justifyContent: "flex-start" }}
             />
+            {formik.values.binding && (
+              <Box sx={{ width: 1 }} >
+              <ThemeSelect
+                label="Binding Type"
+                value={getSelectedOption(formik.values.bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
+                options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
+                onChange={(_, v) => formik.setFieldValue("bindingType", v ? v.value : "")}
+                // required
+                disabled={areFieldsReadOnly}
+                sx={{ flex: 1 }}
+              />
+              </Box>
+            )}
             <ThemeInput
               labelName="Rate / book"
               name="rateBook"
@@ -611,7 +663,7 @@ const BinderForm = () => {
               sx={{ flex: 1 }}
               error={formik.touched.totalAmount && Boolean(formik.errors.totalAmount)}
               helperText={formik.touched.totalAmount && (formik.errors.totalAmount as string)}
-              InputProps={{ readOnly: areFieldsReadOnly || !!singleOrder.totalAmount }}
+              InputProps={{ readOnly: true }}
             />
           </Box>
           <Box display="flex" gap={2} mb={2} justifyContent={"space-between"}>
@@ -688,7 +740,7 @@ const BinderForm = () => {
                     onChange={(e, newValue) =>
                       handleMaterialNameChange(index, newValue?.value as string || "")
                     }
-                    required
+                    // required
                     // disabled={areFieldsReadOnly}
                   />
 
@@ -699,7 +751,7 @@ const BinderForm = () => {
                     onChange={(e, newValue) =>
                       handleMaterialGSMChange(index, newValue?.value as string || "")
                     }
-                    required
+                    // required
                     // disabled={!paper.paperType || areFieldsReadOnly}
                   />
 
@@ -710,7 +762,7 @@ const BinderForm = () => {
                     onChange={(e, newValue) =>
                       handleMaterialSizeChange(index, newValue?.value as string || "")
                     }
-                    required
+                    // required
                     // disabled={!paper.paperType || !paper.gsm || areFieldsReadOnly}
                   />
 
@@ -719,9 +771,9 @@ const BinderForm = () => {
                     value={paper.numberOfSheetsUsed}
                     onChange={(e) => handleBinderPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
                     fullWidth
-                    required
-                    error={!paper.numberOfSheetsUsed && formik.submitCount > 0}
-                    helperText={!paper.numberOfSheetsUsed && formik.submitCount > 0 ? "This field is required" : ""}
+                    // required
+                    // error={!paper.numberOfSheetsUsed && formik.submitCount > 0}
+                    // helperText={!paper.numberOfSheetsUsed && formik.submitCount > 0 ? "This field is required" : ""}
                     InputProps={{ readOnly: areFieldsReadOnly }}
                   />
                   <ThemeInput
@@ -729,9 +781,9 @@ const BinderForm = () => {
                     value={paper.ratePerUnit}
                     onChange={(e) => handleBinderPaperChange(index, 'ratePerUnit', e.target.value)}
                     fullWidth
-                    required
-                    error={!paper.ratePerUnit && formik.submitCount > 0}
-                    helperText={!paper.ratePerUnit && formik.submitCount > 0 ? "This field is required" : ""}
+                    // required
+                    // error={!paper.ratePerUnit && formik.submitCount > 0}
+                    // helperText={!paper.ratePerUnit && formik.submitCount > 0 ? "This field is required" : ""}
                     InputProps={{ readOnly: areFieldsReadOnly }}
                   />
                 </Stack>
