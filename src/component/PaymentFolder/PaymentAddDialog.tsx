@@ -36,7 +36,7 @@ interface PaymentAddDialogProps {
 interface PaymentHistoryItem {
     date: string;
     amount: number;
-    note: string;
+    remark: string;
     paymentMethod: string;
     receivedBy: string;
 }
@@ -51,7 +51,7 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
     const { staffList } = useAppSelector((state) => state.staff || {});
     const [isLoading, setIsLoading] = useState(false);
 
-    const staffOptions = staffList.map((staff:any) => ({
+    const staffOptions = staffList.map((staff: any) => ({
         label: `${staff.firstName} ${staff.lastName}`,
         value: staff._id,
     }))
@@ -68,7 +68,7 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
         paymentDate: Yup.string().required("Payment Date is required"),
         paymentMethod: Yup.string().required("Payment Method is required"),
         receivedBy: Yup.string().required("Received By is required"),
-        note: Yup.string(),
+        remark: Yup.string(),
     });
 
     const getInitialValues = () => {
@@ -77,11 +77,11 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
             paymentDate: moment().format('YYYY-MM-DD'),
             paymentMethod: "Cash",
             receivedBy: "",
-            note: "",
+            remark: "",
         };
     };
 
-    const formik:any = useFormik({
+    const formik: any = useFormik({
         initialValues: getInitialValues(),
         validationSchema,
         enableReinitialize: true,
@@ -91,7 +91,7 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
                 const paymentData = {
                     date: values.paymentDate,
                     amount: values.amount,
-                    note: values.note,
+                    remark: values.remark,
                     paymentMethod: values.paymentMethod,
                     receivedBy: values.receivedBy,
                 };
@@ -271,14 +271,14 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
 
                 <Box mb={1}>
                     <ThemeInput
-                        labelName="Note"
+                        labelName="Remark"
                         type="text"
-                        value={formik.values.note}
-                        onChange={(e) => formik.setFieldValue("note", e.target.value)}
+                        value={formik.values.remark}
+                        onChange={(e) => formik.setFieldValue("remark", e.target.value)}
                         multiline
                         rows={2}
                         fullWidth
-                        placeholder="Add any additional notes about this payment..."
+                        placeholder="Add any additional remarks about this payment..."
                     />
                 </Box>
 
@@ -312,9 +312,9 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
                                         <Typography variant="body2">
                                             {payment.paymentMethod}
                                         </Typography>
-                                        {payment.note && (
+                                        {payment.remark && (
                                             <Typography variant="body2" color="text.secondary" noWrap>
-                                                {payment.note}
+                                                {payment.remark}
                                             </Typography>
                                         )}
                                     </Stack>

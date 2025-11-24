@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import {
   Box,
   Typography,
@@ -17,7 +17,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import {
   getAllPaymentFoldersThunk,
   deletePaymentFolderThunk,
-  deleteMultiplePaymentFoldersThunk, // Add this import
+  deleteMultiplePaymentFoldersThunk,
 } from "@/store/slices/paymentFolderSlice";
 import BasicTable from "@/component/common_component/Table/themetable";
 import PaymentFolderDialog from "./PaymentFolderDialog";
@@ -25,12 +25,14 @@ import PaymentAddDialog from "./PaymentAddDialog";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import PaymentIcon from "@mui/icons-material/Payment";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import Swal from "sweetalert2";
 import { getCompanyWisePermission } from "@/utills/utills";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import TabComponent from "@/component/Dialog/TabComponent";
 import ThemeButton from "../common_component/themebutton";
 import moment from "moment";
+import PaymentHistoryDialog from "./PaymentHistoryDialog";
 
 interface RowData {
   id: string;
@@ -59,7 +61,9 @@ const PaymentFolderPage: React.FC = () => {
   const [rowData, setRowData] = useState<any>(null)
   const [selectedFolder, setSelectedFolder] = useState<any>(null);
   const [modalType, setModalType] = useState('Add')
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false); // Add delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [selectedPaymentData, setSelectedPaymentData] = useState<any>(null);
   const { companies } = useAppSelector((state) => state.company);
   const canViewGlobal = user?.role?.permissions?.payment_folders?.view_global;
   const canViewOwn = user?.role?.permissions?.payment_folders?.view_own;
@@ -72,6 +76,7 @@ const PaymentFolderPage: React.FC = () => {
       { id: "checkbox", label: "" },
       { id: "company", label: "Company" },
       { id: "party", label: "Party" },
+      { id: "mobileNumber", label: "Mobile Number" },
       { id: "area", label: "Area" },
       { id: "month", label: "Month" },
       { id: "paymentAmount", label: "Payment Amount" },
@@ -154,16 +159,27 @@ const PaymentFolderPage: React.FC = () => {
   };
 
   const handleEdit = (row: any) => {
-    const data = paymentFolders.find((item) => item._id === row.id)
+    const data = paymentFolders.find((item: any) => item._id === row.id)
     setRowData(data)
     setModalType('Edit')
     setOpen(true);
   };
 
   const handleAddPayment = (row: any) => {
-    const folderData = paymentFolders.find((item) => item._id === row.id);
+    const folderData = paymentFolders.find((item: any) => item._id === row.id);
     setSelectedFolder(folderData);
     setPaymentDialogOpen(true);
+  };
+
+  const handleViewPaymentHistory = (row: any) => {
+    const folderData = paymentFolders.find((item: any) => item._id === row.id);
+    setSelectedPaymentData(folderData);
+    setShowPaymentHistory(true);
+  };
+
+  const handleClosePaymentHistory = () => {
+    setShowPaymentHistory(false);
+    setSelectedPaymentData(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -206,11 +222,18 @@ const PaymentFolderPage: React.FC = () => {
       ...folder,
       id: folder._id,
       party: folder.party?.partyName || "Unknown",
+      mobileNumber: folder.party?.mobileNumber || "N/A",
       assignTo: folder.assignedTo
         ? `${folder.assignedTo.firstName} ${folder.assignedTo.lastName}`
         : "Unassigned",
       assignedDate: folder.assignedDate,
-    }));
+    }))
+      .sort((a: any, b: any) => a.party.localeCompare(b.party));
+
+  const getRowColor = (row: any) => {
+    if (row.pendingAmount === 0) return "#e6fffa";
+    return "";
+  };
 
   const truncateText = (text: string, maxLength: number) => {
     if (!text) return "N/A";
@@ -233,6 +256,7 @@ const PaymentFolderPage: React.FC = () => {
         </Box>
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.party}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row?.party?.contactForPayment || row?.party?.contactMobileNo || row?.party?.contactWhatsAppNo || row?.party?.ownerMobileNo || row?.party?.ownerWhatsAppNo}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.month}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>₹{row.paymentAmount}</TableCell>
@@ -240,9 +264,6 @@ const PaymentFolderPage: React.FC = () => {
       <TableCell sx={{ fontSize: 14, color: row.pendingAmount > 0 ? "error.main" : "success.main" }}>
         ₹{row.pendingAmount}
       </TableCell>
-      {/* <TableCell sx={{ fontSize: 14 }}>
-        <ThemeChip label={row.paymentType} color="primary" sx={{ size: "small" }} />
-      </TableCell> */}
       <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{moment(row.assignedDate).format('DD-MM-YYYY')}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>
@@ -251,6 +272,17 @@ const PaymentFolderPage: React.FC = () => {
         </Typography>
       </TableCell>
       <TableCell sx={{ display: "flex", gap: 1 }}>
+        {/* View Payment History Button - Always show if there are payments */}
+        {row.payments?.length > 0 && (
+          <IconButton
+            color="info"
+            onClick={() => handleViewPaymentHistory(row)}
+            title="View Payment History"
+          >
+            <VisibilityIcon />
+          </IconButton>
+        )}
+
         {row.pendingAmount > 0 && (
           <IconButton
             color="success"
@@ -260,7 +292,7 @@ const PaymentFolderPage: React.FC = () => {
             <PaymentIcon />
           </IconButton>
         )}
-        {canedit && (
+        {canedit && row.pendingAmount > 0 && (
           <IconButton color="primary" onClick={() => handleEdit(row)} title="Edit">
             <EditIcon />
           </IconButton>
@@ -376,6 +408,7 @@ const PaymentFolderPage: React.FC = () => {
             onSelectRow={handleSelectRow}
             selectedRows={selectedRows}
             title="Payment Folder"
+            getRowColor={getRowColor}
           />
         )}
       </Box>
@@ -421,6 +454,13 @@ const PaymentFolderPage: React.FC = () => {
         open={paymentDialogOpen}
         onClose={() => setPaymentDialogOpen(false)}
         folderData={selectedFolder}
+      /> : null}
+
+      {/* Payment History Dialog */}
+      {showPaymentHistory ? <PaymentHistoryDialog
+        open={showPaymentHistory}
+        onClose={handleClosePaymentHistory}
+        paymentData={selectedPaymentData}
       /> : null}
     </>
   );

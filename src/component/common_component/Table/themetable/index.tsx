@@ -55,6 +55,7 @@ interface BasicTableProps<T> {
   };
   renderExpandedRow?: (row: T) => React.ReactNode;
   showHeaderCheckbox?: boolean;
+  getRowColor?: (row: T) => string;
 }
 
 // Debounce hook
@@ -108,6 +109,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
     hasPrev: false,
   },
   renderExpandedRow,
+  getRowColor,
 }: BasicTableProps<T>) => {
   const [page, setPage] = useState(pagination.currentPage - 1 || 0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -131,11 +133,16 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
   }, []);
 
   const getRowBackgroundColor = useCallback((row: T): string => {
+    if (getRowColor) {
+      const color = getRowColor(row);
+      if (color) return color;
+    }
+
     if (row.lastStatusChangeDate && isStatusChangeOlderThanThreeDays(row.lastStatusChangeDate))
       return "#fdbbbbff";
 
     return "transparent";
-  }, []);
+  }, [getRowColor]);
 
   const getRowHoverBackgroundColor = useCallback((row: T): string => {
     if (row.lastStatusChangeDate && isStatusChangeOlderThanThreeDays(row.lastStatusChangeDate))

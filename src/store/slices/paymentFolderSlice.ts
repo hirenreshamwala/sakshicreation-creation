@@ -5,7 +5,7 @@ export interface Payment {
   _id?: string;
   date: string;
   amount: number;
-  note: string;
+  remark: string;
   paymentMethod: string;
   receivedBy: any;
 }
@@ -21,6 +21,7 @@ export interface PaymentFolder {
   month: string;
   paymentAmount: number;
   area?: string;
+  paymentTerms?: string;
   receivedAmount: number;
   pendingAmount: number;
   payments: Payment[];
@@ -93,6 +94,7 @@ export const updatePaymentFolderThunk = createAsyncThunk(
   async ({ id, data }: { id: string; data: Partial<PaymentFolder> }, { rejectWithValue }) => {
     try {
       const response = await paymentFolderService.updatePaymentFolder(id, data);
+      console.log(response,'response');
       return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to update payment folder');
@@ -203,17 +205,17 @@ const paymentFolderSlice = createSlice({
         state.currentPaymentFolder = action.payload;
       })
       // Update Payment Folder
-      .addCase(updatePaymentFolderThunk.fulfilled, (state, action: PayloadAction<any>) => {
-        const updatedFolder = action.payload.data;
-        if (updatedFolder && updatedFolder._id) {
-          state.paymentFolders = state.paymentFolders.map((folder) =>
-            folder._id === updatedFolder._id ? updatedFolder : folder
-          );
-          if (state.currentPaymentFolder && state.currentPaymentFolder._id === updatedFolder._id) {
-            state.currentPaymentFolder = updatedFolder;
-          }
-        }
-      })
+      // .addCase(updatePaymentFolderThunk.fulfilled, (state, action: PayloadAction<any>) => {
+      //   const updatedFolder = action.payload.data;
+      //   if (updatedFolder && updatedFolder._id) {
+      //     state.paymentFolders = state.paymentFolders.map((folder) =>
+      //       folder._id === updatedFolder._id ? updatedFolder : folder
+      //     );
+      //     if (state.currentPaymentFolder && state.currentPaymentFolder._id === updatedFolder._id) {
+      //       state.currentPaymentFolder = updatedFolder;
+      //     }
+      //   }
+      // })
       // Delete Payment Folder (Single)
       .addCase(deletePaymentFolderThunk.fulfilled, (state, action: PayloadAction<string>) => {
         state.paymentFolders = state.paymentFolders.filter((folder) => folder._id !== action.payload);
@@ -229,12 +231,12 @@ const paymentFolderSlice = createSlice({
       .addCase(deleteMultiplePaymentFoldersThunk.fulfilled, (state, action: PayloadAction<{ deletedIds: string[]; response: any }>) => {
         state.loading = false;
         const { deletedIds } = action.payload;
-        
+
         // Remove all deleted folders from state
         state.paymentFolders = state.paymentFolders.filter(
           (folder) => !deletedIds.includes(folder._id)
         );
-        
+
         // Clear current payment folder if it was deleted
         if (state.currentPaymentFolder && deletedIds.includes(state.currentPaymentFolder._id)) {
           state.currentPaymentFolder = null;

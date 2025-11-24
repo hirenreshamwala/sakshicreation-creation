@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, memo } from "react";
-import { Box, Stack } from "@mui/material";
+import { useState, useEffect, memo } from "react";
+import { Box, Stack, Chip } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import CustomDialog from "@/component/customdialog";
@@ -11,6 +11,7 @@ import ThemeButton from "@/component/common_component/themebutton";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   createPaymentFolderThunk,
+  updatePaymentFolderInState,
   updatePaymentFolderThunk,
 } from "@/store/slices/paymentFolderSlice";
 import { getAllAccountMastersThunk } from "@/store/slices/accountMasterSlice";
@@ -42,10 +43,11 @@ const monthOptions = [
   { label: "Dec", value: "Dec" },
 ]
 
-const paymentTypeOptions = [
-  { label: "NEFT", value: "NEFT" },
-  { label: "Cash", value: "Cash" },
-  { label: "Cheque", value: "Cheque" },
+// Quick action buttons for common payment terms
+const quickPaymentTerms = [
+  { label: "30 Days", value: "30 Days" },
+  { label: "60 Days", value: "60 Days" },
+  { label: "90 Days", value: "90 Days" },
 ]
 
 interface OptionType {
@@ -73,6 +75,8 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
   const { accountMasters } = useAppSelector((state) => state.accountMasters || {});
   const { staffList } = useAppSelector((state) => state.staff || {});
   const [isLoading, setIsLoading] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customPaymentTerm, setCustomPaymentTerm] = useState("");
   const isEditMode = modalType === 'Edit';
 
   const staffOptions = staffList.map((staff: any) => ({
@@ -86,9 +90,9 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     area: Yup.string().required("Area is required"),
     month: Yup.string().required("Month is required"),
     paymentAmount: Yup.number().required("Payment Amount is required").positive("Must be positive"),
-    // paymentType: Yup.string().required("Payment Type is required"),
     assignTo: Yup.string().required("Assign To is required"),
     assignedDate: Yup.string().required("Assigned Date is required"),
+    paymentTerms: Yup.string(),
     remarks: Yup.string(),
   });
 
@@ -101,9 +105,9 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
         area: rowData?.area || "",
         month: rowData?.month || "",
         paymentAmount: rowData?.paymentAmount || 0,
-        paymentType: rowData?.paymentType || "",
         assignTo: rowData?.assignedTo?._id || "",
         assignedDate: moment(rowData?.assignedDate).format('YYYY-MM-DD') || "",
+        paymentTerms: rowData?.paymentTerms || "",
         remarks: rowData?.remarks || "",
         receivedAmount: rowData?.receivedAmount || 0,
       };
@@ -114,9 +118,9 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
       area: "",
       month: "",
       paymentAmount: 0,
-      paymentType: "",
       assignTo: "",
       assignedDate: "",
+      paymentTerms: "",
       remarks: "",
       receivedAmount: 0,
     };
@@ -125,7 +129,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
   const formik = useFormik({
     initialValues: getInitialValues(),
     validationSchema,
-    enableReinitialize: true, // This is important to update form when props change
+    enableReinitialize: true,
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
@@ -135,16 +139,18 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
           party: values.partyName,
           assignedTo: values.assignTo,
           assignedDate: values.assignedDate,
-          paymentType: values.paymentType,
           month: values.month,
           paymentAmount: values.paymentAmount,
           area: values.area,
+          paymentTerms: values.paymentTerms,
           remarks: values.remarks,
           ...(isEditMode && { receivedAmount: values.receivedAmount }),
         };
 
         if (isEditMode) {
-          await dispatch(updatePaymentFolderThunk({ id: rowData._id, data: submitData })).unwrap();
+          const res = await dispatch(updatePaymentFolderThunk({ id: rowData._id, data: submitData })).unwrap();
+          console.log(res);
+          dispatch(updatePaymentFolderInState(res));
           toast.success("Payment folder updated successfully");
         } else {
           await dispatch(createPaymentFolderThunk(submitData)).unwrap();
@@ -173,7 +179,18 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
   // Reset form when modal opens/closes or mode changes
   useEffect(() => {
     if (open) {
-      formik.resetForm({ values: getInitialValues() });
+      const initialValues = getInitialValues();
+      formik.resetForm({ values: initialValues });
+
+      // Check if current payment term is a custom one (not in quick options)
+      const currentTerm = initialValues.paymentTerms;
+      if (currentTerm && !quickPaymentTerms.some(term => term.value === currentTerm)) {
+        setShowCustomInput(true);
+        setCustomPaymentTerm(currentTerm);
+      } else {
+        setShowCustomInput(false);
+        setCustomPaymentTerm("");
+      }
     }
   }, [open, modalType, rowData]);
 
@@ -188,8 +205,32 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     formik.setFieldValue("partyName", partyId);
   };
 
+  const handleQuickPaymentTermClick = (term: string) => {
+    formik.setFieldValue("paymentTerms", term);
+    setShowCustomInput(false);
+    setCustomPaymentTerm("");
+  };
+
+  const handleCustomPaymentTermChange = (value: string) => {
+    setCustomPaymentTerm(value);
+    formik.setFieldValue("paymentTerms", value);
+  };
+
+  const handleShowCustomInput = () => {
+    setShowCustomInput(true);
+    // If there's already a custom value, keep it, otherwise clear
+    if (formik.values.paymentTerms && !quickPaymentTerms.some(term => term.value === formik.values.paymentTerms)) {
+      setCustomPaymentTerm(formik.values.paymentTerms);
+    } else {
+      setCustomPaymentTerm("");
+      formik.setFieldValue("paymentTerms", "");
+    }
+  };
+
   const handleClose = () => {
     formik.resetForm();
+    setShowCustomInput(false);
+    setCustomPaymentTerm("");
     onClose();
   };
 
@@ -273,30 +314,9 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             helperText={formik.touched.assignedDate && formik.errors.assignedDate}
             required
           />
-          {/* {isEditMode && (
-            <ThemeInput
-              labelName="Received Amount"
-              type="number"
-              value={formik.values.receivedAmount}
-              onChange={(e) => formik.setFieldValue("receivedAmount", parseFloat(e.target.value) || 0)}
-              error={formik.touched.receivedAmount && Boolean(formik.errors.receivedAmount)}
-              helperText={formik.touched.receivedAmount && formik.errors.receivedAmount}
-              required
-              fullWidth
-            />
-          )} */}
         </Stack>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
-          {/* <ThemeSelect
-            label="Payment Type"
-            options={paymentTypeOptions}
-            value={getSelectedOption(formik.values.paymentType, paymentTypeOptions)}
-            onChange={(event, newValue) => formik.setFieldValue("paymentType", newValue ? newValue.value : "")}
-            error={formik.touched.paymentType && Boolean(formik.errors.paymentType)}
-            helperText={formik.touched.paymentType && formik.errors.paymentType}
-            required
-          /> */}
           <ThemeSelect
             label="Assign To"
             options={staffOptions}
@@ -306,22 +326,75 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             helperText={formik.touched.assignTo && formik.errors.assignTo}
             required
           />
+
+          {/* Payment Terms Section */}
+          <Box sx={{ width: "100%" }}>
+            <Box sx={{ mb: 1 }}>
+              <Box sx={{ fontSize: "14px", fontWeight: 500, mb: 1, color: "text.secondary" }}>
+                Payment Terms {formik.touched.paymentTerms && formik.errors.paymentTerms && (
+                  <span style={{ color: "#d32f2f", fontSize: "12px" }}>
+                    {formik.errors.paymentTerms as string}
+                  </span>
+                )}
+              </Box>
+
+              {/* Quick Action Buttons */}
+              {!showCustomInput && (
+                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                  {quickPaymentTerms.map((term) => (
+                    <Chip
+                      key={term.value}
+                      label={term.label}
+                      onClick={() => handleQuickPaymentTermClick(term.value)}
+                      variant={formik.values.paymentTerms === term.value ? "filled" : "outlined"}
+                      color={formik.values.paymentTerms === term.value ? "primary" : "default"}
+                      sx={{
+                        cursor: "pointer",
+                        borderRadius: 1,
+                        fontWeight: 500,
+                        border: formik.values.paymentTerms === term.value ? "2px solid" : "1px solid",
+                        borderColor: formik.values.paymentTerms === term.value ? "primary.main" : "grey.300",
+                      }}
+                    />
+                  ))}
+                  <Chip
+                    label="Custom"
+                    onClick={handleShowCustomInput}
+                    variant="outlined"
+                    sx={{
+                      cursor: "pointer",
+                      borderRadius: 1,
+                      fontWeight: 500,
+                      border: "1px solid",
+                      borderColor: "grey.300",
+                    }}
+                  />
+                </Stack>
+              )}
+
+              {/* Custom Input Field */}
+              {showCustomInput && (
+                <ThemeInput
+                  labelName="Custom Payment Term"
+                  type="text"
+                  value={customPaymentTerm}
+                  onChange={(e) => handleCustomPaymentTermChange(e.target.value)}
+                  error={formik.touched.paymentTerms && Boolean(formik.errors.paymentTerms)}
+                  helperText={formik.touched.paymentTerms && formik.errors.paymentTerms}
+                />
+              )}
+
+              {/* Show current payment term value for debugging */}
+              {formik.values.paymentTerms && (
+                <Box sx={{ fontSize: "12px", color: "text.secondary", mt: 0.5 }}>
+                  Current value: {formik.values.paymentTerms}
+                </Box>
+              )}
+            </Box>
+          </Box>
         </Stack>
 
-        {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
-            <ThemeInput
-              labelName="Assigned Date"
-              type="date"
-              value={formik.values.assignedDate}
-              onChange={(e) => formik.setFieldValue("assignedDate", e.target.value)}
-              error={formik.touched.assignedDate && Boolean(formik.errors.assignedDate)}
-              helperText={formik.touched.assignedDate && formik.errors.assignedDate}
-              required
-              fullWidth
-            />
-          </Stack> */}
-
-        {/* <Box mb={2}>
+        <Box mb={2}>
           <ThemeInput
             labelName="Remarks"
             type="text"
@@ -331,7 +404,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             rows={3}
             fullWidth
           />
-        </Box> */}
+        </Box>
 
         <ThemeButton
           type="submit"
