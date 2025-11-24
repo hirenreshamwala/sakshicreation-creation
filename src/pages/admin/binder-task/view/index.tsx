@@ -1,8 +1,9 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
-import { Box, Button, Typography, Paper, CircularProgress, Stack, IconButton } from "@mui/material"
+import { Box, Button, Typography, Paper, CircularProgress, Stack, IconButton, FormControlLabel, Switch } from "@mui/material"
 import { AiOutlineEye } from "react-icons/ai"
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog"
@@ -14,6 +15,12 @@ import { toast } from "react-toastify"
 import ThemeSelect from "@/component/common_component/themeselect";
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice";
 import { authService } from "@/services/auth.service";
+import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice";
+
+type OptionType = {
+  label: string;
+  value: string | number;
+};
 
 type PaperField = {
   paperName: string;
@@ -23,6 +30,7 @@ type PaperField = {
   gsm: string;
   ratePerUnit: string;
   wastage: string;
+  materialId?: string;
 };
 
 const BinderTaskView = () => {
@@ -32,6 +40,7 @@ const BinderTaskView = () => {
   const { id: orderId } = router.query
   const { singleOrder } = useAppSelector((state) => state.orders)
   const { materials } = useAppSelector(state => state.materials);
+  const { binderTypes } = useAppSelector((state) => state.binderType);
   const [pageLoading, setPageLoading] = useState(true)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [openDesignFilesDialog, setOpenDesignFilesDialog] = useState(false)
@@ -40,6 +49,12 @@ const BinderTaskView = () => {
   const [binderWastedSheet, setBinderWastedSheet] = useState("")
   const [uploadedBinderFiles, setUploadedBinderFiles] = useState<any[]>([])
   const [binderPapers, setBinderPapers] = useState<PaperField[]>([])
+  const [binding, setBinding] = useState(false)
+  const [bindingType, setBindingType] = useState("")
+
+  const getSelectedOption = (value: string, options: OptionType[]) => {
+    return options.find((option) => option.value === value) || null;
+  };
 
   // Fetch order data
   useEffect(() => {
@@ -65,6 +80,13 @@ const BinderTaskView = () => {
       setBinderRemarks(singleOrder.binderRemarks || "")
       setBinderWastedSheet(singleOrder.binderWastedSheet?.toString() || "")
       setUploadedBinderFiles(singleOrder.binderFiles || [])
+      // Safely convert binding to boolean: handles boolean false/true, string "false"/"true", undefined/null/empty as false
+      const bindingValue = !!singleOrder.binding && singleOrder.binding !== "false";
+      setBinding(bindingValue);
+      console.log("DEBUG: Order binding value:", singleOrder.binding, typeof singleOrder.binding);
+      console.log("DEBUG: Formik binding value after set:", bindingValue);
+      setBindingType(singleOrder.bindingType?._id || "")
+      
       // Initialize binder papers
       const printerPaperCount = singleOrder.printerPapers?.length || 0
       if (singleOrder.binderPapers && singleOrder.binderPapers.length > 0) {
@@ -86,8 +108,7 @@ const BinderTaskView = () => {
     }
   }, [singleOrder])
 
-
-  // Calculate total wastage whenever printerPapers changes
+  // Calculate total wastage whenever binderPapers changes
   useEffect(() => {
     const totalWastage = binderPapers.reduce((sum, paper) => {
       return sum + (parseFloat(paper.wastage) || 0)
@@ -119,7 +140,8 @@ const BinderTaskView = () => {
   }
   useEffect(() => {
     if (!materials.length) dispatch(getAllMaterialsThunk());
-  }, [])
+    if (!binderTypes.length) dispatch(getAllBinderTypesThunk());
+  }, [dispatch, materials.length, binderTypes.length])
   const handleViewDesignFiles = () => setOpenDesignFilesDialog(true)
   const handleCloseDesignFilesDialog = () => setOpenDesignFilesDialog(false)
 
@@ -144,8 +166,17 @@ const BinderTaskView = () => {
     const updatedPapers = [...binderPapers]
     updatedPapers[index] = {
       ...updatedPapers[index],
-      [field]: value
+      [field]: value.trim() === "" ? null : value // Convert empty strings to null
     }
+    setBinderPapers(updatedPapers)
+  }
+
+  const handleDeleteBinderPaper = (index: number) => {
+    if (binderPapers.length === 1) {
+      toast.error("At least one paper field is required")
+      return
+    }
+    const updatedPapers = binderPapers.filter((_, i) => i !== index)
     setBinderPapers(updatedPapers)
   }
 
@@ -193,12 +224,12 @@ const BinderTaskView = () => {
     // }
 
     // Validate binder papers
-    for (const paper of binderPapers) {
-      if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm || !paper.ratePerUnit) {
-        toast.error("All paper fields must be filled")
-        return
-      }
-    }
+    // for (const paper of binderPapers) {
+    //   if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm || !paper.ratePerUnit) {
+    //     toast.error("All paper fields must be filled")
+    //     return
+    //   }
+    // }
 
     setSubmitLoading(true)
     try {
@@ -227,7 +258,9 @@ const BinderTaskView = () => {
         binderWastedSheet: parseFloat(binderWastedSheet) || 0,
         binderFiles: allBinderFiles,
         binderPapers, // Include binder papers
-        receivedDate: currentDate
+        receivedDate: currentDate,
+        binding: binding, // Include binding status
+        bindingType: binding ? bindingType : null, // Include binding type conditionally
       }
 
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
@@ -247,73 +280,60 @@ const BinderTaskView = () => {
     label: material.materialName,
   }));
 
-  // Get GSM options for a specific material name
+  // Get GSM options for a specific material (_id)
   const getMaterialGSMOptions = (materialId: string) => {
-    const filteredMaterials = materials.filter(material => material._id === materialId);
-
+    const filteredMaterials = materials.filter(m => m._id === materialId);
     return Array.from(
-      new Map(
-        filteredMaterials.map(material => [
-          material.materialGSM.toString(),
-          {
-            value: material._id, // store _id for selection
-            label: `${material.materialGSM} GSM`,
-          },
-        ])
-      ).values()
-    );
+      new Set(filteredMaterials.map(m => m.materialGSM.toString()))
+    ).map(gsm => {
+      const gsmMaterial = filteredMaterials.find(m => m.materialGSM.toString() === gsm);
+      return {
+        value: gsmMaterial?._id, // Use _id for GSM too
+        label: `${gsm} GSM`,
+      };
+    });
   };
 
-
-  // Get size options for a specific material name and GSM
-  const getMaterialSizeOptions = (materialId: string, gsmId: string) => {
+  // Get size options for a specific material + GSM
+  const getMaterialSizeOptions = (materialId: string, materialGSM: string) => {
     const filteredMaterials = materials.filter(
-      material => material._id === materialId && material._id === gsmId
+      m => m._id === materialGSM
     );
-
-    return Array.from(
-      new Map(
-        filteredMaterials.map(material => [
-          material.materialSize,
-          {
-            value: material._id, // use material’s _id
-            label: material.materialSize,
-          },
-        ])
-      ).values()
-    );
+    return filteredMaterials.map(m => ({
+      value: m._id, // Each size option tied to material _id
+      label: m.materialSize,
+    }));
   };
-
 
   // Handle material name selection
-  const handleMaterialNameChange = (index: number, value: string) => {
+  const handleMaterialNameChange = (index: number, id: string) => {
     const updatedPapers = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
-      paperType: value,
-      gsm: "", // Reset GSM when material name changes
-      sheetSize: "", // Reset size when material name changes
+      paperType: id || null, // Use null for empty values
+      gsm: null,       
+      sheetSize: null,
     };
     setBinderPapers(updatedPapers);
   };
 
   // Handle GSM selection
-  const handleMaterialGSMChange = (index: number, value: string) => {
+  const handleMaterialGSMChange = (index: number, id: string) => {
     const updatedPapers = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
-      gsm: value,
-      sheetSize: "", // Reset size when GSM changes
+      gsm: id || null, // Use null for empty values
+      sheetSize: null,
     };
     setBinderPapers(updatedPapers);
   };
 
   // Handle size selection
-  const handleMaterialSizeChange = (index: number, value: string) => {
+  const handleMaterialSizeChange = (index: number, id: string) => {
     const updatedPapers = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
-      sheetSize: value,
+      sheetSize: id || null, // store _id
     };
     setBinderPapers(updatedPapers);
   };
@@ -418,19 +438,40 @@ const BinderTaskView = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-          <ThemeInput
-            labelName="Binding"
-            value={singleOrder.binding || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
+          
+          {/* Binding Switch and Conditional Select - Added from BinderForm */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={binding}
+                onChange={(e) => setBinding(e.target.checked)}
+                color="primary"
+                disabled={!canEditBinderTask}
+              />
+            }
+            label="Binding"
+            sx={{ flex: 1, justifyContent: "flex-start" }}
           />
+          {binding && (
+            <Box sx={{ width: 1 }} >
+              <ThemeSelect
+                label="Binding Type"
+                value={getSelectedOption(bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
+                options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
+                onChange={(_, v) => setBindingType(v ? v.value : "")}
+                disabled={!canEditBinderTask}
+                sx={{ flex: 1 }}
+              />
+            </Box>
+          )}
+          
           <ThemeInput
             labelName="Pages / book"
             value={singleOrder.pagesPerBook?.toString() || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-          <ThemeInput
+          {/* <ThemeInput
             labelName="Sub Paper"
             value={singleOrder.subPaper || "N/A"}
             sx={{ flex: 1 }}
@@ -441,7 +482,7 @@ const BinderTaskView = () => {
             value={singleOrder.usedPaper || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
-          />
+          /> */}
         </Box>
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <ThemeInput
@@ -549,7 +590,23 @@ const BinderTaskView = () => {
           </Typography>
           {binderPapers.map((paper, index) => (
             <Box key={`binder-${index}`} mb={2} p={2} border={1} borderRadius={2} borderColor="#ddd">
-              <Typography fontWeight={600}>{paper.paperName}</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography fontWeight={600}>
+                  {paper.paperName}
+                </Typography>
+                {canEditBinderTask && (
+                  <IconButton
+                    onClick={() => handleDeleteBinderPaper(index)}
+                    disabled={binderPapers.length === 1}
+                    sx={{
+                      color: '#F04438',
+                      '&:hover': { backgroundColor: '#FEE2E2' },
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                )}
+              </Box>
               <Stack direction="row" spacing={2} mt={1}>
                 <ThemeInput
                   labelName="Number of Sheets Used"
@@ -562,24 +619,30 @@ const BinderTaskView = () => {
                   label="Paper Type"
                   options={materialNameOptions}
                   value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
-                  onChange={(e, newValue) => handleMaterialNameChange(index, newValue?.value as string || "")}
-                  required
+                  onChange={(e, newValue) =>
+                    handleMaterialNameChange(index, newValue?.value as string || "")
+                  }
+                  // required
                   disabled={!canEditBinderTask}
                 />
                 <ThemeSelect
                   label="GSM"
                   options={getMaterialGSMOptions(paper.paperType)}
                   value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
-                  onChange={(e, newValue) => handleMaterialGSMChange(index, newValue?.value as string || "")}
-                  required
+                  onChange={(e, newValue) =>
+                    handleMaterialGSMChange(index, newValue?.value as string || "")
+                  }
+                  // required
                   disabled={!paper.paperType || !canEditBinderTask}
                 />
                 <ThemeSelect
                   label="Size"
                   options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
                   value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.sheetSize) || null}
-                  onChange={(e, newValue) => handleMaterialSizeChange(index, newValue?.value as string || "")}
-                  required
+                  onChange={(e, newValue) =>
+                    handleMaterialSizeChange(index, newValue?.value as string || "")
+                  }
+                  // 
                   disabled={!paper.paperType || !paper.gsm || !canEditBinderTask}
                 />
                 <ThemeInput

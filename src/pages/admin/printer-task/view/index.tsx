@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
-import { Box, Button, Typography, Paper, CircularProgress, Stack, IconButton } from "@mui/material"
+import { Box, Button, Typography, Paper, CircularProgress, Stack, IconButton, FormControlLabel, Switch } from "@mui/material"
 import { AiOutlineEye } from "react-icons/ai"
 import AddIcon from '@mui/icons-material/Add';
 import ThemeInput from "@/component/common_component/themeinput"
@@ -9,6 +9,7 @@ import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog"
 import FileUpload from "@/component/reusablecomponents/FileUpload"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { getOrderByIdThunk, updateOrderThunk } from "@/store/slices/orderSlice"
+import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice"
 import { useRouter } from "next/router"
 import { toast } from "react-toastify"
 import ThemeSelect from "@/component/common_component/themeselect";
@@ -17,12 +18,17 @@ import { authService } from "@/services/auth.service";
 
 type PaperField = {
   paperName: string;
-  rowPaperUser: string;
+  numberOfSheetsUsed: string;
   sheetSize: string;
   paperType: string;
   gsm: string;
   ratePerUnit: string;
   wastage: string; // Added wastage field
+};
+
+type OptionType = {
+  label: string;
+  value: string | number;
 };
 
 const PrinterTaskView = () => {
@@ -31,6 +37,7 @@ const PrinterTaskView = () => {
   const router = useRouter()
   const { id: orderId } = router.query
   const { singleOrder } = useAppSelector((state) => state.orders)
+  const { binderTypes } = useAppSelector((state) => state.binderType);
   const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
   const [submitLoading, setSubmitLoading] = useState(false)
@@ -40,7 +47,8 @@ const PrinterTaskView = () => {
   const [printerWastedSheet, setPrinterWastedSheet] = useState("")
   const [uploadedPrinterFiles, setUploadedPrinterFiles] = useState<any[]>([])
   const [printerPapers, setPrinterPapers] = useState<PaperField[]>([])
-  const [paperFields, setPaperFields] = useState<PaperField[]>([]);
+  const [binding, setBinding] = useState(false);
+  const [bindingType, setBindingType] = useState("");
 
   // Fetch order data
   useEffect(() => {
@@ -60,12 +68,22 @@ const PrinterTaskView = () => {
     fetchOrderData()
   }, [dispatch, orderId])
 
+  useEffect(() => {
+    dispatch(getAllMaterialsThunk());
+    if (!binderTypes.length) dispatch(getAllBinderTypesThunk());
+  }, [dispatch, binderTypes.length]);
+
   // Populate local state when singleOrder changes
   useEffect(() => {
     if (singleOrder) {
       setPrinterRemarks(singleOrder.printerRemarks || "")
       setPrinterWastedSheet(singleOrder.printerWastedSheet?.toString() || "")
       setUploadedPrinterFiles(singleOrder.printerFiles || [])
+      // Safely convert binding to boolean: handles boolean false/true, string "false"/"true", undefined/null/empty as false
+      const bindingValue = !!singleOrder.binding && singleOrder.binding !== "false";
+      setBinding(bindingValue);
+
+      setBindingType(singleOrder.bindingType?._id || "");
       
       // Initialize printer papers with wastage field
       if (singleOrder.printerPapers && singleOrder.printerPapers.length > 0) {
@@ -76,16 +94,20 @@ const PrinterTaskView = () => {
       } else {
         setPrinterPapers([{
           paperName: "Paper-1",
-          rowPaperUser: "",
+          numberOfSheetsUsed: "",
           sheetSize: "",
           paperType: "",
           gsm: "",
-          ratePerUnit: "",
+          // ratePerUnit: "",
           wastage: "0" // Default wastage value
         }])
       }
     }
   }, [singleOrder])
+
+  const getSelectedOption = (value: string, options: OptionType[]) => {
+    return options.find((option) => option.value === value) || null;
+  };
 
   // Calculate total wastage whenever printerPapers changes
   useEffect(() => {
@@ -117,10 +139,6 @@ const PrinterTaskView = () => {
     console.error("Upload error:", error)
     toast.error(error)
   }
-
-  useEffect(() => {
-    dispatch(getAllMaterialsThunk());
-  }, []);
 
   const handleViewDesignFiles = () => setOpenDesignFilesDialog(true)
   const handleCloseDesignFilesDialog = () => setOpenDesignFilesDialog(false)
@@ -161,11 +179,11 @@ const PrinterTaskView = () => {
     const paperCount = printerPapers.length
     setPrinterPapers([...printerPapers, {
       paperName: `Paper-${paperCount + 1}`,
-      rowPaperUser: "",
+      numberOfSheetsUsed: "",
       sheetSize: "",
       paperType: "",
       gsm: "",
-      ratePerUnit: "",
+      // ratePerUnit: "",
       wastage: "0" // Default wastage value
     }])
   }
@@ -187,7 +205,7 @@ const PrinterTaskView = () => {
     
     // Validate printer papers
     for (const paper of printerPapers) {
-      if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm || !paper.ratePerUnit) {
+      if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm /*|| !paper.ratePerUnit*/) {
         toast.error("All paper fields must be filled")
         return
       }
@@ -222,6 +240,8 @@ const PrinterTaskView = () => {
         printerWastedSheet: parseFloat(printerWastedSheet) || 0, // Use calculated total
         printerFiles: allPrinterFiles,
         printerPapers, // Include printer papers with wastage
+        binding,
+        bindingType: binding ? bindingType : null,
       }
       
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
@@ -394,24 +414,19 @@ const PrinterTaskView = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-          <ThemeInput
-            labelName="Binding"
-            value={singleOrder.binding || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          />
-          <ThemeInput
+          
+          {/* <ThemeInput
             labelName="Sub Paper"
             value={singleOrder.subPaper || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
-          />
-          <ThemeInput
+          /> Commented out - Hidden field */}
+          {/* <ThemeInput
             labelName="Used Paper"
             value={singleOrder.usedPaper || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
-          />
+          /> Commented out - Hidden field */}
           <ThemeInput
             labelName="Printing Type"
             value={singleOrder.pType || "N/A"}
@@ -426,12 +441,12 @@ const PrinterTaskView = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-          <ThemeInput
+          {/* <ThemeInput
             labelName="Printing Rate Per Unit"
             value={singleOrder.printingratePerUnit || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
-          />
+          /> Commented out - Hidden field */}
           <ThemeInput
             labelName="GSM"
             value={singleOrder.gsm || "N/A"}
@@ -451,6 +466,29 @@ const PrinterTaskView = () => {
             InputProps={{ readOnly: true }}
           />
         </Box>
+        <Stack direction="row" spacing={2} mb={2} sx={{ flex: 1 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={binding}
+                  onChange={(e) => setBinding(e.target.checked)}
+                  color="primary"
+                  disabled={true}
+                />
+              }
+              label="Binding"
+            />
+            {binding ? (
+              <ThemeSelect
+                label="Binding Type"
+                value={getSelectedOption(bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
+                options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
+                onChange={(_, v) => setBindingType(v ? v.value : "")}
+                required
+                disabled={true}
+              />
+            ) : null}
+          </Stack>
         <Box mb={2}>
           <ThemeInput
             labelName="Original Remarks"
@@ -559,13 +597,13 @@ const PrinterTaskView = () => {
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />
-                <ThemeInput
+                {/* <ThemeInput
                   labelName="Rate / Unit"
                   value={paper.ratePerUnit}
                   onChange={(e) => handlePrinterPaperChange(index, 'ratePerUnit', e.target.value)}
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
-                />
+                /> */}
                 <ThemeInput
                   labelName="Wastage"
                   value={paper.wastage}
