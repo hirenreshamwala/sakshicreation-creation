@@ -497,21 +497,47 @@ const BinderTaskView = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-          <ThemeInput
+          {/* <ThemeInput
             labelName="GSM"
             value={singleOrder.gsm || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
-          />
+          /> */}
           <ThemeInput
             labelName="GST"
             value={singleOrder.gst || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-          <ThemeInput
+          {/* <ThemeInput
             labelName="Rate / Unit"
             value={singleOrder.ratePerUnit || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          /> */}
+        </Box>
+        <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
+          <ThemeInput
+            labelName="Start Number"
+            value={singleOrder.startNumber || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
+            labelName="End Number"
+            value={singleOrder.endNumber || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
+            labelName="Total Numbering"
+            value={singleOrder.totalNumbering || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
+            labelName="Final Amount with Numbering"
+            value={singleOrder.numberingAmount || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
@@ -645,13 +671,13 @@ const BinderTaskView = () => {
                   // 
                   disabled={!paper.paperType || !paper.gsm || !canEditBinderTask}
                 />
-                <ThemeInput
+                {/* <ThemeInput
                   labelName="Rate / Unit"
                   value={paper.ratePerUnit}
                   onChange={(e) => handleBinderPaperChange(index, 'ratePerUnit', e.target.value)}
                   fullWidth
                   InputProps={{ readOnly: !canEditBinderTask }}
-                />
+                /> */}
                 <ThemeInput
                   labelName="Wastage"
                   value={paper.wastage}

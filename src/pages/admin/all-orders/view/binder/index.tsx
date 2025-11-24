@@ -1,6 +1,7 @@
 "use client"
 import { useRef, useEffect, useState } from "react"
 import { Box, Typography, Paper, Button, CircularProgress, Stack, IconButton, FormControlLabel, Switch } from "@mui/material"
+import { MdEmail } from "react-icons/md"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import StepperProgress from "@/component/common_component/stepperprogress"
@@ -76,6 +77,10 @@ const BinderForm = () => {
       ratePerUnit: "",
       rowPaperSize: "",
       rowPaperUser: "",
+      startNumber: "",
+      endNumber: "",
+      totalNumbering: "",
+      numberingAmount: "",
     },
     validationSchema: Yup.object({
       issuedDate: Yup.string(),
@@ -101,6 +106,10 @@ const BinderForm = () => {
       gsm: Yup.string(),
       rowPaperSize: Yup.string(),
       rowPaperUser: Yup.string(),
+      startNumber: Yup.string(),
+      endNumber: Yup.string(),
+      totalNumbering: Yup.string(),
+      numberingAmount: Yup.string(),
       binderPapers: Yup.array().of(
         Yup.object().shape({
           numberOfSheetsUsed: Yup.string(),
@@ -156,6 +165,10 @@ const BinderForm = () => {
           ratePerUnit: values.ratePerUnit,
           rowPaperSize: values.rowPaperSize,
           rowPaperUser: values.rowPaperUser,
+          startNumber: values.startNumber,
+          endNumber: values.endNumber,
+          totalNumbering: values.totalNumbering,
+          numberingAmount: values.numberingAmount,
           binderFiles: allBinderFiles,
           binderPapers: binderPapers,
         }
@@ -171,15 +184,20 @@ const BinderForm = () => {
       }
     },
   })
-
-  // Auto-calculate Total Amount = qty * rateBook
+  // Auto-calculate Total Amount = (qty * rateBook)
   useEffect(() => {
     const qty = parseFloat(formik.values.qty) || 0;
     const rateBook = parseFloat(formik.values.rateBook) || 0;
-    const total = qty * rateBook;
-    formik.setFieldValue("totalAmount", total.toString());
+    const baseTotal = qty * rateBook;
+    formik.setFieldValue("totalAmount", baseTotal.toString());
   }, [formik.values.qty, formik.values.rateBook]);
-
+  // Auto-calculate Numbering Amount = Total Amount + Total Numbering
+  useEffect(() => {
+    const totalAmt = parseFloat(formik.values.totalAmount) || 0;
+    const totNum = parseFloat(formik.values.totalNumbering) || 0;
+    const numAmt = totalAmt + totNum;
+    formik.setFieldValue("numberingAmount", numAmt.toString());
+  }, [formik.values.totalAmount, formik.values.totalNumbering]);
   useEffect(() => {
     const fetchOrderData = async () => {
       if (orderId && typeof orderId === "string") {
@@ -227,6 +245,10 @@ const BinderForm = () => {
         ratePerUnit: singleOrder.ratePerUnit || "",
         rowPaperSize: singleOrder.rowPaperSize || "",
         rowPaperUser: singleOrder.rowPaperUser || "",
+        startNumber: singleOrder.startNumber || "",
+        endNumber: singleOrder.endNumber || "",
+        totalNumbering: singleOrder.totalNumbering || "",
+        numberingAmount: singleOrder.numberingAmount || "",
       })
 
       if (singleOrder.binder && singleOrder.binder._id) {
@@ -435,6 +457,65 @@ const BinderForm = () => {
     };
 
     downloadVisitingCardPDF(data);
+  };
+
+  // Email functionality implementation
+  const handleEmailClick = (type: 'binder' = 'binder') => {
+    const recipientEmail = singleOrder?.party?.email || ''; // Add party.email to your data if not exists
+    const contactPerson = singleOrder?.party?.contactPerson || 'Customer';
+    const orderNumber = singleOrder?.orderNumber || 'N/A';
+    const companyName = singleOrder?.companyName?.companyName || 'N/A';
+    const partyName = singleOrder?.party?.partyName || 'N/A';
+    const itemName = singleOrder?.productItem?.itemName || 'N/A';
+    const quantity = singleOrder?.qty || 0;
+    const totalAmount = singleOrder?.total || 0;
+    const finalAmount = singleOrder?.finalAmount || 0;
+    const gstPercentage = singleOrder?.gstPercentage || 0;
+    const remarks = singleOrder?.remarks || 'No remarks';
+   
+    // Address formatting
+    const address = [
+      singleOrder?.party?.address?.unitNo || '',
+      singleOrder?.party?.address?.marketName?.marketName || '',
+      singleOrder?.party?.address?.area?.area || '',
+      singleOrder?.party?.address?.pincode?.pincode || '',
+    ].filter(part => part?.trim() !== '').join(', ') || 'N/A';
+   
+    const gstText = gstPercentage > 0 ? ` (incl. ${gstPercentage}% GST)` : '';
+   
+    // Dynamic subject based on type
+    const subject = `Order ${orderNumber} - Binder Work Completed`;
+   
+    // Dynamic body with all details
+    const body = `Dear ${contactPerson},
+
+Binder work for the following order has been completed. Please review the details and proceed to the next step (Booklet & Folder Binder or Delivery).
+
+---
+ORDER DETAILS:
+-------------
+
+Order Number: ${orderNumber}
+Company Name: ${companyName}
+Party Name: ${partyName}
+Contact Person: ${contactPerson}
+
+
+Address:
+${address}
+
+Remarks:
+${remarks}
+
+---
+Please let us know if you have any questions or need adjustments.
+
+Best regards,
+Your Team
+`;
+
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(gmailUrl, '_blank');
   };
 
   if (pageLoading) {
@@ -668,6 +749,57 @@ const BinderForm = () => {
           </Box>
           <Box display="flex" gap={2} mb={2} justifyContent={"space-between"}>
             <ThemeInput
+              labelName="Start Number"
+              name="startNumber"
+              value={formik.values.startNumber}
+              onChange={formik.handleChange}
+              sx={{ flex: 1 }}
+              error={formik.touched.startNumber && Boolean(formik.errors.startNumber)}
+              helperText={formik.touched.startNumber && (formik.errors.startNumber as string)}
+              InputProps={{ readOnly: areFieldsReadOnly }}
+            />
+            <ThemeInput
+              labelName="End Number"
+              name="endNumber"
+              value={formik.values.endNumber}
+              onChange={formik.handleChange}
+              sx={{ flex: 1 }}
+              error={formik.touched.endNumber && Boolean(formik.errors.endNumber)}
+              helperText={formik.touched.endNumber && (formik.errors.endNumber as string)}
+              InputProps={{ readOnly: areFieldsReadOnly }}
+            />
+            <ThemeInput
+              labelName="Total Numbering"
+              name="totalNumbering"
+              value={formik.values.totalNumbering}
+              onChange={formik.handleChange}
+              sx={{ flex: 1 }}
+              error={formik.touched.totalNumbering && Boolean(formik.errors.totalNumbering)}
+              helperText={formik.touched.totalNumbering && (formik.errors.totalNumbering as string)}
+            />
+            <ThemeInput
+              labelName="Final Amount with Numbering"
+              name="numberingAmount"
+              value={formik.values.numberingAmount}
+              onChange={formik.handleChange}
+              sx={{ flex: 1 }}
+              error={formik.touched.numberingAmount && Boolean(formik.errors.numberingAmount)}
+              helperText={formik.touched.numberingAmount && (formik.errors.numberingAmount as string)}
+              InputProps={{ readOnly: true }}
+            />
+            {(isBinderStatusDone || isBinderStatusInProgress) && (
+              <ThemeInput
+                labelName="Binder Wasted Sheet"
+                value={singleOrder?.binderWastedSheet?.toString() || "0"}
+                type="number"
+                sx={{ flex: 1 }}
+                InputProps={{ readOnly: true }}
+              />
+            )}
+          </Box>
+          {/* Commented out GSM, Raw Paper Size, Raw Paper No of Sheet Used fields */}
+          {/* <Box display="flex" gap={2} mb={2} justifyContent={"space-between"}>
+            <ThemeInput
               labelName="GSM"
               name="gsm"
               value={formik.values.gsm}
@@ -697,17 +829,7 @@ const BinderForm = () => {
               helperText={formik.touched.rowPaperUser && (formik.errors.rowPaperUser as string)}
               InputProps={{ readOnly: areFieldsReadOnly || !!singleOrder.rowPaperUser }}
             />
-            {(isBinderStatusDone || isBinderStatusInProgress) && (
-              <ThemeInput
-                labelName="Binder Wasted Sheet"
-                value={singleOrder?.binderWastedSheet?.toString() || "0"}
-                type="number"
-                sx={{ flex: 1 }}
-                InputProps={{ readOnly: true }}
-              />
-            )}
-          </Box>
-
+          </Box> */}
           {/* Binder Papers Section */}
           <Box mb={3}>
             <Typography fontWeight={600} mb={2}>
@@ -776,7 +898,7 @@ const BinderForm = () => {
                     // helperText={!paper.numberOfSheetsUsed && formik.submitCount > 0 ? "This field is required" : ""}
                     InputProps={{ readOnly: areFieldsReadOnly }}
                   />
-                  <ThemeInput
+                  {/* <ThemeInput
                     labelName="Rate / Unit"
                     value={paper.ratePerUnit}
                     onChange={(e) => handleBinderPaperChange(index, 'ratePerUnit', e.target.value)}
@@ -785,7 +907,7 @@ const BinderForm = () => {
                     // error={!paper.ratePerUnit && formik.submitCount > 0}
                     // helperText={!paper.ratePerUnit && formik.submitCount > 0 ? "This field is required" : ""}
                     InputProps={{ readOnly: areFieldsReadOnly }}
-                  />
+                  /> */}
                 </Stack>
               </Box>
             ))}
@@ -945,6 +1067,33 @@ const BinderForm = () => {
                 >
                   Download PDF
                 </Button>
+              </Stack>
+              <Typography fontWeight={600} mb={2}>
+                Send for Next Step Approval via
+              </Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={4}>
+                <Box
+                  onClick={() => handleEmailClick('binder')}
+                  sx={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 1,
+                    border: "1px solid #D0D5DD",
+                    borderRadius: 2,
+                    px: 2,
+                    py: 1.2,
+                    backgroundColor: "#fff",
+                    cursor: "pointer",
+                    "&:hover": { backgroundColor: "#F9FAFB" },
+                  }}
+                >
+                  <MdEmail size={18} color="#F04438" />
+                  <Typography fontWeight={500} fontSize={14} color="#344054">
+                    Email
+                  </Typography>
+                </Box>
               </Stack>
               <Stack direction="row" spacing={2}>
                 <ThemeButton

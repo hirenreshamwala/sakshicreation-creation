@@ -766,6 +766,9 @@ const ViewOrderDesigner = () => {
   const [quotationProofLoading, setQuotationProofLoading] = useState(false)
   const [uploadedQuotationProofs, setUploadedQuotationProofs] = useState<any[]>([])
   const [quotationHistoryDialog, setQuotationHistoryDialog] = useState(false)
+  const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
+  const [previewDialog, setPreviewDialog] = useState(false)
+  const [openQuotationProofDialog, setOpenQuotationProofDialog] = useState(false)
   const isEditingDisabled = singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0;
   const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
   const hasValidProof = Array.isArray(singleOrder?.invoiceValidProof) && singleOrder?.invoiceValidProof?.length > 0;
@@ -1194,13 +1197,64 @@ const ViewOrderDesigner = () => {
     }
   };
 
+  const handleEmailClick = (type: 'design' | 'invoice' = 'design') => {
+  const recipientEmail = singleOrder?.party?.email || ''; // Add party.email to your data if not exists
+  const contactPerson = singleOrder?.party?.contactPerson || 'Customer';
+  const orderNumber = singleOrder?.orderNumber || 'N/A';
+  const companyName = singleOrder?.companyName?.companyName || 'N/A';
+  const partyName = singleOrder?.party?.partyName || 'N/A';
+  const itemName = singleOrder?.productItem?.itemName || 'N/A';
+  const quantity = singleOrder?.qty || 0;
+  const totalAmount = singleOrder?.total || 0;
+  const finalAmount = singleOrder?.finalAmount || 0;
+  const gstPercentage = singleOrder?.gstPercentage || 0;
+  const remarks = singleOrder?.remarks || 'No remarks';
+  
+  // Address formatting
+  const address = [
+    singleOrder?.party?.address?.unitNo || '',
+    singleOrder?.party?.address?.marketName?.marketName || '',
+    singleOrder?.party?.address?.area?.area || '',
+    singleOrder?.party?.address?.pincode?.pincode || '',
+  ].filter(part => part?.trim() !== '').join(', ') || 'N/A';
+  
+  const gstText = gstPercentage > 0 ? ` (incl. ${gstPercentage}% GST)` : '';
+  
+  // Dynamic subject based on type
+  const subject = type === 'invoice' 
+    ? `Invoice for Order ${orderNumber} - Payment Request` 
+    : `Order ${orderNumber} - ${type === 'design' ? 'Design Review' : 'Approval Required'}`;
+  
+  // Dynamic body with all details
+  const body = `Dear ${contactPerson},
 
-  const handleEmailClick = () => {
-    const subject = `Order ${singleOrder?.orderNumber} - Design Review`
-    const body = `Dear ${singleOrder?.party?.contactPerson},\n\nPlease review the design for order ${singleOrder?.orderNumber}.\n\nBest regards`
-    const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-    window.open(mailtoUrl, "_blank")
-  }
+    ${type === 'invoice' ? 'Please find the invoice details below for your approval and payment.' : `Please review the ${type} for the following order.`}
+
+    ---
+    ORDER DETAILS:
+    -------------
+
+    Order Number: ${orderNumber}
+    Company Name: ${companyName}
+    Party Name: ${partyName}
+    Contact Person: ${contactPerson}
+
+    Address:
+    ${address}
+
+    Remarks:
+    ${remarks}
+
+    ---
+    ${type === 'invoice' ? 'Please make the payment at your earliest convenience. Let us know if you have any questions.' : 'If everything looks good, reply with your approval. Otherwise, suggest any changes.'}
+
+    Best regards,
+    Your Team
+    `;
+
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.open(gmailUrl, '_blank');
+    };
 
   const handleWhatsAppClick = () => {
     const phoneNumber = singleOrder?.party?.ownerWhatsAppNo
