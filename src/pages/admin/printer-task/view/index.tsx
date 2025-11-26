@@ -84,7 +84,7 @@ const PrinterTaskView = () => {
       setBinding(bindingValue);
 
       setBindingType(singleOrder.bindingType?._id || "");
-      
+
       // Initialize printer papers with wastage field
       if (singleOrder.printerPapers && singleOrder.printerPapers.length > 0) {
         setPrinterPapers(singleOrder.printerPapers.map((paper: any) => ({
@@ -114,7 +114,7 @@ const PrinterTaskView = () => {
     const totalWastage = printerPapers.reduce((sum, paper) => {
       return sum + (parseFloat(paper.wastage) || 0)
     }, 0)
-    
+
     setPrinterWastedSheet(totalWastage.toString())
   }, [printerPapers])
 
@@ -202,7 +202,7 @@ const PrinterTaskView = () => {
       toast.error("Order ID not found")
       return
     }
-    
+
     // Validate printer papers
     for (const paper of printerPapers) {
       if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm /*|| !paper.ratePerUnit*/) {
@@ -243,7 +243,7 @@ const PrinterTaskView = () => {
         binding,
         bindingType: binding ? bindingType : null,
       }
-      
+
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
       toast.success("Printer task updated successfully!")
       await dispatch(getOrderByIdThunk(orderId)).unwrap()
@@ -376,6 +376,13 @@ const PrinterTaskView = () => {
           )}
         </Box>
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
+          <Box flex={1} minWidth={240}>
+            <ThemeInput
+              labelName="Order No"
+              value={singleOrder.orderNumber || "N/A"}
+              InputProps={{ readOnly: true }}
+            />
+          </Box>
           <ThemeInput
             labelName="Company Name"
             value={singleOrder.companyName?.companyName || "N/A"}
@@ -395,12 +402,6 @@ const PrinterTaskView = () => {
             InputProps={{ readOnly: true }}
           />
           <ThemeInput
-            labelName="Order Number"
-            value={singleOrder.orderNumber || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          />
-          <ThemeInput
             labelName="Quantity"
             value={singleOrder.qty?.toString() || "N/A"}
             sx={{ flex: 1 }}
@@ -414,7 +415,7 @@ const PrinterTaskView = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-          
+
           {/* <ThemeInput
             labelName="Sub Paper"
             value={singleOrder.subPaper || "N/A"}
@@ -427,12 +428,56 @@ const PrinterTaskView = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           /> Commented out - Hidden field */}
+
+          <Box flex={1} minWidth={240}>
+            <ThemeInput
+              labelName="Printing Type"
+              value={singleOrder?.pType || "N/A"}
+              InputProps={{ readOnly: true }}
+            />
+          </Box>
+          <Box flex={1} minWidth={240}>
+            <ThemeInput
+              labelName="Binding Type"
+              value={singleOrder?.bindingType.name || "N/A"}
+              InputProps={{ readOnly: true }}
+            />
+          </Box>
+          <Box flex={1} minWidth={240}>
+            <ThemeInput
+              labelName="Binding Page"
+              value={singleOrder?.bindingPage || "N/A"}
+              InputProps={{ readOnly: true }}
+            />
+          </Box>
+          <Box flex={1} minWidth={240}>
+            <ThemeInput
+              labelName="Booklet Folder Type"
+              value={singleOrder?.bookletFolderType || "N/A"}
+              InputProps={{ readOnly: true }}
+            />
+          </Box>
+        </Box>
+        <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <ThemeInput
-            labelName="Printing Type"
-            value={singleOrder.pType || "N/A"}
+            labelName="color"
+            value={`color - ${singleOrder.color}` || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
+          <ThemeInput
+            labelName="color1"
+            value={singleOrder.color1 || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
+            labelName="color2"
+            value={singleOrder.color2 || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+
         </Box>
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <ThemeInput
@@ -466,29 +511,6 @@ const PrinterTaskView = () => {
             InputProps={{ readOnly: true }}
           />
         </Box>
-        <Stack direction="row" spacing={2} mb={2} sx={{ flex: 1 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={binding}
-                  onChange={(e) => setBinding(e.target.checked)}
-                  color="primary"
-                  disabled={true}
-                />
-              }
-              label="Binding"
-            />
-            {binding ? (
-              <ThemeSelect
-                label="Binding Type"
-                value={getSelectedOption(bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
-                options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
-                onChange={(_, v) => setBindingType(v ? v.value : "")}
-                required
-                disabled={true}
-              />
-            ) : null}
-          </Stack>
         <Box mb={2}>
           <ThemeInput
             labelName="Original Remarks"
@@ -533,7 +555,7 @@ const PrinterTaskView = () => {
         <Typography variant="h6" fontWeight={600} mb={2} color="#FF9800">
           Printer Work
         </Typography>
-        
+
         {isHeld && (
           <Box mb={3} sx={{ p: 2, bgcolor: "#FFF0F0", borderRadius: 2, border: "1px solid #F04438" }}>
             <Typography fontWeight={500} fontSize={14} mb={1} color="#F04438">
@@ -544,7 +566,7 @@ const PrinterTaskView = () => {
             </Typography>
           </Box>
         )}
-        
+
         {isPrinterWorkDone && (
           <Box mb={3} sx={{ p: 2, bgcolor: "#E8F5E8", borderRadius: 2, border: "1px solid #4CAF50" }}>
             <Typography fontWeight={500} fontSize={14} mb={1} color="#4CAF50">
@@ -561,7 +583,7 @@ const PrinterTaskView = () => {
           <Typography fontWeight={600} mb={2}>
             Printer Papers
           </Typography>
-          
+
           {printerPapers.map((paper, index) => (
             <Box key={`printer-${index}`} mb={2} p={2} border={1} borderRadius={2} borderColor="#ddd">
               <Typography fontWeight={600}>{paper.paperName}</Typography>
@@ -615,7 +637,7 @@ const PrinterTaskView = () => {
               </Stack>
             </Box>
           ))}
-          
+
           {canEditPrinterTask && (
             <Box display="flex" justifyContent="flex-end">
               <ThemeButton

@@ -1,6 +1,6 @@
 "use client"
 import { useRef, useState, useEffect } from "react"
-import { Box, Typography, Paper, Button, CircularProgress, Alert, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, List, ListItem, Chip, Divider, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Stack } from "@mui/material"
+import { Box, Typography, Paper, Button, CircularProgress, Alert, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, List, ListItem, Chip, Divider, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Stack, FormControlLabel, Switch } from "@mui/material"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import StepperProgress from "@/component/common_component/stepperprogress"
@@ -14,9 +14,11 @@ import { useFormik } from "formik"
 import * as Yup from "yup"
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
 import Image from "next/image"
+import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice"
 interface FormValues {
   companyName: string
   partyName: string
+  ownerWhatsAppNo: string
   itemName: string
   size: string
   quantity: string
@@ -29,6 +31,11 @@ interface FormValues {
   remarks: string
   color1: String,
   color2: String,
+  binding: boolean
+  bindingType: string
+  bindingPage: string
+  bookletFolder: boolean
+  bookletFolderType: string
 }
 
 const ViewOrderPage = () => {
@@ -46,11 +53,13 @@ const ViewOrderPage = () => {
   const { markets } = useAppSelector((state) => state.markets);
   const { id: orderId } = router.query
   const { singleOrder } = useAppSelector((state: any) => state.orders)
-  
+  const { binderTypes } = useAppSelector((state) => state.binderType)
+
   const formik = useFormik<FormValues>({
     initialValues: {
       companyName: "",
       partyName: "",
+      ownerWhatsAppNo: "",
       itemName: "",
       size: "",
       quantity: "",
@@ -63,6 +72,11 @@ const ViewOrderPage = () => {
       remarks: "",
       color1: "",
       color2: "",
+      binding: false,
+      bindingType: "",
+      bindingPage: "",
+      bookletFolder: false,
+      bookletFolderType: "",
     },
     validationSchema: Yup.object({
       size: Yup.string().required("Size is required"),
@@ -123,6 +137,11 @@ const ViewOrderPage = () => {
           remarks: values.remarks,
           color1: values.color1,
           color2: values.color2,
+          binding: values.binding,
+          bindingType: values.bindingType,
+          bindingPage: values.bindingPage,
+          bookletFolder: values.bookletFolder,
+          bookletFolderType: values.bookletFolderType,
           filePaths: [
             ...(Array.isArray(singleOrder?.filePaths)
               ? singleOrder.filePaths.map(f => typeof f === 'string' ? f : f.path)
@@ -145,6 +164,7 @@ const ViewOrderPage = () => {
 
   useEffect(() => {
     if (!markets.length) dispatch(getAllMarketsThunk())
+    if (!binderTypes.length) dispatch(getAllBinderTypesThunk())
   }, [])
 
   const formatDate = (dateString: string) => {
@@ -219,9 +239,20 @@ const ViewOrderPage = () => {
           ? singleOrder.color
           : ""
 
+        // Binding type handle karen
+        let bindingTypeValue = ""
+        if (singleOrder.bindingType) {
+          if (typeof singleOrder.bindingType === 'string') {
+            bindingTypeValue = singleOrder.bindingType
+          } else if (singleOrder.bindingType._id) {
+            bindingTypeValue = singleOrder.bindingType._id // ID store karen
+          }
+        }
+
         formik.setValues({
           companyName: typeof singleOrder.companyName?.companyName === "string" ? singleOrder.companyName.companyName : "",
           partyName: typeof singleOrder.party?.partyName === "string" ? singleOrder.party.partyName : "",
+          ownerWhatsAppNo: typeof singleOrder.party?.ownerWhatsAppNo === "string" ? singleOrder.party.ownerWhatsAppNo : "",
           itemName: typeof singleOrder.productItem?.itemName === "string" ? singleOrder.productItem.itemName : "",
           size: typeof singleOrder.size === "string" ? singleOrder.size : "",
           quantity: typeof singleOrder.qty === "number" ? singleOrder.qty.toString() : "",
@@ -234,13 +265,19 @@ const ViewOrderPage = () => {
           remarks: typeof singleOrder.remarks === "string" ? singleOrder.remarks : "",
           color1: typeof singleOrder.color1 === "string" ? singleOrder.color1 : "",
           color2: typeof singleOrder.color2 === "string" ? singleOrder.color2 : "",
+          // Add these new fields
+          binding: Boolean(singleOrder.binding),
+          bindingType: bindingTypeValue, // ID store karen
+          bindingPage: typeof singleOrder.bindingPage === "string" ? singleOrder.bindingPage : "",
+          bookletFolder: Boolean(singleOrder.bookletFolder),
+          bookletFolderType: typeof singleOrder.bookletFolderType === "string" ? singleOrder.bookletFolderType : "",
         })
       } catch (error) {
         console.error("Error setting form values:", error)
         toast.error("Failed to initialize form values")
       }
     }
-  }, [singleOrder])
+  }, [singleOrder, binderTypes])
 
   const handleViewFiles = () => setOpenFilesDialog(true)
 
@@ -262,6 +299,8 @@ const ViewOrderPage = () => {
       </Box>
     )
   }
+
+  console.log("DEBUG : ViewOrderPage : formik:", formik);
 
   return (
     <Box>
@@ -303,6 +342,14 @@ const ViewOrderPage = () => {
             <ThemeInput
               labelName="Party Name"
               value={formik.values.partyName}
+              name="partyName"
+              onChange={formik.handleChange}
+              sx={{ flex: 1 }}
+              disabled
+            />
+            <ThemeInput
+              labelName="Whatsapp Number"
+              value={formik.values.ownerWhatsAppNo}
               name="partyName"
               onChange={formik.handleChange}
               sx={{ flex: 1 }}
@@ -470,6 +517,90 @@ const ViewOrderPage = () => {
             )}
           </Box>
 
+          <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={3} flexWrap="wrap">
+            {/* Binding Switch */}
+            <Box display="flex" alignItems="center" sx={{ minWidth: 120 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formik.values.binding}
+                    onChange={(e) => formik.setFieldValue("binding", e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Binding"
+              />
+            </Box>
+
+            {/* Binding Type Dropdown */}
+            {formik.values.binding && (
+              <FormControl sx={{ flex: 1, minWidth: 120 }}>
+                <InputLabel id="bindingType-label">Binding Type</InputLabel>
+                <Select
+                  labelId="bindingType-label"
+                  name="bindingType"
+                  value={formik.values.bindingType}
+                  onChange={formik.handleChange}
+                  label="Binding Type"
+                >
+                  <MenuItem value="">Select Binding Type</MenuItem>
+                  {binderTypes.map((binder) => (
+                    <MenuItem key={binder._id} value={binder._id}>
+                      {binder.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
+            {/* Binding Page Input */}
+            <ThemeInput
+              labelName="Binding Page"
+              placeholder="Enter binding page count"
+              fullWidth
+              type="text"
+              name="bindingPage"
+              value={formik.values.bindingPage}
+              onChange={formik.handleChange}
+              sx={{ flex: 1, minWidth: 120 }}
+            />
+          </Box>
+
+          {/* Booklet/Folder Section */}
+          <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={3} flexWrap="wrap">
+            <Box display="flex" alignItems="center" sx={{ minWidth: 120 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formik.values.bookletFolder}
+                    onChange={(e) => formik.setFieldValue("bookletFolder", e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Booklet/Folder"
+              />
+            </Box>
+
+            {formik.values.bookletFolder && (
+              <FormControl sx={{ flex: 1, minWidth: 120 }}>
+                <InputLabel id="bookletFolderType-label">Booklet/Folder Type</InputLabel>
+                <Select
+                  labelId="bookletFolderType-label"
+                  name="bookletFolderType"
+                  value={formik.values.bookletFolderType}
+                  onChange={formik.handleChange}
+                  label="Booklet/Folder Type"
+                >
+                  <MenuItem value="">Select Type</MenuItem>
+                  <MenuItem value="two-fold">Two Fold</MenuItem>
+                  <MenuItem value="three-fold">Three Fold</MenuItem>
+                  <MenuItem value="four-fold">Four Fold</MenuItem>
+                  <MenuItem value="five-fold">Five Fold</MenuItem>
+                </Select>
+              </FormControl>
+            )}
+          </Box>
+
           <Box mb={2}>
             <ThemeInput
               labelName="Remarks"
@@ -543,22 +674,22 @@ const ViewOrderPage = () => {
             {loading ? "Updating..." : "Save"}
           </ThemeButton>
         </Box>
-          <ThemeButton
-            fullWidth
-            sx={{
-              mt: 2,
-              background: "#12B76A",
-              color: "#fff",
-              fontWeight: 600,
-              fontSize: 16,
-              borderRadius: 2,
-              py: 1.2,
-              "&:hover": { background: "#079455" },
-            }}
-            onClick={handleNextStep}
-          >
-            Next
-          </ThemeButton>
+        <ThemeButton
+          fullWidth
+          sx={{
+            mt: 2,
+            background: "#12B76A",
+            color: "#fff",
+            fontWeight: 600,
+            fontSize: 16,
+            borderRadius: 2,
+            py: 1.2,
+            "&:hover": { background: "#079455" },
+          }}
+          onClick={handleNextStep}
+        >
+          Next
+        </ThemeButton>
       </Paper>
 
       <ViewFilesDialog

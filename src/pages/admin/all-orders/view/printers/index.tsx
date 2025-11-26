@@ -12,6 +12,10 @@ import {
   IconButton,
   FormControlLabel,
   Switch,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
 } from "@mui/material";
 import { MdEmail } from "react-icons/md";
 import ThemeInput from "@/component/common_component/themeinput";
@@ -90,6 +94,7 @@ const PrinterForm = () => {
     if (singleOrder) {
       // Safely convert binding to boolean: handles boolean false/true, string "false"/"true", undefined/null/empty as false
       const bindingValue = !!singleOrder.binding && singleOrder.binding !== "false";
+      const bookletFolderValue = !!singleOrder.bookletFolder && singleOrder.bookletFolder !== "false";
       formik.setValues({
         companyName: singleOrder.companyName?.companyName || "",
         partyName: singleOrder.party?.partyName || "",
@@ -98,6 +103,12 @@ const PrinterForm = () => {
         size: singleOrder.size || "",
         binding: bindingValue,
         bindingType: singleOrder.bindingType?._id || "",
+        bindingPage: singleOrder.bindingPage || "",
+        bookletFolder: bookletFolderValue,
+        bookletFolderType: singleOrder.bookletFolderType || "",
+        color: singleOrder.color || "",
+        color1: singleOrder.color1 || "",
+        color2: singleOrder.color2 || "",
         // subPaper: singleOrder.subPaper || "",
         // usedPaper: singleOrder.usedPaper || "",
         pType: singleOrder.pType || "",
@@ -147,6 +158,12 @@ const PrinterForm = () => {
       size: "",
       binding: false,
       bindingType: "",
+      bindingPage: "",
+      bookletFolder: false,
+      bookletFolderType: "",
+      color: "",
+      color1: "",
+      color2: "",
       // subPaper: "", // Hidden field - Commented out
       // usedPaper: "", // Hidden field - Commented out
       pType: "",
@@ -203,6 +220,9 @@ const PrinterForm = () => {
           size: values.size,
           binding: values.binding,
           bindingType: values.binding ? values.bindingType : null,
+          bindingPage: values.bindingPage,
+          bookletFolder: values.bookletFolder,
+          bookletFolderType: values.bookletFolder ? values.bookletFolderType : null,
           // subPaper: values.subPaper,
           // usedPaper: values.usedPaper,
           pType: values.pType,
@@ -418,7 +438,7 @@ const PrinterForm = () => {
     const finalAmount = singleOrder?.finalAmount || 0;
     const gstPercentage = singleOrder?.gstPercentage || 0;
     const remarks = singleOrder?.remarks || 'No remarks';
-   
+
     // Address formatting
     const address = [
       singleOrder?.party?.address?.unitNo || '',
@@ -426,12 +446,12 @@ const PrinterForm = () => {
       singleOrder?.party?.address?.area?.area || '',
       singleOrder?.party?.address?.pincode?.pincode || '',
     ].filter(part => part?.trim() !== '').join(', ') || 'N/A';
-   
+
     const gstText = gstPercentage > 0 ? ` (incl. ${gstPercentage}% GST)` : '';
-   
+
     // Dynamic subject based on type
     const subject = `Order ${orderNumber} - Printer Work Completed`;
-   
+
     // Dynamic body with all details
     const body = `Dear ${contactPerson},
 
@@ -572,7 +592,7 @@ Your Team
               fullWidth
               InputProps={{ readOnly: true }}
             />
-           
+
             {/* <ThemeInput
               labelName="Sub Paper"
               name="subPaper"
@@ -595,36 +615,54 @@ Your Team
             /> */}
             <ThemeInput
               labelName="Printing Type"
-              name="pType"
               value={formik.values.pType}
-              onChange={formik.handleChange}
               fullWidth
-              error={formik.touched.pType && Boolean(formik.errors.pType)}
-              helperText={formik.touched.pType && formik.errors.pType}
-              InputProps={{ readOnly: areFieldsReadOnly }}
+              InputProps={{ readOnly: true }}
             />
           </Stack>
-          <Stack direction="row" spacing={2} mb={2} sx={{ flex: 1 }}>
-               <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formik.values.binding}
-                      onChange={(e) => formik.setFieldValue("binding", e.target.checked)}
-                      color="primary"
-                      // disabled={areFieldsReadOnly}
-                    />
-                  }
-                  label="Binding"
+          <Stack direction="row" spacing={2} mb={2}>
+                <ThemeInput
+                  labelName="Binding Type"
+                  value={binderTypes.find(b => b._id === formik.values.bindingType)?.name || formik.values.bindingType}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
                 />
-              {formik.values.binding ? (
-                <ThemeSelect
-                  label="Binding Type"
-                  value={getSelectedOption(formik.values.bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
-                  options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
-                  onChange={(_, v) => formik.setFieldValue("bindingType", v ? v.value : "")}
-                  // disabled={areFieldsReadOnly}
+                <ThemeInput
+                  labelName="Binding Page"
+                  value={formik.values.bindingPage}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
                 />
-              ) : null}
+              <ThemeInput
+                labelName="Booklet/Folder Type"
+                value={formik.values.bookletFolderType}
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
+          </Stack>
+          <Stack direction="row" spacing={2} mb={2}>
+                <ThemeInput
+                  labelName="Color"
+                  value={`Color - ${formik.values.color}`}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
+                />
+                {formik.values.color1 && (
+                <ThemeInput
+                  labelName="COLOR1"
+                  value={formik.values.color1}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
+                />
+                )}
+                {formik.values.color2 && (
+                <ThemeInput
+                  labelName="COLOR2"
+                  value={formik.values.color2}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
+                />
+                )}
           </Stack>
           {/* Paper Fields Section */}
           {paperFields?.map((paper, index) => (
@@ -794,33 +832,33 @@ Your Team
               InputProps={{ readOnly: areFieldsReadOnly }}
             />
           </Box>
-            <Typography fontWeight={600} mb={2}>
-                Send for Next Step Approval via
+          <Typography fontWeight={600} mb={2}>
+            Send for Next Step Approval via
+          </Typography>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={4}>
+            <Box
+              onClick={() => handleEmailClick('printer')}
+              sx={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1,
+                border: "1px solid #D0D5DD",
+                borderRadius: 2,
+                px: 2,
+                py: 1.2,
+                backgroundColor: "#fff",
+                cursor: "pointer",
+                "&:hover": { backgroundColor: "#F9FAFB" },
+              }}
+            >
+              <MdEmail size={18} color="#F04438" />
+              <Typography fontWeight={500} fontSize={14} color="#344054">
+                Email
               </Typography>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={4}>
-                <Box
-                  onClick={() => handleEmailClick('printer')}
-                  sx={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 1,
-                    border: "1px solid #D0D5DD",
-                    borderRadius: 2,
-                    px: 2,
-                    py: 1.2,
-                    backgroundColor: "#fff",
-                    cursor: "pointer",
-                    "&:hover": { backgroundColor: "#F9FAFB" },
-                  }}
-                >
-                  <MdEmail size={18} color="#F04438" />
-                  <Typography fontWeight={500} fontSize={14} color="#344054">
-                    Email
-                  </Typography>
-                </Box>
-              </Stack>
+            </Box>
+          </Stack>
           {/* View Design Files */}
           <Stack direction="row" gap={2} mb={3}>
             <ThemeButton
@@ -889,7 +927,7 @@ Your Team
               <Typography fontWeight={600} mb={2} color="#12B76A">
                 ✅ Printer Work Done
               </Typography>
-              
+
               <Stack direction="row" spacing={2}>
                 <ThemeButton
                   sx={{

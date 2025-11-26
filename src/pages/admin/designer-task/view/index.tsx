@@ -25,6 +25,7 @@ const DesignerViewTask = () => {
   const [formData, setFormData] = useState({
     companyName: "",
     partyName: "",
+    ownerWhatsAppNo: "",
     itemName: "",
     orderNumber: "",
     size: "",
@@ -37,6 +38,11 @@ const DesignerViewTask = () => {
     remarks: "",
     color1: "",
     color2: "",
+    // binding: false,
+    bindingType: "",
+    bindingPage: "",
+    // bookletFolder: false,
+    bookletFolderType: "",
   })
   const [designerRemarks, setDesignerRemarks] = useState("")
 
@@ -64,6 +70,7 @@ const DesignerViewTask = () => {
       setFormData({
         companyName: singleOrder.companyName?.companyName || "",
         partyName: singleOrder.party?.partyName || "",
+        ownerWhatsAppNo: singleOrder.party?.ownerWhatsAppNo || "",
         itemName: singleOrder.productItem?.itemName || "",
         orderNumber: singleOrder.orderNumber || "",
         size: singleOrder.size || "",
@@ -76,6 +83,9 @@ const DesignerViewTask = () => {
         remarks: singleOrder.remarks || "",
         color1: singleOrder.color1 || "",
         color2: singleOrder.color2 || "",
+        bindingType: singleOrder.bindingType?.name || "",
+        bindingPage: singleOrder.bindingPage || "",
+        bookletFolderType: singleOrder.bookletFolderType || "",
       })
       setDesignerRemarks(singleOrder.designerRemarks || "")
     }
@@ -218,6 +228,13 @@ const DesignerViewTask = () => {
             InputProps={{ readOnly: true }}
           />
           <ThemeInput
+            labelName="WhatsApp No"
+            value={formData.ownerWhatsAppNo}
+            onChange={(e) => handleInputChange("partyName", e.target.value)}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
             labelName="Item Name"
             value={formData.itemName}
             onChange={(e) => handleInputChange("itemName", e.target.value)}
@@ -227,13 +244,6 @@ const DesignerViewTask = () => {
           {/* </Box> */}
           {/* Row 2: Order Number, Quantity */}
           {/* <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}> */}
-          <ThemeInput
-            labelName="Order Number"
-            value={formData.orderNumber}
-            onChange={(e) => handleInputChange("orderNumber", e.target.value)}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          />
           <ThemeInput
             labelName="Quantity"
             value={formData.quantity}
@@ -305,9 +315,32 @@ const DesignerViewTask = () => {
               InputProps={{ readOnly: true }}
             />
           )}
+        </Box>
+        <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <ThemeInput
-            labelName="PType"
+            labelName="Printing Type"
             value={formData.pType}
+            onChange={(e) => handleInputChange("pType", e.target.value)}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
+            labelName="Binder Type"
+            value={formData.bindingType}
+            onChange={(e) => handleInputChange("pType", e.target.value)}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
+            labelName="Binding Page"
+            value={formData.bindingPage}
+            onChange={(e) => handleInputChange("pType", e.target.value)}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
+            labelName="Booklet Folder Type"
+            value={formData.bookletFolderType}
             onChange={(e) => handleInputChange("pType", e.target.value)}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}

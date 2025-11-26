@@ -14,11 +14,16 @@ interface Column {
 }
 
 const tableHeader: Column[] = [
+  { id: "order", label: "Order No" },
   { id: "party", label: "Party" },
   { id: "date", label: "Date" },
   { id: "size", label: "Size" },
   { id: "itemName", label: "Item Name" },
-  { id: "number", label: "Number" },
+  { id: "itemName", label: "Printing Type" },
+  { id: "itemName", label: "Binding Type" },
+  { id: "itemName", label: "binding page" },
+  { id: "itemName", label: "booklet folder type" },
+  { id: "color", label: "color" },
   { id: "printerRemarks", label: "Remarks" },
   { id: "status", label: "Status", align: "center" as const },
   { id: "action", label: "Action", align: "center" as const },
@@ -141,11 +146,19 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
     itemName: order.productItem?.itemName || "N/A",
     number: order.number || "N/A",
     printerRemarks: order.printerRemarks || "N/A",
+    orderNo: order.orderNumber,
+    color: order.color,
+    printingType: order.pType || "N/A",
+    bindingType: order.bindingType?.name || "N/A",
+    bindingPage: order.bindingPage || "N/A",
+    bookletType: order.bookletFolderType || "N/A",
     status: order.printerStatus || "Pending",
   }));
 
   const renderRow = (row: (typeof rowData)[number], index: number) => (
     <>
+
+      <TableCell>{row.orderNo}</TableCell>
       <TableCell
         onClick={() => handleRowClick(row.id)}
         sx={{
@@ -160,7 +173,12 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
       <TableCell>{row.date}</TableCell>
       <TableCell>{row.size}</TableCell>
       <TableCell>{row.itemName}</TableCell>
-      <TableCell>{row.number}</TableCell>
+      <TableCell>{row.printingType}</TableCell>
+      <TableCell>{row.bindingType}</TableCell>
+      <TableCell>{row.bindingPage}</TableCell>
+      <TableCell>{row.bookletType}</TableCell>
+      <TableCell>{`color - ${row.color}`}</TableCell>
+      {/* <TableCell>{row.number}</TableCell> */}
       <TableCell>{row.printerRemarks}</TableCell>
       <TableCell align="center">
         <StatusBadge status={row.status} />
