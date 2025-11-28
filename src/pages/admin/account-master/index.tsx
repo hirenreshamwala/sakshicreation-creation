@@ -1,18 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, memo } from "react";
-import { Box, TableCell, Typography, Avatar, IconButton, Tabs, Tab } from "@mui/material";
+import { Box, TableCell, Typography, Avatar, IconButton } from "@mui/material";
 import { useRouter } from "next/router";
-import { useAppDispatch, useAppSelector } from "@/store";
-import {
-  getAllAccountMastersThunk,
-  deleteAccountMasterThunk,
-  approvePartyThunk,
-  clearError,
-  clearSuccessMessage,
-  getAccountMasterByStaffIdThunk,
-} from "@/store/slices/accountMasterSlice";
-import BasicTable from "@/component/common_component/Table/themetable";
 import ThemeButton from "@/component/common_component/themebutton";
 import ThemeChip from "@/component/common_component/themechip";
 import AddNewPartyDialog from "@/component/AddNewPartyDialog";
@@ -28,14 +18,43 @@ import { toast } from "react-toastify";
 import { useMemo } from "react";
 import TabComponent from "@/component/Dialog/TabComponent";
 import { getCompanyWisePermission } from "@/utills/utills";
-import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
-import { StaticCompanyOptions } from "@/constants";
 import moment from "moment";
+import CustomTable from "@/component/common_component/Table/CustomTable";
+import { accountMasterService } from "@/services/accountMaster.service";
+import { companyNameService } from "@/services/companyName.service";
+import _ from "lodash";
 
 interface Company {
   _id: string;
   name: string;
   avatar?: string;
+}
+
+interface AccountMaster {
+  _id: string;
+  companyName?: Company;
+  createdAt: string;
+  party?: {
+    _id: string;
+    partyName: string;
+    ownerName: string;
+    ownerMobileNo: string;
+    contactPerson: string;
+    partyTag: string;
+    statusApproval: string;
+    address?: {
+      unitNo: string;
+      marketName: any;
+      area: any;
+    };
+  };
+  reasonToVisit: string;
+  assignment?: {
+    remarks: string;
+    status: string;
+    assignedTo?: any;
+  };
+  createdBy?: any;
 }
 
 interface RowData {
@@ -61,30 +80,33 @@ interface RowData {
 
 const columns = [
   { id: "checkbox", label: "" },
-  { id: "company", label: "Company" },
-  { id: "createdDate", label: "Created Date" },
-  { id: "party", label: "Party" },
-  { id: "contactPerson", label: "Contact Person" },
-  { id: "partyTag", label: "Party Tag" },
-  { id: "mobile", label: "Mobile No." },
-  { id: "reason", label: "Reason to Visit" },
-  { id: "unitno", label: "Unit No" },
-  { id: "market", label: "Market" },
-  { id: "area", label: "Area" },
-  { id: "remarks", label: "Remarks" },
-  { id: "status", label: "Status" },
-  { id: "createdBy", label: "Created By" },
-  { id: "assignedTo", label: "Assigned to" },
+  { id: "company", label: "company",value:"company" },
+  { id: "createdDate", label: "Created Date",value:"createdAt" },
+  { id: "party", label: "party",value:"party" },
+  { id: "contactPerson", label: "Contact Person",value:"contactPerson" },
+  { id: "partyTag", label: "Party Tag",value:"partyTag" },
+  { id: "mobile", label: "Mobile No.",value:"mobile" },
+  { id: "reason", label: "Reason to Visit",value:"reason" },
+  { id: "unitno", label: "Unit No",value:"unitNo" },
+  { id: "market", label: "Market",value:"market" },
+  { id: "area", label: "Area",value:"area" },
+  { id: "remarks", label: "Remarks",value:"remarks" },
+  { id: "status", label: "Status",value:"status" },
+  { id: "createdBy", label: "Created By",value:"createdBy" },
+  { id: "assignedTo", label: "Assigned to",value:"assignedTo" },
   { id: "action", label: "Action" },
 ];
 
 const IndexPage: React.FC = memo(() => {
   const router = useRouter();
-  const dispatch = useAppDispatch();
-  const { accountMasters, loading, error } = useAppSelector((state) => state.accountMasters);
-  const { user } = useAppSelector((state) => state.auth);
-  const { companies } = useAppSelector((state) => state.company)
 
+  // State management
+  const [accountMasters, setAccountMasters] = useState<AccountMaster[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [initialLoad, setInitialLoad] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [statusTab, setStatusTab] = useState(0);
   const [companyTab, setCompanyTab] = useState(0);
@@ -95,7 +117,39 @@ const IndexPage: React.FC = memo(() => {
   const [openBulkAssignTask, setOpenBulkAssignTask] = useState(false);
   const [openBulkUploadDialog, setOpenBulkUploadDialog] = useState(false);
   const [openAssignLeadDialog, setOpenAssignLeadDialog] = useState(false);
+  const [responseState, setResponseState] = useState<any>(null);
+  const [currentFilterState, setCurrentFilterState] = useState<any>({
+    page: 1,
+    pageSize: 10,
+    searchQuery: "",
+    filters: {},
+    includeCounts: true,
+    isPagination: true,
+    dateRange: { start: null, end: null },
+    statusTab: 0,
+    companyTab: 0,
+    startDate: null,
+    endDate: null,
+    search: ""
+  });
 
+  // Applied filter state (after API call)
+  const [appliedFilterState, setAppliedFilterState] = useState<any>({
+    page: 1,
+    pageSize: 10,
+    searchQuery: "",
+    filters: {},
+    includeCounts: true,
+    isPagination: true,
+    dateRange: { start: null, end: null },
+    statusTab: 0,
+    companyTab: 0,
+    startDate: null,
+    endDate: null,
+    search: ""
+  });
+
+  // Permissions - you might need to adjust this based on your user structure
   const canViewGlobal = user?.role?.permissions?.account_master?.view_global;
   const canViewOwn = user?.role?.permissions?.account_master?.view_own;
   const cancreate = user?.role?.permissions?.account_master?.create;
@@ -106,6 +160,7 @@ const IndexPage: React.FC = memo(() => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = hasSakshi && hasQP;
+
   const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p, c, companyName } = router.query;
 
   // Company tabs configuration
@@ -116,7 +171,6 @@ const IndexPage: React.FC = memo(() => {
     return tabs;
   }, [user, hasSakshi, hasQP]);
 
-
   // Selected company based on permissions
   const selectedCompanyId = hasBothCompanies
     ? companyTabs[companyTab]?.companyId
@@ -124,19 +178,106 @@ const IndexPage: React.FC = memo(() => {
       ? getCompanyWisePermission(5)
       : getCompanyWisePermission(6);
 
-  const approvedCount = accountMasters.filter(
-    (account) => account.party?.statusApproval === "APPROVED" && account.companyName?._id === selectedCompanyId
-  ).length;
+  // Load user data on component mount
+  useEffect(() => {
+    const loadUserData = () => {
+      // Replace this with your actual user data fetching logic
+      // This could be from localStorage, context, or an API call
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        setUser(JSON.parse(userData));
+      }
+    };
 
-  const pendingCount = accountMasters.filter(
-    (account) => account.party?.statusApproval === "PENDING" && account.companyName?._id === selectedCompanyId
-  ).length;
+    loadUserData();
+  }, []);
+
+  // Load companies
+  useEffect(() => {
+    const loadCompanies = async () => {
+      if (companies.length === 0) {
+        try {
+          const companiesData = await companyNameService.getAllCompanyNames();
+          setCompanies(companiesData);
+        } catch (err: any) {
+          console.error("Failed to load companies:", err);
+          setError(err.message || "Failed to load companies");
+        }
+      }
+    };
+
+    loadCompanies();
+  }, []);
+
+  // Load account masters
+  const loadAccountMasters = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (canViewGlobal && router.isReady) {
+        const params: any = {};
+        if (companyName) params.companyName = companyName;
+        if (si) params.staffId = si;
+        if (st) params.startDate = st;
+        if (e) params.endDate = e;
+        if (p) params.partyTag = p.toString().split(",").map((x: string) => x.toLowerCase());
+
+        const data = await accountMasterService.getAccountMasters({ ...params, ...currentFilterState, isPagination: true, includeCounts: true });
+        console.log('data2222222222222222', data)
+        setAccountMasters(data.data);
+        setResponseState(data.pagination)
+        console.log('currentFilterState to set', currentFilterState)
+        setAppliedFilterState(currentFilterState)
+      } else if (canViewOwn && user?.id) {
+        const data = await accountMasterService.getAccountMasterByStaffId(user.id);
+        setAccountMasters(data.data);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to load account masters");
+      toast.error(err.message || "Failed to load account masters");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const isSame = _.isEqual(appliedFilterState, currentFilterState);
+    console.log(isSame, '================================', appliedFilterState, 'appliedFilterState', currentFilterState, 'currentFilterState');
+
+    if (!isSame) {
+      console.log("call 1 ");
+      loadAccountMasters();
+    }
+  }, [currentFilterState]);
+
+  console.log(accountMasters, 'accountMasters',currentFilterState)
+
+
+  useEffect(() => {
+    if (user && router.isReady && initialLoad === false) {
+      setCurrentFilterState((prev: any) => ({ ...prev, pageSize: 10 }))
+      loadAccountMasters();
+      // console.log('initial call')
+      // loadAccountMasters();
+      // setInitialLoad(true)
+    }
+  }, [user, router.isReady, canViewGlobal, canViewOwn]);
+
+  useEffect(() => {
+    if (c) setCompanyTab(c === "Quality Packaging" || c === "QP" ? 1 : 0);
+  }, [c]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
   // Update tabLabels to include counts
   const tabLabelsWithCount = [
-    `APPROVED (${approvedCount})`,
-    `PENDING (${pendingCount})`,
+    `APPROVED (${responseState?.counts?.approved})`,
+    `PENDING (${responseState?.counts?.pending})`,
   ];
+  console.log(responseState, 'responseState')
 
   const excelHeaders = useMemo(() => [
     "Company Name",
@@ -159,7 +300,6 @@ const IndexPage: React.FC = memo(() => {
     "Unit No.",
     "Market Name",
     "Area",
-    // "Street Address",
     "Land Mark",
     "Pin Code",
     "Reason to Visit",
@@ -179,18 +319,6 @@ const IndexPage: React.FC = memo(() => {
     }
   };
 
-  useEffect(() => {
-    if (c) setCompanyTab(c === "Quality Packaging" || c === "QP" ? 1 : 0)
-  }, [c])
-
-  useEffect(() => {
-    if (error) toast.error(error);
-  }, [error, dispatch]);
-
-  useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true));
-  }, [dispatch]);
-
   const handleAddNew = () => {
     setEditId(null);
     setIsRequestMode(false);
@@ -209,6 +337,7 @@ const IndexPage: React.FC = memo(() => {
     setIsRequestMode(false);
     setOpen(true);
   };
+
   const handleSelectRow = (id: string) =>
     setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]));
 
@@ -230,7 +359,9 @@ const IndexPage: React.FC = memo(() => {
 
     if (result.isConfirmed) {
       try {
-        await dispatch(deleteAccountMasterThunk(id)).unwrap();
+        await accountMasterService.deleteAccountMaster(id);
+        console.log("call 3 ")
+        await loadAccountMasters(); // Refresh data
         Swal.fire({
           title: "Deleted!",
           text: "Party deleted successfully",
@@ -261,15 +392,9 @@ const IndexPage: React.FC = memo(() => {
 
     if (result.isConfirmed) {
       try {
-        await dispatch(approvePartyThunk(partyId)).unwrap();
-        // Refresh data after approval
-        await dispatch(getAllAccountMastersThunk(({
-          companyName,
-          staffId: si,
-          startDate: st,
-          endDate: e,
-          partyTag: p?.toString()?.split(",").map((x) => x.toLowerCase()),
-        }))).unwrap();
+        await accountMasterService.approveParty(partyId);
+        console.log("call 4 ")
+        await loadAccountMasters(); // Refresh data
         Swal.fire({
           title: "Approved!",
           text: "Party approved successfully",
@@ -290,8 +415,8 @@ const IndexPage: React.FC = memo(() => {
   const handleBulkUploadClick = () => {
     setEditId(null);
     setIsRequestMode(false);
-    setIsBulkUpload(true)
-    setOpen(true)
+    setIsBulkUpload(true);
+    setOpen(true);
   };
 
   const handleDialogClose = () => {
@@ -301,106 +426,70 @@ const IndexPage: React.FC = memo(() => {
     setIsBulkUpload(false);
   };
 
-  useEffect(() => {
-    if (canViewGlobal && router.isReady) {
-      dispatch(
-        getAllAccountMastersThunk({
-          companyName,
-          staffId: si,
-          startDate: st,
-          endDate: e,
-          partyTag: p?.toString()?.split(",").map((x) => x.toLowerCase()),
-        })
-      );
-    } else if (canViewOwn && user?.id) dispatch(getAccountMasterByStaffIdThunk(user?.id));
-
-    return () => {
-      dispatch(clearError());
-      dispatch(clearSuccessMessage());
-    };
-  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id, router.isReady]);
-
-  const filteredAccountMasters = accountMasters.filter((account) => {
-    const statusApproval = account.party?.statusApproval || "PENDING";
-    const statusMatch = statusTab === 0 ? statusApproval === "APPROVED" : statusApproval === "PENDING";
-
-    const companyMatch = account.companyName?._id === selectedCompanyId;
-
-    if (canViewOwn && !canViewGlobal) {
-      return statusMatch && companyMatch && account.createdBy?._id === user?.id;
-    }
-
-    return statusMatch && companyMatch;
-  });
+  const filteredAccountMasters = accountMasters
+  console.log(filteredAccountMasters, 'filteredAccountMasters---------')
 
   const excelData = useMemo(() => {
-    return filteredAccountMasters.map((account) => {
-      
-    return ({
-        // "id": account._id,
-        "Company Name": account.companyName?.name || "N/A",
-        "Party Name": account.party?.partyName || "N/A",
-        "Owner Name": account.party?.ownerName || "N/A",
-        "Owner WhatsApp No.": account.party?.ownerWhatsAppNo || "N/A",
-        "Owner Mobile No.": account.party?.ownerMobileNo || "N/A",
-        "Owner Email": account.party?.ownerEmail || "N/A",
-        "Contact Person": account.party?.contactPerson || "N/A",
-        "Contact Person WhatsApp No.": account.party?.contactPersonWhatsAppNo || "N/A",
-        "Contact Person Mobile No.": account.party?.contactPersonMobileNo || "N/A",
-        "Contact Person Email": account.party?.contactPersonEmail || "N/A",
-        "Contact For Payment": account.party?.contactForPayment || "N/A",
-        "Contact WhatsApp No.": account.party?.contactForPaymentWhatsAppNo || "N/A",
-        "Contact Mobile No.": account.party?.contactForPaymentMobileNo || "N/A",
-        "Contact For Payment Email": account.party?.contactForPaymentEmail || "N/A",
-        "GST No.": account.party?.gstNo || "N/A",
-        "Party Tag": account.party?.partyTag || "New",
-        "Reference": account.party?.reference ? "Yes" : "No",
-        "Unit No.": account.party?.address?.unitNo || "N/A",
-        "Market Name": account.party?.address?.marketName?.marketName || "N/A",
-        "Area": account.party?.address?.area?.area || "N/A",
-        // "Street Address": account.party?.address?.streetAddress || "N/A",
-        "Land Mark": account.party?.address?.landMark?.landmark || "N/A",
-        "Pin Code": account.party?.address?.pincode?.pincode || "N/A",
-        "Reason to Visit": account.reasonToVisit || "N/A",
-        "Created By": account.createdBy && typeof account.createdBy === "object"
-            ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
-            : "Unknown",
-    });
-});
+    return filteredAccountMasters.map((account) => ({
+      "Company Name": account.companyName?.name || "N/A",
+      "Party Name": account.party?.partyName || "N/A",
+      "Owner Name": account.party?.ownerName || "N/A",
+      "Owner WhatsApp No.": account.party?.ownerWhatsAppNo || "N/A",
+      "Owner Mobile No.": account.party?.ownerMobileNo || "N/A",
+      "Owner Email": account.party?.ownerEmail || "N/A",
+      "Contact Person": account.party?.contactPerson || "N/A",
+      "Contact Person WhatsApp No.": account.party?.contactPersonWhatsAppNo || "N/A",
+      "Contact Person Mobile No.": account.party?.contactPersonMobileNo || "N/A",
+      "Contact Person Email": account.party?.contactPersonEmail || "N/A",
+      "Contact For Payment": account.party?.contactForPayment || "N/A",
+      "Contact WhatsApp No.": account.party?.contactForPaymentWhatsAppNo || "N/A",
+      "Contact Mobile No.": account.party?.contactForPaymentMobileNo || "N/A",
+      "Contact For Payment Email": account.party?.contactForPaymentEmail || "N/A",
+      "GST No.": account.party?.gstNo || "N/A",
+      "Party Tag": account.party?.partyTag || "New",
+      "Reference": account.party?.reference ? "Yes" : "No",
+      "Unit No.": account.party?.address?.unitNo || "N/A",
+      "Market Name": account.party?.address?.marketName?.marketName || "N/A",
+      "Area": account.party?.address?.area?.area || "N/A",
+      "Land Mark": account.party?.address?.landMark?.landmark || "N/A",
+      "Pin Code": account.party?.address?.pincode?.pincode || "N/A",
+      "Reason to Visit": account.reasonToVisit || "N/A",
+      "Created By": account.createdBy && typeof account.createdBy === "object"
+        ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
+        : "Unknown",
+    }));
   }, [filteredAccountMasters]);
 
-  const formattedRows: RowData[] = filteredAccountMasters.map((account) => {
-    return {
-      id: account._id,
-      partyId: account.party?._id || "",
-      company: {
-        _id: account.companyName?._id || "",
-        name: account.companyName?.name || "N/A",
-        avatar: account.companyName?.avatar,
-      },
-      createdDate: moment(account.createdAt).format("DD-MM-YYYY"),
-      party: account.party?.partyName || "N/A",
-      contactPerson: account.party?.contactPerson || "N/A",
-      partyTag: account.party?.partyTag || "New",
-      mobile: account.party?.ownerMobileNo || "N/A",
-      reason: account.reasonToVisit || "N/A",
-      unitno: account.party?.address?.unitNo || "N/A",
-      market: account.party?.address?.marketName || account.party?.address?.marketName?.marketName,
-      area: account.party?.address?.area || account.party?.address?.area?.area,
-      remarks: account.assignment?.remarks || "N/A",
-      status: account.assignment?.status || "Not Started",
-      statusType: mapStatusToType(account.assignment?.status || "Not Started"),
-      createdBy:
-        account.createdBy && typeof account.createdBy === "object"
-          ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
-          : "Unknown",
-      assignedTo:
-        account.assignment?.assignedTo && typeof account.assignment.assignedTo === "object"
-          ? `${account.assignment.assignedTo.firstName} ${account.assignment.assignedTo.lastName}`
-          : "Unassigned",
-      statusApproval: account.party?.statusApproval === "APPROVED" ? "Approved" : "Pending",
-    };
-  });
+  const formattedRows: RowData[] = filteredAccountMasters.map((account) => ({
+    id: account._id,
+    partyId: account.party?._id || "",
+    company: {
+      _id: account.companyName?._id || "",
+      name: account.companyName?.name || "N/A",
+      avatar: account.companyName?.avatar,
+    },
+    createdDate: moment(account.createdAt).format("DD-MM-YYYY"),
+    party: account.party?.partyName || "N/A",
+    contactPerson: account.party?.contactPerson || "N/A",
+    partyTag: account.party?.partyTag || "New",
+    mobile: account.party?.ownerMobileNo || "N/A",
+    reason: account.reasonToVisit || "N/A",
+    unitno: account.party?.address?.unitNo || "N/A",
+    market: account.party?.address?.marketName || account.party?.address?.marketName?.marketName,
+    area: account.party?.address?.area || account.party?.address?.area?.area,
+    remarks: account.assignment?.remarks || "N/A",
+    status: account.assignment?.status || "Not Started",
+    statusType: mapStatusToType(account.assignment?.status || "Not Started"),
+    createdBy:
+      account.createdBy && typeof account.createdBy === "object"
+        ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
+        : "Unknown",
+    assignedTo:
+      account.assignment?.assignedTo && typeof account.assignment.assignedTo === "object"
+        ? `${account.assignment.assignedTo.firstName} ${account.assignment.assignedTo.lastName}`
+        : "Unassigned",
+    statusApproval: account.party?.statusApproval === "APPROVED" ? "Approved" : "Pending",
+  }));
 
   const partyIds = selectedRows
     .map((accountId) => {
@@ -418,6 +507,7 @@ const IndexPage: React.FC = memo(() => {
       };
     })
     .filter((p) => p.partyId && p.companyId);
+  console.log(currentFilterState, 'currentFilterState')
 
   return (
     <>
@@ -466,13 +556,8 @@ const IndexPage: React.FC = memo(() => {
 
       {loading ? (
         <Loader />
-      ) : formattedRows.length === 0 ? (
-        <Typography sx={{ mt: 2 }}>
-          No account masters found for {hasBothCompanies ? companyTabs[companyTab]?.name : hasSakshi ? "Sakshi" : "QP"} -{" "}
-          {tabLabelsWithCount[statusTab]}.
-        </Typography>
       ) : (
-        <BasicTable
+        <CustomTable
           showDatePicker={true}
           tableHeader={columns}
           showFillter={true}
@@ -482,6 +567,8 @@ const IndexPage: React.FC = memo(() => {
           excelHeaders={excelHeaders}
           excelData={excelData}
           rowData={formattedRows}
+          setCurrentFilterState={setCurrentFilterState}
+          currentFilterState={currentFilterState}
           renderRow={(row: RowData, index: number) => (
             <>
               <TableCell>
@@ -563,75 +650,54 @@ const IndexPage: React.FC = memo(() => {
           onSelectAll={handleSelectAll}
           onSelectRow={handleSelectRow}
           selectedRows={selectedRows}
+          totalRows={responseState?.counts?.approved}
+          pageName="account-master"
         />
       )}
-      {open ? <AddNewPartyDialog
-        open={open}
-        onClose={handleDialogClose}
-        accountId={editId ?? undefined}
-        refreshData={() => {
-          if (canViewGlobal) {
-            dispatch(getAllAccountMastersThunk({
-              companyName,
-              staffId: si,
-              startDate: st,
-              endDate: e,
-              partyTag: p?.toString()?.split(",").map((x) => x.toLowerCase()),
-            }));
-          } else if (canViewOwn && user?.id) {
-            dispatch(getAccountMasterByStaffIdThunk(user?.id));
-          }
-        }}
-        isRequestMode={isRequestMode}
-        isBulkUpload={isBulkUpload}
-        company={companies?.find((item) => item?.companyName === StaticCompanyOptions[companyTab])}
-      /> : null}
-      {openAssignLeadDialog ? <AssignLeadDialog
-        open={openAssignLeadDialog}
-        onClose={() => {
-          setOpenAssignLeadDialog(false);
-          setSelectedRows([]);
-        }}
-        partyIds={partyIds}
-        onSuccess={() => {
-          setOpenAssignLeadDialog(false);
-          setSelectedRows([]);
-          if (canViewGlobal) {
-            dispatch(getAllAccountMastersThunk({
-              companyName,
-              staffId: si,
-              startDate: st,
-              endDate: e,
-              partyTag: p?.toString()?.split(",").map((x) => x.toLowerCase()),
-            }));
-          } else if (canViewOwn && user?.id) {
-            dispatch(getAccountMasterByStaffIdThunk(user?.id));
-          }
-        }}
-      /> : null}
-      {openBulkAssignTask ? <AssignTaskDialog
-        open={openBulkAssignTask}
-        onClose={() => {
-          setOpenBulkAssignTask(false);
-          setSelectedRows([]);
-        }}
-        selectedParties={selectedParties}
-        onSuccess={() => {
-          setOpenBulkAssignTask(false);
-          setSelectedRows([]);
-          if (canViewGlobal) {
-            dispatch(getAllAccountMastersThunk({
-              companyName,
-              staffId: si,
-              startDate: st,
-              endDate: e,
-              partyTag: p?.toString()?.split(",").map((x) => x.toLowerCase()),
-            }));
-          } else if (canViewOwn && user?.id) {
-            dispatch(getAccountMasterByStaffIdThunk(user?.id));
-          }
-        }}
-      /> : null}
+
+      {open && (
+        <AddNewPartyDialog
+          open={open}
+          onClose={handleDialogClose}
+          accountId={editId ?? undefined}
+          refreshData={loadAccountMasters}
+          isRequestMode={isRequestMode}
+          isBulkUpload={isBulkUpload}
+          company={companies?.find((item) => item?.name === (hasBothCompanies ? companyTabs[companyTab]?.name : hasSakshi ? "Sakshi" : "QP"))}
+        />
+      )}
+
+      {openAssignLeadDialog && (
+        <AssignLeadDialog
+          open={openAssignLeadDialog}
+          onClose={() => {
+            setOpenAssignLeadDialog(false);
+            setSelectedRows([]);
+          }}
+          partyIds={partyIds}
+          onSuccess={() => {
+            setOpenAssignLeadDialog(false);
+            setSelectedRows([]);
+            loadAccountMasters();
+          }}
+        />
+      )}
+
+      {openBulkAssignTask && (
+        <AssignTaskDialog
+          open={openBulkAssignTask}
+          onClose={() => {
+            setOpenBulkAssignTask(false);
+            setSelectedRows([]);
+          }}
+          selectedParties={selectedParties}
+          onSuccess={() => {
+            setOpenBulkAssignTask(false);
+            setSelectedRows([]);
+            loadAccountMasters();
+          }}
+        />
+      )}
     </>
   );
 });

@@ -11,6 +11,8 @@ import {
   Chip,
   Divider,
   Stack,
+  CircularProgress,
+  Typography,
 } from "@mui/material";
 import { FiFilter, FiSearch, FiX } from "react-icons/fi";
 import { MdArrowBack } from "react-icons/md";
@@ -18,19 +20,23 @@ import { MdArrowBack } from "react-icons/md";
 interface FilterDropdownProps {
   filterOptions: string[];
   uniqueValues: string[];
+  loading?: boolean;
   onFiltersChange: (filters: { [key: string]: string[] }) => void;
   filters: { [key: string]: string[] };
   selectedField: string | null;
   onFieldSelect: (field: string | null) => void;
+  onFieldOpen?: (field: string) => void; // Make sure this prop is defined
 }
 
 const FilterDropdown: React.FC<FilterDropdownProps> = ({
   filterOptions = [],
-  uniqueValues,
+  uniqueValues = [],
+  loading = false,
   onFiltersChange,
   filters,
   selectedField,
   onFieldSelect,
+  onFieldOpen, // This prop should be here
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,11 +58,21 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   const handleClose = () => {
     setAnchorEl(null);
     setSearchQuery("");
+    onFieldSelect(null);
   };
 
-  const handleFieldSelect = (field: string) => {
+  const handleFieldSelect = async (field: string) => {
+    console.log("Field selected:", field);
     onFieldSelect(field);
     setSearchQuery("");
+    
+    // Call API when field is selected
+    if (onFieldOpen) {
+      console.log("Calling onFieldOpen for:", field);
+      await onFieldOpen(field);
+    } else {
+      console.log("onFieldOpen prop is missing!");
+    }
   };
 
   const handleValueToggle = (value: string) => {
@@ -88,28 +104,18 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     handleClose();
   };
 
-  const handleRemoveFilter = (field: string, value?: string) => {
-    const newFilters = { ...filters };
-    if (value) {
-      newFilters[field] = newFilters[field].filter((v) => v !== value);
-      if (newFilters[field].length === 0) {
-        delete newFilters[field];
-      }
-    } else {
-      delete newFilters[field];
-    }
-    onFiltersChange(newFilters);
-  };
-
   const handleBack = () => {
     onFieldSelect(null);
     setSearchQuery("");
     setTempSelectedValues([]);
   };
 
-  const filteredUniqueValues = uniqueValues.filter((value) =>
-    value.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Safe filtering with array check
+  const filteredUniqueValues = Array.isArray(uniqueValues) 
+    ? uniqueValues.filter((value) =>
+        value?.toString().toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
 
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -179,22 +185,26 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
         {!selectedField ? (
           <>
             {filterOptions?.length > 0 ? (
-              filterOptions?.filter((item)=>item?.trim() !== "")?.filter(item => !['actions','options','action','option','aadhar files','address files']?.includes(item?.toLowerCase()?.trim()))?.map((label) => (
-                <MenuItem
-                  key={label}
-                  sx={{ px: 2 }}
-                  onClick={() => handleFieldSelect(label)}
-                >
-                  <ListItemText
-                    primary={label}
-                    primaryTypographyProps={{
-                      fontSize: 14,
-                      fontWeight: 500,
-                      color: "#344054",
-                    }}
-                  />
-                </MenuItem>
-              ))
+              filterOptions
+                ?.filter((item) => item?.trim() !== "")
+                ?.filter(item => !['actions','options','action','option','aadhar files','address files']
+                  ?.includes(item?.toLowerCase()?.trim()))
+                ?.map((label) => (
+                  <MenuItem
+                    key={label}
+                    sx={{ px: 2 }}
+                    onClick={() => handleFieldSelect(label)}
+                  >
+                    <ListItemText
+                      primary={label}
+                      primaryTypographyProps={{
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: "#344054",
+                      }}
+                    />
+                  </MenuItem>
+                ))
             ) : (
               <MenuItem sx={{ px: 2 }} disabled>
                 <ListItemText
@@ -252,7 +262,14 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
             {/* Scrollable values list */}
             <Box sx={{ overflowY: "auto", flex: 1, maxHeight: 300 }}>
-              {filteredUniqueValues.length > 0 ? (
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 2 }}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2" sx={{ ml: 1, color: '#667085' }}>
+                    Loading...
+                  </Typography>
+                </Box>
+              ) : filteredUniqueValues.length > 0 ? (
                 filteredUniqueValues.map((value) => (
                   <MenuItem
                     key={value}
@@ -277,7 +294,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
               ) : (
                 <MenuItem sx={{ px: 2 }} disabled>
                   <ListItemText
-                    primary="No matching values"
+                    primary={searchQuery ? "No matching values" : "No values available"}
                     primaryTypographyProps={{
                       fontSize: 14,
                       fontWeight: 500,
@@ -319,6 +336,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
               <Button
                 variant="contained"
                 onClick={handleApplyFilter}
+                disabled={loading}
                 sx={{
                   backgroundColor: "#7F56D9",
                   fontWeight: 600,
@@ -327,9 +345,13 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                   "&:hover": {
                     backgroundColor: "#7F56D9",
                   },
+                  "&:disabled": {
+                    backgroundColor: "#E9D7FE",
+                    color: "#fff"
+                  }
                 }}
               >
-                Apply
+                {loading ? "Loading..." : "Apply"}
               </Button>
             </Box>
           </>

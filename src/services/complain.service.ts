@@ -84,14 +84,35 @@ export const complainService = {
     }
   },
   async getComplainsByStaff(staffId: string): Promise<ApiResponse<Complaint[]>> {
-  try {
-    const response: AxiosResponse<ApiResponse<Complaint[]>> = await Request.get(
-      `${Endpoint.GET_COMPLAINS_STAFF}/${staffId}`
-    );
-    return { success: true, data: response.data.data || [], message: response.data.message };
-  } catch (error: any) {
-    console.error("Get complains by staff error:", error);
-    throw new Error(error.response?.data?.message || "Failed to fetch complains by staff");
+    try {
+      const response: AxiosResponse<ApiResponse<Complaint[]>> = await Request.get(
+        `${Endpoint.GET_COMPLAINS_STAFF}/${staffId}`
+      );
+      return { success: true, data: response.data.data || [], message: response.data.message };
+    } catch (error: any) {
+      console.error("Get complains by staff error:", error);
+      throw new Error(error.response?.data?.message || "Failed to fetch complains by staff");
+    }
+  },
+   async searchFilterOptions(field: string, searchTerm: string, filters?: any): Promise<ApiResponse<string[]>> {
+    try {
+      const payload = {
+        ...(filters || {}),
+        search: searchTerm
+      };
+      
+      const response: AxiosResponse<ApiResponse<string[]>> = await Request.post(
+        `${Endpoint.ACCOUNT_MASTER_FILTER}/${field}`,
+        payload
+      );
+      return { 
+        success: true, 
+        data: response.data.data || [], 
+        message: response.data.message 
+      };
+    } catch (error: any) {
+      console.error(`Search ${field} options error:`, error);
+      throw new Error(error.response?.data?.message || `Failed to search ${field} options`);
+    }
   }
-}
 }
