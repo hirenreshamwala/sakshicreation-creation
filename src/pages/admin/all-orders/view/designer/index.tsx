@@ -1686,6 +1686,13 @@ const ViewOrderDesigner = () => {
           <Box display="flex" gap={2} mb={2} flexWrap="wrap" alignItems="center">
             <Box flex={1} minWidth={240}>
               <ThemeInput
+                labelName="Order No"
+                value={singleOrder.orderNumber || "N/A"}
+                InputProps={{ readOnly: true }}
+              />
+            </Box>
+            <Box flex={1} minWidth={240}>
+              <ThemeInput
                 labelName="Company Name"
                 value={singleOrder.companyName?.companyName || "N/A"}
                 InputProps={{ readOnly: true }}
@@ -1700,8 +1707,43 @@ const ViewOrderDesigner = () => {
             </Box>
             <Box flex={1} minWidth={240}>
               <ThemeInput
+                labelName="Whatsapp Number"
+                value={singleOrder.party?.ownerWhatsAppNo || "N/A"}
+                InputProps={{ readOnly: true }}
+              />
+            </Box>
+            <Box flex={1} minWidth={240}>
+              <ThemeInput
                 labelName="Item Name"
                 value={singleOrder.productItem?.itemName || "N/A"}
+                InputProps={{ readOnly: true }}
+              />
+            </Box>
+            <Box flex={1} minWidth={240}>
+              <ThemeInput
+                labelName="Printing Type"
+                value={singleOrder?.pType || "N/A"}
+                InputProps={{ readOnly: true }}
+              />
+            </Box>
+            <Box flex={1} minWidth={240}>
+              <ThemeInput
+                labelName="Binding Type"
+                value={singleOrder?.bindingType.name || "N/A"}
+                InputProps={{ readOnly: true }}
+              />
+            </Box>
+            <Box flex={1} minWidth={240}>
+              <ThemeInput
+                labelName="Binding Page"
+                value={singleOrder?.bindingPage || "N/A"}
+                InputProps={{ readOnly: true }}
+              />
+            </Box>
+            <Box flex={1} minWidth={240}>
+              <ThemeInput
+                labelName="Booklet Folder Type"
+                value={singleOrder?.bookletFolderType || "N/A"}
                 InputProps={{ readOnly: true }}
               />
             </Box>

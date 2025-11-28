@@ -13,10 +13,15 @@ interface Column {
 }
 
 const tableHeader: Column[] = [
+  { id: "date", label: "order number" },
   { id: "party", label: "Party" },
   { id: "date", label: "Date" },
   { id: "size", label: "Size" },
   { id: "itemName", label: "Item Name" },
+  { id: "itemName", label: "Printing Type" },
+  { id: "itemName", label: "Binding Type" },
+  { id: "itemName", label: "binding page" },
+  { id: "itemName", label: "booklet folder type" },
   { id: "remarks", label: "Remarks" },
   { id: "status", label: "Status", align: "center" as const },
 ];
@@ -94,18 +99,27 @@ const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
   };
 
   // Transform orders data for table
-  const rowData = tasks.map((order) => ({
+  const rowData = tasks.map((order) => {
+    console.log("DEBUG : DesignerTask : order:", order);
+    return {
     id: order._id,
+    orderNo: order.orderNumber,
+    printingType: order.pType || "N/A",
+    bindingType: order.bindingType?.name || "N/A",
+    bindingPage: order.bindingPage || "N/A",
+    bookletType: order.bookletFolderType || "N/A",
     party: order.party?.partyName || "N/A",
     date: new Date(order.createdAt).toLocaleDateString(),
     size: order.size || "N/A",
     itemName: order.productItem?.itemName || "N/A",
     remarks: order.remarks || "N/A",
     status: order.designerStatus || "Pending",
-  }));
+  };
+  });
 
   const renderRow = (row: (typeof rowData)[number], index: number) => (
     <>
+    <TableCell>{row.orderNo}</TableCell>
       <TableCell
         onClick={() => handleRowClick(row.id)}
         sx={{
@@ -120,6 +134,10 @@ const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
       <TableCell>{row.date}</TableCell>
       <TableCell>{row.size}</TableCell>
       <TableCell>{row.itemName}</TableCell>
+      <TableCell>{row.printingType}</TableCell>
+      <TableCell>{row.bindingType}</TableCell>
+      <TableCell>{row.bindingPage}</TableCell>
+      <TableCell>{row.bookletType}</TableCell>
       <TableCell>{row.remarks}</TableCell>
       <TableCell align="center">
         <StatusBadge status={row.status} />

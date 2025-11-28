@@ -34,7 +34,7 @@ const columns = [
   { id: "orderedBy", label: "Ordered By" },
   { id: "orderStatus", label: "Order Status" },
   { id: "actions", label: "Actions" },
-  { id: "complain", label: "Complain" },
+  // { id: "complain", label: "Complain" },
 ]
 
 type OrderRow = {
@@ -594,7 +594,7 @@ const AllOrdersPage = () => {
 
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row.size?.size || "N/A"}
+                  {row?.size || "N/A"}
                 </Typography>
               </TableCell>
 
@@ -651,13 +651,13 @@ const AllOrdersPage = () => {
                   </Button>
                 </Box>
               </TableCell>
-              <TableCell>
+              {/* <TableCell>
                 <ThemeButton
                   onClick={() => handleComplainClick(row)}
                 >
                   Complain
                 </ThemeButton>
-              </TableCell>
+              </TableCell> */}
             </>
           )}
         />

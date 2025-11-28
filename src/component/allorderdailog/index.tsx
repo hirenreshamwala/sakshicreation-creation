@@ -49,6 +49,9 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
     whatsapp: "",
     binding: false,
     bindingType: null as string | null,
+    bindingPage: "",
+    bookletFolder: false,
+    bookletFolderType: null as string | null,
     itemName: "",
     qty: "",
     gst: "",
@@ -181,12 +184,17 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         const uploadedFiles = await fileUploadRef.current.uploadSelectedFiles()
         filePaths = uploadedFiles.map((file) => file.path || file.url)
       }
+      console.log("DEBUG : handleSakshiSubmit : sakshiFormData:", sakshiFormData);
       const orderData = {
         companyName: sakshiFormData.companyName,
+
         party: sakshiFormData.partyName,
         pType: sakshiFormData.pType,
         binding: sakshiFormData.binding,
         bindingType: sakshiFormData.bindingType,
+        bindingPage: sakshiFormData.bindingPage,
+        bookletFolder: sakshiFormData.bookletFolder,
+        bookletFolderType: sakshiFormData.bookletFolderType,
         productItem: sakshiFormData.itemName,
         qty: Number.parseInt(sakshiFormData.qty),
         remarks: sakshiFormData.remarks || "",
@@ -204,6 +212,8 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         color1: sakshiFormData.color1 || "",
         color2: sakshiFormData.color2 || "",
       }
+      console.log("DEBUG : handleSakshiSubmit : orderData:", orderData);
+
       await dispatch(createOrderThunk(orderData)).unwrap()
       if (refreshData) refreshData()
       resetForm()
@@ -226,8 +236,11 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
       qty: "",
       gst: "",
       bindingType: "",
+      bindingPage: "",
+      bookletFolderType: "",
       pType: "",
       binding: false,
+      bookletFolder: false,
       remarks: "",
       size: "",
       rate: "",
@@ -315,6 +328,15 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         />
       </Stack>
       <Stack direction="row" spacing={2} mb={2}>
+        <ThemeSelect
+          label="Printing Type"
+          value={getSelectedOption(sakshiFormData.pType, printerTypeOption)}
+          options={printerTypeOption}
+          onChange={(_, v) => handleSakshiChange("pType", v ? v.value : "")}
+          required
+        />
+      </Stack>
+      <Stack direction="row" spacing={2} mb={2}>
         <FormControlLabel
           control={
             <Switch
@@ -334,13 +356,45 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
             required
           />
         ) : null}
-        <ThemeSelect
-          label="Printing Type"
-          value={getSelectedOption(sakshiFormData.pType, printerTypeOption)}
-          options={printerTypeOption}
-          onChange={(_, v) => handleSakshiChange("pType", v ? v.value : "")}
-          required
+        <ThemeInput
+          labelName="Binding Page"
+          placeholder="Enter binding page"
+          fullWidth
+          type="text"
+          value={sakshiFormData.bindingPage}
+          onChange={(e) => handleSakshiChange("bindingPage", e.target.value)}
         />
+      </Stack>
+      <Stack direction="row" spacing={2} mb={2}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={sakshiFormData.bookletFolder}
+              onChange={(e) => handleSakshiChange("bookletFolder", e.target.checked)}
+              color="primary"
+            />
+          }
+          label="Booklet/Folder"
+        />
+        {sakshiFormData.bookletFolder ? (
+          <ThemeSelect
+            label="Booklet/Folder Type"
+            value={getSelectedOption(sakshiFormData?.bookletFolderType, [
+              { value: "two-fold", label: "Two Fold" },
+              { value: "three-fold", label: "Three Fold" },
+              { value: "four-fold", label: "Four Fold" },
+              { value: "five-fold", label: "Five Fold" },
+            ])}
+            options={[
+              { value: "two-fold", label: "Two Fold" },
+              { value: "three-fold", label: "Three Fold" },
+              { value: "four-fold", label: "Four Fold" },
+              { value: "five-fold", label: "Five Fold" },
+            ]}
+            onChange={(_, v) => handleSakshiChange("bookletFolderType", v ? v.value : "")}
+            required
+          />
+        ) : null}
       </Stack>
       <Stack direction="row" mb={2} spacing={2}>
         <FormControl sx={{ flex: 1, minWidth: 120 }}>
