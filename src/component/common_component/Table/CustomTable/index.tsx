@@ -1080,6 +1080,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   setCurrentFilterState,
   pageName,
   getFilterOptions,
+  defaultAccountMasterFilter,
   currentFilterState = {
     page: 1,
     pageSize: 10,
@@ -1287,7 +1288,6 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
 
       // Fetch data from API
       const response = await complainService.searchFilterOptions(field, "", apiFilters);
-      console.log(response,response.data,'responseeeeee')
 
       if (response.success && response.data) {
         // Store in Redux for future use
@@ -1343,11 +1343,10 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
     };
   }, [selectedFilterField, filterOptionsFromRedux, loadingOptions]);
 
-  // Dynamically generate filter options from tableHeader, excluding "action" and "checkbox"
   const filterOptions = useMemo(() => {
     return tableHeader
-      ?.filter((col) => col.id !== "action" && col.id !== "checkbox")
-      .map((col) => col.value);
+      ?.filter(col => col.id !== "action" && col.id !== "checkbox")
+      .map(col => col.value).filter(v => v !== undefined);
   }, [tableHeader]);
 
   // Map filter labels to rowData keys dynamically
@@ -1674,6 +1673,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
                   filters={filters}
                   selectedField={selectedFilterField}
                   onFieldSelect={handleFilterFieldSelect}
+                  defaultAccountMasterFilter={defaultAccountMasterFilter}
                   onFieldOpen={handleFieldOpen} // Make sure this is passed
                 />
               </Box>

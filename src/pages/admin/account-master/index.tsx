@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, memo } from "react";
+import { useState, useEffect, memo } from "react";
 import { Box, TableCell, Typography, Avatar, IconButton } from "@mui/material";
 import { useRouter } from "next/router";
 import ThemeButton from "@/component/common_component/themebutton";
@@ -23,6 +23,7 @@ import CustomTable from "@/component/common_component/Table/CustomTable";
 import { accountMasterService } from "@/services/accountMaster.service";
 import { companyNameService } from "@/services/companyName.service";
 import _ from "lodash";
+import { StaticCompanyOptions } from "@/constants";
 
 interface Company {
   _id: string;
@@ -78,51 +79,32 @@ interface RowData {
   statusApproval: "Pending" | "Approved";
 }
 
-const columns = [
-  { id: "checkbox", label: "" },
-  { id: "company", label: "company",value:"company" },
-  { id: "createdDate", label: "Created Date",value:"createdAt" },
-  { id: "party", label: "party",value:"party" },
-  { id: "contactPerson", label: "Contact Person",value:"contactPerson" },
-  { id: "partyTag", label: "Party Tag",value:"partyTag" },
-  { id: "mobile", label: "Mobile No.",value:"mobile" },
-  { id: "reason", label: "Reason to Visit",value:"reason" },
-  { id: "unitno", label: "Unit No",value:"unitNo" },
-  { id: "market", label: "Market",value:"market" },
-  { id: "area", label: "Area",value:"area" },
-  { id: "remarks", label: "Remarks",value:"remarks" },
-  { id: "status", label: "Status",value:"status" },
-  { id: "createdBy", label: "Created By",value:"createdBy" },
-  { id: "assignedTo", label: "Assigned to",value:"assignedTo" },
-  { id: "action", label: "Action" },
-];
-
-const IndexPage: React.FC = memo(() => {
+const AccountMasterPage: React.FC = memo(() => {
   const router = useRouter();
 
   // State management
-  const [accountMasters, setAccountMasters] = useState<AccountMaster[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [initialLoad, setInitialLoad] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [open, setOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const [statusTab, setStatusTab] = useState(0);
   const [companyTab, setCompanyTab] = useState(0);
+  const [initialLoad, setInitialLoad] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isBulkUpload, setIsBulkUpload] = useState(false);
   const [isRequestMode, setIsRequestMode] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [editId, setEditId] = useState<string | null>(null);
+  const [responseState, setResponseState] = useState<any>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [openBulkAssignTask, setOpenBulkAssignTask] = useState(false);
   const [openBulkUploadDialog, setOpenBulkUploadDialog] = useState(false);
   const [openAssignLeadDialog, setOpenAssignLeadDialog] = useState(false);
-  const [responseState, setResponseState] = useState<any>(null);
-  const [currentFilterState, setCurrentFilterState] = useState<any>({
+  const [accountMasters, setAccountMasters] = useState<AccountMaster[]>([]);
+  const defaultAccountMasterFilter = {
     page: 1,
     pageSize: 10,
     searchQuery: "",
-    filters: {},
+    filters: { company: [StaticCompanyOptions[companyTab]], status: ["APPROVED"] },
     includeCounts: true,
     isPagination: true,
     dateRange: { start: null, end: null },
@@ -131,23 +113,9 @@ const IndexPage: React.FC = memo(() => {
     startDate: null,
     endDate: null,
     search: ""
-  });
-
-  // Applied filter state (after API call)
-  const [appliedFilterState, setAppliedFilterState] = useState<any>({
-    page: 1,
-    pageSize: 10,
-    searchQuery: "",
-    filters: {},
-    includeCounts: true,
-    isPagination: true,
-    dateRange: { start: null, end: null },
-    statusTab: 0,
-    companyTab: 0,
-    startDate: null,
-    endDate: null,
-    search: ""
-  });
+  }
+  const [currentFilterState, setCurrentFilterState] = useState<any>(defaultAccountMasterFilter);
+  const [appliedFilterState, setAppliedFilterState] = useState<any>(defaultAccountMasterFilter);
 
   // Permissions - you might need to adjust this based on your user structure
   const canViewGlobal = user?.role?.permissions?.account_master?.view_global;
@@ -162,7 +130,24 @@ const IndexPage: React.FC = memo(() => {
   const hasBothCompanies = hasSakshi && hasQP;
 
   const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p, c, companyName } = router.query;
-
+  const columns = [
+    { id: "checkbox", label: "" },
+    { id: "company", label: "company", value: "company" },
+    { id: "createdDate", label: "Created Date", value: "createdAt" },
+    { id: "party", label: "party", value: "party" },
+    { id: "contactPerson", label: "Contact Person", value: "contactPerson" },
+    { id: "partyTag", label: "Party Tag", value: "partyTag" },
+    { id: "mobile", label: "Mobile No.", value: "mobile" },
+    { id: "reason", label: "Reason to Visit", value: "reason" },
+    { id: "unitno", label: "Unit No", value: "unitNo" },
+    { id: "market", label: "Market", value: "market" },
+    { id: "area", label: "Area", value: "area" },
+    { id: "remarks", label: "Remarks" },
+    { id: "status", label: "Status" },
+    canViewOwn ? { id: "createdBy", label: "Created By" } : { id: "createdBy", label: "Created By", value: "createdBy" },
+    { id: "assignedTo", label: "Assigned to", value: "assignedTo" },
+    { id: "action", label: "Action" },
+  ];
   // Company tabs configuration
   const companyTabs = useMemo(() => {
     const tabs = [];
@@ -198,7 +183,7 @@ const IndexPage: React.FC = memo(() => {
       if (companies.length === 0) {
         try {
           const companiesData = await companyNameService.getAllCompanyNames();
-          setCompanies(companiesData);
+          setCompanies(companiesData.data);
         } catch (err: any) {
           console.error("Failed to load companies:", err);
           setError(err.message || "Failed to load companies");
@@ -224,14 +209,14 @@ const IndexPage: React.FC = memo(() => {
         if (p) params.partyTag = p.toString().split(",").map((x: string) => x.toLowerCase());
 
         const data = await accountMasterService.getAccountMasters({ ...params, ...currentFilterState, isPagination: true, includeCounts: true });
-        console.log('data2222222222222222', data)
         setAccountMasters(data.data);
         setResponseState(data.pagination)
-        console.log('currentFilterState to set', currentFilterState)
         setAppliedFilterState(currentFilterState)
       } else if (canViewOwn && user?.id) {
-        const data = await accountMasterService.getAccountMasterByStaffId(user.id);
+        const data = await accountMasterService.getAccountMasterByStaffId(user.id, { ...currentFilterState,filters:{...currentFilterState.filters,createdBy:[`${user.firstName} ${user.lastName}`]}, isPagination: true, includeCounts: true });
         setAccountMasters(data.data);
+        setResponseState({ ...data.pagination, counts: data.counts })
+        setAppliedFilterState(currentFilterState)
       }
     } catch (err: any) {
       setError(err.message || "Failed to load account masters");
@@ -243,30 +228,47 @@ const IndexPage: React.FC = memo(() => {
 
   useEffect(() => {
     const isSame = _.isEqual(appliedFilterState, currentFilterState);
-    console.log(isSame, '================================', appliedFilterState, 'appliedFilterState', currentFilterState, 'currentFilterState');
 
-    if (!isSame) {
-      console.log("call 1 ");
-      loadAccountMasters();
-    }
+    if (!isSame) loadAccountMasters();
   }, [currentFilterState]);
-
-  console.log(accountMasters, 'accountMasters',currentFilterState)
-
 
   useEffect(() => {
     if (user && router.isReady && initialLoad === false) {
       setCurrentFilterState((prev: any) => ({ ...prev, pageSize: 10 }))
       loadAccountMasters();
-      // console.log('initial call')
-      // loadAccountMasters();
-      // setInitialLoad(true)
     }
   }, [user, router.isReady, canViewGlobal, canViewOwn]);
 
   useEffect(() => {
-    if (c) setCompanyTab(c === "Quality Packaging" || c === "QP" ? 1 : 0);
+    if (c) {
+      setCompanyTab(c === "Quality Packaging" || c === "QP" ? 1 : 0);
+      setCurrentFilterState((prev: any) => ({ ...prev, filters: { company: [c] } }));
+    }
   }, [c]);
+
+  useEffect(() => {
+    const updates: any = {};
+
+    if (companyTab !== null && companyTab !== undefined) {
+      updates.company = [StaticCompanyOptions[companyTab]];
+    }
+
+    if (statusTab !== null && statusTab !== undefined) {
+      updates.status =
+        statusTab === 0 ? ["APPROVED"] :
+          statusTab === 1 ? ["PENDING"] : [];
+    }
+
+    if (Object.keys(updates).length > 0) {
+      setCurrentFilterState(prev => ({
+        ...prev,
+        filters: {
+          ...prev.filters,
+          ...updates,
+        },
+      }));
+    }
+  }, [companyTab, statusTab]);
 
   useEffect(() => {
     if (error) toast.error(error);
@@ -277,7 +279,6 @@ const IndexPage: React.FC = memo(() => {
     `APPROVED (${responseState?.counts?.approved})`,
     `PENDING (${responseState?.counts?.pending})`,
   ];
-  console.log(responseState, 'responseState')
 
   const excelHeaders = useMemo(() => [
     "Company Name",
@@ -360,7 +361,6 @@ const IndexPage: React.FC = memo(() => {
     if (result.isConfirmed) {
       try {
         await accountMasterService.deleteAccountMaster(id);
-        console.log("call 3 ")
         await loadAccountMasters(); // Refresh data
         Swal.fire({
           title: "Deleted!",
@@ -393,7 +393,6 @@ const IndexPage: React.FC = memo(() => {
     if (result.isConfirmed) {
       try {
         await accountMasterService.approveParty(partyId);
-        console.log("call 4 ")
         await loadAccountMasters(); // Refresh data
         Swal.fire({
           title: "Approved!",
@@ -427,11 +426,10 @@ const IndexPage: React.FC = memo(() => {
   };
 
   const filteredAccountMasters = accountMasters
-  console.log(filteredAccountMasters, 'filteredAccountMasters---------')
 
   const excelData = useMemo(() => {
     return filteredAccountMasters.map((account) => ({
-      "Company Name": account.companyName?.name || "N/A",
+      "Company Name": account.companyName?.name || account.companyName?.companyName || "N/A",
       "Party Name": account.party?.partyName || "N/A",
       "Owner Name": account.party?.ownerName || "N/A",
       "Owner WhatsApp No.": account.party?.ownerWhatsAppNo || "N/A",
@@ -465,7 +463,7 @@ const IndexPage: React.FC = memo(() => {
     partyId: account.party?._id || "",
     company: {
       _id: account.companyName?._id || "",
-      name: account.companyName?.name || "N/A",
+      name: account.companyName?.name || account.companyName?.companyName || "N/A",
       avatar: account.companyName?.avatar,
     },
     createdDate: moment(account.createdAt).format("DD-MM-YYYY"),
@@ -507,25 +505,21 @@ const IndexPage: React.FC = memo(() => {
       };
     })
     .filter((p) => p.partyId && p.companyId);
-  console.log(currentFilterState, 'currentFilterState')
 
   return (
     <>
-      {/* Company Tabs - Only show if user has both companies */}
       {hasBothCompanies && (
         <Box sx={{ mb: 2 }}>
           <TabComponent activeTab={companyTab} setActiveTab={setCompanyTab} />
         </Box>
       )}
 
-      {/* Show current company name when user has only one permission */}
       {!hasBothCompanies && selectedCompanyId && (
         <Box sx={{ mb: 2, p: 2, backgroundColor: "primary.light", color: "primary.contrastText", borderRadius: 1 }}>
           <Typography variant="h6">Showing data for: {hasSakshi ? "Sakshi" : "QP"}</Typography>
         </Box>
       )}
 
-      {/* Buttons and Approved/Pending Tabs in the same row using flex */}
       <Box
         sx={{
           display: "flex",
@@ -569,6 +563,7 @@ const IndexPage: React.FC = memo(() => {
           rowData={formattedRows}
           setCurrentFilterState={setCurrentFilterState}
           currentFilterState={currentFilterState}
+          defaultAccountMasterFilter={defaultAccountMasterFilter}
           renderRow={(row: RowData, index: number) => (
             <>
               <TableCell>
@@ -702,4 +697,4 @@ const IndexPage: React.FC = memo(() => {
   );
 });
 
-export default IndexPage;
+export default AccountMasterPage;

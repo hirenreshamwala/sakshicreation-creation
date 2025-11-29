@@ -35,6 +35,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   onFiltersChange,
   filters,
   selectedField,
+  defaultAccountMasterFilter,
   onFieldSelect,
   onFieldOpen, // This prop should be here
 }) => {
@@ -98,7 +99,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   };
 
   const handleClearFilter = () => {
-    onFiltersChange({});
+    // onFiltersChange({});
+        onFiltersChange(defaultAccountMasterFilter.filters);
     onFieldSelect(null);
     setTempSelectedValues([]);
     handleClose();

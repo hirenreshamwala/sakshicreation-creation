@@ -134,10 +134,10 @@ export const accountMasterService = {
       throw new Error(error.response?.data?.message || "Failed to fetch account master");
     }
   },
-  async getAccountMasterByStaffId(id: string): Promise<ApiResponse<AccountMaster>> {
+  async getAccountMasterByStaffId(id: string,data:any): Promise<ApiResponse<AccountMaster>> {
     try {
-      const response: AxiosResponse<ApiResponse<AccountMaster>> = await Request.get(
-        `${Endpoint.GET_ACCOUNT_MASTER_BY_STAFF_ID}/${id}`);
+      const response: AxiosResponse<ApiResponse<AccountMaster>> = await Request.post(
+        `${Endpoint.GET_ACCOUNT_MASTER_BY_STAFF_ID}/${id}`,data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch account master");
