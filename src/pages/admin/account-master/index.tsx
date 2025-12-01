@@ -132,7 +132,7 @@ const AccountMasterPage: React.FC = memo(() => {
   const { staffId: si, startDate: st, endDate: e, status: s, partyTag: p, c, companyName } = router.query;
   const columns = [
     { id: "checkbox", label: "" },
-    { id: "company", label: "company", value: "company" },
+    { id: "company", label: "company" },
     { id: "createdDate", label: "Created Date", value: "createdAt" },
     { id: "party", label: "party", value: "party" },
     { id: "contactPerson", label: "Contact Person", value: "contactPerson" },
@@ -213,7 +213,7 @@ const AccountMasterPage: React.FC = memo(() => {
         setResponseState(data.pagination)
         setAppliedFilterState(currentFilterState)
       } else if (canViewOwn && user?.id) {
-        const data = await accountMasterService.getAccountMasterByStaffId(user.id, { ...currentFilterState,filters:{...currentFilterState.filters,createdBy:[`${user.firstName} ${user.lastName}`]}, isPagination: true, includeCounts: true });
+        const data = await accountMasterService.getAccountMasterByStaffId(user.id, { ...currentFilterState, filters: { ...currentFilterState.filters, createdBy: [`${user.firstName} ${user.lastName}`] }, isPagination: true, includeCounts: true });
         setAccountMasters(data.data);
         setResponseState({ ...data.pagination, counts: data.counts })
         setAppliedFilterState(currentFilterState)
@@ -670,6 +670,7 @@ const AccountMasterPage: React.FC = memo(() => {
             setSelectedRows([]);
           }}
           partyIds={partyIds}
+          accountMasters={accountMasters}
           onSuccess={() => {
             setOpenAssignLeadDialog(false);
             setSelectedRows([]);
