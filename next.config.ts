@@ -1,17 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactStrictMode: true,
   output: 'standalone',
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  images: { unoptimized: false },
+  compress: true,
+  poweredByHeader: false,
+  eslint: { ignoreDuringBuilds: false }, 
+  typescript: { ignoreBuildErrors: true }, 
   pageExtensions: ["tsx", "ts", "jsx", "js"],
+  experimental: { optimizePackageImports: ["@mui/material"] }
 };
 
 export default nextConfig;
