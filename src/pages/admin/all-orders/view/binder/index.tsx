@@ -412,7 +412,7 @@ const BinderForm = () => {
     updatedPapers[index] = {
       ...updatedPapers[index],
       paperType: id || null, // Use null for empty values
-      gsm: null,       
+      gsm: null,
       sheetSize: null,
     };
     setBinderPapers(updatedPapers);
@@ -472,7 +472,7 @@ const BinderForm = () => {
     const finalAmount = singleOrder?.finalAmount || 0;
     const gstPercentage = singleOrder?.gstPercentage || 0;
     const remarks = singleOrder?.remarks || 'No remarks';
-   
+
     // Address formatting
     const address = [
       singleOrder?.party?.address?.unitNo || '',
@@ -480,12 +480,12 @@ const BinderForm = () => {
       singleOrder?.party?.address?.area?.area || '',
       singleOrder?.party?.address?.pincode?.pincode || '',
     ].filter(part => part?.trim() !== '').join(', ') || 'N/A';
-   
+
     const gstText = gstPercentage > 0 ? ` (incl. ${gstPercentage}% GST)` : '';
-   
+
     // Dynamic subject based on type
     const subject = `Order ${orderNumber} - Binder Work Completed`;
-   
+
     // Dynamic body with all details
     const body = `Dear ${contactPerson},
 
@@ -589,6 +589,12 @@ Your Team
           )}
           <Box display="flex" gap={2} mb={2} width={"100%"} justifyContent={"space-between"}>
             <ThemeInput
+              labelName="Order Number"
+              value={singleOrder.orderNumber || "N/A"}
+              sx={{ flex: 1 }}
+              InputProps={{ readOnly: true }}
+            />
+            <ThemeInput
               labelName="Company Name"
               value={singleOrder.companyName?.companyName || "N/A"}
               sx={{ flex: 1 }}
@@ -601,11 +607,12 @@ Your Team
               InputProps={{ readOnly: true }}
             />
             <ThemeInput
-              labelName="Order Number"
-              value={singleOrder.orderNumber || "N/A"}
+              labelName="Whatsapp Number"
+              value={singleOrder.party?.ownerWhatsAppNo || "N/A"}
               sx={{ flex: 1 }}
               InputProps={{ readOnly: true }}
             />
+
             <RoleStaffSelect
               label="Assign to Binder"
               name="binderStaff"
@@ -624,7 +631,7 @@ Your Team
               fullWidth
               InputProps={{ readOnly: true }}
             />
-            <ThemeInput
+            {/* <ThemeInput
               labelName="Issued Date"
               type="date"
               name="issuedDate"
@@ -647,7 +654,7 @@ Your Team
               error={formik.touched.receivedDate && Boolean(formik.errors.receivedDate)}
               helperText={formik.touched.receivedDate && (formik.errors.receivedDate as string)}
               InputProps={{ readOnly: true }}
-            />
+            /> */}
             <ThemeInput
               labelName="Item Size"
               name="size"
@@ -715,15 +722,15 @@ Your Team
             />
             {formik.values.binding && (
               <Box sx={{ width: 1 }} >
-              <ThemeSelect
-                label="Binding Type"
-                value={getSelectedOption(formik.values.bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
-                options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
-                onChange={(_, v) => formik.setFieldValue("bindingType", v ? v.value : "")}
-                // required
-                disabled={areFieldsReadOnly}
-                sx={{ flex: 1 }}
-              />
+                <ThemeSelect
+                  label="Binding Type"
+                  value={getSelectedOption(formik.values.bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
+                  options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
+                  onChange={(_, v) => formik.setFieldValue("bindingType", v ? v.value : "")}
+                  // required
+                  disabled={areFieldsReadOnly}
+                  sx={{ flex: 1 }}
+                />
               </Box>
             )}
             <ThemeInput
@@ -862,8 +869,8 @@ Your Team
                     onChange={(e, newValue) =>
                       handleMaterialNameChange(index, newValue?.value as string || "")
                     }
-                    // required
-                    // disabled={areFieldsReadOnly}
+                  // required
+                  // disabled={areFieldsReadOnly}
                   />
 
                   <ThemeSelect
@@ -873,8 +880,8 @@ Your Team
                     onChange={(e, newValue) =>
                       handleMaterialGSMChange(index, newValue?.value as string || "")
                     }
-                    // required
-                    // disabled={!paper.paperType || areFieldsReadOnly}
+                  // required
+                  // disabled={!paper.paperType || areFieldsReadOnly}
                   />
 
                   <ThemeSelect
@@ -884,8 +891,8 @@ Your Team
                     onChange={(e, newValue) =>
                       handleMaterialSizeChange(index, newValue?.value as string || "")
                     }
-                    // required
-                    // disabled={!paper.paperType || !paper.gsm || areFieldsReadOnly}
+                  // required
+                  // disabled={!paper.paperType || !paper.gsm || areFieldsReadOnly}
                   />
 
                   <ThemeInput

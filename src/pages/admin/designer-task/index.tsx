@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { getDesignerOrdersThunk } from "@/store/slices/orderSlice";
 import { useRouter } from "next/router";
 import Loader from "@/component/common_component/loader";
+import { formatDateToDDMMYYYY } from "@/utills/utills";
 
 interface Column {
   id: string;
@@ -14,8 +15,8 @@ interface Column {
 
 const tableHeader: Column[] = [
   { id: "date", label: "order number" },
-  { id: "party", label: "Party" },
   { id: "date", label: "Date" },
+  { id: "party", label: "Party" },
   { id: "size", label: "Size" },
   { id: "itemName", label: "Item Name" },
   { id: "itemName", label: "Printing Type" },
@@ -109,7 +110,7 @@ const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
     bindingPage: order.bindingPage || "N/A",
     bookletType: order.bookletFolderType || "N/A",
     party: order.party?.partyName || "N/A",
-    date: new Date(order.createdAt).toLocaleDateString(),
+    date: formatDateToDDMMYYYY(order.createdAt),
     size: order.size || "N/A",
     itemName: order.productItem?.itemName || "N/A",
     remarks: order.remarks || "N/A",
@@ -120,6 +121,7 @@ const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
   const renderRow = (row: (typeof rowData)[number], index: number) => (
     <>
     <TableCell>{row.orderNo}</TableCell>
+    <TableCell>{row.date}</TableCell>
       <TableCell
         onClick={() => handleRowClick(row.id)}
         sx={{
@@ -131,7 +133,6 @@ const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
       >
         {row.party}
       </TableCell>
-      <TableCell>{row.date}</TableCell>
       <TableCell>{row.size}</TableCell>
       <TableCell>{row.itemName}</TableCell>
       <TableCell>{row.printingType}</TableCell>

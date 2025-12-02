@@ -387,6 +387,12 @@ const BinderTaskView = () => {
         </Box>
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <ThemeInput
+            labelName="Order Number"
+            value={singleOrder.orderNumber || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
             labelName="Company Name"
             value={singleOrder.companyName?.companyName || "N/A"}
             sx={{ flex: 1 }}
@@ -406,12 +412,6 @@ const BinderTaskView = () => {
           />
         </Box>
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
-          <ThemeInput
-            labelName="Order Number"
-            value={singleOrder.orderNumber || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          />
           <ThemeInput
             labelName="Quantity"
             value={singleOrder.qty?.toString() || "N/A"}
@@ -446,7 +446,7 @@ const BinderTaskView = () => {
                 checked={binding}
                 onChange={(e) => setBinding(e.target.checked)}
                 color="primary"
-                disabled={!canEditBinderTask}
+                disabled
               />
             }
             label="Binding"
@@ -459,12 +459,18 @@ const BinderTaskView = () => {
                 value={getSelectedOption(bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
                 options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
                 onChange={(_, v) => setBindingType(v ? v.value : "")}
-                disabled={!canEditBinderTask}
+                disabled
                 sx={{ flex: 1 }}
               />
             </Box>
           )}
           
+          <ThemeInput
+            labelName="Binding Page"
+            value={singleOrder.bindingPage || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
           <ThemeInput
             labelName="Pages / book"
             value={singleOrder.pagesPerBook?.toString() || "N/A"}

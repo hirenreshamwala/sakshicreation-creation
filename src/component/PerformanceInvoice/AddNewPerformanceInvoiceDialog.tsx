@@ -42,6 +42,7 @@ interface FormData {
   finalAmount?: number;
   assignedTo?: string;
   daysAfterConfirmation?: number;
+  paymentDate?: number;
 }
 
 interface Order {
@@ -117,6 +118,9 @@ const validationSchema = Yup.object({
   daysAfterConfirmation: Yup.number()
     .min(0, "Days after confirmation cannot be negative")
     .optional(),
+  paymentDate: Yup.number() // Add this
+    .min(0, "Payment date cannot be negative")
+    .optional(),
 });
 
 const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogProps> = ({
@@ -188,12 +192,12 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
   }, [open, dispatch]);
 
   // Get last quotation data
-  const getLastQuotation = () => {
-    if (!data?.quotation || data.quotation.length === 0) {
-      return { qty: 0, unitPrice: 0, gst: 0 };
-    }
-    return data.quotation[data.quotation.length - 1];
-  };
+  // const getLastQuotation = () => {
+  //   if (!data?.quotation || data.quotation.length === 0) {
+  //     return { qty: 0, unitPrice: 0, gst: 0 };
+  //   }
+  //   return data.quotation[data.quotation.length - 1];
+  // };
 
   const formik = useFormik<FormData>({
     initialValues: {
@@ -216,6 +220,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       finalAmount: 0,
       assignedTo: "",
       daysAfterConfirmation: undefined,
+      paymentDate: undefined,
     },
     validationSchema,
     validateOnBlur: true,
@@ -264,6 +269,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           assignedTo: values.assignedTo,
           finalAmount: values.finalAmount || 0,
           daysAfterConfirmation: values.daysAfterConfirmation,
+          paymentDate: values.paymentDate,
         };
         let response;
         if (isEditMode && currentInvoiceId) {
@@ -293,6 +299,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
 
   useEffect(() => {
     if (!open || !invoiceId || !isEditMode) return;
+
     const fetchData = async () => {
       setIsLoading(true);
       try {
@@ -302,7 +309,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           setInvoiceData(result)
           const fullAddress = [
             result.partyAddress?.unitNo || "",
-            // result.partyAddress?.streetAddress || "",
             result.partyAddress?.marketName?.marketName || "",
             result.partyAddress?.landMark?.landMark || "",
             result.partyAddress?.area?.area || "",
@@ -315,14 +321,12 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ? result.assignedTo._id.toString()
             : result.assignedTo || "";
 
-          // Get last quotation data
-          const lastQuotation = getLastQuotation();
-
+          // ✅ Directly use the invoice data instead of quotation
           formik.setValues({
             orderNumber: result.orderNumber || "",
             companyName: result.companyName?._id?.toString() || result.companyName || "",
             partyName: result.party?._id?.toString() || result.partyName || "",
-            quantity: lastQuotation.qty,
+            quantity: result.quantity || 0,
             color: result.color || "",
             pType: result.pType || "",
             size: result.size || "",
@@ -331,13 +335,14 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ownerMobileNo: result.ownerMobileNo || "",
             addressName: fullAddress || "",
             servicePerformance: result.servicePerformance || "",
-            unitPrice: lastQuotation.unitPrice,
+            unitPrice: result.unitPrice || 0,
             total: result.total || 0,
-            applyGST: lastQuotation.gst > 0,
-            gstPercentage: lastQuotation.gst,
+            applyGST: result.applyGST || false,
+            gstPercentage: result.gstPercentage || 0,
             finalAmount: result.finalAmount || 0,
             assignedTo: assignedToValue,
             daysAfterConfirmation: result.daysAfterConfirmation,
+            paymentDate: result.paymentDate,
           });
           setIsSaved(true);
         }
@@ -348,9 +353,11 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
         setIsLoading(false);
       }
     };
+
     fetchData();
   }, [open, isEditMode, invoiceId, dispatch, data]);
 
+  // इस पूरे useEffect को नए कोड से बदलें:
   useEffect(() => {
     if (!open || orders.length === 0) {
       if (!invoiceId && !data?.orderNumber) {
@@ -375,7 +382,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
 
     const fullAddress = [
       selectedOrder.party.address?.unitNo || "",
-      // markets.find((item) => item._id === selectedOrder.party.address?.streetAddress)?.streetAddress || "",
       markets.find((item) => item._id === selectedOrder.party.address?.marketName)?.marketName || "",
       markets.find((item) => item._id === selectedOrder.party.address?.landMark)?.landMark || "",
       markets.find((item) => item._id === selectedOrder.party.address?.area)?.area || "",
@@ -384,25 +390,19 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       .filter((part) => part?.trim() !== "")
       .join(", ");
 
-    // Get last quotation data
-    const lastQuotation = getLastQuotation();
-    const total = lastQuotation.qty * lastQuotation.unitPrice;
-    const gstAmount = total * (lastQuotation.gst / 100);
-    const finalAmount = total + gstAmount;
-
     const checkInvoice = async () => {
       try {
         const response = await performanceInvoiceService.getPerformanceInvoices();
         const existingInvoice = response.data?.find((invoice) => invoice.orderNumber === orderNumber);
+
         if (existingInvoice && !invoiceId) {
           setIsEditMode(true);
-          console.log(existingInvoice, 'existingInvoice')
           setInvoiceData(existingInvoice);
           setCurrentInvoiceId(existingInvoice._id);
           setIsSaved(true);
+
           const invoiceAddress = [
             existingInvoice.partyAddress?.unitNo || "",
-            // existingInvoice.partyAddress?.streetAddress || "",
             existingInvoice.partyAddress?.marketName?.marketName || "",
             existingInvoice.partyAddress?.landMark?.landmark || "",
             existingInvoice.partyAddress?.area?.area || "",
@@ -415,11 +415,12 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ? existingInvoice.assignedTo._id.toString()
             : existingInvoice.assignedTo || "";
 
+          // ✅ यहाँ existing invoice के values set करें
           formik.setValues({
             orderNumber: existingInvoice.orderNumber || "",
             companyName: existingInvoice.companyName?._id?.toString() || existingInvoice.companyName || "",
             partyName: existingInvoice.party?._id?.toString() || existingInvoice.partyName || "",
-            quantity: lastQuotation.qty,
+            quantity: existingInvoice.quantity || 0,
             color: existingInvoice.color || "",
             pType: existingInvoice.pType || "",
             size: existingInvoice.size || "",
@@ -428,23 +429,26 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ownerMobileNo: existingInvoice.ownerMobileNo || "",
             addressName: invoiceAddress || fullAddress,
             servicePerformance: existingInvoice.servicePerformance || "",
-            unitPrice: lastQuotation.unitPrice,
+            unitPrice: existingInvoice.unitPrice || 0,
             total: existingInvoice.total || 0,
-            applyGST: lastQuotation.gst > 0,
-            gstPercentage: lastQuotation.gst,
+            applyGST: existingInvoice.applyGST || false,
+            gstPercentage: existingInvoice.gstPercentage || 0,
             finalAmount: existingInvoice.finalAmount || 0,
             assignedTo: assignedToValue,
             daysAfterConfirmation: existingInvoice.daysAfterConfirmation,
+            paymentDate: existingInvoice.paymentDate,
           });
         } else {
           setIsEditMode(!!invoiceId);
           setCurrentInvoiceId(invoiceId);
           setIsSaved(false);
+
+          // ✅ नया invoice create करते समय: Empty values रखें
           formik.setValues({
             orderNumber,
             companyName: selectedOrder.companyName._id || "",
             partyName: selectedOrder.party._id || "",
-            quantity: lastQuotation.qty,
+            quantity: 0, // ✅ Manual entry के लिए 0 से start करें
             color: selectedOrder.color || "",
             pType: selectedOrder.pType || "",
             size: selectedOrder.size || "",
@@ -453,12 +457,14 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ownerMobileNo: selectedOrder.party.ownerMobileNo || "",
             addressName: fullAddress || "",
             servicePerformance: selectedOrder.productItem.itemName || "",
-            unitPrice: lastQuotation.unitPrice,
-            total,
-            applyGST: lastQuotation.gst > 0,
-            gstPercentage: lastQuotation.gst,
-            finalAmount,
+            unitPrice: 0, // ✅ Manual entry के लिए 0 से start करें
+            total: 0, // ✅ Auto calculate होगा
+            applyGST: false, // ✅ Default false
+            gstPercentage: 0, // ✅ Default 0
+            finalAmount: 0, // ✅ Auto calculate होगा
+            assignedTo: "",
             daysAfterConfirmation: undefined,
+            paymentDate: undefined,
           });
         }
       } catch (err: any) {
@@ -466,6 +472,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
         toast.error(err.message || "Failed to check existing invoice");
       }
     };
+
     checkInvoice();
   }, [open, data?.orderNumber, orders, invoiceId, dispatch, markets, data]);
 
@@ -627,7 +634,9 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               label="Quantity"
               type="number"
               value={formik.values.quantity}
-              disabled
+              onChange={formik.handleChange("quantity")} // ✅ Change होंगे
+              error={formik.touched.quantity && Boolean(formik.errors.quantity)}
+              helperText={formik.touched.quantity && formik.errors.quantity}
               fullWidth
               sx={disabledLabelStyle}
             />
@@ -636,11 +645,13 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               name="unitPrice"
               type="number"
               value={formik.values.unitPrice}
-              disabled
+              onChange={formik.handleChange("unitPrice")} // ✅ Change होंगे
+              error={formik.touched.unitPrice && Boolean(formik.errors.unitPrice)}
+              helperText={formik.touched.unitPrice && formik.errors.unitPrice}
               fullWidth
             />
           </Box>
-          <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
+          <Box display="grid" gridTemplateColumns="1fr 1fr 1fr" gap={2} alignItems="center">
             <TextField
               label="Delivery Date"
               placeholder="Enter number of days"
@@ -652,12 +663,22 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               helperText={formik.touched.daysAfterConfirmation && formik.errors.daysAfterConfirmation}
               fullWidth
             />
-            <Box display="flex" flexDirection="row">
+            <TextField
+              label="Payment Date"
+              placeholder="Enter number of days"
+              name="paymentDate"
+              type="number"
+              value={formik.values.paymentDate || ""}
+              onChange={formik.handleChange}
+              error={formik.touched.paymentDate && Boolean(formik.errors.paymentDate)}
+              helperText={formik.touched.paymentDate && formik.errors.paymentDate}
+              fullWidth
+            />
+            <Box display="flex" flexDirection="row" alignItems="center" gap={1}>
               <FormControlLabel
                 control={
                   <Checkbox
                     checked={formik.values.applyGST}
-                    disabled
                     onChange={(e) => {
                       formik.setFieldValue("applyGST", e.target.checked);
                       if (!e.target.checked) {
@@ -670,16 +691,18 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
                 }
                 label="Apply GST"
               />
-
-              {formik.values.applyGST ? (
+              {formik.values.applyGST && (
                 <TextField
-                  label="GST Percentage"
+                  label="GST %"
                   name="gstPercentage"
                   value={formik.values.gstPercentage}
-                  disabled
-                  fullWidth
+                  onChange={formik.handleChange}
+                  error={formik.touched.gstPercentage && Boolean(formik.errors.gstPercentage)}
+                  helperText={formik.touched.gstPercentage && formik.errors.gstPercentage}
+                  sx={{ width: 100 }}
+                  size="small"
                 />
-              ) : null}
+              )}
             </Box>
           </Box>
           <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
@@ -716,7 +739,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               companyName: displayCompanyName,
               orderNumber: formik.values.orderNumber,
               remarks: formik.values.remarks || "",
-              ownerMobileNo: formik.values.ownerMobileNo || `${data?.party?.ownerMobileNo}` ||"",
+              ownerMobileNo: formik.values.ownerMobileNo || `${data?.party?.ownerMobileNo}` || "",
               partyName: displayPartyName,
               addressName: `${data?.party?.address?.unitNo}, ${data?.party?.address?.marketName?.marketName}, ${data?.party?.address?.area?.area}, ${data?.party?.address?.pincode?.pincode}`,
               GSTNo: formik.values.GSTNo,
@@ -728,6 +751,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               applyGST: formik.values.applyGST,
               gstPercentage: formik.values.gstPercentage,
               daysAfterConfirmation: formik.values.daysAfterConfirmation,
+              paymentDate: formik.values.paymentDate,
             }}
             isSaved={isSaved}
             onClose={onClose}

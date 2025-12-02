@@ -473,7 +473,7 @@ const BookletFolderBinderForm = () => {
     const finalAmount = singleOrder?.finalAmount || 0;
     const gstPercentage = singleOrder?.gstPercentage || 0;
     const remarks = singleOrder?.remarks || 'No remarks';
-   
+
     // Address formatting
     const address = [
       singleOrder?.party?.address?.unitNo || '',
@@ -481,12 +481,12 @@ const BookletFolderBinderForm = () => {
       singleOrder?.party?.address?.area?.area || '',
       singleOrder?.party?.address?.pincode?.pincode || '',
     ].filter(part => part?.trim() !== '').join(', ') || 'N/A';
-   
+
     const gstText = gstPercentage > 0 ? ` (incl. ${gstPercentage}% GST)` : '';
-   
+
     // Dynamic subject based on type
     const subject = `Order ${orderNumber} - Booklet Binder Work Completed`;
-   
+
     // Dynamic body with all details
     const body = `Dear ${contactPerson},
 
@@ -600,6 +600,12 @@ Your Team
             {/* Basic Details */}
             <Stack direction="row" spacing={2}>
               <ThemeInput
+                labelName="Order Number"
+                value={singleOrder.orderNumber || "N/A"}
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
+              <ThemeInput
                 labelName="Company Name"
                 value={singleOrder.companyName?.companyName || "N/A"}
                 fullWidth
@@ -612,8 +618,8 @@ Your Team
                 InputProps={{ readOnly: true }}
               />
               <ThemeInput
-                labelName="Order Number"
-                value={singleOrder.orderNumber || "N/A"}
+                labelName="Whatsapp Number"
+                value={singleOrder.party?.ownerWhatsAppNo || "N/A"}
                 fullWidth
                 InputProps={{ readOnly: true }}
               />
@@ -642,6 +648,12 @@ Your Team
                 InputProps={{ readOnly: true }}
               />
               <ThemeInput
+                labelName="Booklet Folder Type"
+                value={singleOrder.bookletFolderType || "N/A"}
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
+              {/* <ThemeInput
                 labelName="Issued Date"
                 type="date"
                 name="issuedDate"
@@ -664,7 +676,7 @@ Your Team
                 error={formik.touched.receivedDate && Boolean(formik.errors.receivedDate)}
                 helperText={formik.touched.receivedDate && formik.errors.receivedDate}
                 InputProps={{ readOnly: areFieldsReadOnly }}
-              />
+              /> */}
               <ThemeInput
                 labelName="Size"
                 name="size"
@@ -673,23 +685,24 @@ Your Team
                 fullWidth
                 error={formik.touched.size && Boolean(formik.errors.size)}
                 helperText={formik.touched.size && formik.errors.size}
-                InputProps={{ readOnly: areFieldsReadOnly }}
+                InputProps={{ readOnly: true }}
+              />
+              <ThemeInput
+                labelName="Quantity"
+                name="qty"
+                value={formik.values.qty}
+                onChange={formik.handleChange}
+                fullWidth
+                // disabled
+                error={formik.touched.qty && Boolean(formik.errors.qty)}
+                helperText={formik.touched.qty && formik.errors.qty}
+                InputProps={{ readOnly: true }}
               />
             </Stack>
             <Box>
               <Grid container spacing={2} alignItems="center">
                 {/* Quantity */}
                 <Grid item xs={12} sm={3}>
-                  <ThemeInput
-                    labelName="Quantity"
-                    name="qty"
-                    value={formik.values.qty}
-                    onChange={formik.handleChange}
-                    fullWidth
-                    error={formik.touched.qty && Boolean(formik.errors.qty)}
-                    helperText={formik.touched.qty && formik.errors.qty}
-                    InputProps={{ readOnly: areFieldsReadOnly }}
-                  />
 
                 </Grid>
 

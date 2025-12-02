@@ -8,6 +8,7 @@ import { getBookletBinderThunk } from "@/store/slices/orderSlice"
 import { useRouter } from "next/router"
 import { authService } from "@/services/auth.service"
 import Loader from "@/component/common_component/loader"
+import { formatDateToDDMMYYYY } from "@/utills/utills"
 
 interface Column {
   id: string
@@ -16,10 +17,12 @@ interface Column {
 }
 
 const tableHeader: Column[] = [
-  { id: "party", label: "Party" },
+  { id: "order", label: "Order No" },
   { id: "date", label: "Date" },
+  { id: "party", label: "Party" },
   { id: "size", label: "Size" },
   { id: "itemName", label: "Item Name" },
+  { id: "itemName", label: "Booklet folder Type" },
   { id: "remarks", label: "Remarks" },
   { id: "status", label: "Status", align: "center" as const },
   { id: "action", label: "Action", align: "center" as const },
@@ -114,16 +117,20 @@ const BookletBinderTask: React.FC<BookletBinderTaskProps> = ({ tasks }) => {
   // Transform orders data for table
   const rowData = tasks.map((order) => ({
     id: order._id,
+    orderNo: order.orderNumber,
+    date: formatDateToDDMMYYYY(order.createdAt),
     party: order.party?.partyName || "N/A",
-    date: new Date(order.createdAt).toLocaleDateString(),
-    size: order.size || "N/A",
     itemName: order.productItem?.itemName || "N/A",
-    remarks: order.bookletBinderRemarks || "N/A", // Use bookletBinderRemarks
-    status: order.bookletBinderStatus || "Pending", // Use bookletBinderStatus
+    bookletFolderType: order.bookletFolderType || "N/A",
+    status: order.bookletBinderStatus || "Pending",
+    remarks: order.bookletBinderRemarks || "N/A",
+    size: order.size || "N/A",
   }))
 
   const renderRow = (row: (typeof rowData)[number], index: number) => (
     <>
+      <TableCell>{row.orderNo}</TableCell>
+      <TableCell>{row.date}</TableCell>
       <TableCell
         onClick={() => handleRowClick(row.id)}
         sx={{
@@ -135,9 +142,10 @@ const BookletBinderTask: React.FC<BookletBinderTaskProps> = ({ tasks }) => {
       >
         {row.party}
       </TableCell>
-      <TableCell>{row.date}</TableCell>
+      {/* <TableCell>{row.date}</TableCell> */}
       <TableCell>{row.size}</TableCell>
       <TableCell>{row.itemName}</TableCell>
+      <TableCell>{row.bookletFolderType}</TableCell>
       <TableCell>{row.remarks}</TableCell>
       <TableCell align="center">
         <StatusBadge status={row.status} />

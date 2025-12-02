@@ -409,25 +409,15 @@ const PrinterTaskView = () => {
           />
         </Box>
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
+          <Box flex={1} minWidth={240}>
+
           <ThemeInput
             labelName="Size"
             value={singleOrder.size || "N/A"}
-            sx={{ flex: 1 }}
+            // sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-
-          {/* <ThemeInput
-            labelName="Sub Paper"
-            value={singleOrder.subPaper || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          /> Commented out - Hidden field */}
-          {/* <ThemeInput
-            labelName="Used Paper"
-            value={singleOrder.usedPaper || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          /> Commented out - Hidden field */}
+          </Box>
 
           <Box flex={1} minWidth={240}>
             <ThemeInput
@@ -478,35 +468,9 @@ const PrinterTaskView = () => {
             InputProps={{ readOnly: true }}
           />
 
-        </Box>
-        <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <ThemeInput
             labelName="Printing Rate"
             value={singleOrder.printingrate || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          />
-          {/* <ThemeInput
-            labelName="Printing Rate Per Unit"
-            value={singleOrder.printingratePerUnit || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          /> Commented out - Hidden field */}
-          <ThemeInput
-            labelName="GSM"
-            value={singleOrder.gsm || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          />
-          <ThemeInput
-            labelName="Paper Size"
-            value={singleOrder.rowPaperSize || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          />
-          <ThemeInput
-            labelName="Paper User"
-            value={singleOrder.rowPaperUser || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
