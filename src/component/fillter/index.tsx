@@ -26,6 +26,7 @@ interface FilterDropdownProps {
   selectedField: string | null;
   onFieldSelect: (field: string | null) => void;
   onFieldOpen?: (field: string) => void; // Make sure this prop is defined
+  defaultAccountMasterFilter?: { filters: { [key: string]: string[] } };
 }
 
 const FilterDropdown: React.FC<FilterDropdownProps> = ({
@@ -66,7 +67,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     console.log("Field selected:", field);
     onFieldSelect(field);
     setSearchQuery("");
-    
+
     // Call API when field is selected
     if (onFieldOpen) {
       console.log("Calling onFieldOpen for:", field);
@@ -100,7 +101,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
   const handleClearFilter = () => {
     // onFiltersChange({});
-        onFiltersChange(defaultAccountMasterFilter.filters);
+    onFiltersChange(defaultAccountMasterFilter?.filters || {});
     onFieldSelect(null);
     setTempSelectedValues([]);
     handleClose();
@@ -113,10 +114,10 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   };
 
   // Safe filtering with array check
-  const filteredUniqueValues = Array.isArray(uniqueValues) 
+  const filteredUniqueValues = Array.isArray(uniqueValues)
     ? uniqueValues.filter((value) =>
-        value?.toString().toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      value?.toString().toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : [];
 
   return (
@@ -189,7 +190,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
             {filterOptions?.length > 0 ? (
               filterOptions
                 ?.filter((item) => item?.trim() !== "")
-                ?.filter(item => !['actions','options','action','option','aadhar files','address files']
+                ?.filter(item => !['actions', 'options', 'action', 'option', 'aadhar files', 'address files']
                   ?.includes(item?.toLowerCase()?.trim()))
                 ?.map((label) => (
                   <MenuItem
