@@ -126,6 +126,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   GET_PRINTER_BINDER: `${BaseURL}/api/orders/binder`,
   GET_BOOKLET_BINDER: `${BaseURL}/api/orders/bookletBinder`,
   GET_ORDER_BY_STAFF_ID: `${BaseURL}/api/orders/getbystaffid`,
+  GET_ORDER_FILTER_OPTIONS: `${BaseURL}/api/orders/filter-options`,
 
   //performance invoice
   GET_ALL_PERFORMANCE_INVOICES: `${BaseURL}/api/performance-invoice/getall`,

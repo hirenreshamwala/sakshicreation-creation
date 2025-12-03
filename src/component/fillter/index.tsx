@@ -25,8 +25,8 @@ interface FilterDropdownProps {
   filters: { [key: string]: string[] };
   selectedField: string | null;
   onFieldSelect: (field: string | null) => void;
-  onFieldOpen?: (field: string) => void; // Make sure this prop is defined
-  defaultAccountMasterFilter?: { filters: { [key: string]: string[] } };
+  onFieldOpen?: (field: string) => void;
+  defaultAccountMasterFilter?: any;
 }
 
 const FilterDropdown: React.FC<FilterDropdownProps> = ({
@@ -101,7 +101,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
   const handleClearFilter = () => {
     // onFiltersChange({});
-    onFiltersChange(defaultAccountMasterFilter?.filters || {});
+    // onFiltersChange(defaultAccountMasterFilter?.filters || {});
+    onFiltersChange({}); // FIXED: Reset to empty filters object
     onFieldSelect(null);
     setTempSelectedValues([]);
     handleClose();
