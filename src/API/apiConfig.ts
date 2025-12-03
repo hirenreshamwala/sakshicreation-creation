@@ -244,5 +244,10 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   DELETE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/delete`,
   DELETE_MULTIPLE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/multi-delete`,
 
+
+  // filteres data 
+  ACCOUNT_MASTER_FILTER: `${BaseURL}/api/account-master/filter-options`,
+  PARTY_CALL_FILTER:`${BaseURL}/api/lead/get-filter`,
+
 };
 export default Endpoint;

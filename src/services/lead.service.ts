@@ -26,6 +26,7 @@ export const leadService = {
       const data = Array.isArray(response.data.data) ? response.data.data : [];
 
       return {
+        res:response,
         success: response.data.success,
         data: data,
         message: response.data.message,
@@ -100,4 +101,25 @@ export const leadService = {
       throw new Error(error.response?.data?.message || 'Failed to delete lead');
     }
   },
+  async searchFilterOptions(field: string, searchTerm: string, filters?: any): Promise<ApiResponse<string[]>> {
+    try {
+      const payload = {
+        ...(filters || {}),
+        search: searchTerm
+      };
+      
+      const response: AxiosResponse<ApiResponse<string[]>> = await Request.post(
+        `${Endpoint.PARTY_CALL_FILTER}/${field}`,
+        payload
+      );
+      return { 
+        success: true, 
+        data: response.data.data || [], 
+        message: response.data.message 
+      };
+    } catch (error: any) {
+      console.error(`Search ${field} options error:`, error);
+      throw new Error(error.response?.data?.message || `Failed to search ${field} options`);
+    }
+  }
 };

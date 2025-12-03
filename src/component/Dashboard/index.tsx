@@ -275,7 +275,7 @@ useEffect(() => {
 }, [user]);
 
   // Function to get current page title
-  const getCurrentPageTitle = () => {
+  const getCurrentPageTitle = () => { 
     // First check if we're in setup submenu
     if (activeSubSidebar === "setup") {
       const setupItem = setupSubMenuItems.find(
