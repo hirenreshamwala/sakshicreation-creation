@@ -143,6 +143,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   // Role endpoints
   CREATE_ROLE: `${BaseURL}/api/role/create`,
   GET_ALL_ROLES: `${BaseURL}/api/role/getall`,
+  GET_ROLE_FILTERS: `${BaseURL}/api/role/filters`,
   GET_ROLE_BY_ID: `${BaseURL}/api/role/getbyid`,
   UPDATE_ROLE: `${BaseURL}/api/role/updatebyid`,
   DELETE_ROLE: `${BaseURL}/api/role/delete`,
