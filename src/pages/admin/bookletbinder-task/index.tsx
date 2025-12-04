@@ -20,6 +20,7 @@ const tableHeader: Column[] = [
   { id: "order", label: "Order No" },
   { id: "date", label: "Date" },
   { id: "party", label: "Party" },
+  { id: "party", label: "QTY" },
   { id: "size", label: "Size" },
   { id: "itemName", label: "Item Name" },
   { id: "itemName", label: "Booklet folder Type" },
@@ -120,6 +121,7 @@ const BookletBinderTask: React.FC<BookletBinderTaskProps> = ({ tasks }) => {
     orderNo: order.orderNumber,
     date: formatDateToDDMMYYYY(order.createdAt),
     party: order.party?.partyName || "N/A",
+    qty: order.qty || "N/A",
     itemName: order.productItem?.itemName || "N/A",
     bookletFolderType: order.bookletFolderType || "N/A",
     status: order.bookletBinderStatus || "Pending",
@@ -142,7 +144,7 @@ const BookletBinderTask: React.FC<BookletBinderTaskProps> = ({ tasks }) => {
       >
         {row.party}
       </TableCell>
-      {/* <TableCell>{row.date}</TableCell> */}
+      <TableCell>{row.qty}</TableCell>
       <TableCell>{row.size}</TableCell>
       <TableCell>{row.itemName}</TableCell>
       <TableCell>{row.bookletFolderType}</TableCell>

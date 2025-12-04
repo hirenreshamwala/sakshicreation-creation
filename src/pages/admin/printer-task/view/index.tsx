@@ -429,7 +429,7 @@ const PrinterTaskView = () => {
           <Box flex={1} minWidth={240}>
             <ThemeInput
               labelName="Binding Type"
-              value={singleOrder?.bindingType.name || "N/A"}
+              value={singleOrder?.bindingType?.name || "N/A"}
               InputProps={{ readOnly: true }}
             />
           </Box>
@@ -475,14 +475,17 @@ const PrinterTaskView = () => {
             InputProps={{ readOnly: true }}
           />
         </Box>
-        <Box mb={2}>
+        <Box mb={3}>
           <ThemeInput
-            labelName="Original Remarks"
-            value={singleOrder.remarks || "N/A"}
+            labelName="Printer Remarks"
+            placeholder="Enter your remarks about the printing work..."
+            value={printerRemarks}
+            onChange={(e) => setPrinterRemarks(e.target.value)}
             multiline
-            rows={2}
+            rows={3}
             sx={{ width: "100%" }}
             InputProps={{ readOnly: true }}
+
           />
         </Box>
       </Paper>
@@ -558,6 +561,7 @@ const PrinterTaskView = () => {
                   value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
                   onChange={(e, newValue) => handleMaterialNameChange(index, newValue?.value as string || "")}
                   required
+                  disabled
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />
                 <ThemeSelect
@@ -566,6 +570,7 @@ const PrinterTaskView = () => {
                   value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
                   onChange={(e, newValue) => handleMaterialGSMChange(index, newValue?.value as string || "")}
                   required
+                  disabled
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />
                 <ThemeSelect
@@ -574,6 +579,7 @@ const PrinterTaskView = () => {
                   value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.materialSize) || null}
                   onChange={(e, newValue) => handleMaterialSizeChange(index, newValue?.value as string || "")}
                   required
+                  disabled
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />
                 <ThemeInput
@@ -602,7 +608,7 @@ const PrinterTaskView = () => {
             </Box>
           ))}
 
-          {canEditPrinterTask && (
+          {/* {canEditPrinterTask && (
             <Box display="flex" justifyContent="flex-end">
               <ThemeButton
                 onClick={handleAddPrinterPaper}
@@ -618,7 +624,7 @@ const PrinterTaskView = () => {
                 Add Printer Paper
               </ThemeButton>
             </Box>
-          )}
+          )} */}
         </Box>
 
         {/* Total Printer Wasted Sheet (Calculated) */}
@@ -632,18 +638,7 @@ const PrinterTaskView = () => {
         </Box>
 
         {/* Printer Remarks */}
-        <Box mb={3}>
-          <ThemeInput
-            labelName="Printer Remarks"
-            placeholder="Enter your remarks about the printing work..."
-            value={printerRemarks}
-            onChange={(e) => setPrinterRemarks(e.target.value)}
-            multiline
-            rows={3}
-            sx={{ width: "100%" }}
-            InputProps={{ readOnly: !canEditPrinterTask }}
-          />
-        </Box>
+        
 
         {/* File Upload for Printer's Files */}
         <Box mb={3}>

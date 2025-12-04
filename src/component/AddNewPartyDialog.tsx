@@ -90,8 +90,8 @@ const validationSchema = Yup.object({
     pincode: Yup.string()
       .required("Pincode is required"),
   }),
-   partyType: Yup.string()
-    .oneOf(['stationary', 'patta'], 'Party Type must be either stationary or patta')
+  partyType: Yup.string()
+    .oneOf(['stationary', 'booklet', 'other'], 'Please select a valid party type') // यहाँ options बदलें
     .required('Party Type is required'),
   reasonToVisit: Yup.string().required("Reason to Visit is required"),
   // createdBy: Yup.string().required("Created By is required"),
@@ -126,6 +126,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   const isEditMode = !!accountId;
 
   const currentUser = authService.getUser();
+
+
 
   useEffect(() => {
     if (open) {
@@ -200,7 +202,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       partyTag: "New",
       createdBy: isRequestMode ? (currentUser?.id || "") : "",
       isRequestMode,
-      partyType: "",
+      partyType: "stationary",
     },
     validationSchema,
     validateOnBlur: false,
@@ -215,6 +217,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         ...values,
         reference: hasReference === "yes" ? values.reference : "",
       };
+      console.log("DEBUG : AddNewPartyDialog : submissionValues:", submissionValues);
+
       setIsLoading(true);
       try {
         if (isEditMode && accountId) {
@@ -234,8 +238,16 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     },
   });
 
+  useEffect(() => {
+    if (formik.values.reference && formik.values.reference.trim() !== "") {
+      setHasReference("yes");
+    } else {
+      setHasReference("no");
+    }
+  }, [formik.values.reference]);
+
   const handleDownloadSample = () => {
-    const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,partyType,createdBy\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Near Abc,Area A,400001,Visit,Ref123,FALSE,New,stationary,SUSHIL CHHAJER\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer,patta,SUSHIL CHHAJER`;
+    const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,partyType,createdBy\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Near Abc,Area A,400001,Visit,Ref123,FALSE,New,stationary,SUSHIL CHHAJER\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer,booklet,SUSHIL CHHAJER\nTest Party 3,Robert Brown,7654321098,7654321098,robert@example.com,Alice White,9345678901,9345678901,alice@example.com,Payment Contact 3,9345678902,9345678902,payment3@example.com,22AAAAA0000A1Z7,Unit 103,Market C,Near Park,Area C,400003,Visit,Ref789,FALSE,New,other,SUSHIL CHHAJER`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -288,7 +300,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             createdBy:
               result.createdById || (typeof result.createdBy === "object" ? result.createdBy._id : ""),
             isRequestMode,
-            partyType: result.party.partyType || "",
+            partyType: result.party.partyType || "stationary",
           });
           setInputValue(result.partyName || "");
         } else {
@@ -754,15 +766,19 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                   placeholder="Select Type"
                   options={[
                     { value: "stationary", label: "Stationary" },
-                    { value: "patta", label: "Patta" },
+                    { value: "booklet", label: "Booklet" },
+                    { value: "other", label: "Other" },
                   ]}
                   value={
                     formik.values.partyType
-                      ? { value: formik.values.partyType, label: formik.values.partyType.charAt(0).toUpperCase() + formik.values.partyType.slice(1) }
-                      : null
+                      ? {
+                        value: formik.values.partyType,
+                        label: formik.values.partyType.charAt(0).toUpperCase() + formik.values.partyType.slice(1)
+                      }
+                      : { value: "stationary", label: "Stationary" } // यहाँ default value सेट करें
                   }
                   onChange={(e, val: any) => {
-                    formik.setFieldValue("partyType", val?.value || "");
+                    formik.setFieldValue("partyType", val?.value || "stationary");
                   }}
                   error={Boolean(formik.errors.partyType)}
                   helperText={formik.touched.partyType && formik.errors.partyType}
@@ -778,7 +794,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                     name="hasReference"
                     value={hasReference.toLowerCase()}
                     onChange={(e) => {
-                      const value = e.target.value.toUpperCase();
+                      const value = e.target.value.toLowerCase();
                       setHasReference(value);
                       if (value === "no") {
                         formik.setFieldValue("reference", "");

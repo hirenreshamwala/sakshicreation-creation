@@ -1215,13 +1215,17 @@ const ViewOrderDesigner = () => {
         GSTNo: singleOrder?.party?.GSTNo || "N/A",
         servicePerformance: singleOrder?.productItem?.itemName || "N/A",
         quantity: singleOrder?.qty || 0,
-        unitPrice: singleOrder?.quotation[singleOrder?.quotation?.length - 1]?.unitPrice || 0,
+        // यहाँ quotation की जगह unitPrice सीधे order से लें
+        unitPrice: singleOrder?.unitPrice || 0, // या आपके data structure के अनुसार
         total: singleOrder?.total || 0,
         finalAmount: singleOrder?.finalAmount || 0,
         applyGST: singleOrder?.applyGST || false,
         gstPercentage: singleOrder?.gstPercentage || 18,
         daysAfterConfirmation: singleOrder?.daysAfterConfirmation || 0,
+        paymentDate: singleOrder?.paymentDate || 0, // यदि available हो तो
       };
+      console.log("DEBUG : handleDownloadInvoice : formData:", formData);
+
 
       generateInvoicePDF(formData);
       toast.success("Invoice downloaded successfully");
@@ -1763,7 +1767,7 @@ const ViewOrderDesigner = () => {
             <Box flex={1} minWidth={240}>
               <ThemeInput
                 labelName="Binding Type"
-                value={singleOrder?.bindingType.name || "N/A"}
+                value={singleOrder?.bindingType?.name || "N/A"}
                 InputProps={{ readOnly: true }}
               />
             </Box>
@@ -2267,62 +2271,6 @@ const ViewOrderDesigner = () => {
                   })}
                 </Box>
               )}
-              {/* <Box mt={3} pt={3} borderTop={1} borderColor="#E5E7EB">
-                <Typography variant="h6" fontWeight={600} mb={2}>
-                  Quotation Proof
-                </Typography>
-
-                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                  <ThemeButton
-                    sx={{
-                      flex: 1,
-                      background: "#667085",
-                      color: "#fff",
-                      fontWeight: 600,
-                      fontSize: 16,
-                      borderRadius: 2,
-                      py: 1.2,
-                    }}
-                    disabled={Boolean(singleOrder?.quotationProof) || hasValidProof}
-                    onClick={() => setQuoteDialog(true)}
-                  >
-                    Generate Quotation
-                  </ThemeButton> 
-
-                  {singleOrder?.quotation?.length ? (
-                    <Button
-                      variant="contained"
-                      onClick={() => setQuotationHistoryDialog(true)}
-                      sx={{ flex: 1 }}
-                    >
-                      View Quotation History
-                    </Button>
-                  ) : (
-                    <Box sx={{ flex: 1 }} />
-                  )}
-
-                  {singleOrder?.quotation?.length ? (
-                    <ThemeButton
-                      sx={{
-                        flex: 1,
-                        background: "#2196F3",
-                        color: "#fff",
-                        fontWeight: 600,
-                        fontSize: 16,
-                        borderRadius: 2,
-                        py: 1.2,
-                        "&:hover": { background: "#1976D2" },
-                      }}
-                      onClick={handleDownloadInvoice}
-                    >
-                      <MdDownload style={{ marginRight: "8px" }} />
-                      Download Quotation
-                    </ThemeButton>
-                  ) : (
-                    <Box sx={{ flex: 1 }} />
-                  )}
-                </Box>
-              </Box> */}
               <Box display="flex" gap={2} mb={2}>
                 <ThemeButton
                   fullWidth
@@ -2602,88 +2550,6 @@ const ViewOrderDesigner = () => {
         orderId={orderId as string}
         onInvoiceSaved={() => setIsPerformaInvoiceSaved(true)}
       />
-      {/* <AddNewQuotation
-        open={quoteDialog}
-        onClose={() => setQuoteDialog(false)}
-        invoiceId={undefined}
-        data={singleOrder}
-        orderId={orderId as string}
-        isQuote={true}
-        quoteUpdate={singleOrder?.quotation?.length ? true : false}
-      /> */}
-
-      {/* <Dialog
-        open={quotationHistoryDialog}
-        onClose={() => setQuotationHistoryDialog(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" fontWeight={600}>
-              Quotation History
-            </Typography>
-            <Button onClick={() => setQuotationHistoryDialog(false)}>
-              X
-            </Button>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <List>
-            {singleOrder?.quotation?.map((item, index) => (
-              <Box key={item.id}>
-                <ListItem alignItems="flex-start">
-                  <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        Quotation - {index + 1}
-                      </Typography>
-                      <Box display="flex" gap={1}>
-                        <Chip
-                          label={singleOrder?.quotationProof === "" ? "Pending" : index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled"}
-                          color={getStatusColor(singleOrder?.quotationProof === "" ? "Pending" : index === singleOrder?.quotation?.length - 1 ? "Final" : "canceled") as any}
-                          size="small"
-                        />
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => handlePreviewQuotation(item)}
-                          sx={{ textTransform: 'none' }}
-                        >
-                          Preview
-                        </Button>
-                      </Box>
-                    </Box>
-
-                    <Typography variant="body2" color="textSecondary">
-                      Date: {formatDate(item.createdAt)}
-                    </Typography>
-
-                    <Typography variant="body2" color="textSecondary">
-                      Amount: ₹{item.unitPrice.toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Total: ₹
-                      {item.gst > 0
-                        ? (Number(item.unitPrice) * Number(item.qty)) * (1 + Number(item.gst) / 100)
-                        : (Number(item.unitPrice) * Number(item.qty))}
-                    </Typography>
-
-
-
-                    {item.notes && (
-                      <Typography variant="body2" sx={{ mt: 1 }}>
-                        Notes: {item.notes}
-                      </Typography>
-                    )}
-                  </Box>
-                </ListItem>
-                {index < singleOrder?.quotation?.length - 1 && <Divider variant="inset" component="li" />}
-              </Box>
-            ))}
-          </List>
-        </DialogContent>
-      </Dialog> */}
     </>
   )
 }

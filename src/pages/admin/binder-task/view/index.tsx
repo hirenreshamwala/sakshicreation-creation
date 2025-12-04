@@ -419,25 +419,13 @@ const BinderTaskView = () => {
             InputProps={{ readOnly: true }}
           />
           <ThemeInput
-            labelName="Raw Paper Size"
-            value={singleOrder.rowPaperSize || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          />
-          <ThemeInput
-            labelName="Raw Paper Used"
-            value={singleOrder.rowPaperUser || "N/A"}
-            sx={{ flex: 1 }}
-            InputProps={{ readOnly: true }}
-          />
-        </Box>
-        <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
-          <ThemeInput
             labelName="Size"
             value={singleOrder.size || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
+        </Box>
+        <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           
           {/* Binding Switch and Conditional Select - Added from BinderForm */}
           <FormControlLabel
@@ -471,12 +459,12 @@ const BinderTaskView = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-          <ThemeInput
+          {/* <ThemeInput
             labelName="Pages / book"
             value={singleOrder.pagesPerBook?.toString() || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
-          />
+          /> */}
           {/* <ThemeInput
             labelName="Sub Paper"
             value={singleOrder.subPaper || "N/A"}
@@ -509,12 +497,12 @@ const BinderTaskView = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           /> */}
-          <ThemeInput
+          {/* <ThemeInput
             labelName="GST"
             value={singleOrder.gst || "N/A"}
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
-          />
+          /> */}
           {/* <ThemeInput
             labelName="Rate / Unit"
             value={singleOrder.ratePerUnit || "N/A"}
@@ -548,14 +536,16 @@ const BinderTaskView = () => {
             InputProps={{ readOnly: true }}
           />
         </Box>
-        <Box mb={2}>
+      <Box mb={3}>
           <ThemeInput
-            labelName="Original Remarks"
-            value={singleOrder.remarks || "N/A"}
+            labelName="Binder Remarks"
+            placeholder="Enter your remarks about the binding work..."
+            value={binderRemarks}
+            onChange={(e) => setBinderRemarks(e.target.value)}
             multiline
-            rows={2}
+            rows={3}
             sx={{ width: "100%" }}
-            InputProps={{ readOnly: true }}
+            InputProps={{ readOnly: !canEditBinderTask }}
           />
         </Box>
       </Paper>
@@ -640,13 +630,6 @@ const BinderTaskView = () => {
                 )}
               </Box>
               <Stack direction="row" spacing={2} mt={1}>
-                <ThemeInput
-                  labelName="Number of Sheets Used"
-                  value={paper.numberOfSheetsUsed}
-                  onChange={(e) => handleBinderPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditBinderTask }}
-                />
                 <ThemeSelect
                   label="Paper Type"
                   options={materialNameOptions}
@@ -655,7 +638,7 @@ const BinderTaskView = () => {
                     handleMaterialNameChange(index, newValue?.value as string || "")
                   }
                   // required
-                  disabled={!canEditBinderTask}
+                  disabled
                 />
                 <ThemeSelect
                   label="GSM"
@@ -665,7 +648,7 @@ const BinderTaskView = () => {
                     handleMaterialGSMChange(index, newValue?.value as string || "")
                   }
                   // required
-                  disabled={!paper.paperType || !canEditBinderTask}
+                  disabled
                 />
                 <ThemeSelect
                   label="Size"
@@ -675,8 +658,15 @@ const BinderTaskView = () => {
                     handleMaterialSizeChange(index, newValue?.value as string || "")
                   }
                   // 
-                  disabled={!paper.paperType || !paper.gsm || !canEditBinderTask}
+                  disabled
                 />
+                    <ThemeInput
+                      labelName="Number of Sheets Used"
+                      value={paper.numberOfSheetsUsed}
+                      onChange={(e) => handleBinderPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
+                      fullWidth
+                      InputProps={{ readOnly: !canEditBinderTask }}
+                    />
                 {/* <ThemeInput
                   labelName="Rate / Unit"
                   value={paper.ratePerUnit}
@@ -695,7 +685,7 @@ const BinderTaskView = () => {
               </Stack>
             </Box>
           ))}
-          {canEditBinderTask && (
+          {/* {canEditBinderTask && (
             <Box display="flex" justifyContent="flex-end">
               <ThemeButton
                 onClick={handleAddBinderPaper}
@@ -711,7 +701,7 @@ const BinderTaskView = () => {
                 Add Binder Paper
               </ThemeButton>
             </Box>
-          )}
+          )} */}
         </Box>
 
         {/* Binder Wasted Sheet */}
@@ -728,18 +718,7 @@ const BinderTaskView = () => {
         </Box>
 
         {/* Binder Remarks */}
-        <Box mb={3}>
-          <ThemeInput
-            labelName="Binder Remarks"
-            placeholder="Enter your remarks about the binding work..."
-            value={binderRemarks}
-            onChange={(e) => setBinderRemarks(e.target.value)}
-            multiline
-            rows={3}
-            sx={{ width: "100%" }}
-            InputProps={{ readOnly: !canEditBinderTask }}
-          />
-        </Box>
+        
 
         {/* File Upload for Binder's Files */}
         <Box mb={3}>
