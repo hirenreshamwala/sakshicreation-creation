@@ -141,11 +141,23 @@ const ViewOrderPage = () => {
           remarks: values.remarks,
           color1: values.color1,
           color2: values.color2,
-          binding: values.binding,
-          bindingType: values.bindingType,
           bindingPage: values.bindingPage,
+          ...(values.binding && {
+            bindingType: values.bindingType || null, // null भेजें अगर empty string है
+          }),
+          // Binding type null भेजें अगर binding false है
+          ...(!values.binding && {
+            bindingType: null,
+          }),
           bookletFolder: values.bookletFolder,
-          bookletFolderType: values.bookletFolderType,
+          // Booklet folder type तभी भेजें जब bookletFolder true हो
+          ...(values.bookletFolder && {
+            bookletFolderType: values.bookletFolderType || null // null भेजें अगर empty string है
+          }),
+          // Booklet folder type null भेजें अगर bookletFolder false है
+          ...(!values.bookletFolder && {
+            bookletFolderType: null
+          }),
           rate: values.rate ? Number.parseFloat(values.rate) : undefined,
           rateType: values.rateType,
           filePaths: [
@@ -246,17 +258,48 @@ const ViewOrderPage = () => {
           : ""
 
         // Binding type handle karen
+        let bindingValue = false;
+        if (typeof singleOrder.binding === 'boolean') {
+          bindingValue = singleOrder.binding;
+        } else if (typeof singleOrder.binding === 'string') {
+          bindingValue = singleOrder.binding.toLowerCase() === 'true';
+        } else {
+          // Default false
+          bindingValue = false;
+        }
+
         let bindingTypeValue = ""
-        if (singleOrder.bindingType) {
+        if (bindingValue && singleOrder.bindingType) {
           if (typeof singleOrder.bindingType === 'string') {
             bindingTypeValue = singleOrder.bindingType
           } else if (singleOrder.bindingType._id) {
-            bindingTypeValue = singleOrder.bindingType._id // ID store karen
+            bindingTypeValue = singleOrder.bindingType._id
           }
         }
 
+
+        let bookletFolderValue = false;
+        if (typeof singleOrder.bookletFolder === 'boolean') {
+          bookletFolderValue = singleOrder.bookletFolder;
+        } else if (typeof singleOrder.bookletFolder === 'string') {
+          bookletFolderValue = singleOrder.bookletFolder.toLowerCase() === 'true';
+        } else {
+          bookletFolderValue = false;
+        }
+
+        let bookletFolderTypeValue = ""
+        if (bookletFolderValue && singleOrder.bookletFolderType) {
+          if (typeof singleOrder.bookletFolderType === 'string') {
+            bookletFolderTypeValue = singleOrder.bookletFolderType
+          } else if (singleOrder.bookletFolderType._id) {
+            bookletFolderTypeValue = singleOrder.bookletFolderType._id
+          }
+        }
+
+        console.log("DEBUG : ViewOrderPage : singleOrder:", singleOrder);
         formik.setValues({
           companyName: typeof singleOrder.companyName?.companyName === "string" ? singleOrder.companyName.companyName : "",
+
           partyName: typeof singleOrder.party?.partyName === "string" ? singleOrder.party.partyName : "",
           ownerWhatsAppNo: typeof singleOrder.party?.ownerWhatsAppNo === "string" ? singleOrder.party.ownerWhatsAppNo : "",
           itemName: typeof singleOrder.productItem?.itemName === "string" ? singleOrder.productItem.itemName : "",
@@ -271,14 +314,19 @@ const ViewOrderPage = () => {
           remarks: typeof singleOrder.remarks === "string" ? singleOrder.remarks : "",
           color1: typeof singleOrder.color1 === "string" ? singleOrder.color1 : "",
           color2: typeof singleOrder.color2 === "string" ? singleOrder.color2 : "",
-          // Add these new fields
-          binding: Boolean(singleOrder.binding),
-          bindingType: bindingTypeValue, // ID store karen
+
+          // Binding fields - conditionally set based on database values
+          binding: bindingValue,
+          bindingType: bindingTypeValue,
           bindingPage: typeof singleOrder.bindingPage === "string" ? singleOrder.bindingPage : "",
-          bookletFolder: Boolean(singleOrder.bookletFolder),
-          bookletFolderType: typeof singleOrder.bookletFolderType === "string" ? singleOrder.bookletFolderType : "",
-          rate: singleOrder.rate ? singleOrder.rate.toString() : "", // Add this
-          rateType: singleOrder.rateType || "new", // Add this
+
+          // Booklet folder fields - conditionally set based on database values
+          bookletFolder: bookletFolderValue,
+          bookletFolderType: bookletFolderTypeValue,
+
+
+          rate: singleOrder.rate ? singleOrder.rate.toString() : "",
+          rateType: singleOrder.rateType || "new",
         })
       } catch (error) {
         console.error("Error setting form values:", error)
@@ -558,13 +606,21 @@ const ViewOrderPage = () => {
                 control={
                   <Switch
                     checked={formik.values.binding}
-                    onChange={(e) => formik.setFieldValue("binding", e.target.checked)}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      formik.setFieldValue("binding", isChecked);
+                      // अगर binding off किया जाए तो related fields clear करें
+                      if (!isChecked) {
+                        formik.setFieldValue("bindingType", "");
+                      }
+                    }}
                     color="primary"
                   />
                 }
                 label="Binding"
               />
             </Box>
+
 
             {/* Binding Type Dropdown */}
             {formik.values.binding && (
@@ -574,7 +630,7 @@ const ViewOrderPage = () => {
                   labelId="bindingType-label"
                   name="bindingType"
                   value={formik.values.bindingType}
-                  onChange={formik.handleChange}
+                  onChange={(e) => formik.setFieldValue("bindingType", e.target.value || null)}
                   label="Binding Type"
                 >
                   <MenuItem value="">Select Binding Type</MenuItem>
@@ -607,7 +663,14 @@ const ViewOrderPage = () => {
                 control={
                   <Switch
                     checked={formik.values.bookletFolder}
-                    onChange={(e) => formik.setFieldValue("bookletFolder", e.target.checked)}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      formik.setFieldValue("bookletFolder", isChecked);
+                      // अगर bookletFolder off किया जाए तो related field clear करें
+                      if (!isChecked) {
+                        formik.setFieldValue("bookletFolderType", "");
+                      }
+                    }}
                     color="primary"
                   />
                 }
@@ -622,7 +685,7 @@ const ViewOrderPage = () => {
                   labelId="bookletFolderType-label"
                   name="bookletFolderType"
                   value={formik.values.bookletFolderType}
-                  onChange={formik.handleChange}
+                  onChange={(e) => formik.setFieldValue("bookletFolderType", e.target.value || null)}
                   label="Booklet/Folder Type"
                 >
                   <MenuItem value="">Select Type</MenuItem>

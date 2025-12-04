@@ -69,11 +69,13 @@ const BookletFolderBinderForm = () => {
   const [openBinderFilesDialog, setOpenBinderFilesDialog] = useState(false)
   const [bookletPapers, setBookletPapers] = useState<PaperField[]>([])
   const { allInventory } = useAppSelector(state => state.inventory);
+
+
   const formik = useFormik({
     initialValues: {
       issuedDate: new Date().toISOString()?.split("T")[0],
       receivedDate: "",
-      remarks: "",
+      // remarks: "",
       size: "",
       qty: "",
       isLamination: "No",
@@ -90,6 +92,8 @@ const BookletFolderBinderForm = () => {
       isFoil: false,
       isPunching: false,
       bookletPapers: [],
+      bookletBinderRemarks: "",
+      punchingType: "",
     },
     validationSchema: Yup.object({
       issuedDate: Yup.string().required("Issued Date is required"),
@@ -99,7 +103,7 @@ const BookletFolderBinderForm = () => {
           if (!issuedDate || !value) return true
           return new Date(value) >= new Date(issuedDate)
         }),
-      remarks: Yup.string().required("Remarks are required"),
+      bookletBinderRemarks: Yup.string().required("Remarks are required"),
       size: Yup.string().required("Size is required"),
       qty: Yup.number()
         .typeError("Must be a number")
@@ -111,6 +115,12 @@ const BookletFolderBinderForm = () => {
           ? schema.required("Lamination type is required when lamination is selected")
           : schema.nullable()
       }),
+      punchingType: Yup.string()
+        .when('isPunching', {
+          is: true,
+          then: (schema) => schema.required("Punching type is required when punching is selected"),
+          otherwise: (schema) => schema.notRequired(),
+        }),
       uv: Yup.string().required("UV selection is required"),
       bookletPapers: Yup.array()
         .of(
@@ -120,7 +130,7 @@ const BookletFolderBinderForm = () => {
             sheetSize: Yup.string().required("Sheet Size is required"),
             paperType: Yup.string().required("Paper Type is required"),
             gsm: Yup.string().required("GSM is required"),
-            ratePerUnit: Yup.string().required("Rate / Unit is required"),
+
           })
         )
         .min(1, "At least one booklet paper is required"),
@@ -163,7 +173,7 @@ const BookletFolderBinderForm = () => {
           status: "Booklet & Folder Binder",
           issuedDate: values.issuedDate,
           receivedDate: values.receivedDate,
-          bookletBinderRemarks: values.remarks,
+          bookletBinderRemarks: values.bookletBinderRemarks,
           size: values.size,
           qty: Number(values.qty),
           isLamination: values.isLamination === "Yes",
@@ -181,6 +191,7 @@ const BookletFolderBinderForm = () => {
           isPunching: values.isPunching,
           bookletBinderFiles: allBookletFiles,
           bookletPapers: bookletPapers,
+          punchingType: values.isPunching ? values.punchingType : "",
         }
 
         await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
@@ -194,6 +205,8 @@ const BookletFolderBinderForm = () => {
       }
     },
   })
+  console.log("DEBUG : BookletFolderBinderForm : formik:", formik);
+
 
   useEffect(() => {
     const fetchOrderData = async () => {
@@ -225,7 +238,7 @@ const BookletFolderBinderForm = () => {
           ? new Date(singleOrder.issuedDate).toISOString()?.split("T")[0]
           : new Date().toISOString()?.split("T")[0],
         receivedDate: singleOrder.receivedDate ? new Date(singleOrder.receivedDate).toISOString()?.split("T")[0] : "",
-        remarks: singleOrder.bookletBinderRemarks || singleOrder.remarks || "",
+        bookletBinderRemarks: singleOrder.bookletBinderRemarks || singleOrder.remarks || "",
         size: singleOrder.size || "",
         qty: singleOrder.qty?.toString() || "",
         isLamination: singleOrder.isLamination ? "Yes" : "No",
@@ -241,7 +254,9 @@ const BookletFolderBinderForm = () => {
         isCreasing: singleOrder.isCreasing || false,
         isFoil: singleOrder.isFoil || false,
         isPunching: singleOrder.isPunching || false,
+        punchingType: singleOrder.punchingType || "",
         bookletPapers: singleOrder.bookletPapers || [],
+        bookletBinderRemarks: singleOrder.bookletBinderRemarks || "",
       })
 
       if (singleOrder.bookletBinder && singleOrder.bookletBinder._id) {
@@ -699,6 +714,18 @@ Your Team
                 InputProps={{ readOnly: true }}
               />
             </Stack>
+            <ThemeInput
+              labelName="Remarks"
+              placeholder="Enter remarks here"
+              fullWidth
+              multiline
+              rows={3}
+              name="bookletBinderRemarks" // ✅ name change करें
+              value={formik.values.bookletBinderRemarks} // ✅ value change करें
+              onChange={formik.handleChange}
+              error={formik.touched.bookletBinderRemarks && Boolean(formik.errors.bookletBinderRemarks)} // ✅ error change करें
+              helperText={formik.touched.bookletBinderRemarks && formik.errors.bookletBinderRemarks} // ✅ helperText change करें
+            />
             <Box>
               <Grid container spacing={2} alignItems="center">
                 {/* Quantity */}
@@ -893,13 +920,6 @@ Your Team
                     )}
                   </Box>
                   <Stack direction="row" spacing={2} mt={1}>
-                    <ThemeInput
-                      labelName="Number of Sheets Used"
-                      value={paper.numberOfSheetsUsed}
-                      onChange={(e) => handleBookletPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
-                      fullWidth
-                      InputProps={{ readOnly: areFieldsReadOnly }}
-                    />
                     <ThemeSelect
                       label="Paper Type"
                       options={materialNameOptions}
@@ -932,13 +952,20 @@ Your Team
                       required
                       disabled={!paper.paperType || !paper.gsm || areFieldsReadOnly}
                     />
-                    <ThemeInput
+                      <ThemeInput
+                        labelName="Number of Sheets Used"
+                        value={paper.numberOfSheetsUsed}
+                        onChange={(e) => handleBookletPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
+                        fullWidth
+                        InputProps={{ readOnly: areFieldsReadOnly }}
+                      />
+                    {/* <ThemeInput
                       labelName="Rate / Unit"
                       value={paper.ratePerUnit}
                       onChange={(e) => handleBookletPaperChange(index, 'ratePerUnit', e.target.value)}
                       fullWidth
                       InputProps={{ readOnly: areFieldsReadOnly }}
-                    />
+                    /> */}
                   </Stack>
                 </Box>
               ))}
@@ -1066,20 +1093,23 @@ Your Team
                 size="small"
                 disabled={areFieldsReadOnly}
               />
+              {formik.values.isPunching && (
+                <Box sx={{ mt: 2 }}>
+                  <ThemeInput
+                    labelName="Punching Type"
+                    placeholder="Enter punching type (e.g., Round, Square, Slot, etc.)"
+                    name="punchingType"
+                    value={formik.values.punchingType}
+                    onChange={formik.handleChange}
+                    fullWidth
+                    error={formik.touched.punchingType && Boolean(formik.errors.punchingType)}
+                    helperText={formik.touched.punchingType && formik.errors.punchingType}
+                    InputProps={{ readOnly: areFieldsReadOnly }}
+                  />
+                </Box>
+              )}
             </Stack>
-            <ThemeInput
-              labelName="Remarks"
-              placeholder="Enter remarks here"
-              fullWidth
-              multiline
-              rows={3}
-              name="remarks"
-              value={formik.values.remarks}
-              onChange={formik.handleChange}
-              error={formik.touched.remarks && Boolean(formik.errors.remarks)}
-              helperText={formik.touched.remarks && formik.errors.remarks}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            />
+
 
             <Box mb={2}>
               <FileUpload
