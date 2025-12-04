@@ -315,8 +315,8 @@ const AllOrdersPage = () => {
         remarks: row?.remarks || "",
         ownerMobileNo: row?.party?.ownerMobileNo || "",
         partyName: row?.party?.partyName || "N/A",
-        addressName: 
-          `${row?.party?.address?.unitNo}, ${row?.party?.address?.marketName?.marketName}, ${row?.party?.address?.area?.area}, ${row?.party?.address?.pincode?.pincode}`, 
+        addressName:
+          `${row?.party?.address?.unitNo}, ${row?.party?.address?.marketName?.marketName}, ${row?.party?.address?.area?.area}, ${row?.party?.address?.pincode?.pincode}`,
         GSTNo: row?.party?.GSTNo || "N/A",
         servicePerformance: row?.productItem?.itemName || "N/A",
         quantity: quantity,
@@ -343,32 +343,29 @@ const AllOrdersPage = () => {
         return;
       }
 
-      const latestQuotation = row?.quotation?.[row?.quotation?.length - 1];
-      const quantity = Number(row?.qty) || 0;
-      const unitPrice = Number(latestQuotation?.unitPrice) || 0;
-      const subtotal = quantity * unitPrice;
-      const gstValue = Number(latestQuotation?.gst) || 0;
-      const applyGST = gstValue > 0;
-      const gstPercentage = gstValue;
-      const gstAmount = applyGST ? subtotal * (gstPercentage / 100) : 0;
-      const totalAmount = subtotal + gstAmount;
-
       const formData = {
         orderNumber: row?.orderNumber || "N/A",
         companyName: row?.companyName?.companyName || "N/A",
         remarks: row?.remarks || "",
         ownerMobileNo: row?.party?.ownerMobileNo || "",
         partyName: row?.party?.partyName || "N/A",
-        addressName: `${row?.party?.address?.unitNo}, ${row?.party?.address?.marketName?.marketName}, ${row?.party?.address?.area?.area}, ${row?.party?.address?.pincode?.pincode}`,
+        addressName: `${row?.party?.address?.unitNo || ""}, ${typeof row?.party?.address?.marketName === 'object'
+            ? row?.party?.address?.marketName?.marketName
+            : row?.party?.address?.marketName || ""
+          }, ${typeof row?.party?.address?.area === 'object'
+            ? row?.party?.address?.area?.area
+            : row?.party?.address?.area || ""
+          } - ${row?.party?.address?.pincode || ""}`,
         GSTNo: row?.party?.GSTNo || "N/A",
         servicePerformance: row?.productItem?.itemName || "N/A",
-        quantity: quantity,
-        unitPrice: unitPrice,
-        total: subtotal,
-        finalAmount: totalAmount,
-        applyGST: applyGST,
-        gstPercentage: gstPercentage,
+        quantity: row?.qty || 0,
+        unitPrice: row?.unitPrice || 0,
+        total: row?.total || 0,
+        finalAmount: row?.finalAmount || 0,
+        applyGST: row?.applyGST || false,
+        gstPercentage: row?.gstPercentage || 18,
         daysAfterConfirmation: row?.daysAfterConfirmation || 0,
+        paymentDate: row?.paymentDate || "",
       }
 
       generateInvoicePDF(formData)
@@ -632,7 +629,7 @@ const AllOrdersPage = () => {
               </TableCell>
               <TableCell>
                 <Box display="flex" gap={1}>
-                  <Button
+                  {/* <Button
                     variant="outlined"
                     size="small"
                     onClick={() => handleDownloadInvoice(row)}
@@ -640,7 +637,7 @@ const AllOrdersPage = () => {
                     sx={{ fontSize: "12px", textTransform: "none" }}
                   >
                     Quotation
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="outlined"
                     size="small"
@@ -680,7 +677,7 @@ const AllOrdersPage = () => {
             setSelectedOrderForComplain(null);
           }}
           selectedOrderData={selectedOrderForComplain} // Pass the selected order data
-          // refreshData={refreshData}
+        // refreshData={refreshData}
         />
       )}
     </>

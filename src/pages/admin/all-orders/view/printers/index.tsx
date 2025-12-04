@@ -669,7 +669,48 @@ Your Team
                 InputProps={{ readOnly: true }}
               />
             )}
+            <ThemeInput
+              labelName="Printing Rate"
+              name="printingrate"
+              value={formik.values.printingrate}
+              onChange={formik.handleChange}
+              fullWidth
+              error={formik.touched.printingrate && Boolean(formik.errors.printingrate)}
+              helperText={formik.touched.printingrate && formik.errors.printingrate}
+              InputProps={{ readOnly: areFieldsReadOnly }}
+            />
+            {(isPrinterStatusDone || isPrinterStatusInProgress) && (
+              <ThemeInput
+                labelName="Printer Wasted Sheet"
+                value={singleOrder?.printerWastedSheet?.toString() || "0"}
+                type="number"
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
+            )}
           </Stack>
+
+          {/* Specs Section - Third Row */}
+          {/* <Stack direction="row" spacing={2} mb={3}>
+            
+          </Stack> */}
+
+          {/* Remarks */}
+          <Box mb={3}>
+            <ThemeInput
+              labelName="Printer Remarks"
+              placeholder="Enter Remarks"
+              fullWidth
+              multiline
+              rows={2}
+              name="printerRemarks"
+              value={formik.values.printerRemarks}
+              onChange={formik.handleChange}
+              error={formik.touched.printerRemarks && Boolean(formik.errors.printerRemarks)}
+              helperText={formik.touched.printerRemarks && formik.errors.printerRemarks}
+              InputProps={{ readOnly: areFieldsReadOnly }}
+            />
+          </Box>
           {/* Paper Fields Section */}
           {paperFields?.map((paper, index) => (
             <Box key={index} mb={3} p={2} border={1} borderRadius={2} borderColor="#ddd">
@@ -765,79 +806,7 @@ Your Team
           )}
 
           {/* Specs Section - Second Row */}
-          <Stack direction="row" spacing={2} mb={3}>
-            <ThemeInput
-              labelName="Printing Rate"
-              name="printingrate"
-              value={formik.values.printingrate}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.printingrate && Boolean(formik.errors.printingrate)}
-              helperText={formik.touched.printingrate && formik.errors.printingrate}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            />
-            {/* <ThemeInput
-              labelName="Printing Rate Per Unit"
-              name="printingratePerUnit"
-              value={formik.values.printingratePerUnit}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.printingratePerUnit && Boolean(formik.errors.printingratePerUnit)}
-              helperText={formik.touched.printingratePerUnit && formik.errors.printingratePerUnit}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            /> */}
-            {/* <ThemeInput
-              labelName="Raw Paper Size"
-              name="rowPaperSize"
-              value={formik.values.rowPaperSize}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.rowPaperSize && Boolean(formik.errors.rowPaperSize)}
-              helperText={formik.touched.rowPaperSize && formik.errors.rowPaperSize}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            /> */}
-            {/* <ThemeInput
-              labelName="Raw Paper No. Of Sheet Used"
-              name="rowPaperUser"
-              value={formik.values.rowPaperUser}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.rowPaperUser && Boolean(formik.errors.rowPaperUser)}
-              helperText={formik.touched.rowPaperUser && formik.errors.rowPaperUser}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            /> */}
-            {(isPrinterStatusDone || isPrinterStatusInProgress) && (
-              <ThemeInput
-                labelName="Printer Wasted Sheet"
-                value={singleOrder?.printerWastedSheet?.toString() || "0"}
-                type="number"
-                fullWidth
-                InputProps={{ readOnly: true }}
-              />
-            )}
-          </Stack>
-
-          {/* Specs Section - Third Row */}
-          {/* <Stack direction="row" spacing={2} mb={3}>
-            
-          </Stack> */}
-
-          {/* Remarks */}
-          <Box mb={3}>
-            <ThemeInput
-              labelName="Printer Remarks"
-              placeholder="Enter Remarks"
-              fullWidth
-              multiline
-              rows={2}
-              name="printerRemarks"
-              value={formik.values.printerRemarks}
-              onChange={formik.handleChange}
-              error={formik.touched.printerRemarks && Boolean(formik.errors.printerRemarks)}
-              helperText={formik.touched.printerRemarks && formik.errors.printerRemarks}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            />
-          </Box>
+          
           <Typography fontWeight={600} mb={2}>
             Send for Next Step Approval via
           </Typography>

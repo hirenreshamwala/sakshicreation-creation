@@ -21,6 +21,7 @@ import { performanceInvoiceService } from "@/services/performanceInvoice.service
 import InvoicePDFGenerator from "../InvoicePDFGenerator"
 import { assignTaskService } from "@/services/assignTask.service";
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice";
+import { updateOrderThunk } from "@/store/slices/orderSlice";
 
 interface FormData {
   orderNumber: string;
@@ -76,6 +77,13 @@ interface Order {
   qty: number;
   remarks?: string;
   status: string;
+  unitPrice?: number;
+  applyGST?: boolean;
+  gstPercentage?: number;
+  total?: number;
+  finalAmount?: number;
+  daysAfterConfirmation?: number;
+  paymentDate?: number;
 }
 
 interface AddNewPerformanceInvoiceDialogProps {
@@ -134,6 +142,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
 }) => {
   const dispatch = useAppDispatch();
   const { loading: invoiceLoading, error: invoiceError } = useAppSelector((state) => state.performanceInvoices);
+  const { loading: orderLoading } = useAppSelector((state) => state.orders);
   const { markets } = useAppSelector((state) => state.markets);
   const [isLoading, setIsLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState<any>(null);
@@ -233,14 +242,17 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
         setSubmitting(false);
         return;
       }
+
       if (isEditMode && !currentInvoiceId) {
         toast.error("Invalid invoice ID for update");
         setIsLoading(false);
         setSubmitting(false);
         return;
       }
+
       setIsLoading(true);
       setSubmitting(true);
+
       try {
         const invoiceData = {
           orderNumber: values.orderNumber,
@@ -257,7 +269,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             landMark: values.addressName || "",
             unitNo: "",
             marketName: "",
-            // landMark: "",
             area: "",
             pincode: "",
           },
@@ -271,17 +282,56 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           daysAfterConfirmation: values.daysAfterConfirmation,
           paymentDate: values.paymentDate,
         };
-        let response;
-        if (isEditMode && currentInvoiceId) {
-          response = await dispatch(updatePerformanceInvoiceThunk({ id: currentInvoiceId, data: invoiceData })).unwrap();
-          toast.success("Performance invoice updated successfully");
-        } else {
-          response = await dispatch(createPerformanceInvoiceThunk(invoiceData)).unwrap();
-          toast.success(response.message || "Performance invoice created successfully");
+
+        // 1️⃣ Order ID निकालें (orderNumber से)
+        const selectedOrder = orders.find(order => order.orderNumber === values.orderNumber);
+        if (!selectedOrder) {
+          throw new Error("Order not found");
         }
+
+        // 2️⃣ Order update data तैयार करें
+        const orderUpdateData = {
+          unitPrice: values.unitPrice || 0,
+          total: values.total || 0,
+          applyGST: values.applyGST,
+          gstPercentage: values.gstPercentage || 0,
+          finalAmount: values.finalAmount || 0,
+          daysAfterConfirmation: values.daysAfterConfirmation,
+          paymentDate: values.paymentDate,
+          // Quantity भी update करना चाहते हैं तो:
+          // qty: values.quantity,
+        };
+
+        let response;
+
+        // 3️⃣ Parallel में दोनों operations run करें
+        if (isEditMode && currentInvoiceId) {
+          [response] = await Promise.all([
+            dispatch(updatePerformanceInvoiceThunk({
+              id: currentInvoiceId,
+              data: invoiceData
+            })).unwrap(),
+            dispatch(updateOrderThunk({
+              id: selectedOrder._id,
+              data: orderUpdateData
+            })).unwrap()
+          ]);
+          toast.success("Performance invoice and order updated successfully");
+        } else {
+          [response] = await Promise.all([
+            dispatch(createPerformanceInvoiceThunk(invoiceData)).unwrap(),
+            dispatch(updateOrderThunk({
+              id: selectedOrder._id,
+              data: orderUpdateData
+            })).unwrap()
+          ]);
+          toast.success("Performance invoice created and order updated successfully");
+        }
+
         setIsSaved(true);
         if (refreshData) refreshData();
         if (onInvoiceSaved) onInvoiceSaved();
+
       } catch (err: any) {
         console.error("Submission error:", err);
         toast.error(err.message || "Operation failed");
@@ -439,16 +489,19 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             paymentDate: existingInvoice.paymentDate,
           });
         } else {
-          setIsEditMode(!!invoiceId);
-          setCurrentInvoiceId(invoiceId);
-          setIsSaved(false);
+          // नया invoice create करते समय:
+          // Order से unitPrice और अन्य values लें यदि available हों
+          const orderUnitPrice = selectedOrder?.unitPrice || 0;
+          const orderTotal = selectedOrder?.total || 0;
+          const orderFinalAmount = selectedOrder?.finalAmount || 0;
+          const orderApplyGST = selectedOrder?.applyGST || false;
+          const orderGSTPercentage = selectedOrder?.gstPercentage || 0;
 
-          // ✅ नया invoice create करते समय: Empty values रखें
           formik.setValues({
             orderNumber,
             companyName: selectedOrder.companyName._id || "",
             partyName: selectedOrder.party._id || "",
-            quantity: 0, // ✅ Manual entry के लिए 0 से start करें
+            quantity: selectedOrder.qty || 0, // Order से quantity लें
             color: selectedOrder.color || "",
             pType: selectedOrder.pType || "",
             size: selectedOrder.size || "",
@@ -457,14 +510,14 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ownerMobileNo: selectedOrder.party.ownerMobileNo || "",
             addressName: fullAddress || "",
             servicePerformance: selectedOrder.productItem.itemName || "",
-            unitPrice: 0, // ✅ Manual entry के लिए 0 से start करें
-            total: 0, // ✅ Auto calculate होगा
-            applyGST: false, // ✅ Default false
-            gstPercentage: 0, // ✅ Default 0
-            finalAmount: 0, // ✅ Auto calculate होगा
+            unitPrice: orderUnitPrice, // Order से unitPrice लें
+            total: orderTotal, // Order से total लें
+            applyGST: orderApplyGST, // Order से applyGST लें
+            gstPercentage: orderGSTPercentage, // Order से gstPercentage लें
+            finalAmount: orderFinalAmount, // Order से finalAmount लें
             assignedTo: "",
-            daysAfterConfirmation: undefined,
-            paymentDate: undefined,
+            daysAfterConfirmation: selectedOrder?.daysAfterConfirmation || undefined,
+            paymentDate: selectedOrder?.paymentDate || undefined,
           });
         }
       } catch (err: any) {
@@ -481,6 +534,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     const total = (formik.values.quantity || 0) * (formik.values.unitPrice || 0);
     const gstAmount = formik.values.applyGST ? total * (formik.values.gstPercentage / 100) : 0;
     const finalAmount = total + gstAmount;
+    
     formik.setFieldValue("total", total);
     formik.setFieldValue("finalAmount", finalAmount);
   }, [formik.values.quantity, formik.values.unitPrice, formik.values.gstPercentage, formik.values.applyGST]);
@@ -728,11 +782,11 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           <ThemeButton
             type="submit"
             sx={{ minWidth: 120, height: 40, mt: 2 }}
-            disabled={isLoading || invoiceLoading || formik.isSubmitting ||
+            disabled={isLoading || invoiceLoading || formik.isSubmitting || orderLoading ||
               !formik.values.orderNumber ||
               !formik.values.quantity}
           >
-            {isLoading || invoiceLoading || formik.isSubmitting ? "Saving..." : "Save"}
+            {isLoading || invoiceLoading || orderLoading || formik.isSubmitting ? "Saving..." : "Save"}
           </ThemeButton>
           <InvoicePDFGenerator
             formData={{

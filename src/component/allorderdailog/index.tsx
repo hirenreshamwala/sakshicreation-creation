@@ -204,7 +204,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         isGst: !gstNotApplicable,
         size: sakshiFormData.size || "",
         rate: sakshiFormData.rate ? Number.parseFloat(sakshiFormData.rate) : undefined,
-        rateType: sakshiFormData.rate ? sakshiFormData.rateType : undefined,
+        rateType: sakshiFormData.rateType,
         number: sakshiFormData.number,
         endNumber: sakshiFormData.endNumber,
         startNumber: sakshiFormData.startNumber,
@@ -483,34 +483,47 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         </Stack>
       ) : null}
 
-      <Stack direction="row" spacing={2} mb={2}>
-        <Box sx={{ width: "100%" ,display:"flex"}}  >
-          <FormControl component="fieldset" >
-            {/* <FormLabel component="legend">Rate Type</FormLabel> */}
+      <Stack direction="row" spacing={2} mb={2} >
+        <Box sx={{ width: "100%" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              flexWrap: "nowrap" 
+            }}
+          >
             <RadioGroup
               row
               value={sakshiFormData.rateType}
               onChange={(e) => handleSakshiChange("rateType", e.target.value)}
+              sx={{
+                flexDirection: "row",
+                alignItems: "center",
+                width: "auto"  // 👈 Radio group ki width fix
+              }}
             >
               <FormControlLabel value="old" control={<Radio />} label="Old Rate" />
               <FormControlLabel value="new" control={<Radio />} label="New Rate" />
             </RadioGroup>
-          </FormControl>
 
-          {/* NEW RATE SELECT KIYA HO TO HI RATE INPUT SHOW HOGA */}
-          {sakshiFormData.rateType === "new" && (
-            <ThemeInput
-              labelName="Rate"
-              placeholder="Enter rate"
-              fullWidth
-              type="number"
-              value={sakshiFormData.rate}
-              onChange={(e) => handleSakshiChange("rate", e.target.value)}
-            />
-          )}
+            {/* New Rate Input (Same Row) */}
+            {sakshiFormData.rateType === "new" && (
+              <ThemeInput
+                labelName="Rate"
+                placeholder="Enter rate"
+                type="number"
+                sx={{ width: 150 }}   // aap chaho to badha sakte ho
+                value={sakshiFormData.rate}
+                onChange={(e) => handleSakshiChange("rate", e.target.value)}
+              />
+            )}
+          </Box>
         </Box>
 
-        <Box sx={{ width: "100%" }}>
+
+
+        {/* <Box sx={{ width: "100%" }}>
           <ThemeInput
             labelName="GST Number"
             placeholder="Enter GST number"
@@ -524,7 +537,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
               },
             }}
           />
-        </Box>
+        </Box> */}
       </Stack>
 
 

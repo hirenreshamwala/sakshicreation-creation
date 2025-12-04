@@ -63,7 +63,7 @@ const BinderForm = () => {
     initialValues: {
       issuedDate: "",
       receivedDate: "",
-      remarks: "",
+      binderRemarks: "",
       size: "",
       binding: false, // Boolean
       bindingType: "", // String _id
@@ -90,7 +90,7 @@ const BinderForm = () => {
           if (!issuedDate || !value) return true
           return new Date(value) >= new Date(issuedDate)
         }),
-      remarks: Yup.string(),
+      binderRemarks: Yup.string(),
       size: Yup.string(),
       // binding: Yup.boolean().required("Binding is required"),
       // bindingType: Yup.string().when('binding', {
@@ -151,7 +151,7 @@ const BinderForm = () => {
           binderStatus: "Pending",
           status: "Binder",
           issuedDate: values.issuedDate,
-          binderRemarks: values.remarks,
+          binderRemarks: values.binderRemarks,
           size: values.size,
           binding: values.binding, // Boolean
           bindingType: values.binding ? values.bindingType : null, // Conditional
@@ -231,7 +231,7 @@ const BinderForm = () => {
           ? new Date(singleOrder.issuedDate).toISOString()?.split("T")[0]
           : new Date().toISOString()?.split("T")[0],
         receivedDate: singleOrder.receivedDate ? new Date(singleOrder.receivedDate).toISOString()?.split("T")[0] : "",
-        remarks: singleOrder.binderRemarks || singleOrder.remarks || "",
+        binderRemarks: singleOrder.binderRemarks || singleOrder.remarks || "",
         size: singleOrder.size || "",
         binding: bindingValue,
         bindingType: singleOrder.bindingType?._id || "",
@@ -249,6 +249,7 @@ const BinderForm = () => {
         endNumber: singleOrder.endNumber || "",
         totalNumbering: singleOrder.totalNumbering || "",
         numberingAmount: singleOrder.numberingAmount || "",
+        binderRemarks: singleOrder.binderRemarks || ""
       })
 
       if (singleOrder.binder && singleOrder.binder._id) {
@@ -804,6 +805,19 @@ Your Team
               />
             )}
           </Box>
+          <ThemeInput
+            sx={{ mb: 2 }}
+            labelName="Remarks"
+            placeholder="Enter Remarks"
+            fullWidth
+            multiline
+            rows={3}
+            name="binderRemarks" // ✅ name change करें
+            value={formik.values.binderRemarks} // ✅ value change करें
+            onChange={formik.handleChange}
+            error={formik.touched.binderRemarks && Boolean(formik.errors.binderRemarks)} // ✅ error change करें
+            helperText={formik.touched.binderRemarks && (formik.errors.binderRemarks as string)} // ✅ helperText change करें
+          />
           {/* Commented out GSM, Raw Paper Size, Raw Paper No of Sheet Used fields */}
           {/* <Box display="flex" gap={2} mb={2} justifyContent={"space-between"}>
             <ThemeInput
@@ -938,19 +952,7 @@ Your Team
           </Box>
 
           <Box mb={2}>
-            <ThemeInput
-              labelName="Remarks"
-              placeholder="Enter Remarks"
-              fullWidth
-              multiline
-              rows={3}
-              name="remarks"
-              value={formik.values.remarks}
-              onChange={formik.handleChange}
-              error={formik.touched.remarks && Boolean(formik.errors.remarks)}
-              helperText={formik.touched.remarks && (formik.errors.remarks as string)}
-              InputProps={{ readOnly: areFieldsReadOnly || !!singleOrder.binderRemarks }}
-            />
+
           </Box>
           <Box mb={2}>
             <FileUpload
