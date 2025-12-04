@@ -26,8 +26,8 @@ import ComplainDialogue from "../all-complains/ComplainDialogue"
 const columns = [
   { id: "orderNumber", label: "Order No." },
   { id: "company", label: "Company" },
-  { id: "party", label: "Party" },
   { id: "date", label: "Date" },
+  { id: "party", label: "Party" },
   { id: "item", label: "Item Name" },
   { id: "size", label: "Size" },
   { id: "remarks", label: "Remarks" },
@@ -568,6 +568,11 @@ const AllOrdersPage = () => {
                   </Typography>
                 </Box>
               </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {formatDate(row.createdAt)}
+                </Typography>
+              </TableCell>
 
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
@@ -577,11 +582,6 @@ const AllOrdersPage = () => {
 
 
 
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {formatDate(row.createdAt)}
-                </Typography>
-              </TableCell>
 
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
