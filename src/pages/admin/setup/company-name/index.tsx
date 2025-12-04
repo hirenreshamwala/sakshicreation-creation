@@ -1,47 +1,50 @@
-"use client"
-
-import type React from "react"
-import { useEffect, useState } from "react"
-import { 
-  Box, 
-  Typography, 
-  IconButton, 
-  TableCell, 
-  Button as MuiButton, 
+// pages/CompanyNamePage.tsx
+"use client";
+import type React from "react";
+import { useEffect, useState, useCallback } from "react";
+import {
+  Box,
+  Typography,
+  IconButton,
+  TableCell,
+  Button as MuiButton,
   Switch,
-  FormControlLabel 
-} from "@mui/material"
-import { Add, Edit, Delete, CloudUpload as CloudUploadIcon } from "@mui/icons-material"
-import BasicTable from "@/component/common_component/Table/themetable"
-import Input from "@/component/common_component/themeinput"
-import Button from "@/component/common_component/themebutton"
-import CustomDialog from "@/component/customdialog"
+  FormControlLabel,
+  Chip,
+} from "@mui/material";
+import { Add, Edit, Delete, CloudUpload as CloudUploadIcon } from "@mui/icons-material";
+import BasicTable from "@/component/common_component/Table/themetable";
+import Input from "@/component/common_component/themeinput";
+import Button from "@/component/common_component/themebutton";
+import CustomDialog from "@/component/customdialog";
 import {
   createCompanyNameThunk,
   getAllCompanyNamesThunk,
+  getCompanyNameFiltersThunk,
   updateCompanyNameThunk,
   deleteCompanyNameThunk,
   clearCompanyNameError,
   clearCompanyNameSuccessMessage,
-} from "@/store/slices/companyNameSlice"
-import { useAppDispatch, useAppSelector, type RootState } from "@/store"
-import { toast } from "react-toastify"
-import { fileUploadService } from "@/services/fileUpload.service"
-import Swal from "sweetalert2"
+  setCompanyNameFilters,
+} from "@/store/slices/companyNameSlice";
+import { useAppDispatch, useAppSelector, type RootState } from "@/store";
+import { toast } from "react-toastify";
+import { fileUploadService } from "@/services/fileUpload.service";
+import Swal from "sweetalert2";
 
 interface CompanyName {
-  _id: string
-  companyName: string
-  avatar?: string
-  default: boolean
-  createdAt?: string
-  updatedAt?: string
+  _id: string;
+  companyName: string;
+  avatar?: string;
+  default: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface FormData {
-  companyName: string
-  default: boolean
-  logo?: File | null
+  companyName: string;
+  default: boolean;
+  logo?: File | null;
 }
 
 const columns = [
@@ -50,84 +53,106 @@ const columns = [
   { id: "avatar", label: "Logo" },
   { id: "default", label: "Default" },
   { id: "options", label: "Options" },
-]
+];
 
 const CompanyNamePage = () => {
-  const dispatch = useAppDispatch()
-  const { companyNames, loading, error, successMessage } = useAppSelector((state: RootState) => state.companyNames)
-
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editId, setEditId] = useState<string | null>(null)
+  const dispatch = useAppDispatch();
+  const { companyNames, loading, error, successMessage, pagination, filters, availableFilters } =
+    useAppSelector((state: RootState) => state.companyName);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>({
     companyName: "",
     default: false,
     logo: null,
-  })
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  });
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
 
-  // Fetch all company names on component mount
+  // Fetch data
+  const fetchData = useCallback(() => {
+    const apiFilters: any = {
+      page: filters.page || 1,
+      limit: filters.limit || 10,
+      search: filters.search || "",
+    };
+    if (activeFilters["Company Name"]?.length) {
+      apiFilters.companyNames = activeFilters["Company Name"];
+    }
+    if (activeFilters["Default"]?.length) {
+      apiFilters.defaults = activeFilters["Default"].map((val) => (val === "Yes" ? true : false));
+    }
+    dispatch(getAllCompanyNamesThunk(apiFilters));
+  }, [dispatch, filters, activeFilters]);
+
   useEffect(() => {
-    dispatch(getAllCompanyNamesThunk())
-  }, [dispatch])
+    dispatch(getCompanyNameFiltersThunk());
+    fetchData();
+  }, [dispatch]);
+
+  useEffect(() => {
+    fetchData();
+  }, [filters.page, filters.search, activeFilters]);
 
   // Handle success and error messages
   useEffect(() => {
     if (successMessage) {
-      toast.success(successMessage)
-      dispatch(clearCompanyNameSuccessMessage())
+      toast.success(successMessage);
+      dispatch(clearCompanyNameSuccessMessage());
+      fetchData(); // Refresh after create/update/delete
     }
     if (error) {
-      toast.error(error)
-      dispatch(clearCompanyNameError())
+      toast.error(error);
+      dispatch(clearCompanyNameError());
     }
-  }, [successMessage, error, dispatch])
+  }, [successMessage, error, dispatch, fetchData]);
 
   // Open dialog for add or edit
   const handleOpenDialog = (company?: CompanyName) => {
     if (company) {
-      setEditId(company._id)
-      setForm({ 
-        companyName: company.companyName, 
+      setEditId(company._id);
+      setForm({
+        companyName: company.companyName,
         default: company.default,
-        logo: null 
-      })
-      setLogoPreview(company.avatar || null)
+        logo: null,
+      });
+      setLogoPreview(company.avatar || null);
     } else {
-      setEditId(null)
-      setForm({ 
-        companyName: "", 
-        default: companyNames.filter(c => c.default).length === 0, // Set as default if no default exists
-        logo: null 
-      })
-      setLogoPreview(null)
+      setEditId(null);
+      setForm({
+        companyName: "",
+        default: companyNames.filter((c) => c.default).length === 0, // Set as default if no default exists
+        logo: null,
+      });
+      setLogoPreview(null);
     }
-    setDialogOpen(true)
-  }
+    setDialogOpen(true);
+  };
 
   // Handle form input changes
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, companyName: e.target.value })
-  }
+    setForm({ ...form, companyName: e.target.value });
+  };
 
   // Handle default switch change
   const handleDefaultChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, default: e.target.checked })
-  }
+    setForm({ ...form, default: e.target.checked });
+  };
 
   // Handle logo file changes
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setForm({ ...form, logo: file })
+      setForm({ ...form, logo: file });
 
       // Create preview URL
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (e) => {
-        setLogoPreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleSave = async () => {
     if (!form.companyName.trim()) {
@@ -154,18 +179,20 @@ const CompanyNamePage = () => {
 
       // If setting as default and there's already a default company
       if (form.default) {
-        const currentDefaultCompany = companyNames.find(company => company.default);
-        
+        const currentDefaultCompany = companyNames.find((company) => company.default);
+
         // If there's an existing default company and it's not the one being edited
         if (currentDefaultCompany && (!editId || currentDefaultCompany._id !== editId)) {
           // Update the previous default company to false
-          await dispatch(updateCompanyNameThunk({
-            id: currentDefaultCompany._id,
-            data: {
-              ...currentDefaultCompany,
-              default: false
-            }
-          })).unwrap();
+          await dispatch(
+            updateCompanyNameThunk({
+              id: currentDefaultCompany._id,
+              data: {
+                ...currentDefaultCompany,
+                default: false,
+              },
+            })
+          ).unwrap();
         }
       }
 
@@ -175,55 +202,58 @@ const CompanyNamePage = () => {
         await dispatch(createCompanyNameThunk(companyData)).unwrap();
       }
 
-      setDialogOpen(false)
-      setForm({ companyName: "", default: false, logo: null })
-      setLogoPreview(null)
-      setEditId(null)
+      setDialogOpen(false);
+      setForm({ companyName: "", default: false, logo: null });
+      setLogoPreview(null);
+      setEditId(null);
     } catch (error: any) {
-      toast.error(error.message || "Failed to save company")
+      toast.error(error.message || "Failed to save company");
     }
-  }
+  };
 
   // Handle toggle default status from table
   const handleToggleDefault = async (company: CompanyName) => {
     try {
       const newDefaultStatus = !company.default;
-      
+
       // If setting as default and there's already a default company
       if (newDefaultStatus) {
-        const currentDefaultCompany = companyNames.find(c => c.default && c._id !== company._id);
-        
+        const currentDefaultCompany = companyNames.find((c) => c.default && c._id !== company._id);
+
         // If there's an existing default company
         if (currentDefaultCompany) {
           // Update the previous default company to false
-          await dispatch(updateCompanyNameThunk({
-            id: currentDefaultCompany._id,
-            data: {
-              ...currentDefaultCompany,
-              default: false
-            }
-          })).unwrap();
+          await dispatch(
+            updateCompanyNameThunk({
+              id: currentDefaultCompany._id,
+              data: {
+                ...currentDefaultCompany,
+                default: false,
+              },
+            })
+          ).unwrap();
         }
       }
-      
+
       // Update the current company's default status
-      await dispatch(updateCompanyNameThunk({
-        id: company._id,
-        data: {
-          ...company,
-          default: newDefaultStatus
-        }
-      })).unwrap();
-      
+      await dispatch(
+        updateCompanyNameThunk({
+          id: company._id,
+          data: {
+            ...company,
+            default: newDefaultStatus,
+          },
+        })
+      ).unwrap();
     } catch (error: any) {
-      toast.error(error.message || "Failed to update default status")
+      toast.error(error.message || "Failed to update default status");
     }
-  }
+  };
 
   // Delete company name
   const handleDelete = async (id: string) => {
-    const companyToDelete = companyNames.find(company => company._id === id);
-    
+    const companyToDelete = companyNames.find((company) => company._id === id);
+
     // Prevent deletion of default company if there are other companies
     if (companyToDelete?.default && companyNames.length > 1) {
       Swal.fire({
@@ -267,11 +297,28 @@ const CompanyNamePage = () => {
 
   // Close dialog handler
   const handleCloseDialog = () => {
-    setDialogOpen(false)
-    setForm({ companyName: "", default: false, logo: null })
-    setLogoPreview(null)
-    setEditId(null)
-  }
+    setDialogOpen(false);
+    setForm({ companyName: "", default: false, logo: null });
+    setLogoPreview(null);
+    setEditId(null);
+  };
+
+  const handleFilterChange = (newFilters: { [key: string]: string[] }) => {
+    const apiFilters: any = { ...newFilters };
+    // Map "Default" filter from "Yes"/"No" to true/false
+    if (apiFilters["Default"]) {
+      apiFilters["Default"] = apiFilters["Default"].map((val) => (val === "Yes" ? true : false));
+    }
+    setActiveFilters(newFilters);
+    dispatch(setCompanyNameFilters({ page: 1 }));
+  };
+
+  const clearAllFilters = () => {
+    setActiveFilters({});
+    dispatch(setCompanyNameFilters({ page: 1, search: "" }));
+  };
+
+  const activeFilterCount = Object.values(activeFilters).flat().length;
 
   return (
     <Box p={3}>
@@ -279,17 +326,64 @@ const CompanyNamePage = () => {
         <Typography variant="h5" fontWeight={600}>
           Company Names
         </Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()} disabled={loading}>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => handleOpenDialog()}
+          disabled={loading}
+        >
           New Company
         </Button>
       </Box>
+
+      {activeFilterCount > 0 && (
+        <Box mb={2} display="flex" alignItems="center" gap={1} flexWrap="wrap">
+          <Typography variant="body2" color="textSecondary">
+            Filters:
+          </Typography>
+          {Object.entries(activeFilters).map(([field, values]) =>
+            values.map((val) => (
+              <Chip
+                key={`${field}-${val}`}
+                label={`${field}: ${val}`}
+                onDelete={() => {
+                  const updated = activeFilters[field].filter((v) => v !== val);
+                  setActiveFilters((prev) => ({
+                    ...prev,
+                    [field]: updated.length ? updated : [],
+                  }));
+                }}
+                size="small"
+                color="primary"
+              />
+            ))
+          )}
+          <Button size="small" onClick={clearAllFilters}>
+            Clear All
+          </Button>
+        </Box>
+      )}
+
       <BasicTable
+        serverSide={true}
         tableHeader={columns}
         rowData={companyNames}
+        loading={loading}
+        totalCount={pagination?.totalItems || 0}
+        pagination={pagination}
+        onPageChange={(page) => dispatch(setCompanyNameFilters({ page }))}
+        onSearchChange={(search) => dispatch(setCompanyNameFilters({ search, page: 1 }))}
+        onFilterChange={handleFilterChange}
+        availableFilters={{
+          "Company Name": availableFilters.companyNames || [],
+          "Default": ["Yes", "No"],
+        }}
         showDatePicker={false}
+        showExcelDownload={true}
+        excelHeaders={["Company Name", "Logo", "Default"]}
         renderRow={(row: CompanyName, idx: number) => (
           <>
-            <TableCell>{idx + 1}</TableCell>
+            <TableCell>{(filters.page - 1) * filters.limit + idx + 1}</TableCell>
             <TableCell>{row.companyName}</TableCell>
             <TableCell>
               {row.avatar && (
@@ -301,24 +395,28 @@ const CompanyNamePage = () => {
               )}
             </TableCell>
             <TableCell>
-              <Switch 
-                checked={row.default} 
+              <Switch
+                checked={row.default}
                 onChange={() => handleToggleDefault(row)}
                 color="primary"
                 disabled={loading}
               />
             </TableCell>
             <TableCell>
-              <IconButton color="primary" onClick={() => handleOpenDialog(row)} disabled={loading}>
+              <IconButton
+                color="primary"
+                onClick={() => handleOpenDialog(row)}
+                disabled={loading}
+              >
                 <Edit />
               </IconButton>
-             {/* <IconButton 
-                color="error" 
-                onClick={() => handleDelete(row._id)} 
+              <IconButton
+                color="error"
+                onClick={() => handleDelete(row._id)}
                 disabled={loading || (row.default && companyNames.length > 1)}
               >
                 <Delete />
-              </IconButton> */}
+              </IconButton>
             </TableCell>
           </>
         )}
@@ -339,7 +437,9 @@ const CompanyNamePage = () => {
           onChange={handleFormChange}
           fullWidth
           required
-          disabled={form.companyName === "Quality Packaging" || form.companyName === "Sakshi Creation"}
+          disabled={
+            form.companyName === "Quality Packaging" || form.companyName === "Sakshi Creation"
+          }
           sx={{ mb: 2, mt: 1 }}
         />
 
@@ -350,14 +450,16 @@ const CompanyNamePage = () => {
               checked={form.default}
               onChange={handleDefaultChange}
               color="primary"
-              disabled={companyNames.filter(c => c.default).length === 0 && !form.default && !editId}
+              disabled={
+                companyNames.filter((c) => c.default).length === 0 && !form.default && !editId
+              }
             />
           }
           label="Set as default company"
           sx={{ mb: 2 }}
         />
-        {companyNames.filter(c => c.default).length === 0 && !form.default && !editId && (
-          <Typography variant="caption" color="primary" sx={{ display: 'block', mt: -2, mb: 2 }}>
+        {companyNames.filter((c) => c.default).length === 0 && !form.default && !editId && (
+          <Typography variant="caption" color="primary" sx={{ display: "block", mt: -2, mb: 2 }}>
             This will be set as default since no default company exists.
           </Typography>
         )}
@@ -412,8 +514,8 @@ const CompanyNamePage = () => {
                 variant="text"
                 color="error"
                 onClick={() => {
-                  setForm({ ...form, logo: null })
-                  setLogoPreview(null)
+                  setForm({ ...form, logo: null });
+                  setLogoPreview(null);
                 }}
                 sx={{ textTransform: "none" }}
               >
@@ -437,7 +539,7 @@ const CompanyNamePage = () => {
         </Box>
       </CustomDialog>
     </Box>
-  )
-}
+  );
+};
 
-export default CompanyNamePage
+export default CompanyNamePage;

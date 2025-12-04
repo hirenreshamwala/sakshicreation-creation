@@ -67,7 +67,7 @@ export const store = configureStore({
     materials: materialReducer,
     roleDepartments: roleDepartmentReducer,
     performanceInvoices: performanceInvoiceReducer,
-    companyNames: companyNameReducer,
+    companyName: companyNameReducer,
     vendors: vendorReducer,
     inventory: inventoryReducer,
     lowStock: lowStockReducer,

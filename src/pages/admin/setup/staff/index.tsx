@@ -1,12 +1,13 @@
+// In your StaffPage.tsx - Complete multiple filter implementation
 "use client"
-import { useState, useEffect } from "react"
-import { Box, Paper, Tabs, Tab, TableCell, Button, IconButton, Typography } from "@mui/material"
-import { AttachFile, Delete, Edit, Lock } from "@mui/icons-material" // Renamed Image to ImageIconMui to avoid conflict
+import { useState, useEffect, useCallback } from "react"
+import { Box, Paper, TableCell, Button, IconButton, Typography, Chip } from "@mui/material"
+import { AttachFile, Delete, Edit, Lock } from "@mui/icons-material"
 import BasicTable from "@/component/common_component/Table/themetable"
-import StaffChart from "@/component/staffchart" // Assuming this is a valid import
+import StaffChart from "@/component/staffchart"
 import { useRouter } from "next/router"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { getAllStaffThunk, deleteStaffThunk } from "@/store/slices/staffSlice"
+import { getAllStaffThunk, deleteStaffThunk, getStaffFiltersThunk, setFilters } from "@/store/slices/staffSlice"
 import Swal from "sweetalert2"
 import { toast } from "react-toastify"
 import FileViewerModal from "@/component/FileViewerModal"
@@ -20,9 +21,8 @@ const columns = [
   { id: "name", label: "Staff" },
   { id: "role", label: "Role" },
   { id: "joiningDate", label: "Date of Joining" },
-  { id: "aadharFiles", label: "Aadhar Files" }, // New column
-  { id: "addressFiles", label: "Address Files" }, // New column
-  // { id: "status", label: "Status" },
+  { id: "aadharFiles", label: "Aadhar Files" },
+  { id: "addressFiles", label: "Address Files" },
   { id: "actions", label: "Actions" },
 ]
 
@@ -30,35 +30,134 @@ const StaffPage = () => {
   const [tab, setTab] = useState(0)
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const { staffList, loading, error } = useAppSelector((state) => state.staff)
+  const { 
+    staffList, 
+    loading, 
+    error, 
+    pagination, 
+    filters,
+    availableFilters 
+  } = useAppSelector((state) => state.staff)
+  
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<{ id: string; name: string } | null>(null);
-
-  // State for file viewer modal
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentFileUrl, setCurrentFileUrl] = useState<string | null>(null)
   const [currentFileName, setCurrentFileName] = useState<string | null>(null)
   const [currentFileType, setCurrentFileType] = useState<"image" | "pdf" | "other" | null>(null)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
-  // Fetch all staff on component mount
-  useEffect(() => {
-    dispatch(getAllStaffThunk())
+  const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+
+ // In your StaffPage.tsx - Update the fetchStaffData function
+// Fetch staff data with current filters
+const fetchStaffData = useCallback(() => {
+  // Convert active filters to proper API parameters
+  const apiFilters: any = {
+    page: filters.page,
+    limit: filters.limit,
+    search: filters.search,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    company: filters.company,
+  };
+
+  // Add array filters properly
+  if (activeFilters.Role && activeFilters.Role.length > 0) {
+    apiFilters.roles = activeFilters.Role;
+  }
+  
+  if (activeFilters.Staff && activeFilters.Staff.length > 0) {
+    apiFilters.staffNames = activeFilters.Staff;
+  }
+  if (activeFilters["Date of Joining"] && activeFilters["Date of Joining"].length > 0) {
+    apiFilters.joiningDates = activeFilters["Date of Joining"]; // send array of "DD/MM/YYYY"
+  }
+
+  console.log('Sending filters to API:', apiFilters); // Debug log
+
+  dispatch(getAllStaffThunk(apiFilters))
+    .unwrap()
+    .catch((err) => {
+      toast.error(err.message || "Failed to fetch staff")
+    })
+}, [dispatch, filters, activeFilters]);
+
+  // Fetch available filters
+  const fetchAvailableFilters = useCallback(() => {
+    dispatch(getStaffFiltersThunk())
       .unwrap()
       .catch((err) => {
-        toast.error(err.message || "Failed to fetch staff")
+        console.error("Failed to fetch filters:", err)
       })
   }, [dispatch])
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchStaffData()
+    fetchAvailableFilters()
+  }, [])
+
+  // Refresh data when filters change
+  useEffect(() => {
+    fetchStaffData()
+  }, [filters, activeFilters, fetchStaffData])
+
+  // Reset page when tab changes
+  useEffect(() => {
+    dispatch(setFilters({ page: 1 }))
+  }, [tab, dispatch])
 
   useEffect(() => {
     if (error) {
       toast.error(error);
     }
+  }, [error]);
 
-  }, [error, dispatch]);
+  // Handle search change
+  const handleSearchChange = useCallback((search: string) => {
+    dispatch(setFilters({ search, page: 1 }))
+  }, [dispatch])
+
+  const handleDateChange = useCallback((startDate: string | null, endDate: string | null) => {
+    dispatch(setFilters({ 
+      startDate: startDate || "", 
+      endDate: endDate || "", 
+      page: 1 
+    }))
+  }, [dispatch])
+
+  const handlePageChange = useCallback((page: number) => {
+    dispatch(setFilters({ page }))
+  }, [dispatch])
+
+  // Handle multiple filter changes
+  const handleFilterChange = useCallback((newFilters: { [key: string]: string[] }) => {
+    setActiveFilters(newFilters);
+    dispatch(setFilters({ page: 1 }));
+  }, [dispatch]);
+
+  // Clear specific filter
+  const clearFilter = useCallback((filterType: string) => {
+    const updatedFilters = { ...activeFilters };
+    delete updatedFilters[filterType];
+    setActiveFilters(updatedFilters);
+    dispatch(setFilters({ page: 1 }));
+  }, [activeFilters, dispatch]);
+
+  // Clear all filters
+  const clearAllFilters = useCallback(() => {
+    setActiveFilters({});
+    dispatch(setFilters({ 
+      search: "",
+      role: "",
+      page: 1 
+    }));
+  }, [dispatch]);
+
   // Handle edit action
   const handleEdit = (id: string) => router.push(`/admin/setup/staff/view?mode=edit&id=${id}`)
 
-  // Handle delete action with SweetAlert2 confirmation and toast feedback
+  // Handle delete action
   const handleDelete = (id: string, name: string) => {
     Swal.fire({
       title: "Are you sure?",
@@ -75,6 +174,7 @@ const StaffPage = () => {
           .unwrap()
           .then(() => {
             toast.success(`${name} has been deleted.`)
+            fetchStaffData()
           })
           .catch((err) => {
             toast.error(err.message || "Failed to delete staff")
@@ -82,16 +182,17 @@ const StaffPage = () => {
       }
     })
   }
+
   const handlePasswordUpdate = (id: string, name: string) => {
     setSelectedStaff({ id, name });
     setPasswordDialogOpen(true);
   };
+
   // Function to open the file viewer modal
   const handleFileClick = (filePath: string) => {
     const extension = filePath?.split(".").pop()?.toLowerCase()
     const fileName = filePath?.split("/").pop()
 
-    // Ensure NEXT_PUBLIC_BACKEND_URL is correctly set and is an absolute URL
     const baseUrl = process.env.NEXT_PUBLIC_API_URL
     if (!baseUrl) {
       toast.error("Backend URL is not configured. Please set NEXT_PUBLIC_API_URL.")
@@ -125,17 +226,70 @@ const StaffPage = () => {
   const formattedStaffList = staffList.map((staff) => ({
     id: staff.id,
     name: staff.name || `${staff.firstName} ${staff.lastName}`,
-    role: staff.role?.roleName || "N/A", // Use roleName from populated role
+    role: staff.role?.roleName || "N/A",
     joiningDate: staff.joiningDate ? new Date(staff.joiningDate).toLocaleDateString() : "-",
     status: staff.status ? "Active" : "Inactive",
-    aadharFiles: staff.aadharFiles || [], // Include Aadhar files
-    addressFiles: staff.addressFiles || [], // Include Address files
+    aadharFiles: staff.aadharFiles || [],
+    addressFiles: staff.addressFiles || [],
   }))
+
+  // Count active filters
+  const activeFilterCount = Object.values(activeFilters).reduce((count, values) => 
+    count + (values ? values.length : 0), 0
+  );
 
   return (
     <Box sx={{ p: 2 }}>
       {/* Tabs */}
       <TabComponent activeTab={tab} setActiveTab={setTab} tabList={tabLabels} />
+      
+      {/* Active Filters Display */}
+      {activeFilterCount > 0 && (
+        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Typography variant="body2" color="textSecondary">
+            Active filters:
+          </Typography>
+          {Object.entries(activeFilters).map(([filterType, values]) => 
+            values.map((value, index) => (
+              <Chip
+                key={`${filterType}-${value}-${index}`}
+                // label={`${filterType}: ${value}`}
+                label={
+        filterType === "Date of Joining" 
+          ? `Joined: ${value}` 
+          : filterType === "Role" 
+            ? `Role: ${value}` 
+            : filterType === "Staff" 
+              ? `Staff: ${value}` 
+              : `${filterType}: ${value}`
+      }
+                onDelete={() => {
+                  const updatedValues = activeFilters[filterType].filter(v => v !== value);
+                  if (updatedValues.length === 0) {
+                    clearFilter(filterType);
+                  } else {
+                    setActiveFilters(prev => ({
+                      ...prev,
+                      [filterType]: updatedValues
+                    }));
+                  }
+                }}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+            ))
+          )}
+          <Button 
+            size="small" 
+            onClick={clearAllFilters}
+            sx={{ ml: 1 }}
+          >
+            Clear All
+          </Button>
+        </Box>
+      )}
+
       {/* Add Staff Button */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
         <Button
@@ -155,14 +309,28 @@ const StaffPage = () => {
           Bulk Upload Staff
         </Button>
       </Box>
+
       {/* Stats & Bar Chart */}
       <StaffChart tab={tab} />
+
       {/* Staff Table */}
       <Paper sx={{ mt: 4, borderRadius: 2, overflow: "hidden" }}>
         <BasicTable
           tableHeader={columns}
           rowData={formattedStaffList}
           loading={loading}
+          serverSide={true}
+          totalCount={pagination.totalItems}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onSearchChange={handleSearchChange}
+          onFilterChange={handleFilterChange}
+          onDateChange={handleDateChange}
+         availableFilters={{
+  "Staff": availableFilters.staff || [],
+  "Role":       availableFilters.roles || [],
+  "Date of Joining":     availableFilters.joiningDates || [],
+}}
           renderRow={(row) => (
             <>
               <TableCell sx={{ fontWeight: 500, cursor: "pointer" }} onClick={() => handleEdit(row.id)}>
@@ -170,6 +338,7 @@ const StaffPage = () => {
               </TableCell>
               <TableCell>{row.role}</TableCell>
               <TableCell>{row.joiningDate}</TableCell>
+              
               {/* Display Aadhar Files */}
               <TableCell>
                 {row.aadharFiles.length > 0 ? (
@@ -210,6 +379,7 @@ const StaffPage = () => {
                   "-"
                 )}
               </TableCell>
+
               {/* Display Address Files */}
               <TableCell>
                 {row.addressFiles.length > 0 ? (
@@ -250,7 +420,7 @@ const StaffPage = () => {
                   "-"
                 )}
               </TableCell>
-              {/* <TableCell>{row.status}</TableCell> */}
+
               <TableCell>
                 <IconButton color="primary" onClick={() => handleEdit(row.id)} size="small">
                   <Edit />
@@ -261,7 +431,7 @@ const StaffPage = () => {
                   size="small"
                   title="Update Password"
                 >
-                  <Lock /> {/* You'll need to import Lock icon from @mui/icons-material */}
+                  <Lock />
                 </IconButton>
                 <IconButton color="error" onClick={() => handleDelete(row.id, row.name)} size="small">
                   <Delete />
@@ -272,7 +442,6 @@ const StaffPage = () => {
         />
       </Paper>
 
-
       {/* File Viewer Modal */}
       <FileViewerModal
         open={isModalOpen}
@@ -281,18 +450,19 @@ const StaffPage = () => {
         fileName={currentFileName}
         fileType={currentFileType}
       />
+      
       <AddNewStaffBulkDialog
         open={bulkDialogOpen}
         onClose={() => setBulkDialogOpen(false)}
-        refreshData={() => dispatch(getAllStaffThunk())}
+        refreshData={fetchStaffData}
       />
+      
       <PasswordUpdateDialog
         open={passwordDialogOpen}
         onClose={() => setPasswordDialogOpen(false)}
         staffId={selectedStaff?.id || ""}
         staffName={selectedStaff?.name || ""}
       />
-
     </Box>
   )
 }
