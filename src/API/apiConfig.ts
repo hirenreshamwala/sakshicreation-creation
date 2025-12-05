@@ -199,7 +199,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   SEND_BOX_FROM_GODOWN_OR_FACTORY: `${BaseURL}/api/qporder/sendboxfromgodownorfactory`,
   DRIVER_SELECT_AND_INVENTORY_MANAGE: `${BaseURL}/api/qporder/driverselection`,
   MARK_ORDER_AS_URGENT: `${BaseURL}/api/qporder/mark-urgent`,
-
+  GET_ALL_QP_ORDER_FOR_DRIVER: `${BaseURL}/api/qporder/getalldriver`,
   CREATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/create`,
   UPDATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/update`,
   DELETE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/delete`,
@@ -249,6 +249,8 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   // filteres data 
   ACCOUNT_MASTER_FILTER: `${BaseURL}/api/account-master/filter-options`,
   PARTY_CALL_FILTER:`${BaseURL}/api/lead/get-filter`,
-
+  GET_QP_ORDER_FILTER_OPTIONS: `${BaseURL}/api/qporder/filter-options`,
+  GET_COMPLAIN_FILTER_OPTIONS: `${BaseURL}/api/complain/filter-options`,
+  GET_PAYMENT_FOLDER_FILTER_OPTIONS: `${BaseURL}/api/payment-folders/filter-options`,
 };
 export default Endpoint;

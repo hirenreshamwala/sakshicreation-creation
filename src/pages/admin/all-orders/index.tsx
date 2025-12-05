@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react"
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import { Avatar, Box, TableCell, Typography, Button } from "@mui/material"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
@@ -15,8 +15,7 @@ import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 import ComplainDialogue from "../all-complains/ComplainDialogue";
 import CustomTable2 from "@/component/common_component/Table/CustomTable2";
 import { orderService } from "@/services/order.service";
-import { getAllOrdersThunk, getOrdersByStaffIdThunk } from "@/store/slices/orderSlice"; // Import thunks
-import _ from "lodash";
+import { getAllOrdersThunk, getOrdersByStaffIdThunk } from "@/store/slices/orderSlice";import _ from "lodash";
 import moment from "moment";
 import { FaChevronRight } from "react-icons/fa6"
 
@@ -87,17 +86,24 @@ const AllOrdersPage = () => {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const { orderList: orders, loading } = useAppSelector((state) => state.orders) // Renamed to orderList to avoid confusion
+  const { orderList: orders, loading } = useAppSelector((state) => state.orders);
   const { companies } = useAppSelector((state) => state.company)
-  const { totalCount } = useAppSelector((state) => state.orders) // Add totalCount
+  const { totalCount } = useAppSelector((state) => state.orders);
   const userData = getUserData()
 
   // Filter state
   const { companyName, c, staffId, startDate: st, endDate: ed, party } = router.query
-  const [activeTab, setActiveTab] = useState(c === "Quality Packaging" ? 1 : 0);
-  const [complainOpen, setComplainOpen] = useState(false);
-  const [selectedOrderForComplain, setSelectedOrderForComplain] = useState<OrderRow | null>(null);
-  const [initialLoad, setInitialLoad] = useState(false);
+  const [activeTab, setActiveTab] = useState(c === "Quality Packaging" ? 1 : 0)
+  const [complainOpen, setComplainOpen] = useState(false)
+  const [selectedOrderForComplain, setSelectedOrderForComplain] = useState<OrderRow | null>(null)
+  
+  // Remove isInitialLoad state and use loading state from Redux instead
+  const [isLoadingData, setIsLoadingData] = useState(false)
+  
+  // Prevent multiple API calls
+  const isLoadingRef = React.useRef(false)
+  const hasLoadedInitialDataRef = React.useRef(false)
+
   const defaultOrderFilter = {
     page: 1,
     pageSize: 10,
@@ -111,7 +117,6 @@ const AllOrdersPage = () => {
     search: ""
   };
   const [currentFilterState, setCurrentFilterState] = useState<any>(defaultOrderFilter);
-  const [appliedFilterState, setAppliedFilterState] = useState<any>(defaultOrderFilter);
   // State for filter options
   const [filterOptionsData, setFilterOptionsData] = useState<{ [key: string]: string[] }>({});
   const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
@@ -122,23 +127,49 @@ const AllOrdersPage = () => {
   const hasSakshiPermission = getCompanyWisePermission(1)
   const hasQpPermission = getCompanyWisePermission(2)
   const hasBothPermissions = getCompanyWisePermission(0)
+  const debounceRef = useRef(0);
   
   // Updated: Use thunk for loading orders
   const loadOrders = useCallback(async () => {
-    const params = { 
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      console.log("⚠️ API call already in progress, skipping...")
+      return
+    }
+    
+    setIsLoadingData(true)
+    isLoadingRef.current = true
+    
+    // Simple debounce: Ignore if called within 300ms of last call (for rapid page clicks)
+    const now = Date.now()
+    if (debounceRef.current && (now - debounceRef.current) < 300) {
+      setIsLoadingData(false)
+      isLoadingRef.current = false
+      return
+    }
+    debounceRef.current = now  // Update debounce timestamp
+    
+    try {
+    const params = {
       ...currentFilterState, 
       isPagination: true, 
       includeCounts: true 
     };
-    try {
+
       if (canViewGlobal) {
-        dispatch(getAllOrdersThunk(params));
+        await dispatch(getAllOrdersThunk(params));
       } else if (canViewOwn && userData?.id) {
-        dispatch(getOrdersByStaffIdThunk({ id: userData.id, filters: params }));
+        await dispatch(getOrdersByStaffIdThunk({ id: userData.id, filters: params }))
       }
+      
+      // Mark that initial data has been loaded
+      hasLoadedInitialDataRef.current = true
     } catch (err: any) {
-      console.error("Error loading orders:", err);
-      toast.error(err.message || "Failed to load orders");
+      console.error("❌ Error loading orders:", err)
+      toast.error(err.message || "Failed to load orders")
+    } finally {
+      setIsLoadingData(false)
+      isLoadingRef.current = false
     }
   }, [dispatch, currentFilterState, canViewGlobal, canViewOwn, userData?.id]);
 
@@ -183,7 +214,7 @@ const AllOrdersPage = () => {
       }
     }
     return Promise.resolve();
-  }, [filterOptionsData, currentFilterState, canViewOwn, canViewGlobal, userData.id]);
+  }, [filterOptionsData, currentFilterState, canViewOwn, canViewGlobal, userData?.id]);
 
   // Handle filter changes
   const handleFiltersChange = useCallback((newFilters: { [key: string]: string[] }) => {
@@ -196,23 +227,24 @@ const AllOrdersPage = () => {
   }, []);
 
   // Effect to load orders when filters change - FIXED: Use applied state to prevent loops
+  // FIXED: Simplify the filter change effect - Remove appliedFilterState and timeout
   useEffect(() => {
-    const isSame = _.isEqual(appliedFilterState, currentFilterState);
-    if (!isSame) {
-      console.log("Filter state changed, loading orders...");
-      loadOrders();
-      setAppliedFilterState(currentFilterState);
+    console.log("🔄 Filter state changed, loading orders...")
+    loadOrders()  // Directly call - deps will handle triggering
+  }, [loadOrders]);
+  useEffect(() => {
+    if (userData && router.isReady && !hasLoadedInitialDataRef.current) {
+      console.log("🚀 Initial load started")
+      loadOrders() // No need to set page:1 here - table will handle initial page
     }
-  }, [currentFilterState, appliedFilterState, loadOrders]);
+  }, [userData, router.isReady, loadOrders]);  // Depend on loadOrders
 
-  // Effect for initial load - FIXED: Dispatch thunk
+  // Reset initial load flag when user changes
   useEffect(() => {
-    if (userData && router.isReady && !initialLoad) {
-      setCurrentFilterState((prev: any) => ({ ...prev, pageSize: 10 }));
-      loadOrders();
-      setInitialLoad(true);
+    if (userData) {
+      hasLoadedInitialDataRef.current = false
     }
-  }, [userData, router.isReady, initialLoad, loadOrders]);
+  }, [userData])
 
   // Initial companies load
   useEffect(() => {
@@ -615,7 +647,7 @@ const AllOrdersPage = () => {
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           gap: 2,
           mb: 2,
         }}
@@ -624,7 +656,7 @@ const AllOrdersPage = () => {
           <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
         </Box>
       </Box>
-      {loading ? (
+      {(loading || isLoadingData) && orders.length === 0 ? (
         <Loader />
       ) : (
         <CustomTable2
@@ -639,6 +671,11 @@ const AllOrdersPage = () => {
           rowData={formattedRows}
           setCurrentFilterState={setCurrentFilterState}
           currentFilterState={currentFilterState}
+          currentPage={currentFilterState.page} // NEW: Pass explicit current page
+          onPageChange={(newPage: number) => { // NEW: Callback for page changes
+            console.log("Page change to:", newPage)
+            setCurrentFilterState(prev => ({ ...prev, page: newPage }))
+          }}
           renderRow={renderRow}
           totalRows={totalCount || formattedRows.length} // FIXED: Use Redux totalCount
           onFilterFieldSelect={handleFilterFieldSelect}
@@ -675,7 +712,10 @@ const AllOrdersPage = () => {
 
   const renderQpContent = () => <QpOrdersPage />;
 
-  if (loading && initialLoad === false) return <Typography><Loader /></Typography>;
+  // Show loader only on first load when there are no orders
+  if ((loading || isLoadingData) && orders.length === 0) {
+    return <Loader />
+  }
 
   return <>{renderContent()}</>;
 }

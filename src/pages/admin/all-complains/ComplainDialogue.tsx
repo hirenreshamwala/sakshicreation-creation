@@ -47,7 +47,7 @@ interface ComplainDialogProps {
     // selectedOrderData?: OrderRow | null
 }
 
-const getValidationSchema = (isEdit: boolean, status: string) => {
+const getValidationSchema = (isEdit: boolean) => {
     return Yup.object({
         subject: Yup.string()
             .required("Subject is required")
@@ -62,17 +62,17 @@ const getValidationSchema = (isEdit: boolean, status: string) => {
         status: Yup.string().required("Status is required"),
         response: Yup.string()
             .transform((value) => (value ? value.trim() : ""))
-            .when([], {
-                is: () => isEdit && status === "Completed",
-                then: (schema) =>
-                    schema
+            .when('status', {
+                is: 'Completed',
+                then: (schema) => isEdit 
+                    ? schema
                         .required("Response is required when status is Completed")
                         .min(10, "Response must be at least 10 characters")
-                        .max(500, "Response must not exceed 500 characters"),
-                otherwise: (schema) =>
-                    schema
-                        .notRequired()
-                        .max(500, "Response must not exceed 500 characters"),
+                        .max(500, "Response must not exceed 500 characters")
+                    : schema.notRequired().max(500, "Response must not exceed 500 characters"),
+                otherwise: (schema) => schema
+                    .notRequired()
+                    .max(500, "Response must not exceed 500 characters"),
             }),
     });
 };
@@ -83,14 +83,14 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     onClose,
     refreshData,
     editData,
-    selectedOrderData,
+    // selectedOrderData,  // ← Remove if not using
 }) => {
     const dispatch = useAppDispatch();
     const { user } = useAppSelector((state) => state.auth);
     const { companies } = useAppSelector((state) => state.company);
     const { staffList } = useAppSelector((state) => state.staff);
 
-    const { orders } = useAppSelector((state) => state.orders);
+    const { orderList: orders } = useAppSelector((state) => state.orders);
     const { orders: qporders } = useAppSelector((state) => state.qpOrders);
 
     // File upload ref और states
@@ -108,21 +108,21 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
         user?.role?.roleName?.includes("Manager");
 
 
-    useEffect(() => {
-        if (selectedOrderData && open) {
-            // Auto-fill the form with order data
-            formik.setValues({
-                company: selectedOrderData.companyName._id,
-                // subject: `Complaint for QP-${selectedOrderData.orderNo}`,
-                details: "",
-                orderId: selectedOrderData._id,
-                party: selectedOrderData.party?._id || "",
-                status: "Pending",
-                response: "",
-                files: []
-            });
-        }
-    }, [selectedOrderData, open]);
+    // useEffect(() => {
+    //     if (selectedOrderData && open) {
+    //         // Auto-fill the form with order data
+    //         formik.setValues({
+    //             company: selectedOrderData.companyName._id,
+    //             // subject: `Complaint for QP-${selectedOrderData.orderNo}`,
+    //             details: "",
+    //             orderId: selectedOrderData._id,
+    //             party: selectedOrderData.party?._id || "",
+    //             status: "Pending",
+    //             response: "",
+    //             files: []
+    //         });
+    //     }
+    // }, [selectedOrderData, open]);
 
     // Formik initialization
     const formik = useFormik({
@@ -134,7 +134,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
             status: "Pending",
             response: "",
         },
-        validationSchema: (values) => getValidationSchema(!!editData, values?.status),
+        validationSchema: getValidationSchema(!!editData),
         onSubmit: async (values) => {
             setFileLoading(true);
 
@@ -259,14 +259,14 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     useEffect(() => {
         if (open) {
             if (canViewGlobal) {
-                if (!orders.length) dispatch(getAllOrdersThunk());
-                if (!qporders.length) dispatch(getAllQPOrdersThunk({ limit: 100 }));
+                if (!orders?.length) dispatch(getAllOrdersThunk({})); 
+                if (!qporders?.length) dispatch(getAllQPOrdersThunk({ limit: 100 }));
             } else if (canViewOwn && user?.id) {
-                if (!orders.length) dispatch(getOrdersByStaffIdThunk(user?.id));
-                if (!qporders.length) dispatch(getQPOrdersByStaffIdThunk(user?.id));
+                if (!orders?.length) dispatch(getOrdersByStaffIdThunk({ id: user.id, filters: {} }));
+                if (!qporders?.length) dispatch(getQPOrdersByStaffIdThunk({ id: user.id, filters: {} }));
             }
         }
-    }, [open, canViewGlobal, canViewOwn, user?.id]);
+    }, [open, canViewGlobal, canViewOwn, user?.id, dispatch, orders?.length, qporders?.length]);
 
     // Order options - party select होने के बाद filter करें
     const orderOptions = (company.companyName === StaticCompanyOptions[0] ? orders : qporders)
@@ -325,7 +325,7 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
                 formik.setFieldValue("orderId", "");
             }
         }
-    }, [formik.values.party]);
+    }, [formik.values.party, orders, qporders, company.companyName]);  // ← Added deps
 
     return (
         <>
