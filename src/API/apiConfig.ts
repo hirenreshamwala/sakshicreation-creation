@@ -249,6 +249,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   // filteres data 
   ACCOUNT_MASTER_FILTER: `${BaseURL}/api/account-master/filter-options`,
   PARTY_CALL_FILTER:`${BaseURL}/api/lead/get-filter`,
+  ASSIGN_TASK_FILTER:`${BaseURL}/api/assign-task/get-filter`,
 
 };
 export default Endpoint;

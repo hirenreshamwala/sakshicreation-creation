@@ -26,6 +26,7 @@ import moment from "moment";
 import { useDispatch, useSelector } from "react-redux";
 import { complainService } from "@/services/complain.service";
 import { addToState } from "@/store/slices/accountMasterFilterSlice";
+import { accountMasterService } from "@/services/accountMaster.service";
 
 interface Column {
   id: string;
@@ -314,7 +315,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
       };
 
       // Fetch data from API
-      const response = await complainService.searchFilterOptions(field, "", apiFilters);
+      const response = await accountMasterService.searchFilterOptions(field, "", apiFilters);
 
       if (response.success && response.data) {
         // Store in Redux for future use

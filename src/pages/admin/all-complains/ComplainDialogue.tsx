@@ -259,11 +259,11 @@ const ComplainDialogue: React.FC<ComplainDialogProps> = ({
     useEffect(() => {
         if (open) {
             if (canViewGlobal) {
-                if (!orders.length) dispatch(getAllOrdersThunk());
-                if (!qporders.length) dispatch(getAllQPOrdersThunk({ limit: 100 }));
+                if (!orders?.length) dispatch(getAllOrdersThunk());
+                if (!qporders?.length) dispatch(getAllQPOrdersThunk({ limit: 100 }));
             } else if (canViewOwn && user?.id) {
-                if (!orders.length) dispatch(getOrdersByStaffIdThunk(user?.id));
-                if (!qporders.length) dispatch(getQPOrdersByStaffIdThunk(user?.id));
+                if (!orders?.length) dispatch(getOrdersByStaffIdThunk(user?.id));
+                if (!qporders?.length) dispatch(getQPOrdersByStaffIdThunk(user?.id));
             }
         }
     }, [open, canViewGlobal, canViewOwn, user?.id]);
