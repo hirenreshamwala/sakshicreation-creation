@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback,useRef } from "react";
 import {
   Box,
   Typography,
@@ -49,7 +49,27 @@ const BinderTypesPage = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "" });
   const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+  const searchTimeoutRef = useRef<number | null>(null);
 
+  const handleSearchDebounced = useCallback(
+    (search: string) => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = window.setTimeout(() => {
+        dispatch(setBinderTypeFilters({ search: search.trim(), page: 1 }));
+      }, 500);
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
   const fetchData = useCallback(() => {
     const apiFilters: any = {
       page: filters?.page || 1,
@@ -166,7 +186,7 @@ const BinderTypesPage = () => {
         totalCount={pagination?.totalItems || 0}
         pagination={pagination}
         onPageChange={(page) => dispatch(setBinderTypeFilters({ page }))}
-        onSearchChange={(search) => dispatch(setBinderTypeFilters({ search, page: 1 }))}
+        onSearchChange={handleSearchDebounced}
         onFilterChange={handleFilterChange}
         availableFilters={{
           "Binder Name": availableFilters.binderNames || [],

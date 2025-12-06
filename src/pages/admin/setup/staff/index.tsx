@@ -1,6 +1,6 @@
 // In your StaffPage.tsx - Complete multiple filter implementation
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback,useRef} from "react"
 import { Box, Paper, TableCell, Button, IconButton, Typography, Chip } from "@mui/material"
 import { AttachFile, Delete, Edit, Lock } from "@mui/icons-material"
 import BasicTable from "@/component/common_component/Table/themetable"
@@ -47,7 +47,27 @@ const StaffPage = () => {
   const [currentFileType, setCurrentFileType] = useState<"image" | "pdf" | "other" | null>(null)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+  const searchTimeoutRef = useRef<number | null>(null);
 
+  const handleSearchDebounced = useCallback(
+    (search: string) => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = window.setTimeout(() => {
+        dispatch(setFilters({ search: search.trim(), page: 1 }));
+      }, 500);
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
  // In your StaffPage.tsx - Update the fetchStaffData function
 // Fetch staff data with current filters
 const fetchStaffData = useCallback(() => {
@@ -113,10 +133,7 @@ const fetchStaffData = useCallback(() => {
     }
   }, [error]);
 
-  // Handle search change
-  const handleSearchChange = useCallback((search: string) => {
-    dispatch(setFilters({ search, page: 1 }))
-  }, [dispatch])
+
 
   const handleDateChange = useCallback((startDate: string | null, endDate: string | null) => {
     dispatch(setFilters({ 
@@ -323,7 +340,7 @@ const fetchStaffData = useCallback(() => {
           totalCount={pagination.totalItems}
           pagination={pagination}
           onPageChange={handlePageChange}
-          onSearchChange={handleSearchChange}
+          onSearchChange={handleSearchDebounced}
           onFilterChange={handleFilterChange}
           onDateChange={handleDateChange}
          availableFilters={{

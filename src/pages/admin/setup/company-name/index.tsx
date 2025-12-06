@@ -1,7 +1,7 @@
 // pages/CompanyNamePage.tsx
 "use client";
 import type React from "react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback,useRef} from "react";
 import {
   Box,
   Typography,
@@ -68,7 +68,27 @@ const CompanyNamePage = () => {
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+  const searchTimeoutRef = useRef<number | null>(null);
 
+  const handleSearchDebounced = useCallback(
+    (search: string) => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = window.setTimeout(() => {
+        dispatch(setCompanyNameFilters({ search: search.trim(), page: 1 }));
+      }, 500);
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
   // Fetch data
   const fetchData = useCallback(() => {
     const apiFilters: any = {
@@ -372,7 +392,7 @@ const CompanyNamePage = () => {
         totalCount={pagination?.totalItems || 0}
         pagination={pagination}
         onPageChange={(page) => dispatch(setCompanyNameFilters({ page }))}
-        onSearchChange={(search) => dispatch(setCompanyNameFilters({ search, page: 1 }))}
+        onSearchChange={handleSearchDebounced}
         onFilterChange={handleFilterChange}
         availableFilters={{
           "Company Name": availableFilters.companyNames || [],

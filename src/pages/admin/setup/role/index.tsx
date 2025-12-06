@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback,useRef} from "react";
 import {
   Box,
   Typography,
@@ -43,7 +43,27 @@ const RoleTable = () => {
   } = useSelector((state: RootState) => state.roles);
 
   const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+  const searchTimeoutRef = useRef<number | null>(null);
 
+  const handleSearchDebounced = useCallback(
+    (search: string) => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = window.setTimeout(() => {
+        dispatch(setRoleFilters({ search: search.trim(), page: 1 }));
+      }, 500);
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
   const fetchData = useCallback(() => {
     const apiFilters: any = {
       page: filters.page || 1,
@@ -159,7 +179,7 @@ const RoleTable = () => {
           totalCount={pagination?.totalItems || 0}
           pagination={pagination}
           onPageChange={(page) => dispatch(setRoleFilters({ page }))}
-          onSearchChange={(search) => dispatch(setRoleFilters({ search, page: 1 }))}
+          onSearchChange={handleSearchDebounced}
           onFilterChange={handleFilterChange}
 availableFilters={{
   "Role Name": availableFilters.roleNames || [],

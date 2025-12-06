@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   Box,
   Typography,
@@ -55,8 +55,29 @@ const KantanPage = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+  const searchTimeoutRef = useRef<number | null>(null);
 
-  // Fetch data with filters, search, pagination
+  const handleSearchDebounced = useCallback(
+    (search: string) => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = window.setTimeout(() => {
+        dispatch(setKantanFilters({ search: search.trim(), page: 1 }));
+      }, 500);
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Fetch data
   const fetchData = useCallback(() => {
     const apiFilters: any = {
       page: filters.page || 1,
@@ -218,7 +239,7 @@ const KantanPage = () => {
         totalCount={pagination?.totalItems || 0}
         pagination={pagination}
         onPageChange={(page) => dispatch(setKantanFilters({ page }))}
-        onSearchChange={(search) => dispatch(setKantanFilters({ search, page: 1 }))}
+        onSearchChange={handleSearchDebounced}   // <-- DEBOUNCED SEARCH
         onFilterChange={handleFilterChange}
         availableFilters={{
           "Kantan Name": availableFilters.kantanNames || [], // Maps to "Kantan Name" filter

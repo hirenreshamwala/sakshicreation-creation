@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback,useRef } from "react";
 import {
   Box,
   Typography,
@@ -53,7 +53,27 @@ const MarketPage = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+  const searchTimeoutRef = useRef<number | null>(null);
 
+  const handleSearchDebounced = useCallback(
+    (search: string) => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = window.setTimeout(() => {
+        dispatch(setMarketFilters({ search: search.trim(), page: 1 }));
+      }, 500);
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
   // Fetch data on mount + when filters change
   const fetchData = useCallback(() => {
     const apiFilters: any = {
@@ -221,7 +241,7 @@ const MarketPage = () => {
         totalCount={pagination?.totalItems || 0}
         pagination={pagination}
         onPageChange={(page) => dispatch(setMarketFilters({ page }))}
-        onSearchChange={(search) => dispatch(setMarketFilters({ search, page: 1 }))}
+        onSearchChange={handleSearchDebounced}
         onFilterChange={handleFilterChange}
       availableFilters={{
     "Market Name": availableFilters.marketNames || [],

@@ -1,6 +1,6 @@
 // pages/ProductsPage.tsx
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback,useRef} from "react";
 import {
   Box,
   Typography,
@@ -60,7 +60,27 @@ const ProductsPage = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ itemName: "" });
   const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+  const searchTimeoutRef = useRef<number | null>(null);
 
+  const handleSearchDebounced = useCallback(
+    (search: string) => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = window.setTimeout(() => {
+        dispatch(setProductItemFilters({ search: search.trim(), page: 1 }));
+      }, 500);
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
   // Fetch data
   const fetchData = useCallback(() => {
     const apiFilters: any = {
@@ -223,7 +243,7 @@ const ProductsPage = () => {
         totalCount={pagination?.totalItems || 0}
         pagination={pagination}
         onPageChange={(page) => dispatch(setProductItemFilters({ page }))}
-        onSearchChange={(search) => dispatch(setProductItemFilters({ search, page: 1 }))}
+        onSearchChange={handleSearchDebounced}
         onFilterChange={handleFilterChange}
         availableFilters={{
           "Name": availableFilters.itemNames,
