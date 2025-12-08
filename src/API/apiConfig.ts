@@ -159,6 +159,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
 
   // New vendor endpoints
   GET_ALL_VENDORS: `${BaseURL}/api/vendor/getall`,
+  GET_ALL_VENDORS_FILTERS: `${BaseURL}/api/vendor/filters`,
   GET_VENDOR_BY_ID: `${BaseURL}/api/vendor/getbyid`,
   CREATE_VENDOR: `${BaseURL}/api/vendor/create`,
   UPDATE_VENDOR: `${BaseURL}/api/vendor/update`,
