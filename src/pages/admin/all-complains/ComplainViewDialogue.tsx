@@ -53,7 +53,7 @@ const ComplainViewDialogue: React.FC<ComplainViewDialogueProps> = ({
   complaint,
 }) => {
   const { companies } = useAppSelector((state) => state.company);
-  const { orders } = useAppSelector((state) => state.orders);
+  const { orderList: orders } = useAppSelector((state) => state.orders);
   const { orders: qporders } = useAppSelector((state) => state.qpOrders);
 
   if (!complaint) return null;

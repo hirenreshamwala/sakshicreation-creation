@@ -204,7 +204,7 @@ const Endpoint = {
   SEND_BOX_FROM_GODOWN_OR_FACTORY: `${BaseURL}/api/qporder/sendboxfromgodownorfactory`,
   DRIVER_SELECT_AND_INVENTORY_MANAGE: `${BaseURL}/api/qporder/driverselection`,
   MARK_ORDER_AS_URGENT: `${BaseURL}/api/qporder/mark-urgent`,
-
+  GET_ALL_QP_ORDER_FOR_DRIVER: `${BaseURL}/api/qporder/getalldriver`,
   CREATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/create`,
   UPDATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/update`,
   GET_PACKAGING_FILTERS: `${BaseURL}/api/packagingOptions/filters`,
@@ -261,5 +261,10 @@ const Endpoint = {
 
   EXPORT_ACCOUNT_MASTERS_EXCEL: `${BaseURL}/api/account-master/download-excel`,
 
+  GET_QP_ORDER_FILTER_OPTIONS: `${BaseURL}/api/qporder/filter-options`,
+  GET_COMPLAIN_FILTER_OPTIONS: `${BaseURL}/api/complain/filter-options`,
+  GET_PAYMENT_FOLDER_FILTER_OPTIONS: `${BaseURL}/api/payment-folders/filter-options`,
+  GET_INVENTORY_FILTER_OPTIONS: `${BaseURL}/api/inventory/filter-options`,
+  GET_ALL_INVENTORY_FOR_QUALITY: `${BaseURL}/api/inventory/getallForQuality`,
 };
 export default Endpoint;

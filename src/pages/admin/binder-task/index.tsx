@@ -19,11 +19,13 @@ const tableHeader: Column[] = [
   { id: "order", label: "Order No" },
   { id: "date", label: "Date" },
   { id: "party", label: "Party" },
+  { id: "qty", label: "qty" },
   { id: "itemName", label: "Item Name" },
   { id: "itemName", label: "size" },
   { id: "itemName", label: "Binding Type" },
   { id: "itemName", label: "binding page" },
-  { id: "number", label: "Number" },
+  { id: "number", label: "Start number" },
+  { id: "number", label: "end number" },
   { id: "printerRemarks", label: "Remarks" },
   { id: "status", label: "Status", align: "center" as const },
   { id: "action", label: "Action", align: "center" as const },
@@ -122,6 +124,7 @@ const BinderTask: React.FC<BinderTaskProps> = ({ tasks }) => {
     orderNo: order.orderNumber,
     date: formatDateToDDMMYYYY(order.createdAt),
     party: order.party?.partyName || "N/A",
+    qty: order.qty || "N/A",
     itemName: order.productItem?.itemName || "N/A",
     bindingType: order.bindingType?.name || "N/A",
     bindingPage: order.bindingPage || "N/A",
@@ -129,6 +132,8 @@ const BinderTask: React.FC<BinderTaskProps> = ({ tasks }) => {
     number: order.totalNumbering || "N/A",
     status: order.printerStatus || "Pending",
     binderStatus: order.binderStatus,
+    startnumber:order.startNumber,
+    endnumber:order.endNumber,
     // date: new Date(order.createdAt).toLocaleDateString(),
     size: order.size || "N/A",
   }));
@@ -149,11 +154,13 @@ const BinderTask: React.FC<BinderTaskProps> = ({ tasks }) => {
       >
         {row.party}
       </TableCell>
+      <TableCell>{row.qty}</TableCell>
       <TableCell>{row.itemName}</TableCell>
       <TableCell>{row.size}</TableCell>
       <TableCell>{row.bindingType}</TableCell>
       <TableCell>{row.bindingPage}</TableCell>
-      <TableCell>{row.number}</TableCell>
+      <TableCell>{row.startnumber}</TableCell>
+      <TableCell>{row.endnumber}</TableCell>
       <TableCell>{row.remarks}</TableCell>
       <TableCell align="center">
         <StatusBadge status={row.status} />

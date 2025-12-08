@@ -432,11 +432,11 @@ const CustomTable2 = <T extends { id: string; _id?: string; lastStatusChangeDate
           rowGap: 2,
         }}
       >
-        {title && (
-          <Typography variant="h1" sx={{ fontWeight: 600 }}>
-            {title}
-          </Typography>
-        )}
+          {/* {title && (
+            <Typography variant="h1" sx={{ fontWeight: 600 }}>
+              {title}
+            </Typography>
+          )} */}
         
         {/* Search + Date + Filter */}
         <Box
@@ -586,7 +586,7 @@ const CustomTable2 = <T extends { id: string; _id?: string; lastStatusChangeDate
       </Box>
       
       {/* Active Filters Display */}
-      {Object.keys(filters).length > 0 && (
+      {/* {Object.keys(filters).length > 0 && (
         <Box sx={{ px: 2, pb: 1 }}>
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
             {Object.entries(filters).map(([field, values]) => (
@@ -606,7 +606,7 @@ const CustomTable2 = <T extends { id: string; _id?: string; lastStatusChangeDate
             ))}
           </Stack>
         </Box>
-      )}
+      )} */}
       
       <TableContainer sx={{ width: "100%", overflowX: "auto", maxWidth: "100vw" }}>
         <Box sx={{ minWidth: 0, width: "100%" }}>

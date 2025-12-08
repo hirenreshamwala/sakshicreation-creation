@@ -18,6 +18,7 @@ const tableHeader: Column[] = [
   { id: "order", label: "Order No" },
   { id: "date", label: "Date" },
   { id: "party", label: "Party" },
+  { id: "qty", label: "qty" },
   { id: "size", label: "Size" },
   { id: "itemName", label: "Item Name" },
   { id: "itemName", label: "Printing Type" },
@@ -139,12 +140,15 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
   }
 
   // Transform orders data for table
-  const rowData = tasks.map((order: any) => ({
+  const rowData = tasks.map((order: any) => {
+    console.log("DEBUG : PrinterTask : order:", order);
+    return {
     id: order._id,
     party: order.party?.partyName || "N/A",
     date: formatDateToDDMMYYYY(order.createdAt),
     // date: new Date(order.createdAt).toLocaleDateString(),
     size: order.size || "N/A",
+    qty: order.qty || "N/A",
     itemName: order.productItem?.itemName || "N/A",
     number: order.number || "N/A",
     printerRemarks: order.printerRemarks || "N/A",
@@ -155,7 +159,8 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
     bindingPage: order.bindingPage || "N/A",
     bookletType: order.bookletFolderType || "N/A",
     status: order.printerStatus || "Pending",
-  }));
+  };
+  });
 
   const renderRow = (row: (typeof rowData)[number], index: number) => (
     <>
@@ -173,6 +178,7 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
       >
         {row.party}
       </TableCell>
+      <TableCell>{row.qty}</TableCell>
       <TableCell>{row.size}</TableCell>
       <TableCell>{row.itemName}</TableCell>
       <TableCell>{row.printingType}</TableCell>

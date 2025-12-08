@@ -26,7 +26,9 @@ interface Order {
   printerPapers?: PaperField[];
   binderPapers?: PaperField[];
   bookletPapers?: PaperField[];
-
+  noOfPieces?: number
+  orderNo?: string
+  deliveryStatus?: string
 }
 
 interface CreateOrderData {
@@ -49,7 +51,8 @@ interface ApiResponse<T> {
     totalCount: number;
     hasNext: boolean;
     hasPrev: boolean;
-  };
+  }
+  totalCount?: number // Added for count
 }
 
 interface BulkStatusUpdateData {
@@ -113,22 +116,86 @@ export const orderService = {
       );
     }
   },
+  async getAllOrdersForDriver(filters: any): Promise<ApiResponse<Order[]>> {
+    try {
+      console.log("📊 Service: Fetching QP orders with filters:", filters);
+      
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
+        Endpoint.GET_ALL_QP_ORDER_FOR_DRIVER,
+        filters
+      );
+      
+      console.log("📊 Service: QP orders response:", response.data);
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          data: response.data.data || [],
+          totalCount: response.data.totalCount || response.data.data?.length || 0,
+          pagination: response.data.pagination || {
+            currentPage: filters?.page || 1,
+            totalPages: Math.ceil(
+              (response.data.totalCount || response.data.data?.length || 0) /
+              (filters?.pageSize || 10)
+            ),
+            totalCount: response.data.totalCount || response.data.data?.length || 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message,
+        };
+      }
+    } catch (error: any) {
+      console.error("Service: Get all QP orders error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to fetch QP orders"
+      );
+    }
+  },
+
+
+  async searchFilterOptions(field: string, search: string = "", filters: any = {}): Promise<ApiResponse<string[]>> {
+    try {
+      console.log(`🔍 Fetching QP filter options for ${field}:`, { search, filters });
+      
+      const response: AxiosResponse<ApiResponse<string[]>> = await Request.post(
+        `${Endpoint.GET_QP_ORDER_FILTER_OPTIONS}/${field}`,
+        { search, ...filters }
+      );
+      
+      return response.data;
+    } catch (error: any) {
+      console.error(`Error fetching QP ${field} filter options:`, error);
+      throw new Error(error.response?.data?.message || "Failed to fetch QP filter options");
+    }
+  },
+
   // Add this method to your orderService in order.service.ts
-  async getOrdersByStaffId(id: string): Promise<ApiResponse<Order[]>> {
+  async getOrdersByStaffId(id: string, filters: any): Promise<ApiResponse<Order[]>> {
     try {
 
-      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.get(
-        `${Endpoint.GET_QP_ORDER_BY_STAFF_ID}/${id}`);
-
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
+        `${Endpoint.GET_QP_ORDER_BY_STAFF_ID}/${id}`,
+        filters
+      );
+      
+      console.log("Orders by Staff API Response:", response.data);
+      
       return {
         success: response.data.success,
         data: response.data.data || [],
         message: response.data.message,
+        totalCount: response.data.totalCount || response.data.data?.length || 0,
+        pagination: response.data.pagination,
       };
     } catch (error: any) {
-      console.error("Service: Get orders by staff ID error:", error);
+      console.error("Service: Get QP orders by staff ID error:", error);
       throw new Error(
-        error.response?.data?.message || "Failed to fetch orders by staff ID"
+        error.response?.data?.message || "Failed to fetch QP orders by staff ID"
       );
     }
   },

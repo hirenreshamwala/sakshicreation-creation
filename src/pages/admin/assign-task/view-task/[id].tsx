@@ -247,14 +247,14 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true,
                   task.status === 'Completed'
                     ? '#D1FAE5'
                     : task.status === 'Pending'
-                    ? '#FEF3C7'
-                    : '#FEE2E2',
+                      ? '#FEF3C7'
+                      : '#FEE2E2',
                 color:
                   task.status === 'Completed'
                     ? '#065F46'
                     : task.status === 'Pending'
-                    ? '#92400E'
-                    : '#B91C1C',
+                      ? '#92400E'
+                      : '#B91C1C',
                 fontWeight: 600,
                 fontSize: 13,
                 height: 24,
@@ -311,11 +311,14 @@ const ViewTaskPage: React.FC = () => {
   const router = useRouter();
   const { id } = router.query;
   const dispatch: AppDispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
   const { assignTasks, singleAssignTask, loading } = useSelector((state: RootState) => state.assignTasks);
   const [openRescheduleDialog, setOpenRescheduleDialog] = useState(false);
   const [editTaskId, setEditTaskId] = useState<string | null>(null);
   const [partyDetails, setPartyDetails] = useState<PartyDetails | null>(null);
   const todayRef = useRef<HTMLDivElement>(null);
+
+  const isDriverRole = user?.role?.roleName?.toLowerCase() === 'driver';
 
   useEffect(() => {
     dispatch(getAllAssignTasksThunk());
@@ -331,48 +334,57 @@ const ViewTaskPage: React.FC = () => {
       const company = typeof fullTask?.companyName === 'object' ? fullTask.companyName : null;
 
       if (party) {
-      setPartyDetails({
-        partyName: party?.partyName || 'Unknown',
-        companyName: typeof fullTask?.companyName === 'string' ? fullTask.companyName : undefined,
-        companyNameObj: company ? { companyName: company.companyName } : undefined,
-        address: party.address
-          ? `${party.address.unitNo}, ${party.address?.marketName?.marketName}, ${party.address?.landMark?.landmark || ''}, ${party.address?.area?.area} - ${party.address?.pincode?.pincode}`
-          : 'Address not available',
-        createdByObj: fullTask?.createdBy || singleAssignTask?.createdBy,
-        ownerMobileNo: party.ownerMobileNo || 'Not available',
-        ownerName: party.ownerName || 'Unknown',
-        ownerEmail :party.ownerEmail || 'Unknown',
-        contactPersonEmail  :party.contactPersonEmail  || 'Unknown',
-        contactForPaymentEmail  :party.contactForPaymentEmail  || 'Unknown',
-        personMobileNo: party.personMobileNo || 'Not available',
-        contactPerson: party.contactPerson || 'Not available',
-        contactMobileNo: party.contactMobileNo || 'Not available',
-        contactForPayment: party.contactForPayment || 'Not available',
-        marketName: party.address?.marketName?.marketName || 'Not available',
-        area: party.address?.area?.area || 'Not available',
-      });
-    } else {
-      setPartyDetails(null);
-    }
+        setPartyDetails({
+          partyName: party?.partyName || 'Unknown',
+          companyName: typeof fullTask?.companyName === 'string' ? fullTask.companyName : undefined,
+          companyNameObj: company ? { companyName: company.companyName } : undefined,
+          address: party.address
+            ? `${party.address.unitNo}, ${party.address?.marketName?.marketName}, ${party.address?.landMark?.landmark || ''}, ${party.address?.area?.area} - ${party.address?.pincode?.pincode}`
+            : 'Address not available',
+          createdByObj: fullTask?.createdBy || singleAssignTask?.createdBy,
+          ownerMobileNo: party.ownerMobileNo || 'Not available',
+          ownerName: party.ownerName || 'Unknown',
+          ownerEmail: party.ownerEmail || 'Unknown',
+          contactPersonEmail: party.contactPersonEmail || 'Unknown',
+          contactForPaymentEmail: party.contactForPaymentEmail || 'Unknown',
+          personMobileNo: party.personMobileNo || 'Not available',
+          contactPerson: party.contactPerson || 'Not available',
+          contactMobileNo: party.contactMobileNo || 'Not available',
+          contactForPayment: party.contactForPayment || 'Not available',
+          marketName: party.address?.marketName?.marketName || 'Not available',
+          area: party.address?.area?.area || 'Not available',
+        });
+      } else {
+        setPartyDetails(null);
+      }
     }
   }, [singleAssignTask, assignTasks]);
 
   // Filter tasks to only show those for this party
-const partyTasks = assignTasks.filter((task) => {
-  if (!singleAssignTask) return false;
+  const partyTasks = assignTasks.filter((task) => {
+    if (!singleAssignTask) return false;
 
-  const taskPartyId =
-    typeof task.partyName === 'object'
-      ? task.partyName?._id || null
-      : task.partyName || null;
+    // पहले party match check करें
+    const taskPartyId =
+      typeof task.partyName === 'object'
+        ? task.partyName?._id || null
+        : task.partyName || null;
 
-  const singlePartyId =
-    typeof singleAssignTask.partyName === 'string'
-      ? singleAssignTask.partyName || null
-      : singleAssignTask.partyName?._id || null;
+    const singlePartyId =
+      typeof singleAssignTask.partyName === 'string'
+        ? singleAssignTask.partyName || null
+        : singleAssignTask.partyName?._id || null;
 
-  return taskPartyId && singlePartyId && taskPartyId === singlePartyId;
-});
+    const isPartyMatch = taskPartyId && singlePartyId && taskPartyId === singlePartyId;
+
+    // अगर user driver है और party match हो रहा है, तो reason for visit check करें
+    if (isDriverRole && isPartyMatch) {
+      return task.reasonForVisit?.toLowerCase() === 'delivery';
+    }
+
+    // अगर user driver नहीं है, तो सभी tasks दिखाएं
+    return isPartyMatch;
+  });
 
   // Separate pending and completed tasks
   const pendingTasks = partyTasks.filter((task) => ["Pending", "Rescheduled"].includes(task.status));
@@ -530,25 +542,25 @@ const partyTasks = assignTasks.filter((task) => {
       </Box>
 
       {/* Scrollable Content Container */}
-    <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3, bgcolor: '#f5f5f5' }}>
-      {/* Pending Tasks */}
-      <Typography component="div" fontWeight={600} color="primary" mb={2}>
-        Pending Tasks
-      </Typography>
-      {sortedPendingDates.length > 0 ? (
-        sortedPendingDates.map((date) => (
-          <Box
-            key={date}
-            ref={isToday(date) ? todayRef : null}
-            mb={4}
-            sx={{
-              backgroundColor: isToday(date) ? '#a0d8b4ff' : 'transparent',
-              borderRadius: 2,
-              p: 2,
-              border: isToday(date) ? '1px solid #D1FADF' : 'none',
-            }}
-          >
-            {/* <Typography variant="subtitle1" fontWeight={600}>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3, bgcolor: '#f5f5f5' }}>
+        {/* Pending Tasks */}
+        <Typography component="div" fontWeight={600} color="primary" mb={2}>
+          Pending Tasks
+        </Typography>
+        {sortedPendingDates.length > 0 ? (
+          sortedPendingDates.map((date) => (
+            <Box
+              key={date}
+              ref={isToday(date) ? todayRef : null}
+              mb={4}
+              sx={{
+                backgroundColor: isToday(date) ? '#a0d8b4ff' : 'transparent',
+                borderRadius: 2,
+                p: 2,
+                border: isToday(date) ? '1px solid #D1FADF' : 'none',
+              }}
+            >
+              {/* <Typography variant="subtitle1" fontWeight={600}>
               Task - <span style={{ color: 'red' }}>{date}</span>
               {isToday(date) && (
                 <ThemeChip
@@ -559,61 +571,61 @@ const partyTasks = assignTasks.filter((task) => {
                 />
               )}
             </Typography> */}
-            {groupedPendingTasks[date].map((task) => (
-              <TaskCard
-                key={task._id}
-                title="Task"
-                task={task}
-                showStatusChip
-                onReschedule={handleReschedule}
-              />
-            ))}
-          </Box>
-        ))
-      ) : (
-        <Typography>No pending tasks found</Typography>
-      )}
-
-      {/* Completed Tasks */}
-      <Typography component="div" fontWeight={600} color="primary" mb={2} mt={4}>
-        History Tasks
-      </Typography>
-      {sortedCompletedDates.length > 0 ? (
-        sortedCompletedDates.map((date) => (
-          <Box
-            key={date}
-            mb={4}
-            sx={{
-              backgroundColor: isToday(date) ? '#a0d8b4ff' : 'transparent',
-              borderRadius: 2,
-              p: 2,
-              border: isToday(date) ? '1px solid #D1FADF' : 'none',
-            }}
-          >
-            <Typography variant="subtitle1" fontWeight={600}>
-              Task - <span style={{ color: 'red' }}>{date}</span>
-              {isToday(date) && (
-                <ThemeChip
-                  label="Today"
-                  color="success"
-                  size="small"
-                  sx={{ ml: 1, background: '#3a43beff' }}
+              {groupedPendingTasks[date].map((task) => (
+                <TaskCard
+                  key={task._id}
+                  title="Task"
+                  task={task}
+                  showStatusChip
+                  onReschedule={handleReschedule}
                 />
-              )}
-            </Typography>
-            {groupedCompletedTasks[date].map((task) => (
-              <TaskCard
-                key={task._id}
-                title="Task"
-                task={task}
-                onReschedule={handleReschedule}
-              />
-            ))}
-          </Box>
-        ))
-      ) : (
-        <Typography>No history tasks found</Typography>
-      )}
+              ))}
+            </Box>
+          ))
+        ) : (
+          <Typography>No pending tasks found</Typography>
+        )}
+
+        {/* Completed Tasks */}
+        <Typography component="div" fontWeight={600} color="primary" mb={2} mt={4}>
+          History Tasks
+        </Typography>
+        {sortedCompletedDates.length > 0 ? (
+          sortedCompletedDates.map((date) => (
+            <Box
+              key={date}
+              mb={4}
+              sx={{
+                backgroundColor: isToday(date) ? '#a0d8b4ff' : 'transparent',
+                borderRadius: 2,
+                p: 2,
+                border: isToday(date) ? '1px solid #D1FADF' : 'none',
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={600}>
+                Task - <span style={{ color: 'red' }}>{date}</span>
+                {isToday(date) && (
+                  <ThemeChip
+                    label="Today"
+                    color="success"
+                    size="small"
+                    sx={{ ml: 1, background: '#3a43beff' }}
+                  />
+                )}
+              </Typography>
+              {groupedCompletedTasks[date].map((task) => (
+                <TaskCard
+                  key={task._id}
+                  title="Task"
+                  task={task}
+                  onReschedule={handleReschedule}
+                />
+              ))}
+            </Box>
+          ))
+        ) : (
+          <Typography>No history tasks found</Typography>
+        )}
       </Box>
 
       {/* AssignTaskDialog for Rescheduling */}

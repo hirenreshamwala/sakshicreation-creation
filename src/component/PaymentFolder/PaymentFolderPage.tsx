@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -19,7 +18,7 @@ import {
   deletePaymentFolderThunk,
   deleteMultiplePaymentFoldersThunk,
 } from "@/store/slices/paymentFolderSlice";
-import BasicTable from "@/component/common_component/Table/themetable";
+import CustomTable2 from "@/component/common_component/Table/CustomTable2";
 import PaymentFolderDialog from "./PaymentFolderDialog";
 import PaymentAddDialog from "./PaymentAddDialog";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -33,26 +32,14 @@ import TabComponent from "@/component/Dialog/TabComponent";
 import ThemeButton from "../common_component/themebutton";
 import moment from "moment";
 import PaymentHistoryDialog from "./PaymentHistoryDialog";
-
-interface RowData {
-  id: string;
-  company: { name: string; avatar?: string };
-  party: string;
-  area: string;
-  month: string;
-  paymentAmount: number;
-  receivedAmount: number;
-  pendingAmount: number;
-  paymentType: string;
-  assignTo: string;
-  assignedDate: string;
-  remarks: string;
-}
+import { paymentFolderService } from "@/services/paymentFolder.service";
+import { toast } from 'react-toastify'; // Add if using toast
 
 const PaymentFolderPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { paymentFolders } = useAppSelector((state) => state.paymentFolders || {});
+  const { paymentFolders, loading, totalCount } = useAppSelector((state) => state.paymentFolders || {});
   const { user } = useAppSelector((state) => state.auth);
+  const { companies } = useAppSelector((state) => state.company);
   const [open, setOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [companyTab, setCompanyTab] = useState(0);
@@ -64,36 +51,21 @@ const PaymentFolderPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
   const [selectedPaymentData, setSelectedPaymentData] = useState<any>(null);
-  const { companies } = useAppSelector((state) => state.company);
+  
   const canViewGlobal = user?.role?.permissions?.payment_folders?.view_global;
   const canViewOwn = user?.role?.permissions?.payment_folders?.view_own;
   const cancreate = user?.role?.permissions?.payment_folders?.create;
   const canedit = user?.role?.permissions?.payment_folders?.edit;
   const candelete = user?.role?.permissions?.payment_folders?.delete;
 
-  const columns = useMemo(() => {
-    const baseColumns = [
-      { id: "checkbox", label: "" },
-      { id: "company", label: "Company" },
-      { id: "party", label: "Party" },
-      { id: "mobileNumber", label: "Mobile Number" },
-      { id: "area", label: "Area" },
-      { id: "month", label: "Month" },
-      { id: "paymentAmount", label: "Payment Amount" },
-      { id: "receivedAmount", label: "Received Amount" },
-      { id: "pendingAmount", label: "Pending Amount" },
-      // { id: "paymentType", label: "Payment Type" },
-      { id: "assignTo", label: "Assigned To" },
-      { id: "assignedDate", label: "Assigned Date" },
-      { id: "remarks", label: "Remarks" },
-    ];
+  // Filter states - similar to ComplainPage
+  const [isInitialLoad, setIsInitialLoad] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
-    if (canedit || candelete) {
-      baseColumns.push({ id: "action", label: "Action" });
-    }
-
-    return baseColumns;
-  }, [canedit, candelete]);
+  // Filter options states
+  const [filterOptionsData, setFilterOptionsData] = useState<{ [key: string]: string[] }>({});
+  const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
+  const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
 
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
@@ -104,7 +76,7 @@ const PaymentFolderPage: React.FC = () => {
     if (hasSakshi) tabs.push({ id: 'sakshi', name: 'Sakshi Creation', companyId: getCompanyWisePermission(5) });
     if (hasQP) tabs.push({ id: 'qp', name: 'Quality Packaging', companyId: getCompanyWisePermission(6) });
     return tabs;
-  }, [user, hasSakshi, hasQP]);
+  }, [hasSakshi, hasQP]);
 
   const selectedCompanyId = hasBothCompanies
     ? companyTabs[companyTab]?.companyId
@@ -112,28 +84,181 @@ const PaymentFolderPage: React.FC = () => {
       ? getCompanyWisePermission(5)
       : getCompanyWisePermission(6);
 
-  const companyFilteredFolders = useMemo(() => {
-    if (!selectedCompanyId) return paymentFolders;
-    return paymentFolders.filter((folder: any) => folder.company?._id === selectedCompanyId || folder.company === selectedCompanyId);
-  }, [paymentFolders, selectedCompanyId]);
+  const selectedCompanyName = useMemo(() => {
+    if (hasBothCompanies) {
+      return companyTabs[companyTab]?.name || '';
+    }
+    return hasSakshi ? 'Sakshi Creation' : 'Quality Packaging';
+  }, [hasBothCompanies, companyTabs, companyTab, hasSakshi]);
 
-  const areaTabs = useMemo(() => {
-    return ['All', "K-1", "K-2", "K-3", "K-4"];
-  }, [companyFilteredFolders]);
+  const areaTabs = useMemo(() => ['All', "K-1", "K-2", "K-3", "K-4"], []);
+
+  // Initialize currentFilterState with company and area filters after selectedCompanyName is computed
+  const [currentFilterState, setCurrentFilterState] = useState<any>(() => {
+    const initialState = {
+      page: 1,
+      pageSize: 10,
+      search: "",
+      filters: {
+        company: selectedCompanyName ? [selectedCompanyName] : [],
+        area: [], // Initial areaTab=0, so empty array for "All"
+      },
+      includeCounts: true,
+      isPagination: true,
+      startDate: null,
+      endDate: null,
+    };
+    return initialState;
+  });
+
+  const [appliedFilterState, setAppliedFilterState] = useState<any>({});
+
+  // Add company filter to currentFilterState (using name)
+  useEffect(() => {
+    if (selectedCompanyName) {
+      setCurrentFilterState(prev => ({
+        ...prev,
+        filters: {
+          ...prev.filters,
+          company: [selectedCompanyName]
+        },
+        page: 1
+      }));
+    }
+  }, [selectedCompanyName]);
+
+  // Area tab filter (server-side)
+  useEffect(() => {
+    const selectedArea = areaTab === 0 ? [] : [areaTabs[areaTab]];
+    setCurrentFilterState(prev => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        area: selectedArea
+      },
+      page: 1
+    }));
+  }, [areaTab, areaTabs]);
 
   useEffect(() => {
     setAreaTab(0);
   }, [selectedCompanyId]);
 
-  const finalFilteredFolders = useMemo(() => {
-    if (areaTab === 0) return companyFilteredFolders;
-    const selectedArea = areaTabs[areaTab];
-    return companyFilteredFolders.filter((folder: any) => folder.area === selectedArea);
-  }, [companyFilteredFolders, areaTab, areaTabs]);
+  // Helper to get first mobile/contact
+  const getFirstContact = useCallback((party: any) => {
+    return party?.contactForPayment || party?.contactMobileNo || party?.contactWhatsAppNo || party?.ownerMobileNo || party?.ownerWhatsAppNo || party?.mobileNumber || 'N/A';
+  }, []);
+
+  // Load payment folders with filters (similar to loadComplains)
+  const loadPaymentFolders = useCallback(async () => {
+    if (!selectedCompanyName) {
+      console.error("Cannot load payment folders: Company Name is undefined");
+      return;
+    }
+    setIsLoadingData(true);
+   
+    try {
+      const params = {
+        ...currentFilterState,
+        filters: {
+          ...currentFilterState.filters,
+          // Ensure company filter
+          ...(currentFilterState.filters.company ? {} : { company: [selectedCompanyName] }),
+        },
+        isPagination: true,
+        includeCounts: true
+      };
+      console.log("📡 Loading payment folders with params:", params);
+      await dispatch(getAllPaymentFoldersThunk(params));
+      setIsInitialLoad(true);
+    } catch (err: any) {
+      console.error("❌ Error loading payment folders:", err);
+      toast.error(err.message || "Failed to load payment folders");
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [dispatch, currentFilterState, selectedCompanyName]);
+
+  // Load filter options (similar to loadFilterOptions in ComplainPage)
+  const loadFilterOptions = async (field: string) => {
+    if (!selectedCompanyName) {
+      console.error("Cannot load filter options: Company Name is undefined");
+      return;
+    }
+    setLoadingFilterOptions(true);
+    try {
+      const filterPayload = {
+        ...currentFilterState.filters,
+        startDate: currentFilterState.startDate,
+        endDate: currentFilterState.endDate,
+        company: [selectedCompanyName],
+      };
+      console.log(`🔍 Loading payment folder filter options for ${field}:`, filterPayload);
+      const response = await paymentFolderService.searchFilterOptions(field, "", filterPayload);
+      if (response.success && response.data) {
+        setFilterOptionsData(prev => ({
+          ...prev,
+          [field]: response.data || []
+        }));
+      }
+    } catch (error: any) {
+      console.error(`Error loading payment folder filter options for ${field}:`, error);
+      toast.error(`Failed to load filter options for ${field}`);
+    } finally {
+      setLoadingFilterOptions(false);
+    }
+  };
+
+  // Handle filter field selection
+  const handleFilterFieldSelect = useCallback(async (field: string | null) => {
+    console.log("PaymentFolder handleFilterFieldSelect called with:", field);
+    setSelectedFilterField(field);
+    if (field && !filterOptionsData[field]) {
+      try {
+        await loadFilterOptions(field);
+      } catch (error) {
+        console.error("Error loading payment folder filter options:", error);
+        toast.error(`Failed to load options for ${field}`);
+      }
+    }
+    return Promise.resolve();
+  }, [filterOptionsData, currentFilterState, loadFilterOptions]);
+
+  // Handle filter changes
+  const handleFiltersChange = useCallback((newFilters: { [key: string]: string[] }) => {
+    console.log("PaymentFolder Filters changed to:", newFilters);
+    setCurrentFilterState((prev: any) => ({
+      ...prev,
+      filters: newFilters,
+      page: 1,
+    }));
+  }, []);
+
+  // Effect to load payment folders when filters change
+  useEffect(() => {
+    if (!selectedCompanyName) return;
+    const isSame = JSON.stringify(appliedFilterState) === JSON.stringify(currentFilterState);
+    if (!isSame) {
+      console.log("🔄 PaymentFolder Filter state changed, loading payment folders...");
+      const timer = setTimeout(() => {
+        loadPaymentFolders();
+        setAppliedFilterState(currentFilterState);
+      }, 300); // Add small delay for better UX
+      return () => clearTimeout(timer);
+    }
+  }, [currentFilterState, appliedFilterState, loadPaymentFolders, selectedCompanyName]);
+
+  // Effect for initial load
+  // useEffect(() => {
+  //   if (user && !isInitialLoad && selectedCompanyName) {
+  //     console.log("🚀 Initial load started for payment folders");
+  //     loadPaymentFolders();
+  //   }
+  // }, [user, isInitialLoad, loadPaymentFolders, selectedCompanyName]);
 
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true as any));
-  }, []);
+  }, [dispatch, companies.length]);
 
   const handleMultipleDelete = async () => {
     try {
@@ -148,6 +273,7 @@ const PaymentFolderPage: React.FC = () => {
 
       setSelectedRows([]);
       setDeleteDialogOpen(false);
+      loadPaymentFolders(); // Reload after delete
     } catch (err: any) {
       Swal.fire({
         title: "Error!",
@@ -202,6 +328,7 @@ const PaymentFolderPage: React.FC = () => {
           icon: "success",
           confirmButtonColor: "#7F56D9",
         });
+        loadPaymentFolders(); // Reload after delete
       } catch (err: any) {
         Swal.fire({
           title: "Error!",
@@ -213,50 +340,47 @@ const PaymentFolderPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (!paymentFolders.length) dispatch(getAllPaymentFoldersThunk());
-  }, []);
+  const formattedRows = useMemo(() => {
+    if (!paymentFolders || !Array.isArray(paymentFolders)) return [];
+    return paymentFolders.map((folder, index) => ({
+      _id: folder?._id || `temp-${index}`,
+      id: folder?._id || `temp-${index}`,
+      company: folder.company,
+      partyObj: folder.party, // Keep full object
+      party: folder.party?.partyName || 'N/A',
+      mobileNumber: getFirstContact(folder.party),
+      area: folder.area || 'N/A',
+      month: folder.month || 'N/A',
+      paymentAmount: folder.paymentAmount || 0,
+      receivedAmount: folder.receivedAmount || 0,
+      pendingAmount: folder.pendingAmount || 0,
+      assignTo: folder.assignedTo ? `${folder.assignedTo.firstName} ${folder.assignedTo.lastName}` : 'Unassigned',
+      assignedDate: folder.assignedDate || '',
+      remarks: folder.remarks || '',
+      payments: folder.payments || [],
+      createdAt: folder.createdAt || new Date().toISOString(),
+    }));
+  }, [paymentFolders, getFirstContact]);
 
-  const mapFoldersToRows = () =>
-    finalFilteredFolders?.map((folder: any) => ({
-      ...folder,
-      id: folder._id,
-      party: folder.party?.partyName || "Unknown",
-      mobileNumber: folder.party?.mobileNumber || "N/A",
-      assignTo: folder.assignedTo
-        ? `${folder.assignedTo.firstName} ${folder.assignedTo.lastName}`
-        : "Unassigned",
-      assignedDate: folder.assignedDate,
-    }))
-      .sort((a: any, b: any) => a.party.localeCompare(b.party));
-
-  const getRowColor = (row: any) => {
-    if (row.pendingAmount === 0) return "#e6fffa";
-    return "";
-  };
-
-  const truncateText = (text: string, maxLength: number) => {
-    if (!text) return "N/A";
-    if (text.length <= maxLength) return text;
-    return `${text.substring(0, maxLength)}...`;
-  };
-
-  const renderRow = (row: any) => (
+  // Render row function
+  const renderRow = useCallback((row: any, index: number) => (
     <>
       <TableCell>
         <Box display="flex" alignItems="center" gap={1}>
           <Avatar
             sx={{ width: 32, height: 32 }}
-            src={row.company.avatar}
-            alt={row.company.companyName}
+            src={row.company?.avatar}
+            alt={row.company?.companyName}
           />
           <Typography fontWeight={500} sx={{ fontSize: 14 }}>
-            {row.company.companyName}
+            {row.company?.companyName}
           </Typography>
         </Box>
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.party}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row?.party?.contactForPayment || row?.party?.contactMobileNo || row?.party?.contactWhatsAppNo || row?.party?.ownerMobileNo || row?.party?.ownerWhatsAppNo}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>
+        {getFirstContact(row.partyObj)}
+      </TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.month}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>₹{row.paymentAmount}</TableCell>
@@ -268,7 +392,7 @@ const PaymentFolderPage: React.FC = () => {
       <TableCell sx={{ fontSize: 14 }}>{moment(row.assignedDate).format('DD-MM-YYYY')}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>
         <Typography title={row.remarks} noWrap>
-          {truncateText(row.remarks, 20)}
+          {row.remarks?.substring(0, 20) || 'N/A'}...
         </Typography>
       </TableCell>
       <TableCell sx={{ display: "flex", gap: 1 }}>
@@ -304,15 +428,79 @@ const PaymentFolderPage: React.FC = () => {
         )}
       </TableCell>
     </>
-  );
+  ), [canedit, candelete, handleViewPaymentHistory, handleAddPayment, handleEdit, handleDelete, paymentFolders, getFirstContact]);
+
+  // Columns for CustomTable2
+  const columns = useMemo(() => [
+  { id: 'checkbox', label: '' },
+  { id: 'company', label: 'Company', value: 'company' }, // value matches backend field
+  { id: 'party', label: 'Party', value: 'party' },
+  { id: 'mobileNumber', label: 'Mobile Number', value: null }, // Skip filter for derived field
+  { id: 'area', label: 'Area', value: 'area' },
+  { id: 'month', label: 'Month', value: 'month' },
+  { id: 'paymentAmount', label: 'Payment Amount' /*value: 'paymentAmount'*/ },
+  { id: 'receivedAmount', label: 'Received Amount'/* value: 'receivedAmount'*/ },
+  { id: 'pendingAmount', label: 'Pending Amount'/* value: 'pendingAmount'*/ },
+  { id: 'assignTo', label: 'Assigned To', value: 'assignTo' },
+  { id: 'assignedDate', label: 'Assigned Date', value: 'assignedDate' },
+  { id: 'remarks', label: 'Remarks', value: 'remarks' },
+  { id: 'action', label: 'Action', value: null }, // Skip action
+], [canedit, candelete]);
+
+  // Excel headers and data
+  const excelHeaders = useMemo(() => [
+    "Company", "Party", "Mobile Number", "Area", "Month", "Payment Amount",
+    "Received Amount", "Pending Amount", "Assigned To", "Assigned Date", "Remarks"
+  ], []);
+  const excelData = useMemo(() => {
+    return formattedRows.map((row) => ({
+      "Company": row.company?.companyName || 'N/A',
+      "Party": row.party,
+      "Mobile Number": row.mobileNumber,
+      "Area": row.area,
+      "Month": row.month,
+      "Payment Amount": row.paymentAmount,
+      "Received Amount": row.receivedAmount,
+      "Pending Amount": row.pendingAmount,
+      "Assigned To": row.assignTo,
+      "Assigned Date": moment(row.assignedDate).format('DD-MM-YYYY'),
+      "Remarks": row.remarks,
+    }));
+  }, [formattedRows]);
+
+  const getRowColor = useCallback((row: any) => {
+    if (row.pendingAmount === 0) return "#e6fffa";
+    return "";
+  }, []);
 
   const handleSelectRow = (id: string) =>
     setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]));
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.checked) setSelectedRows(finalFilteredFolders.map((row: any) => row._id));
+    if (event.target.checked) setSelectedRows(formattedRows.map((row: any) => row._id));
     else setSelectedRows([]);
   };
+
+  // Show loading while initial data is being loaded
+  if ((loading || isLoadingData) && !isInitialLoad && paymentFolders.length === 0) {
+    return <div>Loading Payment Folders...</div>;
+  }
+
+  // Show error if company is not available
+  if (!selectedCompanyName) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '200px'
+      }}>
+        <Typography color="error">
+          Company information is not available. Please try again.
+        </Typography>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -338,11 +526,10 @@ const PaymentFolderPage: React.FC = () => {
           />
         </Box>
       )}
-
-      {!hasBothCompanies && selectedCompanyId && (
+      {!hasBothCompanies && selectedCompanyName && (
         <Box sx={{ mb: 2, p: 2, backgroundColor: 'primary.light', color: 'primary.contrastText', borderRadius: 1 }}>
           <Typography variant="h6">
-            Showing payment folders for: {hasSakshi ? 'Sakshi' : 'QP'}
+            Showing payment folders for: {selectedCompanyName}
           </Typography>
         </Box>
       )}
@@ -351,7 +538,7 @@ const PaymentFolderPage: React.FC = () => {
         <TabComponent
           activeTab={areaTab}
           setActiveTab={setAreaTab}
-          tabList={areaTabs as string[]}
+          tabList={areaTabs}
           align="left"
         />
       </Box>
@@ -369,49 +556,30 @@ const PaymentFolderPage: React.FC = () => {
           </ThemeButton>
         </Box>
       )}
-
-      <Box
-        sx={{
-          maxHeight: "70vh",
-          overflowY: "auto",
-          px: 2,
-          py: 2,
-          "&::-webkit-scrollbar": {
-            width: "8px",
-          },
-          "&::-webkit-scrollbar-track": {
-            background: "#f1f1f1",
-          },
-          "&::-webkit-scrollbar-thumb": {
-            background: "#888",
-            borderRadius: "4px",
-          },
-          "&::-webkit-scrollbar-thumb:hover": {
-            background: "#555",
-          },
-        }}
-      >
-        {finalFilteredFolders.length === 0 ? (
-          <Typography>
-            No payment folders found for {hasBothCompanies ? companyTabs[companyTab]?.name : (hasSakshi ? 'Sakshi' : 'QP')}.
-          </Typography>
-        ) : (
-          <BasicTable
-            tableHeader={columns}
-            rowData={mapFoldersToRows()}
-            showDatePicker={true}
-            showSearch={true}
-            showFillter={true}
-            showExcelDownload={true}
-            renderRow={renderRow}
-            onSelectAll={handleSelectAll}
-            onSelectRow={handleSelectRow}
-            selectedRows={selectedRows}
-            title="Payment Folder"
-            getRowColor={getRowColor}
-          />
-        )}
-      </Box>
+      <CustomTable2
+        showDatePicker={true}
+          tableHeader={columns}
+          showFillter={true}
+          showSearch={true}
+          title={`Payment Folders - ${selectedCompanyName}`}
+          showExcelDownload={false}
+          excelHeaders={excelHeaders}
+          excelData={excelData}
+          rowData={formattedRows}
+          setCurrentFilterState={setCurrentFilterState}
+          currentFilterState={currentFilterState}
+          renderRow={renderRow}
+          totalRows={totalCount || formattedRows.length}
+          onFilterFieldSelect={handleFilterFieldSelect}
+          selectedFilterField={selectedFilterField}
+          filterOptionsData={filterOptionsData}
+          loadingFilterOptions={loadingFilterOptions}
+          onFiltersChange={handleFiltersChange}
+          onSelectAll={handleSelectAll}
+          onSelectRow={handleSelectRow}
+          selectedRows={selectedRows}
+          getRowColor={getRowColor}
+        />
 
       <Dialog
         open={deleteDialogOpen}
@@ -442,26 +610,36 @@ const PaymentFolderPage: React.FC = () => {
       </Dialog>
 
       {/* Payment Folder Dialog for Add/Edit */}
-      {open ? <PaymentFolderDialog
-        open={open}
-        onClose={() => setOpen(false)}
-        rowData={rowData as any}
-        modalType={modalType}
-      /> : null}
-
+      {open && (
+        <PaymentFolderDialog
+          open={open}
+          onClose={() => {
+            setOpen(false);
+            loadPaymentFolders(); // Reload after add/edit
+          }}
+          rowData={rowData as any}
+          modalType={modalType}
+        />
+      )}
       {/* Payment Add Dialog for adding payments */}
-      {paymentDialogOpen ? <PaymentAddDialog
-        open={paymentDialogOpen}
-        onClose={() => setPaymentDialogOpen(false)}
-        folderData={selectedFolder}
-      /> : null}
-
+      {paymentDialogOpen && (
+        <PaymentAddDialog
+          open={paymentDialogOpen}
+          onClose={() => {
+            setPaymentDialogOpen(false);
+            loadPaymentFolders(); // Reload after add payment
+          }}
+          folderData={selectedFolder}
+        />
+      )}
       {/* Payment History Dialog */}
-      {showPaymentHistory ? <PaymentHistoryDialog
-        open={showPaymentHistory}
-        onClose={handleClosePaymentHistory}
-        paymentData={selectedPaymentData}
-      /> : null}
+      {showPaymentHistory && (
+        <PaymentHistoryDialog
+          open={showPaymentHistory}
+          onClose={handleClosePaymentHistory}
+          paymentData={selectedPaymentData}
+        />
+      )}
     </>
   );
 };

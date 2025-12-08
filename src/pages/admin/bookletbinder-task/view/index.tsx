@@ -58,6 +58,7 @@ const BookletBinderTaskView = () => {
     isCreasing: false,
     isFoil: false,
     isPunching: false,
+    punchingType: "",
   })
 
   // Fetch order data
@@ -100,6 +101,7 @@ const BookletBinderTaskView = () => {
         isCreasing: singleOrder.isCreasing || false,
         isFoil: singleOrder.isFoil || false,
         isPunching: singleOrder.isPunching || false,
+        punchingType: singleOrder.punchingType || "",
       })
       // Initialize booklet papers
       const printerPaperCount = singleOrder.printerPapers?.length || 0
@@ -303,7 +305,8 @@ const BookletBinderTaskView = () => {
         isCreasing: formData.isCreasing,
         isFoil: formData.isFoil,
         isPunching: formData.isPunching,
-        receivedDate: currentDate
+        receivedDate: currentDate,
+        punchingType: formData.isPunching ? formData.punchingType : "",
       }
 
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
@@ -463,8 +466,8 @@ const BookletBinderTaskView = () => {
         </Box>
         <Box mb={2}>
           <ThemeInput
-            labelName="Original Remarks"
-            value={singleOrder.remarks || "N/A"}
+            labelName="Remarks"
+            value={singleOrder.bookletBinderRemarks || "N/A"}
             multiline
             rows={2}
             sx={{ width: "100%" }}
@@ -656,13 +659,6 @@ const BookletBinderTaskView = () => {
             <Box key={`booklet-${index}`} mb={2} p={2} border={1} borderRadius={2} borderColor="#ddd">
               <Typography fontWeight={600}>{paper.paperName}</Typography>
               <Stack direction="row" spacing={2} mt={1}>
-                <ThemeInput
-                  labelName="Number of Sheets Used"
-                  value={paper.numberOfSheetsUsed}
-                  onChange={(e) => handleBookletPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditBookletBinderTask }}
-                />
                 <ThemeSelect
                   label="Paper Type"
                   options={materialNameOptions}
@@ -696,19 +692,26 @@ const BookletBinderTaskView = () => {
                   disabled={!paper.paperType || !paper.gsm || canEditBookletBinderTask}
                 />
                 <ThemeInput
+                  labelName="Number of Sheets Used"
+                  value={paper.numberOfSheetsUsed}
+                  onChange={(e) => handleBookletPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
+                  fullWidth
+                  InputProps={{ readOnly: !canEditBookletBinderTask }}
+                />
+                {/* <ThemeInput
                   labelName="Rate / Unit"
                   value={paper.ratePerUnit}
                   onChange={(e) => handleBookletPaperChange(index, 'ratePerUnit', e.target.value)}
                   fullWidth
                   InputProps={{ readOnly: !canEditBookletBinderTask }}
-                />
+                /> */}
                 <ThemeInput
                   labelName="Wastage"
                   value={paper.wastage}
                   onChange={(e) => handleBookletPaperChange(index, 'wastage', e.target.value)}
                   type="number"
                   fullWidth
-                InputProps={{ readOnly: !canEditBookletBinderTask }}
+                  InputProps={{ readOnly: !canEditBookletBinderTask }}
                 />
               </Stack>
             </Box>
@@ -853,32 +856,44 @@ const BookletBinderTaskView = () => {
             label="Pasting"
             checked={formData.isPasting}
             onChange={(e) => handleInputChange("isPasting", e.target.checked)}
-            disabled={!canEditBookletBinderTask}
+            disabled
           />
           <ThemeCheckbox
             label="Cutting"
             checked={formData.isCutting}
             onChange={(e) => handleInputChange("isCutting", e.target.checked)}
-            disabled={!canEditBookletBinderTask}
+            disabled
           />
           <ThemeCheckbox
             label="Creasing"
             checked={formData.isCreasing}
             onChange={(e) => handleInputChange("isCreasing", e.target.checked)}
-            disabled={!canEditBookletBinderTask}
+            disabled
           />
           <ThemeCheckbox
             label="Foil"
             checked={formData.isFoil}
             onChange={(e) => handleInputChange("isFoil", e.target.checked)}
-            disabled={!canEditBookletBinderTask}
+            disabled
           />
           <ThemeCheckbox
             label="Punching"
             checked={formData.isPunching}
             onChange={(e) => handleInputChange("isPunching", e.target.checked)}
-            disabled={!canEditBookletBinderTask}
+            disabled
           />
+          {formData.isPunching && (
+            <Box mb={3} mt={2}>
+              <ThemeInput
+                labelName="Punching Type"
+                placeholder="e.g., Round, Square, Slot, etc."
+                value={formData.punchingType}
+                onChange={(e) => handleInputChange("punchingType", e.target.value)}
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
+            </Box>
+          )}
           {/* <ThemeCheckbox
               label="Paper-1"
               checked={formData.isPaper1}
@@ -907,18 +922,6 @@ const BookletBinderTaskView = () => {
         </Box>
 
         {/* Booklet Binder Remarks */}
-        <Box mb={3}>
-          <ThemeInput
-            labelName="Booklet Binder Remarks"
-            placeholder="Enter your remarks about the booklet binding work..."
-            value={bookletBinderRemarks}
-            onChange={(e) => setBookletBinderRemarks(e.target.value)}
-            multiline
-            rows={3}
-            sx={{ width: "100%" }}
-            InputProps={{ readOnly: !canEditBookletBinderTask }}
-          />
-        </Box>
 
         {/* File Upload for Booklet Binder Files */}
         <Box mb={3}>

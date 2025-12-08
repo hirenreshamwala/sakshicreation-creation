@@ -10,7 +10,7 @@ function PurchaseEditPage() {
   // Convert type to string (router.query always gives string | string[] | undefined)
   const typeValue = Array.isArray(type) ? type[0] : type
 
-  if (!id || !typeValue) {
+  if (!id) {
     return <div>Loading...</div>
   }
 
