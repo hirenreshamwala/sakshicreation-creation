@@ -604,7 +604,7 @@ const ViewLeadPage: React.FC = () => {
         )}
       </Box>
 
-      <AssignLeadDialog
+      {open ? <AssignLeadDialog
         open={open}
         onClose={() => {
           setOpen(false);
@@ -612,13 +612,13 @@ const ViewLeadPage: React.FC = () => {
         }}
         lead={selectedLead}
         onSuccess={handleAssignSuccess}
-      />
+      /> : null}
 
-      <CallHistoryDialog
+      {openHistoryDialog ? <CallHistoryDialog
         open={openHistoryDialog}
         onClose={() => setOpenHistoryDialog(false)}
         data={selectedLead?.callHistory}
-      />
+      /> : null}
     </Box>
   );
 };

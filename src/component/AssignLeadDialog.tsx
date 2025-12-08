@@ -276,10 +276,10 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accou
                 toast.error(leadError);
                 dispatch(clearError());
             }
-            if (accountError) {
-                toast.error(accountError);
-                dispatch(clearError());
-            }
+            // if (accountError) {
+            //     toast.error(accountError);
+            //     dispatch(clearError());
+            // }
             if (staffError) {
                 toast.error(staffError);
                 dispatch(clearError());
@@ -289,7 +289,7 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accou
                 dispatch(clearSuccessMessage());
             }
         }
-    }, [leadError, accountError, staffError, successMessage, open, dispatch]);
+    }, [leadError, staffError, successMessage, open, dispatch]);
 
     useEffect(() => {
         return () => {

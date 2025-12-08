@@ -13,10 +13,7 @@ import AssignTaskDialog from '@/component/assigntaskdailog';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 import moment from 'moment'
-import {
-  getAccountMasterByIdThunk,
-  getAllAccountMastersThunk,
-} from '@/store/slices/accountMasterSlice';
+import { getAccountMasterByIdThunk } from '@/store/slices/accountMasterSlice';
 import {
   getAllAssignTasksThunk,
   createAssignTaskThunk,
@@ -776,15 +773,15 @@ const ViewCompanyPage: React.FC = () => {
         companyId={id as string}
       /> */}
 
-      <InputReasonDialog
+      {inputReasonOpen ? <InputReasonDialog
         open={inputReasonOpen}
         onClose={() => setInputReasonOpen(false)}
         onSave={(reason) => {
           setReasons([...reasons, { label: reason, value: reason }]);
         }}
-      />
+      /> : null}
 
-      <AssignLeadDialog
+      {openAssignPartyDialog ? <AssignLeadDialog
         open={openAssignPartyDialog}
         onClose={() => {
           setOpenAssignPartyDialog(false);
@@ -793,7 +790,7 @@ const ViewCompanyPage: React.FC = () => {
         type='add'
         lead={selectedLead}
         onSuccess={() => { }}
-      />
+      /> : null}
     </Box>
   );
 };

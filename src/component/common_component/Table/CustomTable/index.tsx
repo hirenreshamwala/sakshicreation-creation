@@ -109,6 +109,8 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   pageName,
   getFilterOptions,
   defaultAccountMasterFilter,
+  downloadLoading,
+  handleDownloadExcel,
   currentFilterState = {
     page: 1,
     pageSize: 10,
@@ -248,7 +250,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
     setTempSearch("");
     setTempStartDate(null);
     setTempEndDate(null);
-    
+
     if (setCurrentFilterState) {
       setCurrentFilterState((prev: any) => ({
         ...prev,
@@ -292,17 +294,12 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
 
   // Get unique values for filter dropdown - with lazy loading
   const getUniqueValues = useCallback(async (field: string) => {
-    console.log('getUniqueValues -------------------------------')
     // Check if data already exists in Redux
     const existingData = filterOptionsFromRedux[field];
     if (existingData && existingData.length > 0) {
-      console.log('returns -------------------------------')
       return existingData;
     }
 
-    // If getFilterOptions function is provided, use it
-
-    console.log('getFilterOptions -------------------------------')
     setLoadingOptions(prev => ({ ...prev, [field]: true }));
 
     try {
@@ -377,75 +374,6 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
       .map(col => col.value).filter(v => v !== undefined);
   }, [tableHeader]);
 
-  // Map filter labels to rowData keys dynamically
-  const filterFieldToKey = useMemo(() => {
-    const mapping: { [key: string]: keyof T } = {};
-    tableHeader.forEach((col) => {
-      let key: keyof T;
-      switch (col.label) {
-        case "Company":
-          key = "company" as keyof T;
-          break;
-        case "Created Date":
-        case "Date":
-          key = "createdDate" as keyof T;
-          break;
-        case "Party":
-          key = "party" as keyof T;
-          break;
-        case "Contact Person":
-          key = "contactPerson" as keyof T;
-          break;
-        case "Party Tag":
-          key = "partyTag" as keyof T;
-          break;
-        case "Mobile No.":
-          key = "mobile" as keyof T;
-          break;
-        case "Reason to Visit":
-          key = "reason" as keyof T;
-          break;
-        case "Market":
-        case "Market Name":
-          key = "market" as keyof T;
-          break;
-        case "Area":
-          key = "area" as keyof T;
-          break;
-        case "Remarks":
-          key = "remarks" as keyof T;
-          break;
-        case "Status":
-          key = "status" as keyof T;
-          break;
-        case "Created By":
-        case "Assign By":
-          key = "createdBy" as keyof T;
-          break;
-        case "Assigned to":
-        case "Assign To":
-          key = "assignedTo" as keyof T;
-          break;
-        case "Address":
-          key = "address" as keyof T;
-          break;
-        case "OrderNo":
-          key = "orderid" as keyof T;
-          break;
-        case "Driver":
-          key = "driverEmail" as keyof T;
-          break;
-        case "Last Status Change":
-          key = "lastStatusChangeDate" as keyof T;
-          break;
-        default:
-          key = col.id as keyof T;
-      }
-      mapping[col.label] = key;
-    });
-    return mapping;
-  }, [tableHeader]);
-
   // For display, use the server-filtered data
   const displayRows = rowData;
 
@@ -476,41 +404,9 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
     setColWidths(newWidths);
   }, [tableHeader, rowData]);
 
-  const handleExcelDownload = useCallback(() => {
-    const headers = excelHeaders
-      ? excelHeaders
-      : tableHeader
-        .filter((col) => col.id !== "checkbox" && col.id !== "action")
-        .map((col) => col.label);
-
-    const array = displayRows.map((row) => id ? row.id : (row as any)._id);
-    const data = excelData
-      ? excelData?.filter((item) => array.includes(item.id))
-      : displayRows.map((row) => {
-        const rowData: { [key: string]: any } = {};
-        tableHeader
-          .filter((col) => col.id !== "checkbox" && col.id !== "action")
-          .forEach((col) => {
-            const key = filterFieldToKey[col.label];
-            let value = row[key];
-            if (key === "company") {
-              value = (row[key] as any)?.name || "N/A";
-            } else if (key === "lastStatusChangeDate") {
-              value = row[key] ? moment(row[key] as string).format('DD/MM/YYYY HH:mm') : "N/A";
-            } else {
-              value = value ?? "N/A";
-            }
-            rowData[col.label] = value;
-          });
-        return rowData;
-      });
-
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "TableData");
-    XLSX.writeFile(workbook, `${title || "Table"}.xlsx`);
-  }, [excelHeaders, excelData, displayRows, tableHeader, filterFieldToKey, title, id]);
+  const handleExcelDownload = () => {
+    handleDownloadExcel();
+  };
 
   const getPaginationItems = () => {
     const maxVisiblePages = 5;
@@ -738,31 +634,36 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
                   alignItems: "center",
                 }}
                 title="Download as Excel"
+                disabled={downloadLoading} // disable button while loading
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="16"
-                  width="16"
-                  viewBox="0 0 384 512"
-                >
-                  <path
-                    fill="#667085"
-                    d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
-                       10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
-                       0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
-                       8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
-                       405.5 192 373 192 373c-6.4 14.8-10 20-36.6 
-                       68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 
-                       0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 
-                       .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 
-                       6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 
-                       6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 
-                       10.6-6.3H274c9.5-.1 15.2 10.4 10.1 
-                       18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
-                       12.5 2.5 17 7l97.9 98c4.5 4.5 7 
-                       10.6 7 16.9z"
-                  />
-                </svg>
+                {downloadLoading ? (
+                  <CircularProgress size={16} /> // small loader inside button
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="16"
+                    width="16"
+                    viewBox="0 0 384 512"
+                  >
+                    <path
+                      fill="#667085"
+                      d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
+             10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
+             0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
+             8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
+             405.5 192 373 192 373c-6.4 14.8-10 20-36.6 
+             68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 
+             0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 
+             .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 
+             6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 
+             6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 
+             10.6-6.3H274c9.5-.1 15.2 10.4 10.1 
+             18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
+             12.5 2.5 17 7l97.9 98c4.5 4.5 7 
+             10.6 7 16.9z"
+                    />
+                  </svg>
+                )}
               </IconButton>
             )}
           </Box>

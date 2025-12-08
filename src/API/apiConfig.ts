@@ -70,13 +70,13 @@ const Endpoint = {
   GET_INVENTORY_BOX: `${BaseURL}/api/inventory/getbox`,
 
   GETALLOWSTOCKS: `${BaseURL}/api/lowstock/getall`,
-GETLOWSTOCKBYID: (id: string) => `${BaseURL}/api/lowstock/getbyid/${id}`,
-CREATELOWSTOCK: `${BaseURL}/api/lowstock/create`,
-UPDATELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/update/${id}`,
-DELETELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/delete/${id}`,
-CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
+  GETLOWSTOCKBYID: (id: string) => `${BaseURL}/api/lowstock/getbyid/${id}`,
+  CREATELOWSTOCK: `${BaseURL}/api/lowstock/create`,
+  UPDATELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/update/${id}`,
+  DELETELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/delete/${id}`,
+  CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
 
-  
+
   //staff
   GET_ROLE: `${BaseURL}/api/staff/getrol`,
 
@@ -248,8 +248,10 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
 
   // filteres data 
   ACCOUNT_MASTER_FILTER: `${BaseURL}/api/account-master/filter-options`,
-  PARTY_CALL_FILTER:`${BaseURL}/api/lead/get-filter`,
-  ASSIGN_TASK_FILTER:`${BaseURL}/api/assign-task/get-filter`,
+  PARTY_CALL_FILTER: `${BaseURL}/api/lead/get-filter`,
+  ASSIGN_TASK_FILTER: `${BaseURL}/api/assign-task/get-filter`,
+
+  EXPORT_ACCOUNT_MASTERS_EXCEL: `${BaseURL}/api/account-master/download-excel`,
 
 };
 export default Endpoint;

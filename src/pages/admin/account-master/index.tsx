@@ -83,6 +83,7 @@ const AccountMasterPage: React.FC = memo(() => {
   const router = useRouter();
 
   // State management
+    const [downloadLoading, setDownloadLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -279,34 +280,7 @@ const AccountMasterPage: React.FC = memo(() => {
     `APPROVED (${responseState?.counts?.approved})`,
     `PENDING (${responseState?.counts?.pending})`,
   ];
-
-  const excelHeaders = useMemo(() => [
-    "Company Name",
-    "Party Name",
-    "Owner Name",
-    "Owner WhatsApp No.",
-    "Owner Mobile No.",
-    "Owner Email",
-    "Contact Person",
-    "Contact Person WhatsApp No.",
-    "Contact Person Mobile No.",
-    "Contact Person Email",
-    "Contact For Payment",
-    "Contact WhatsApp No.",
-    "Contact Mobile No.",
-    "Contact For Payment Email",
-    "GST No.",
-    "Party Tag",
-    "Reference",
-    "Unit No.",
-    "Market Name",
-    "Area",
-    "Land Mark",
-    "Pin Code",
-    "Reason to Visit",
-    "Created By",
-  ], []);
-
+  
   const mapStatusToType = (status: string): RowData["statusType"] => {
     switch (status) {
       case "Completed":
@@ -427,37 +401,6 @@ const AccountMasterPage: React.FC = memo(() => {
 
   const filteredAccountMasters = accountMasters
 
-  const excelData = useMemo(() => {
-    return filteredAccountMasters.map((account) => ({
-      "Company Name": account.companyName?.name || account.companyName?.companyName || "N/A",
-      "Party Name": account.party?.partyName || "N/A",
-      "Owner Name": account.party?.ownerName || "N/A",
-      "Owner WhatsApp No.": account.party?.ownerWhatsAppNo || "N/A",
-      "Owner Mobile No.": account.party?.ownerMobileNo || "N/A",
-      "Owner Email": account.party?.ownerEmail || "N/A",
-      "Contact Person": account.party?.contactPerson || "N/A",
-      "Contact Person WhatsApp No.": account.party?.contactPersonWhatsAppNo || "N/A",
-      "Contact Person Mobile No.": account.party?.contactPersonMobileNo || "N/A",
-      "Contact Person Email": account.party?.contactPersonEmail || "N/A",
-      "Contact For Payment": account.party?.contactForPayment || "N/A",
-      "Contact WhatsApp No.": account.party?.contactForPaymentWhatsAppNo || "N/A",
-      "Contact Mobile No.": account.party?.contactForPaymentMobileNo || "N/A",
-      "Contact For Payment Email": account.party?.contactForPaymentEmail || "N/A",
-      "GST No.": account.party?.gstNo || "N/A",
-      "Party Tag": account.party?.partyTag || "New",
-      "Reference": account.party?.reference ? "Yes" : "No",
-      "Unit No.": account.party?.address?.unitNo || "N/A",
-      "Market Name": account.party?.address?.marketName?.marketName || "N/A",
-      "Area": account.party?.address?.area?.area || "N/A",
-      "Land Mark": account.party?.address?.landMark?.landmark || "N/A",
-      "Pin Code": account.party?.address?.pincode?.pincode || "N/A",
-      "Reason to Visit": account.reasonToVisit || "N/A",
-      "Created By": account.createdBy && typeof account.createdBy === "object"
-        ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
-        : "Unknown",
-    }));
-  }, [filteredAccountMasters]);
-
   const formattedRows: RowData[] = filteredAccountMasters.map((account) => ({
     id: account._id,
     partyId: account.party?._id || "",
@@ -505,6 +448,37 @@ const AccountMasterPage: React.FC = memo(() => {
       };
     })
     .filter((p) => p.partyId && p.companyId);
+
+
+    const handleDownloadExcel = async () => {
+        try {
+          setDownloadLoading(true);
+          
+          // Use the same filters that are currently applied
+          const blob = await accountMasterService.exportAccountMastersToExcel(appliedFilterState);
+          
+          // Create a download link
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `AccountMasters_${moment().format('DD-MM-YYYY')}.xlsx`);
+          document.body.appendChild(link);
+          
+          // Trigger download
+          link.click();
+          
+          // Clean up
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          
+          toast.success('Excel file downloaded successfully');
+        } catch (error: any) {
+          console.error('Export failed:', error);
+          toast.error(error.message || 'Failed to download Excel file');
+        } finally {
+          setDownloadLoading(false);
+        }
+      };
 
   return (
     <>
@@ -558,8 +532,6 @@ const AccountMasterPage: React.FC = memo(() => {
           showSearch={true}
           title="Account-master"
           showExcelDownload={true}
-          excelHeaders={excelHeaders}
-          excelData={excelData}
           rowData={formattedRows}
           setCurrentFilterState={setCurrentFilterState}
           currentFilterState={currentFilterState}
@@ -647,6 +619,9 @@ const AccountMasterPage: React.FC = memo(() => {
           selectedRows={selectedRows}
           totalRows={responseState?.counts?.approved}
           pageName="account-master"
+          setDownloadLoading={setDownloadLoading}
+          downloadLoading={downloadLoading}
+          handleDownloadExcel={handleDownloadExcel}
         />
       )}
 
@@ -662,7 +637,7 @@ const AccountMasterPage: React.FC = memo(() => {
         />
       )}
 
-      {openAssignLeadDialog && (
+      {openAssignLeadDialog ? 
         <AssignLeadDialog
           open={openAssignLeadDialog}
           onClose={() => {
@@ -677,9 +652,9 @@ const AccountMasterPage: React.FC = memo(() => {
             loadAccountMasters();
           }}
         />
-      )}
+      :null}
 
-      {openBulkAssignTask && (
+      {openBulkAssignTask ? 
         <AssignTaskDialog
           open={openBulkAssignTask}
           onClose={() => {
@@ -693,7 +668,7 @@ const AccountMasterPage: React.FC = memo(() => {
             loadAccountMasters();
           }}
         />
-      )}
+      :null}
     </>
   );
 });
