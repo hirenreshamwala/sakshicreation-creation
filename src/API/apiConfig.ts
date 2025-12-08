@@ -205,6 +205,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
 
   CREATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/create`,
   UPDATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/update`,
+  GET_PACKAGING_FILTERS: `${BaseURL}/api/packagingOptions/filters`,
   DELETE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/delete`,
   GET_ALL_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/getall`,
   BULK_UPLOAD_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/bulk`,

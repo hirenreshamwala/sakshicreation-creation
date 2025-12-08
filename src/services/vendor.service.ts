@@ -39,17 +39,10 @@ export interface ApiResponse<T> {
 }
 
 export const vendorService = {
-  async getVendors(): Promise<ApiResponse<Vendor[]>> {
-    try {
-      const response: AxiosResponse<ApiResponse<Vendor[]>> = await Request.get(
-        Endpoint.GET_ALL_VENDORS);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 'Failed to fetch vendors'
-      );
-    }
-  },
+async getVendors(query = '') {
+  const res = await Request.get(`${Endpoint.GET_ALL_VENDORS}?${query}`);
+  return res.data;
+},
 
   async getVendorById(id: string): Promise<ApiResponse<Vendor>> {
     try {

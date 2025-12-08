@@ -6,18 +6,19 @@ import {
   UpdateVendor,
 } from '@/services/vendor.service';
 
+// In vendorSlice.ts
 export const getAllVendorsThunk = createAsyncThunk(
   'vendors/getAll',
-  async (_, { rejectWithValue }) => {
+  async ({ page = 1, limit = 10 }: { page?: number; limit?: number }, { rejectWithValue }) => {
     try {
-      const response = await vendorService.getVendors();
-      if (response.success && Array.isArray(response.data)) {
-        return response.data;
-      } else {
-        return rejectWithValue('Invalid response format: data array not found');
-      }
+      const params = new URLSearchParams();
+      if (page) params.append('page', page.toString());
+      if (limit) params.append('limit', limit.toString());
+
+      const response = await vendorService.getVendors(params.toString());
+      return response; // { data: [...], pagination: { ... } }
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch vendors');
+      return rejectWithValue(error.message);
     }
   }
 );

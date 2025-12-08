@@ -5,6 +5,12 @@ import {
   IconButton,
   TableCell,
   Stack,
+  Pagination,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  CircularProgress,
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import BasicTable from '@/component/common_component/Table/themetable';
@@ -33,12 +39,19 @@ interface VendorForm {
   address: string;
 }
 
+interface PaginationMeta {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  limit: number;
+}
+
 const columns = [
   { id: 'id', label: 'ID' },
   { id: 'companyName', label: 'Company Name' },
   { id: 'name', label: 'Vendor Name' },
-  { id: 'contactNumber', label: 'Contact Number' },
-  { id: 'whatsappNumber', label: 'WhatsApp Number' },
+  { id: 'contactNumber', label: 'Contact' },
+  { id: 'whatsappNumber', label: 'WhatsApp' },
   { id: 'gst', label: 'GST' },
   { id: 'address', label: 'Address' },
   { id: 'action', label: 'Actions' },
@@ -46,10 +59,17 @@ const columns = [
 
 const VendorPage = () => {
   const dispatch = useAppDispatch();
-  const { vendors, loading, error } = useAppSelector((state) => state.vendors);
+  const { vendors, loading } = useAppSelector((state) => state.vendors);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+
   const [form, setForm] = useState<VendorForm>({
     companyName: '',
     name: '',
@@ -60,26 +80,44 @@ const VendorPage = () => {
   });
   const [gstError, setGstError] = useState<string | null>(null);
 
-  // Fetch vendors on component mount
-  useEffect(() => {
-    dispatch(getAllVendorsThunk())
+  // Fetch vendors with pagination
+  const fetchVendors = () => {
+    dispatch(getAllVendorsThunk({ page, limit }))
       .unwrap()
+      .then((res: any) => {
+        // Assuming your backend returns: { data: [...], pagination: { totalItems, currentPage, totalPages, limit } }
+        if (res.pagination) {
+          setTotalItems(res.pagination.totalItems || 0);
+        }
+      })
       .catch((err) => toast.error(err));
-  }, [dispatch]);
+  };
 
-  // Open dialog for add or edit
+  useEffect(() => {
+    fetchVendors();
+  }, [page, limit]);
+
+  const handlePageChange = (_: any, value: number) => {
+    setPage(value);
+  };
+
+  const handleLimitChange = (event: any) => {
+    setLimit(event.target.value);
+    setPage(1); // Reset to first page
+  };
+
+  // Open dialog (add/edit)
   const handleOpenDialog = (vendor?: any) => {
     if (vendor) {
       setEditId(vendor._id);
       setForm({
         companyName: vendor.companyName?._id || vendor.companyName || '',
-        name: vendor.name,
-        contactNumber: vendor.contactNumber,
-        whatsappNumber: vendor.whatsappNumber,
+        name: vendor.name || '',
+        contactNumber: vendor.contactNumber || '',
+        whatsappNumber: vendor.whatsappNumber || '',
         gst: vendor.gst || '',
-        address: vendor.address,
+        address: vendor.address || '',
       });
-      setGstError(null); // Reset GST error on open
     } else {
       setEditId(null);
       setForm({
@@ -90,280 +128,234 @@ const VendorPage = () => {
         gst: '',
         address: '',
       });
-      setGstError(null); // Reset GST error on open
     }
+    setGstError(null);
     setDialogOpen(true);
   };
 
-  // GST validation function
   const validateGST = (gst: string): string | null => {
-    if (!gst) return null; // GST is optional
+    if (!gst) return null;
     const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-    if (!gstRegex.test(gst)) {
-      return 'GST number must be a valid 15-character GSTIN (e.g., 27AAAAA0000A1Z5)';
-    }
-    return null;
+    return gstRegex.test(gst) ? null : 'Invalid GSTIN format';
   };
 
-  // Handle GST input change with validation
   const handleGstChange = (value: string) => {
-    const upperCaseValue = value.toUpperCase();
-    setForm((f) => ({ ...f, gst: upperCaseValue }));
-    setGstError(validateGST(upperCaseValue));
+    const upper = value.toUpperCase();
+    setForm((f) => ({ ...f, gst: upper }));
+    setGstError(validateGST(upper));
   };
 
-  // Save new or edited vendor
   const handleSave = async () => {
-    if (
-      !form.companyName.trim() ||
-      !form.name.trim() ||
-      !form.contactNumber.trim() ||
-      !form.whatsappNumber.trim() ||
-      !form.address.trim()
-    ) {
-      toast.error('Please fill all required fields');
+    if (!form.companyName || !form.name || !form.contactNumber || !form.whatsappNumber || !form.address) {
+      toast.error('All fields except GST are required');
       return;
     }
-
-    if (
-      form.contactNumber.length !== 10 ||
-      form.whatsappNumber.length !== 10
-    ) {
-      toast.error('Contact and WhatsApp numbers must be 10 digits');
+    if (form.contactNumber.length !== 10 || form.whatsappNumber.length !== 10) {
+      toast.error('Contact & WhatsApp must be 10 digits');
       return;
     }
-
     if (form.gst && validateGST(form.gst)) {
-      toast.error(validateGST(form.gst));
+      toast.error('Please enter a valid GST number');
       return;
     }
 
     try {
       if (editId) {
-        await dispatch(
-          updateVendorThunk({
-            id: editId,
-            data: {
-              companyName: form.companyName,
-              name: form.name,
-              contactNumber: form.contactNumber,
-              whatsappNumber: form.whatsappNumber,
-              gst: form.gst,
-              address: form.address,
-            },
-          })
-        ).unwrap();
-        toast.success('Vendor updated successfully');
+        await dispatch(updateVendorThunk({ id: editId, data: form })).unwrap();
+        toast.success('Vendor updated');
       } else {
-        await dispatch(
-          createVendorThunk({
-            companyName: form.companyName,
-            name: form.name,
-            contactNumber: form.contactNumber,
-            whatsappNumber: form.whatsappNumber,
-            gst: form.gst,
-            address: form.address,
-          })
-        ).unwrap();
-        toast.success('Vendor created successfully');
+        await dispatch(createVendorThunk(form)).unwrap();
+        toast.success('Vendor created');
       }
       setDialogOpen(false);
-      setForm({
-        companyName: '',
-        name: '',
-        contactNumber: '',
-        whatsappNumber: '',
-        gst: '',
-        address: '',
-      });
-      setEditId(null);
-      setGstError(null);
+      fetchVendors(); // Refresh current page
     } catch (err: any) {
-      toast.error(err || 'Failed to save vendor');
+      toast.error(err || 'Operation failed');
     }
   };
 
-  // Delete vendor with confirmation
   const handleDelete = (id: string, name: string) => {
     Swal.fire({
-      title: 'Are you sure?',
-      text: `Do you want to delete ${name}?`,
+      title: 'Delete Vendor?',
+      text: `${name} will be deleted permanently`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'Cancel',
+      confirmButtonText: 'Yes, delete!',
     }).then((result) => {
       if (result.isConfirmed) {
         dispatch(deleteVendorThunk(id))
           .unwrap()
           .then(() => {
-            toast.success(`${name} has been deleted.`);
+            toast.success('Vendor deleted');
+            fetchVendors();
           })
-          .catch((err) => {
-            toast.error(err || 'Failed to delete vendor');
-          });
+          .catch(() => toast.error('Delete failed'));
       }
     });
   };
 
   return (
     <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight={600}>
-          Vendors
+          Vendors ({totalItems})
         </Typography>
-        <Box>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => handleOpenDialog()}
-            sx={{ borderRadius: 2, fontWeight: 600, mr: 2, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
-          >
-            New Vendor
-          </Button>
+        <Box display="flex" gap={2}>
           <Button
             variant="contained"
             startIcon={<Add />}
             onClick={() => setBulkDialogOpen(true)}
-            sx={{ borderRadius: 2, fontWeight: 600, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
+            sx={{ bgcolor: '#7B06C2', '&:hover': { bgcolor: '#6b05a8' } }}
           >
             Bulk Upload
           </Button>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => handleOpenDialog()}
+            sx={{ bgcolor: '#A409F8', '&:hover': { bgcolor: '#7B06C2' } }}
+          >
+            New Vendor
+          </Button>
         </Box>
       </Box>
+
+      {/* Table */}
       <BasicTable
-        showFillter={false}
-        showDatePicker={false}
-        showSearch={false}
         tableHeader={columns}
-        rowData={vendors}
+       rowData={vendors?.data || vendors || []}
         loading={loading}
         renderRow={(row: any, idx: number) => (
           <>
-            <TableCell>{idx + 1}</TableCell>
+            <TableCell>{(page - 1) * limit + idx + 1}</TableCell>
             <TableCell>{row.companyName?.companyName || 'N/A'}</TableCell>
             <TableCell>{row.name}</TableCell>
             <TableCell>{row.contactNumber}</TableCell>
             <TableCell>{row.whatsappNumber}</TableCell>
-            <TableCell>{row.gst || 'N/A'}</TableCell>
+            <TableCell>{row.gst || '—'}</TableCell>
             <TableCell>{row.address}</TableCell>
             <TableCell>
-              <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
-                <Edit />
+              <IconButton size="small" onClick={() => handleOpenDialog(row)}>
+                <Edit fontSize="small" />
               </IconButton>
-              <IconButton
-                color="error"
-                onClick={() => handleDelete(row._id, row.name)}
-              >
-                <Delete />
+              <IconButton size="small" color="error" onClick={() => handleDelete(row._id, row.name)}>
+                <Delete fontSize="small" />
               </IconButton>
             </TableCell>
           </>
         )}
       />
 
+      {/* Pagination Controls */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mt={3}>
+        <FormControl size="small">
+          <InputLabel>Rows per page</InputLabel>
+          <Select value={limit} label="Rows per page" onChange={handleLimitChange}>
+            {[10, 25, 50].map((val) => (
+              <MenuItem key={val} value={val}>
+                {val}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Stack spacing={2}>
+          <Pagination
+          count={Math.ceil(totalItems / limit)}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+          shape="rounded"
+          showFirstButton
+          showLastButton
+          siblingCount={1}
+          boundaryCount={1}
+        />
+        </Stack>
+
+        <Typography variant="body2" color="text.secondary">
+          Showing {(page - 1) * limit + 1} to {Math.min(page * limit, totalItems)} of {totalItems} vendors
+        </Typography>
+      </Box>
+
       {/* Add/Edit Dialog */}
-      <CustomDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        title={editId ? 'Edit Vendor' : 'New Vendor'}
-        maxWidth="md"
-        fullWidth
-      >
-        <Stack direction="row" spacing={2} mb={2}>
-          <CompanySelect
-            name="companyName"
-            value={form.companyName}
-            onChange={(event, newValue) => {
-              setForm((f) => ({ ...f, companyName: newValue ? newValue.value : '' }));
-            }}
-            required
-            sx={{ flex: 1 }}
-          />
-          <Input
-            labelName="Vendor Name"
-            value={form.name}
-            onChange={(e: any) =>
-              setForm((f) => ({ ...f, name: e.target.value }))
-            }
-            fullWidth
-            required
-            sx={{ flex: 1 }}
-          />
+      <CustomDialog open={dialogOpen} onClose={() => setDialogOpen(false)} title={editId ? 'Edit Vendor' : 'New Vendor'} maxWidth="md" fullWidth>
+        <Stack spacing={3}>
+          <Stack direction="row" spacing={2}>
+            <CompanySelect
+              value={form.companyName}
+              onChange={(_, newValue) => setForm(f => ({ ...f, companyName: newValue?.value || '' }))}
+              required
+              sx={{ flex: 1 }}
+            />
+            <Input
+              labelName="Vendor Name *"
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              fullWidth
+            />
+          </Stack>
+
+          <Stack direction="row" spacing={2}>
+            <Input
+              labelName="Contact Number *"
+              value={form.contactNumber}
+              onChange={e => setForm(f => ({ ...f, contactNumber: e.target.value.replace(/\D/g, '').slice(0,10) }))}
+              fullWidth
+            />
+            <Input
+              labelName="WhatsApp Number *"
+              value={form.whatsappNumber}
+              onChange={e => setForm(f => ({ ...f, whatsappNumber: e.target.value.replace(/\D/g, '').slice(0,10) }))}
+              fullWidth
+            />
+          </Stack>
+
+          <Stack direction="row" spacing={2}>
+            <Input
+              labelName="GST Number"
+              value={form.gst}
+              onChange={e => handleGstChange(e.target.value)}
+              error={!!gstError}
+              helperText={gstError}
+              fullWidth
+            />
+            <Input
+              labelName="Address *"
+              value={form.address}
+              onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+              multiline
+              rows={2}
+              fullWidth
+            />
+          </Stack>
+
+          <Box display="flex" justifyContent="flex-end" gap={2}>
+            <Button variant="outlined" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              disabled={loading || !!gstError}
+              startIcon={loading ? <CircularProgress size={20} /> : null}
+            >
+              {editId ? 'Update' : 'Create'}
+            </Button>
+          </Box>
         </Stack>
-        <Stack direction="row" spacing={2} mb={2}>
-          <Input
-            labelName="Contact Number"
-            value={form.contactNumber}
-            onChange={(e: any) =>
-              setForm((f) => ({
-                ...f,
-                contactNumber: e.target.value.replace(/\D/g, '').slice(0, 10),
-              }))
-            }
-            fullWidth
-            required
-            sx={{ flex: 1 }}
-          />
-          <Input
-            labelName="WhatsApp Number"
-            value={form.whatsappNumber}
-            onChange={(e: any) =>
-              setForm((f) => ({
-                ...f,
-                whatsappNumber: e.target.value.replace(/\D/g, '').slice(0, 10),
-              }))
-            }
-            fullWidth
-            required
-            sx={{ flex: 1 }}
-          />
-        </Stack>
-        <Stack direction="row" spacing={2} mb={2}>
-          <Input
-            labelName="GST Number"
-            value={form.gst}
-            onChange={(e: any) => handleGstChange(e.target.value)}
-            fullWidth
-            error={!!gstError}
-            helperText={gstError}
-            sx={{ flex: 1 }}
-          />
-          <Input
-            labelName="Address"
-            value={form.address}
-            onChange={(e: any) =>
-              setForm((f) => ({ ...f, address: e.target.value }))
-            }
-            fullWidth
-            required
-            sx={{ flex: 1 }}
-          />
-        </Stack>
-        <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-          <Button
-            onClick={() => setDialogOpen(false)}
-            variant="outlined"
-            sx={{ borderRadius: 2, borderColor: '#A409F8', color: '#A409F8', '&:hover': { borderColor: '#7B06C2', color: '#7B06C2' } }}
-          >
-            Close
-          </Button>
-          <Button
-            onClick={handleSave}
-            variant="contained"
-            sx={{ borderRadius: 2, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
-            disabled={loading || !!gstError}
-          >
-            Save
-          </Button>
-        </Box>
       </CustomDialog>
+
       <AddNewVendorBulkDialog
         open={bulkDialogOpen}
         onClose={() => setBulkDialogOpen(false)}
-        refreshData={() => dispatch(getAllVendorsThunk())}
+        refreshData={() => {
+          setPage(1);
+          fetchVendors();
+        }}
       />
     </Box>
   );
