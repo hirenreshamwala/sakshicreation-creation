@@ -59,6 +59,8 @@ interface FormData {
   reference: string;
   createdBy: string;
   isRequestMode?: boolean;
+  partyTag: string;
+  partyType: string;
 }
 
 interface AddNewPartyDialogProps {
@@ -88,6 +90,9 @@ const validationSchema = Yup.object({
     pincode: Yup.string()
       .required("Pincode is required"),
   }),
+   partyType: Yup.string()
+    .oneOf(['stationary', 'patta'], 'Party Type must be either stationary or patta')
+    .required('Party Type is required'),
   reasonToVisit: Yup.string().required("Reason to Visit is required"),
   // createdBy: Yup.string().required("Created By is required"),
 });
@@ -195,6 +200,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       partyTag: "New",
       createdBy: isRequestMode ? (currentUser?.id || "") : "",
       isRequestMode,
+      partyType: "",
     },
     validationSchema,
     validateOnBlur: false,
@@ -229,7 +235,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   });
 
   const handleDownloadSample = () => {
-    const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,createdBy\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Near Abc,Area A,400001,Visit,Ref123,FALSE,New,SUSHIL CHHAJER\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer,SUSHIL CHHAJER`;
+    const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,partyType,createdBy\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Near Abc,Area A,400001,Visit,Ref123,FALSE,New,stationary,SUSHIL CHHAJER\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer,patta,SUSHIL CHHAJER`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -282,6 +288,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             createdBy:
               result.createdById || (typeof result.createdBy === "object" ? result.createdBy._id : ""),
             isRequestMode,
+            partyType: result.party.partyType || "",
           });
           setInputValue(result.partyName || "");
         } else {
@@ -378,6 +385,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
           contactForPaymentEmail: partyData.contactForPaymentEmail || "",
           GSTNo: partyData.GSTNo || "",
           partyTag: partyData.partyTag || "",
+          partyType: partyData.partyType || "",
           address: {
             unitNo: partyData.address?.unitNo || "",
             marketName: partyData.address?.marketName?._id || "",
@@ -716,6 +724,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                   helperText={formik.touched.GSTNo && formik.errors.GSTNo}
                 />
               </Box>
+
+              {/* Party Tag */}
               <Box sx={{ width: '24.2%' }}>
                 <ThemeSelect
                   label="Party Tag"
@@ -734,6 +744,28 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                   }}
                   error={Boolean(formik.errors.partyTag)}
                   helperText={formik.touched.partyTag && formik.errors.partyTag}
+                />
+              </Box>
+
+              {/* Party Type - नया field जोड़ें */}
+              <Box sx={{ width: '24.2%' }}>
+                <ThemeSelect
+                  label="Party Type"
+                  placeholder="Select Type"
+                  options={[
+                    { value: "stationary", label: "Stationary" },
+                    { value: "patta", label: "Patta" },
+                  ]}
+                  value={
+                    formik.values.partyType
+                      ? { value: formik.values.partyType, label: formik.values.partyType.charAt(0).toUpperCase() + formik.values.partyType.slice(1) }
+                      : null
+                  }
+                  onChange={(e, val: any) => {
+                    formik.setFieldValue("partyType", val?.value || "");
+                  }}
+                  error={Boolean(formik.errors.partyType)}
+                  helperText={formik.touched.partyType && formik.errors.partyType}
                 />
               </Box>
 
@@ -795,7 +827,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                   />
                 </Box>
               )}
-
             </Box>
 
             <Box>

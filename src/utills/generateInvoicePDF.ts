@@ -262,6 +262,10 @@
       doc.text(`Delivery date - ${formData.daysAfterConfirmation} Days After Confirmation`, 120, daysY);
       tableStartY += LINE_HEIGHT;
     }
+    if (formData.paymentDate !== undefined) {
+      doc.text(`Payment date - ${formData.paymentDate} Days After Confirmation`, 120, daysY + LINE_HEIGHT);
+      tableStartY += LINE_HEIGHT;
+    }
 
 
     // Calculate amounts correctly for both quotation and proforma invoice

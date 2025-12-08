@@ -71,13 +71,13 @@ const Endpoint = {
   GET_INVENTORY_BOX: `${BaseURL}/api/inventory/getbox`,
 
   GETALLOWSTOCKS: `${BaseURL}/api/lowstock/getall`,
-GETLOWSTOCKBYID: (id: string) => `${BaseURL}/api/lowstock/getbyid/${id}`,
-CREATELOWSTOCK: `${BaseURL}/api/lowstock/create`,
-UPDATELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/update/${id}`,
-DELETELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/delete/${id}`,
-CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
+  GETLOWSTOCKBYID: (id: string) => `${BaseURL}/api/lowstock/getbyid/${id}`,
+  CREATELOWSTOCK: `${BaseURL}/api/lowstock/create`,
+  UPDATELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/update/${id}`,
+  DELETELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/delete/${id}`,
+  CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
 
-  
+
   //staff
   GET_ROLE: `${BaseURL}/api/staff/getrol`,
 
@@ -129,6 +129,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   GET_PRINTER_BINDER: `${BaseURL}/api/orders/binder`,
   GET_BOOKLET_BINDER: `${BaseURL}/api/orders/bookletBinder`,
   GET_ORDER_BY_STAFF_ID: `${BaseURL}/api/orders/getbystaffid`,
+  GET_ORDER_FILTER_OPTIONS: `${BaseURL}/api/orders/filter-options`,
 
   //performance invoice
   GET_ALL_PERFORMANCE_INVOICES: `${BaseURL}/api/performance-invoice/getall`,
@@ -251,6 +252,14 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   ADD_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/payments`,
   DELETE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/delete`,
   DELETE_MULTIPLE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/multi-delete`,
+
+
+  // filteres data 
+  ACCOUNT_MASTER_FILTER: `${BaseURL}/api/account-master/filter-options`,
+  PARTY_CALL_FILTER: `${BaseURL}/api/lead/get-filter`,
+  ASSIGN_TASK_FILTER: `${BaseURL}/api/assign-task/get-filter`,
+
+  EXPORT_ACCOUNT_MASTERS_EXCEL: `${BaseURL}/api/account-master/download-excel`,
 
 };
 export default Endpoint;

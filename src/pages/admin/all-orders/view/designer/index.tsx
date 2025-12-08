@@ -41,7 +41,6 @@ import { performanceInvoiceService } from "@/services/performanceInvoice.service
 import Request from "@/services/axios"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
-import AddNewQuotation from "@/component/PerformanceInvoice/AddQuotationDialog"
 
 const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]> => {
   const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
@@ -493,15 +492,41 @@ const FileSelectionDialog = ({
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
 
   useEffect(() => {
-    // Auto-select all files when dialog opens
-    const allFilePaths = [
-      ...designFiles.map(file => file.path),
-      ...reworkFiles.map(file => file.path)
-    ];
-    setSelectedFiles(allFilePaths);
-  }, [open, designFiles, reworkFiles]);
+    if (open) {
+      let filesToSelect: string[] = [];
+
+      // अगर rework files हैं तो केवल rework की सबसे last file select करें
+      if (reworkFiles.length > 0) {
+        // सबसे last rework file
+        const lastReworkFile = reworkFiles[reworkFiles.length - 1];
+        if (lastReworkFile?.path) {
+          filesToSelect.push(lastReworkFile.path);
+        }
+      }
+      // अगर rework files नहीं हैं और design files हैं
+      else if (designFiles.length > 0) {
+        // सबसे last design file
+        const lastDesignFile = designFiles[designFiles.length - 1];
+        if (lastDesignFile?.path) {
+          filesToSelect.push(lastDesignFile.path);
+        }
+      }
+
+      setSelectedFiles(filesToSelect);
+    }
+  }, [open, designFiles, reworkFiles])
 
   const handleFileToggle = (filePath: string) => {
+    // अगर rework files हैं तो design files को toggle नहीं करने दें
+    if (reworkFiles.length > 0) {
+      // यह check करें कि toggle की जा रही file rework file है या नहीं
+      const isReworkFile = reworkFiles.some(file => file.path === filePath);
+      if (!isReworkFile) {
+        toast.error("Cannot select design files when rework files are available");
+        return;
+      }
+    }
+
     setSelectedFiles(prev =>
       prev.includes(filePath)
         ? prev.filter(path => path !== filePath)
@@ -509,13 +534,22 @@ const FileSelectionDialog = ({
     )
   }
 
+
   const handleSelectAll = () => {
-    const allFilePaths = [
-      ...designFiles.map(file => file.path),
-      ...reworkFiles.map(file => file.path)
-    ];
+    let allFilePaths: string[] = [];
+
+    // अगर rework files हैं तो केवल rework files select करें
+    if (reworkFiles.length > 0) {
+      allFilePaths = reworkFiles.map(file => file.path);
+    }
+    // अगर rework files नहीं हैं तो design files select करें
+    else {
+      allFilePaths = designFiles.map(file => file.path);
+    }
+
     setSelectedFiles(allFilePaths);
   }
+
 
   const handleDeselectAll = () => {
     setSelectedFiles([]);
@@ -763,15 +797,15 @@ const ViewOrderDesigner = () => {
   const { markets } = useAppSelector((state) => state.markets);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false)
   const [newSelectedDesigner, setNewSelectedDesigner] = useState<any>(null)
-  const [quotationProofLoading, setQuotationProofLoading] = useState(false)
-  const [uploadedQuotationProofs, setUploadedQuotationProofs] = useState<any[]>([])
-  const [quotationHistoryDialog, setQuotationHistoryDialog] = useState(false)
-  const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
-  const [previewDialog, setPreviewDialog] = useState(false)
-  const [openQuotationProofDialog, setOpenQuotationProofDialog] = useState(false)
+  // const [quotationProofLoading, setQuotationProofLoading] = useState(false)
+  // const [uploadedQuotationProofs, setUploadedQuotationProofs] = useState<any[]>([])
+  // const [quotationHistoryDialog, setQuotationHistoryDialog] = useState(false)
+  // const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
+  // const [previewDialog, setPreviewDialog] = useState(false)
+  // const [openQuotationProofDialog, setOpenQuotationProofDialog] = useState(false)
   const isEditingDisabled = singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0;
-  const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
-  const hasValidProof = Array.isArray(singleOrder?.invoiceValidProof) && singleOrder?.invoiceValidProof?.length > 0;
+  // const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
+  // const hasValidProof = Array.isArray(singleOrder?.invoiceValidProof) && singleOrder?.invoiceValidProof?.length > 0;
 
 
   const handleUpdateDesigner = async () => {
@@ -1198,35 +1232,35 @@ const ViewOrderDesigner = () => {
   };
 
   const handleEmailClick = (type: 'design' | 'invoice' = 'design') => {
-  const recipientEmail = singleOrder?.party?.email || ''; // Add party.email to your data if not exists
-  const contactPerson = singleOrder?.party?.contactPerson || 'Customer';
-  const orderNumber = singleOrder?.orderNumber || 'N/A';
-  const companyName = singleOrder?.companyName?.companyName || 'N/A';
-  const partyName = singleOrder?.party?.partyName || 'N/A';
-  const itemName = singleOrder?.productItem?.itemName || 'N/A';
-  const quantity = singleOrder?.qty || 0;
-  const totalAmount = singleOrder?.total || 0;
-  const finalAmount = singleOrder?.finalAmount || 0;
-  const gstPercentage = singleOrder?.gstPercentage || 0;
-  const remarks = singleOrder?.remarks || 'No remarks';
-  
-  // Address formatting
-  const address = [
-    singleOrder?.party?.address?.unitNo || '',
-    singleOrder?.party?.address?.marketName?.marketName || '',
-    singleOrder?.party?.address?.area?.area || '',
-    singleOrder?.party?.address?.pincode?.pincode || '',
-  ].filter(part => part?.trim() !== '').join(', ') || 'N/A';
-  
-  const gstText = gstPercentage > 0 ? ` (incl. ${gstPercentage}% GST)` : '';
-  
-  // Dynamic subject based on type
-  const subject = type === 'invoice' 
-    ? `Invoice for Order ${orderNumber} - Payment Request` 
-    : `Order ${orderNumber} - ${type === 'design' ? 'Design Review' : 'Approval Required'}`;
-  
-  // Dynamic body with all details
-  const body = `Dear ${contactPerson},
+    const recipientEmail = singleOrder?.party?.email || ''; // Add party.email to your data if not exists
+    const contactPerson = singleOrder?.party?.contactPerson || 'Customer';
+    const orderNumber = singleOrder?.orderNumber || 'N/A';
+    const companyName = singleOrder?.companyName?.companyName || 'N/A';
+    const partyName = singleOrder?.party?.partyName || 'N/A';
+    const itemName = singleOrder?.productItem?.itemName || 'N/A';
+    const quantity = singleOrder?.qty || 0;
+    const totalAmount = singleOrder?.total || 0;
+    const finalAmount = singleOrder?.finalAmount || 0;
+    const gstPercentage = singleOrder?.gstPercentage || 0;
+    const remarks = singleOrder?.remarks || 'No remarks';
+
+    // Address formatting
+    const address = [
+      singleOrder?.party?.address?.unitNo || '',
+      singleOrder?.party?.address?.marketName?.marketName || '',
+      singleOrder?.party?.address?.area?.area || '',
+      singleOrder?.party?.address?.pincode?.pincode || '',
+    ].filter(part => part?.trim() !== '').join(', ') || 'N/A';
+
+    const gstText = gstPercentage > 0 ? ` (incl. ${gstPercentage}% GST)` : '';
+
+    // Dynamic subject based on type
+    const subject = type === 'invoice'
+      ? `Invoice for Order ${orderNumber} - Payment Request`
+      : `Order ${orderNumber} - ${type === 'design' ? 'Design Review' : 'Approval Required'}`;
+
+    // Dynamic body with all details
+    const body = `Dear ${contactPerson},
 
     ${type === 'invoice' ? 'Please find the invoice details below for your approval and payment.' : `Please review the ${type} for the following order.`}
 
@@ -1252,9 +1286,9 @@ const ViewOrderDesigner = () => {
     Your Team
     `;
 
-      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.open(gmailUrl, '_blank');
-    };
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(gmailUrl, '_blank');
+  };
 
   const handleWhatsAppClick = () => {
     const phoneNumber = singleOrder?.party?.ownerWhatsAppNo
@@ -1447,9 +1481,9 @@ const ViewOrderDesigner = () => {
       }
     }
 
-    const handleViewQuotationProofs = () => {
-      setOpenQuotationProofDialog(true)
-    }
+    // const handleViewQuotationProofs = () => {
+    //   setOpenQuotationProofDialog(true)
+    // }
 
     return (
       <Box key={index} sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0", borderRadius: 2 }}>
@@ -2233,7 +2267,7 @@ const ViewOrderDesigner = () => {
                   })}
                 </Box>
               )}
-              <Box mt={3} pt={3} borderTop={1} borderColor="#E5E7EB">
+              {/* <Box mt={3} pt={3} borderTop={1} borderColor="#E5E7EB">
                 <Typography variant="h6" fontWeight={600} mb={2}>
                   Quotation Proof
                 </Typography>
@@ -2253,9 +2287,8 @@ const ViewOrderDesigner = () => {
                     onClick={() => setQuoteDialog(true)}
                   >
                     Generate Quotation
-                  </ThemeButton>
+                  </ThemeButton> 
 
-                  {/* View Quotation History – condition पर */}
                   {singleOrder?.quotation?.length ? (
                     <Button
                       variant="contained"
@@ -2268,7 +2301,6 @@ const ViewOrderDesigner = () => {
                     <Box sx={{ flex: 1 }} />
                   )}
 
-                  {/* Download Quotation – condition पर */}
                   {singleOrder?.quotation?.length ? (
                     <ThemeButton
                       sx={{
@@ -2290,25 +2322,7 @@ const ViewOrderDesigner = () => {
                     <Box sx={{ flex: 1 }} />
                   )}
                 </Box>
-
-                {/* Next Button - ALWAYS VISIBLE and ALWAYS ACTIVE */}
-                {/* <ThemeButton
-                          fullWidth
-                          sx={{
-                            mt: 2,
-                            background: "#12B76A",
-                            color: "#fff",
-                            fontWeight: 600,
-                            fontSize: 16,
-                            borderRadius: 2,
-                            py: 1.2,
-                            "&:hover": { background: "#079455" },
-                          }}
-                          onClick={handleNextStep}
-                        >
-                          Next
-                        </ThemeButton> */}
-              </Box>
+              </Box> */}
               <Box display="flex" gap={2} mb={2}>
                 <ThemeButton
                   fullWidth
@@ -2588,7 +2602,7 @@ const ViewOrderDesigner = () => {
         orderId={orderId as string}
         onInvoiceSaved={() => setIsPerformaInvoiceSaved(true)}
       />
-      <AddNewQuotation
+      {/* <AddNewQuotation
         open={quoteDialog}
         onClose={() => setQuoteDialog(false)}
         invoiceId={undefined}
@@ -2596,9 +2610,9 @@ const ViewOrderDesigner = () => {
         orderId={orderId as string}
         isQuote={true}
         quoteUpdate={singleOrder?.quotation?.length ? true : false}
-      />
+      /> */}
 
-      <Dialog
+      {/* <Dialog
         open={quotationHistoryDialog}
         onClose={() => setQuotationHistoryDialog(false)}
         maxWidth="md"
@@ -2669,7 +2683,7 @@ const ViewOrderDesigner = () => {
             ))}
           </List>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </>
   )
 }

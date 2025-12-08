@@ -557,6 +557,12 @@ Your Team
               InputProps={{ readOnly: true }}
             />
             <ThemeInput
+              labelName="Whatsapp Number"
+              value={singleOrder.party?.ownerWhatsAppNo || "N/A"}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+            <ThemeInput
               labelName="Item Name"
               value={formik.values.itemName}
               fullWidth
@@ -621,48 +627,48 @@ Your Team
             />
           </Stack>
           <Stack direction="row" spacing={2} mb={2}>
-                <ThemeInput
-                  labelName="Binding Type"
-                  value={binderTypes.find(b => b._id === formik.values.bindingType)?.name || formik.values.bindingType}
-                  fullWidth
-                  InputProps={{ readOnly: true }}
-                />
-                <ThemeInput
-                  labelName="Binding Page"
-                  value={formik.values.bindingPage}
-                  fullWidth
-                  InputProps={{ readOnly: true }}
-                />
+            <ThemeInput
+              labelName="Binding Type"
+              value={binderTypes.find(b => b._id === formik.values.bindingType)?.name || formik.values.bindingType}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+            <ThemeInput
+              labelName="Binding Page"
+              value={formik.values.bindingPage}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+            <ThemeInput
+              labelName="Booklet/Folder Type"
+              value={formik.values.bookletFolderType}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+          </Stack>
+          <Stack direction="row" spacing={2} mb={2}>
+            <ThemeInput
+              labelName="Color"
+              value={`Color - ${formik.values.color}`}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+            {formik.values.color1 && (
               <ThemeInput
-                labelName="Booklet/Folder Type"
-                value={formik.values.bookletFolderType}
+                labelName="COLOR1"
+                value={formik.values.color1}
                 fullWidth
                 InputProps={{ readOnly: true }}
               />
-          </Stack>
-          <Stack direction="row" spacing={2} mb={2}>
-                <ThemeInput
-                  labelName="Color"
-                  value={`Color - ${formik.values.color}`}
-                  fullWidth
-                  InputProps={{ readOnly: true }}
-                />
-                {formik.values.color1 && (
-                <ThemeInput
-                  labelName="COLOR1"
-                  value={formik.values.color1}
-                  fullWidth
-                  InputProps={{ readOnly: true }}
-                />
-                )}
-                {formik.values.color2 && (
-                <ThemeInput
-                  labelName="COLOR2"
-                  value={formik.values.color2}
-                  fullWidth
-                  InputProps={{ readOnly: true }}
-                />
-                )}
+            )}
+            {formik.values.color2 && (
+              <ThemeInput
+                labelName="COLOR2"
+                value={formik.values.color2}
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
+            )}
           </Stack>
           {/* Paper Fields Section */}
           {paperFields?.map((paper, index) => (

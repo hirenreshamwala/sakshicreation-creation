@@ -26,9 +26,12 @@ interface AssignLeadDialogProps {
     type?: 'add' | 'edit';
 }
 
-const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead, type, partyIds, onSuccess, company }) => {
+const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accountMasters, lead, type, partyIds, onSuccess, company }) => {
     const dispatch = useAppDispatch();
-    const { accountMasters, loading: accountLoading, error: accountError } = useAppSelector(
+    console.log("accountMasters=------=-=-=-=-====",accountMasters)
+    const { 
+        // accountMasters, 
+        loading: accountLoading, error: accountError } = useAppSelector(
         (state) => state.accountMasters || {}
     );
     const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
@@ -119,7 +122,7 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
                     }
                     // Bulk lead creation
                     const leadsData = partyIds.map((partyId) => {
-                        const account = accountMasters.find((acc) => acc.party?._id === partyId);
+                        const account = accountMasters?.find((acc) => acc.party?._id === partyId);
                         if (!account) {
                             console.error(`Account not found for party ID: ${partyId}`);
                             throw new Error(`Account not found for party ID: ${partyId}`);
@@ -226,7 +229,7 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
     );
 
     useEffect(() => {
-        if (!accountMasters.length) dispatch(getAllAccountMastersThunk());
+        // if (!accountMasters.length) dispatch(getAllAccountMastersThunk());
         if (!staffList.length) dispatch(getAllStaffThunk());
     }, [])
     useEffect(() => {
@@ -273,10 +276,10 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
                 toast.error(leadError);
                 dispatch(clearError());
             }
-            if (accountError) {
-                toast.error(accountError);
-                dispatch(clearError());
-            }
+            // if (accountError) {
+            //     toast.error(accountError);
+            //     dispatch(clearError());
+            // }
             if (staffError) {
                 toast.error(staffError);
                 dispatch(clearError());
@@ -286,7 +289,7 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
                 dispatch(clearSuccessMessage());
             }
         }
-    }, [leadError, accountError, staffError, successMessage, open, dispatch]);
+    }, [leadError, staffError, successMessage, open, dispatch]);
 
     useEffect(() => {
         return () => {
@@ -330,7 +333,7 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
         formik.setFieldValue('partyName', partyId);
 
         // Find the selected party's createdBy and details from accountMasters
-        const selectedParty = accountMasters?.find((account) => account.party?._id === partyId);
+        const selectedParty = accountMasters?.find((account) => account?.party?._id === partyId);
         const createdById = selectedParty?.createdBy?._id || "";
         if (createdById) {
             const isSalesStaff = staffList.find(

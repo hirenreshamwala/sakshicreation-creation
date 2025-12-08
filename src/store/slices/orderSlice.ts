@@ -54,12 +54,12 @@ interface CreateOrderData {
 }
 
 interface OrderState {
-  orders: Order[];
+  orderList: Order[]; // Renamed from orders to orderList
   singleOrder: Order | null;
   loading: boolean;
   error: string | null;
   successMessage: string | null;
-  totalCount: number;
+  totalCount: number; // FIXED: Add totalCount
   pagination: {
     currentPage: number;
     totalPages: number;
@@ -69,7 +69,7 @@ interface OrderState {
 }
 
 const initialState: OrderState = {
-  orders: [],
+  orderList: [],
   singleOrder: null,
   loading: false,
   error: null,
@@ -105,16 +105,15 @@ export const createOrderThunk = createAsyncThunk(
 // Get All Orders
 export const getAllOrdersThunk = createAsyncThunk(
   "order/getAll",
-  async (filters,{ rejectWithValue }
-  ) => {
+  async (filters, { rejectWithValue }) => {
     try {
       const response = await orderService.getAllOrders(filters);
 
       if (response.success && Array.isArray(response.data)) {
         return {
           data: response.data,
-          count: response.count
-          // pagination: response.pagination,
+          count: response.count || 0, // FIXED: Use totalCount as count
+          pagination: response.pagination,
         };
       } else {
         return rejectWithValue(
@@ -300,11 +299,15 @@ export const getBookletBinderThunk = createAsyncThunk(
 
 export const getOrdersByStaffIdThunk = createAsyncThunk(
   "order/getByStaffId",
-  async (id: string, { rejectWithValue }) => {
+  async ({ id, filters }: { id: string; filters: any }, { rejectWithValue }) => {
     try {
-      const response = await orderService.getOrdersByStaffId(id);
+      const response = await orderService.getOrdersByStaffId(id, filters);
       if (response.success && Array.isArray(response.data)) {
-        return response.data;
+        return {
+          data: response.data,
+          count: response.count || 0, // FIXED: Add count
+          pagination: response.pagination,
+        };
       } else {
         return rejectWithValue(
           response.message || "Invalid response format: orders array not found"
@@ -334,7 +337,7 @@ const orderSlice = createSlice({
       state.singleOrder = null;
     },
     setOrders(state, action: PayloadAction<Order[]>) {
-      state.orders = action.payload;
+      state.orderList = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -348,14 +351,14 @@ const orderSlice = createSlice({
         getDesignerOrdersThunk.fulfilled,
         (state, action: PayloadAction<Order[]>) => {
           state.loading = false;
-          state.orders = action.payload;
+          state.orderList = action.payload;
           state.error = null;
         }
       )
       .addCase(getDesignerOrdersThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.orders = [];
+        state.orderList = [];
       })
 
 
@@ -366,12 +369,12 @@ const orderSlice = createSlice({
       })
       .addCase(getBinderOrdersThunk.fulfilled, (state, action) => {
         state.loading = false
-        state.orders = action.payload
+        state.orderList = action.payload
       })
       .addCase(getBinderOrdersThunk.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload as string
-        state.orders = [] // Clear orders on error
+        state.orderList = [] // Clear orders on error
       })
 
       //get Booklet Binder
@@ -381,12 +384,12 @@ const orderSlice = createSlice({
       })
       .addCase(getBookletBinderThunk.fulfilled, (state, action) => {
         state.loading = false
-        state.orders = action.payload
+        state.orderList = action.payload
       })
       .addCase(getBookletBinderThunk.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload as string
-        state.orders = [] // Clear orders on error
+        state.orderList = [] // Clear orders on error
       })
 
       //get designer
@@ -398,14 +401,14 @@ const orderSlice = createSlice({
         getPrinterOrdersThunk.fulfilled,
         (state, action: PayloadAction<Order[]>) => {
           state.loading = false;
-          state.orders = action.payload;
+          state.orderList = action.payload;
           state.error = null;
         }
       )
       .addCase(getPrinterOrdersThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.orders = [];
+        state.orderList = [];
       })
 
       // Create Order
@@ -417,7 +420,7 @@ const orderSlice = createSlice({
         createOrderThunk.fulfilled,
         (state, action: PayloadAction<Order>) => {
           state.loading = false;
-          state.orders = [action.payload, ...state.orders];
+          state.orderList = [action.payload, ...state.orderList];
           state.successMessage = "Order created successfully";
           state.error = null;
         }
@@ -438,25 +441,21 @@ const orderSlice = createSlice({
           state,
           action: PayloadAction<{
             data: Order[];
-            pagination: {
-              currentPage: number;
-              totalPages: number;
-              hasNext: boolean;
-              hasPrev: boolean;
-            };
+            count: number;
+            pagination?: any;
           }>
         ) => {
           state.loading = false;
-          state.orders = action.payload.data;
-          state.pagination = action.payload.pagination;
-          state.totalCount = action.payload.data.length;
+          state.orderList = action.payload.data;
+          state.totalCount = action.payload.count;
+          state.pagination = action.payload.pagination || state.pagination; // FIXED: Set pagination
           state.error = null;
         }
       )
       .addCase(getAllOrdersThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.orders = [];
+        state.orderList = [];
       })
 
       // Get Order By ID
@@ -487,11 +486,11 @@ const orderSlice = createSlice({
         updateOrderThunk.fulfilled,
         (state, action: PayloadAction<Order>) => {
           state.loading = false;
-          const index = state.orders.findIndex(
+          const index = state.orderList.findIndex(
             (order) => order._id === action.payload._id
           );
           if (index !== -1) {
-            state.orders[index] = action.payload;
+            state.orderList[index] = action.payload;
           }
           state.singleOrder = action.payload;
           state.successMessage = "Order updated successfully";
@@ -512,7 +511,7 @@ const orderSlice = createSlice({
         deleteOrderThunk.fulfilled,
         (state, action: PayloadAction<string>) => {
           state.loading = false;
-          state.orders = state.orders.filter(
+          state.orderList = state.orderList.filter(
             (order) => order._id !== action.payload
           );
           state.successMessage = "Order deleted successfully";
@@ -533,32 +532,34 @@ const orderSlice = createSlice({
         getOrdersByCompanyAndPartyThunk.fulfilled,
         (state, action: PayloadAction<Order[]>) => {
           state.loading = false;
-          state.orders = action.payload;
+          state.orderList = action.payload;
           state.error = null;
         }
       )
       .addCase(getOrdersByCompanyAndPartyThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.orders = [];
+        state.orderList = [];
       })
       .addCase(getOrdersByStaffIdThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.orders = [];
+        state.orderList = [];
       })
       .addCase(
         getOrdersByStaffIdThunk.fulfilled,
-        (state, action: PayloadAction<Order[]>) => {
+        (state, action: PayloadAction<{ data: Order[]; count: number; pagination?: any }>) => {
           state.loading = false;
-          state.orders = action.payload;
+          state.orderList = action.payload.data;
+          state.totalCount = action.payload.count;
+          state.pagination = action.payload.pagination || state.pagination;
           state.error = null;
         }
       )
       .addCase(getOrdersByStaffIdThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.orders = [];
+        state.orderList = [];
       })
 
   },

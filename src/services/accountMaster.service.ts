@@ -118,7 +118,7 @@ export const accountMasterService = {
   async getAccountMasters(filters): Promise<ApiResponse<AccountMaster[]>> {
     try {
       const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await Request.post(
-        Endpoint.GET_ALL_ACCOUNT_MASTERS,filters);
+        Endpoint.GET_ALL_ACCOUNT_MASTERS, filters);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch account masters");
@@ -134,10 +134,10 @@ export const accountMasterService = {
       throw new Error(error.response?.data?.message || "Failed to fetch account master");
     }
   },
-  async getAccountMasterByStaffId(id: string): Promise<ApiResponse<AccountMaster>> {
+  async getAccountMasterByStaffId(id: string, data: any): Promise<ApiResponse<AccountMaster>> {
     try {
-      const response: AxiosResponse<ApiResponse<AccountMaster>> = await Request.get(
-        `${Endpoint.GET_ACCOUNT_MASTER_BY_STAFF_ID}/${id}`);
+      const response: AxiosResponse<ApiResponse<AccountMaster>> = await Request.post(
+        `${Endpoint.GET_ACCOUNT_MASTER_BY_STAFF_ID}/${id}`, data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to fetch account master");
@@ -216,22 +216,57 @@ export const accountMasterService = {
       throw new Error(error.response?.data?.message || "Failed to approve party");
     }
   },
-  async searchParties(query: string, companyId?: string): Promise<ApiResponse<PartySuggestion[]>> {
-  try {
-    const params: any = { q: query };
-    
-    // Add companyId to params if provided
-    if (companyId) {
-      params.companyId = companyId;
-    }
+  async searchFilterOptions(field: string, searchTerm: string, filters?: any): Promise<ApiResponse<string[]>> {
+    try {
+      const payload = {
+        ...(filters || {}),
+        search: searchTerm
+      };
 
-    const response: AxiosResponse<ApiResponse<PartySuggestion[]>> = await Request.get(
-      `${Endpoint.SEARCH_PARTIES}`,
-      { params }
-    );
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || "Failed to search parties");
-  }
-},
+      const response: AxiosResponse<ApiResponse<string[]>> = await Request.post(
+        `${Endpoint.ACCOUNT_MASTER_FILTER}/${field}`,
+        payload
+      );
+      return {
+        success: true,
+        data: response.data.data || [],
+        message: response.data.message
+      };
+    } catch (error: any) {
+      console.error(`Search ${field} options error:`, error);
+      throw new Error(error.response?.data?.message || `Failed to search ${field} options`);
+    }
+  },
+  async searchParties(query: string, companyId?: string): Promise<ApiResponse<PartySuggestion[]>> {
+    try {
+      const params: any = { q: query };
+
+      // Add companyId to params if provided
+      if (companyId) {
+        params.companyId = companyId;
+      }
+
+      const response: AxiosResponse<ApiResponse<PartySuggestion[]>> = await Request.get(
+        `${Endpoint.SEARCH_PARTIES}`,
+        { params }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to search parties");
+    }
+  },
+    async exportAccountMastersToExcel(filters): Promise<Blob> {
+    try {
+      const response: AxiosResponse<Blob> = await Request.post(
+        Endpoint.EXPORT_ACCOUNT_MASTERS_EXCEL,
+        filters,
+        {
+          responseType: 'blob' // Important for file downloads
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to export account masters");
+    }
+  },
 };

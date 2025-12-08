@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -8,26 +8,10 @@ import {
   Avatar,
   IconButton,
   InputBase,
-  Tooltip,
-  TableRow,
-  Checkbox,
+  Tooltip
 } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "@/store";
-import {
-  getAllAssignTasksThunk,
-  getAssignTaskByStaffIdThunk,
-  deleteAssignTaskThunk,
-  bulkDeleteAssignTasksThunk,
-  clearError,
-  clearSuccessMessage,
-  selectTask,
-  deselectTask,
-  selectAllTasks,
-  clearSelectedTasks,
-  toggleTaskSelection,
-} from "@/store/slices/assignTaskSlice";
 import FilterDropdown from "@/component/fillter";
-import BasicTable from "@/component/common_component/Table/themetable";
 import ThemeButton from "@/component/common_component/themebutton";
 import ThemeChip from "@/component/common_component/themechip";
 import AssignTaskDialog from "@/component/assigntaskdailog";
@@ -47,6 +31,81 @@ import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { StaticCompanyOptions } from "@/constants";
 import AddQPOrderDialog from "@/component/allorderdailog/QpOrderDialog";
 import AddSakhiOrderDialog from "@/component/allorderdailog";
+import CustomTable2 from "@/component/common_component/Table/CustomTable/CustomTable2";
+import { assignTaskService } from "@/services/assignTask.service";
+
+interface Task {
+  _id: string;
+  companyName: {
+    _id: string;
+    companyName?: string;
+    avatar?: string;
+  };
+  partyName: {
+    _id: string;
+    partyName: string;
+    ownerName?: string;
+    ownerMobileNo?: string;
+    ownerWhatsAppNo?: string;
+    contactPerson?: string;
+    personMobileNo?: string;
+    personWhatsAppNo?: string;
+    contactForPayment?: string;
+    contactMobileNo?: string;
+    contactWhatsAppNo?: string;
+    GSTNo?: string;
+    partyTag?: string;
+    address?: {
+      unitNo: string;
+      marketName: string;
+      landMark: string;
+      area: string;
+      pincode: string;
+    };
+    createdAt?: string;
+    updatedAt?: string;
+    createdBy?: {
+      _id: string;
+      firstName?: string;
+      lastName?: string;
+    };
+  };
+  reasonForVisit: string;
+  customReason?: string;
+  assignTo: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
+  status: string;
+  rescheduleDate?: string;
+  isRescheduledTask?: boolean;
+  originalTaskId?: {
+    _id: string;
+    date: string;
+    createdAt: string;
+  };
+  remarks: string;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+  };
+}
+
+interface DatePaginationState {
+  [date: string]: {
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    loading: boolean;
+    data: Task[];
+  };
+}
 
 interface RowData {
   id: string;
@@ -69,8 +128,6 @@ interface RowData {
   highlightYellow?: boolean;
 }
 
-
-
 const tabLabels = ["Pending", "History"];
 
 const AssignTaskPage: React.FC = () => {
@@ -78,40 +135,55 @@ const AssignTaskPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const {
     assignTasks = [],
-    loading = false,
-    error = null,
-    successMessage = null,
-    selectedTasks = [],
   } = useAppSelector((state) => state.assignTasks || {});
   const { user } = useAppSelector((state) => state.auth);
+  const { companies } = useAppSelector((state) => state.company);
+
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [companyTab, setCompanyTab] = useState(0);
   const [editId, setEditId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [scDialog, setScDialog] = useState(false)
-  const [qpDialog, setQpDialog] = useState(false)
+  const [scDialog, setScDialog] = useState(false);
+  const [qpDialog, setQpDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusTab, setStatusTab] = useState(0);
-  const [tempEditId, setTempEditId] = useState(null)
-  const [selectedFilterField, setSelectedFilterField] = useState<string | null>(
-    null
-  );
+  const [tempEditId, setTempEditId] = useState<string | null>(null);
+  const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const todayRef = useRef<HTMLDivElement>(null);
-  const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c, companyName } = router.query
-  const { companies } = useAppSelector((state) => state.company)
+  const { staffId: si, startDate: st, endDate: e, status: s, reason: r, c } = router.query;
+  const [filterOptions, setFilterOptions] = useState<string[]>([]);
+  const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
+
+  // New state for applied filters
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState<string>("");
+  const [appliedStartDate, setAppliedStartDate] = useState<Date | null>(null);
+  const [appliedEndDate, setAppliedEndDate] = useState<Date | null>(null);
+
+  // Pagination state
+  const [availableDates, setAvailableDates] = useState<{ date: string, count: number }[]>([]);
+  const [datePagination, setDatePagination] = useState<DatePaginationState>({});
+  const [loadingDates, setLoadingDates] = useState(true);
+
+  const ITEMS_PER_PAGE = 10;
+
   const canViewGlobal = user?.role?.permissions?.assign_task?.view_global;
   const canViewOwn = user?.role?.permissions?.assign_task?.view_own;
   const cancreate = user?.role?.permissions?.assign_task?.create;
   const canedit = user?.role?.permissions?.assign_task?.edit;
   const candelete = user?.role?.permissions?.assign_task?.delete;
 
-  const selectedTasksCount = selectedTasks.length;
+  // Get current user's full name for canViewOwn filter
+  const currentUserName = useMemo(() => {
+    if (!user) return "";
+    return `${user.firstName || ""} ${user.lastName || ""}`.trim();
+  }, [user]);
 
   const columns = useMemo(() => {
     const baseColumns = [
-      ...(candelete ? [{ id: "checkbox", label: "" }] : []),
+      { id: "checkbox", label: "checkbox" },
       { id: "company", label: "Company" },
       { id: "date", label: "Created Date" },
       { id: "party", label: "Party" },
@@ -133,45 +205,51 @@ const AssignTaskPage: React.FC = () => {
     return baseColumns;
   }, [canedit, candelete]);
 
-  console.log(assignTasks, 'assignTasks')
-
   const handleSelectTask = (taskId: string) => {
-    dispatch(toggleTaskSelection(taskId));
+    setSelectedTaskIds(prev => {
+      if (prev.includes(taskId)) {
+        return prev.filter(id => id !== taskId);
+      } else {
+        return [...prev, taskId];
+      }
+    });
   };
 
   const handleSelectAllTasks = () => {
-    const currentTaskIds = filteredTasks.map(task => task._id);
-    if (selectedTasks.length === currentTaskIds.length) {
-      // If all are selected, deselect all
-      dispatch(clearSelectedTasks());
+    const currentTaskIds = datePagination[availableDates[0]?.date]?.data?.map(task => task._id) || [];
+    if (selectedTaskIds.length === currentTaskIds.length) {
+      setSelectedTaskIds([]);
     } else {
-      // Select all current tasks
-      dispatch(selectAllTasks(currentTaskIds));
+      setSelectedTaskIds(currentTaskIds);
     }
   };
 
   const handleBulkDelete = async () => {
-    if (selectedTasks.length === 0) return;
+    if (selectedTaskIds.length === 0) return;
 
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: `You are about to delete ${selectedTasks.length} task(s). This action cannot be undone!`,
+      text: `You are about to delete ${selectedTaskIds.length} task(s). This action cannot be undone!`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#7F56D9",
       cancelButtonColor: "#d33",
-      confirmButtonText: `Yes, delete ${selectedTasks.length} task(s)!`,
+      confirmButtonText: `Yes, delete ${selectedTaskIds.length} task(s)!`,
     });
 
     if (result.isConfirmed) {
       try {
-        await dispatch(bulkDeleteAssignTasksThunk(selectedTasks)).unwrap();
+        await assignTaskService.bulkDeleteAssignTasks(selectedTaskIds);
         Swal.fire({
           title: "Deleted!",
-          text: `${selectedTasks.length} task(s) deleted successfully`,
+          text: `${selectedTaskIds.length} task(s) deleted successfully`,
           icon: "success",
           confirmButtonColor: "#7F56D9",
         });
+        // Refresh data after deletion
+        setDatePagination({});
+        fetchDates();
+        setSelectedTaskIds([]);
       } catch (err: any) {
         Swal.fire({
           title: "Error!",
@@ -183,11 +261,11 @@ const AssignTaskPage: React.FC = () => {
     }
   };
 
-
   // Determine company permissions
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = hasSakshi && hasQP;
+
   const isToday = (dateString: string): boolean => {
     const today = new Date();
     const [day, month, year] = dateString?.split("/");
@@ -198,37 +276,57 @@ const AssignTaskPage: React.FC = () => {
       compareDate.getFullYear() === today.getFullYear()
     );
   };
+
   // Company tabs configuration
   const companyTabs = useMemo(() => {
     const tabs = [];
     if (hasSakshi) tabs.push({ id: 'sakshi', name: 'Sakshi', companyId: getCompanyWisePermission(5) });
     if (hasQP) tabs.push({ id: 'qp', name: 'QP', companyId: getCompanyWisePermission(6) });
     return tabs;
-  }, [user, hasSakshi, hasQP]);
+  }, [hasSakshi, hasQP]);
 
   // Selected company based on permissions
-  const selectedCompanyId = hasBothCompanies
-    ? companyTabs[companyTab]?.companyId
-    : hasSakshi
-      ? getCompanyWisePermission(5)
-      : getCompanyWisePermission(6);
+  const selectedCompanyId = useMemo(() => {
+    if (hasBothCompanies) {
+      return companyTabs[companyTab]?.companyId;
+    } else if (hasSakshi) {
+      return getCompanyWisePermission(5);
+    } else if (hasQP) {
+      return getCompanyWisePermission(6);
+    }
+    return null;
+  }, [hasBothCompanies, companyTab, hasSakshi, hasQP, companyTabs]);
+
+  // Selected status based on tab
+  const selectedStatus = useMemo(() => {
+    if (statusTab === 0) return ["pending", "rescheduled"];
+    if (statusTab === 1) return ["completed", "cancelled"];
+    return [];
+  }, [statusTab]);
 
   useEffect(() => {
-    if (c)
-      setCompanyTab(c === "Quality Packaging" || c === "QP" ? 1 : 0)
-  }, [c])
+    if (c) setCompanyTab(c === "Quality Packaging" || c === "QP" ? 1 : 0);
+  }, [c]);
 
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true))
-  }, [])
+    if (!companies.length) dispatch(getAllCompaniesThunk(true));
+  }, []);
 
-  const toggleQpDialog = () => setQpDialog(!qpDialog)
-  const toggleScDialog = () => setScDialog(!scDialog)
+  const toggleQpDialog = () => setQpDialog(!qpDialog);
+  const toggleScDialog = () => setScDialog(!scDialog);
 
   // Set initial date range and status from query parameters
   useEffect(() => {
-    if (st) setStartDate(new Date(st as string));
-    if (e) setEndDate(new Date(e as string));
+    if (st) {
+      const start = new Date(st as string);
+      setStartDate(start);
+      setAppliedStartDate(start);
+    }
+    if (e) {
+      const end = new Date(e as string);
+      setEndDate(end);
+      setAppliedEndDate(end);
+    }
     if (s) {
       const statuses = (s as string)?.split(",");
       if (statuses.includes("completed") || statuses.includes("cancelled")) {
@@ -255,7 +353,7 @@ const AssignTaskPage: React.FC = () => {
 
   const handleEdit = (id: string) => {
     setEditId(id);
-    setTempEditId(id)
+    setTempEditId(id);
     setOpen(true);
   };
 
@@ -272,13 +370,16 @@ const AssignTaskPage: React.FC = () => {
 
     if (result.isConfirmed) {
       try {
-        await dispatch(deleteAssignTaskThunk(id)).unwrap();
+        await assignTaskService.deleteAssignTask(id);
         Swal.fire({
           title: "Deleted!",
           text: "Task deleted successfully",
           icon: "success",
           confirmButtonColor: "#7F56D9",
         });
+        // Refresh data after deletion
+        setDatePagination({});
+        fetchDates();
       } catch (err: any) {
         Swal.fire({
           title: "Error!",
@@ -290,38 +391,217 @@ const AssignTaskPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (error) {
-      Swal.fire({
-        title: "Error!",
-        text: error,
-        icon: "error",
-        confirmButtonText: "OK",
-        confirmButtonColor: "#7F56D9",
-      });
-      dispatch(clearError());
-    }
-    if (successMessage) {
-      Swal.fire({
-        title: "Success!",
-        text: successMessage,
-        icon: "success",
-        confirmButtonText: "OK",
-        confirmButtonColor: "#7F56D9",
-      });
-      dispatch(clearSuccessMessage());
-    }
-  }, [error, successMessage, dispatch]);
-
   const handleClick = (id: string) => {
     router.push(`/admin/assign-task/view-task/${id}`);
   };
 
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
+  // Fetch tasks for specific date with pagination
+  const fetchTasksForDate = useCallback(async (date: string, page: number, itemsPerPage: number) => {
+    setDatePagination(prev => ({
+      ...prev,
+      [date]: {
+        ...prev[date],
+        loading: true,
+      }
+    }));
+
+    try {
+      const queryParams: any = {
+        companyName: selectedCompanyId,
+        status: selectedStatus,
+        staffId: si,
+        reason: r,
+        date: date, // Pass specific date
+        page: page,
+        limit: itemsPerPage,
+      };
+
+      // Use applied search query instead of current searchQuery
+      if (appliedSearchQuery) {
+        queryParams.search = appliedSearchQuery;
+      }
+
+      // Add other filters if available
+      if (Object.keys(filters).length > 0) {
+        Object.keys(filters).forEach(key => {
+          if (filters[key] && filters[key].length > 0) {
+            const fieldMap: Record<string, string> = {
+              'Company': 'companyName',
+              'Date': 'date',
+              'Party': 'party',
+              'Unit No': 'unitNo',
+              'Market Name': 'marketName',
+              'Area': 'area',
+              'Mobile No.': 'mobile',
+              'Reason to Visit': 'reason',
+              'Assign By': 'assignBy',
+              'Assign To': 'assignedTo',
+              'Status': 'taskStatus'
+            };
+
+            const backendField = fieldMap[key] || key;
+
+            if (filters[key].length > 1) {
+              queryParams[backendField] = filters[key].join(',');
+            } else {
+              queryParams[backendField] = filters[key][0];
+            }
+          }
+        });
+      }
+
+      // Add applied date range if available
+      if (appliedStartDate && appliedEndDate) {
+        queryParams.startDate = appliedStartDate.toISOString();
+        queryParams.endDate = appliedEndDate.toISOString();
+      }
+
+      // Add assignedTo filter for canViewOwn permission
+      if (canViewOwn && !canViewGlobal && currentUserName) {
+        queryParams.assignToFilter = currentUserName;
+      }
+
+      // Call the API
+      const response = await assignTaskService.getAllAssignTasks(queryParams);
+
+      if (response) {
+        setDatePagination(prev => ({
+          ...prev,
+          [date]: {
+            ...prev[date],
+            data: response.data || [],
+            totalItems: response.count || 0,
+            loading: false,
+          }
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching tasks for date ${date}:`, error);
+      toast.error(`Failed to fetch tasks for ${date}`);
+      setDatePagination(prev => ({
+        ...prev,
+        [date]: {
+          ...prev[date],
+          loading: false,
+        }
+      }));
     }
-  }, [error, dispatch]);
+  }, [dispatch, appliedSearchQuery, appliedStartDate, appliedEndDate, filters, si, r, selectedCompanyId, selectedStatus, canViewOwn, canViewGlobal, currentUserName]);
+
+  // Fetch dates with task counts
+  const fetchDates = useCallback(async () => {
+    setLoadingDates(true);
+    try {
+      const queryParams: any = {
+        companyName: selectedCompanyId,
+        status: selectedStatus,
+        staffId: si,
+        reason: r,
+        getDatesOnly: true,
+      };
+
+      // Use applied search query instead of current searchQuery
+      if (appliedSearchQuery) {
+        queryParams.search = appliedSearchQuery;
+      }
+
+      // Add other filters if available
+      if (Object.keys(filters).length > 0) {
+        Object.keys(filters).forEach(key => {
+          if (filters[key] && filters[key].length > 0) {
+            const fieldMap: Record<string, string> = {
+              'Company': 'companyName',
+              'Date': 'date',
+              'Party': 'partyName',
+              'Unit No': 'unitNo',
+              'Market Name': 'marketName',
+              'Area': 'area',
+              'Mobile No.': 'mobile',
+              'Reason to Visit': 'reason',
+              'Assign By': 'createdBy',
+              'Assign To': 'assignToFilter',
+              'Status': 'status'
+            };
+
+            const backendField = fieldMap[key] || key;
+
+            if (filters[key].length > 1) {
+              queryParams[backendField] = filters[key].join(',');
+            } else {
+              queryParams[backendField] = filters[key][0];
+            }
+          }
+        });
+      }
+
+      // Add applied date range if available
+      if (appliedStartDate && appliedEndDate) {
+        queryParams.startDate = appliedStartDate.toISOString();
+        queryParams.endDate = appliedEndDate.toISOString();
+      }
+
+      // Add assignedTo filter for canViewOwn permission
+      if (canViewOwn && !canViewGlobal && currentUserName) {
+        queryParams.assignToFilter = currentUserName;
+      }
+
+      const response = await assignTaskService.getAllAssignTasks(queryParams);
+
+      if (response?.data) {
+        setAvailableDates(response.data || []);
+
+        const newPagination: DatePaginationState = {};
+        response.data.forEach((dateInfo: { date: string, count: number }) => {
+          newPagination[dateInfo.date] = {
+            currentPage: 1,
+            itemsPerPage: ITEMS_PER_PAGE,
+            totalItems: dateInfo.count,
+            loading: false,
+            data: [],
+          };
+        });
+        setDatePagination(newPagination);
+
+        // Fetch tasks for each date (only first page)
+        response.data.forEach((dateInfo: { date: string }) => {
+          fetchTasksForDate(dateInfo.date, 1, ITEMS_PER_PAGE);
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching dates:', error);
+      toast.error('Failed to fetch task dates');
+    } finally {
+      setLoadingDates(false);
+    }
+  }, [dispatch, appliedSearchQuery, appliedStartDate, appliedEndDate, filters, si, r, selectedCompanyId, selectedStatus, fetchTasksForDate, canViewOwn, canViewGlobal, currentUserName]);
+
+  // Tab changes को handle करें
+  useEffect(() => {
+    if ((canViewGlobal || canViewOwn) && router.isReady && selectedCompanyId) {
+      setDatePagination({});
+      fetchDates();
+    }
+  }, [companyTab, statusTab, fetchDates, canViewGlobal, canViewOwn, router.isReady, selectedCompanyId]);
+
+  // Handle page change for a specific date
+  const handlePageChange = (date: string, page: number) => {
+    const pagination = datePagination[date];
+    if (pagination) {
+      fetchTasksForDate(date, page, pagination.itemsPerPage);
+      setDatePagination(prev => ({
+        ...prev,
+        [date]: {
+          ...prev[date],
+          currentPage: page,
+        }
+      }));
+    }
+  };
+
+  // Auto-scroll to today's section
+  // useEffect(() => {
+  //   if (todayRef.current) todayRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  // }, [availableDates]);
 
   useEffect(() => {
     const token = authService.getToken();
@@ -329,26 +609,7 @@ const AssignTaskPage: React.FC = () => {
       router.push("/login");
       return;
     }
-
-
-    if (canViewGlobal && router.isReady) {
-      dispatch(getAllAssignTasksThunk({
-        companyName,
-        staffId: si,
-        startDate: st,
-        endDate: e,
-        status: s?.split(",").map(s => s.toLowerCase()),
-        reason: r
-      }));
-    } else if (canViewOwn && user?.id) {
-      dispatch(getAssignTaskByStaffIdThunk(user?.id));
-    }
-
-    return () => {
-      dispatch(clearError());
-      dispatch(clearSuccessMessage());
-    };
-  }, [dispatch, router.isReady, canViewGlobal, canViewOwn, user?.id, selectedCompanyId,]);
+  }, [dispatch, router]);
 
   const defaultReasons = [
     "Delivery",
@@ -360,8 +621,8 @@ const AssignTaskPage: React.FC = () => {
     "Other",
   ];
 
-  const mapTasksToRows = (tasks: any[]): RowData[] =>
-    tasks.map((task) => ({
+  const mapTaskToRowData = (task: Task): RowData => {
+    return {
       id: task._id,
       company: {
         name: task.companyName?.companyName || "Unknown",
@@ -379,8 +640,8 @@ const AssignTaskPage: React.FC = () => {
       area: task.partyName?.address?.area?.area || "N/A",
       mobile: task.partyName?.ownerWhatsAppNo || "N/A",
       remarks: task.remarks || "N/A",
-      assignBy: task.createdBy
-        ? `${task.createdBy.firstName} ${task.createdBy.lastName}`
+      assignBy: task.partyName.createdBy
+        ? `${task.partyName.createdBy.firstName} ${task.partyName.createdBy.lastName}`
         : "Unknown",
       assignTo: task.assignTo
         ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
@@ -394,143 +655,11 @@ const AssignTaskPage: React.FC = () => {
       rescheduleDate: task.rescheduleDate
         ? new Date(task.rescheduleDate).toLocaleDateString("en-GB")
         : undefined,
-
-      /** 🟡 Custom Highlight Condition */
       highlightYellow:
         !defaultReasons.includes(task.reasonForVisit) &&
         task.assignTo?.role?.roleName?.toLowerCase() === "driver",
-    }));
-
-  // Map filter labels to rowData keys
-  const filterFieldToKey: { [key: string]: keyof RowData } = {
-    Company: "company",
-    Date: "date",
-    Party: "party",
-    "Unit No": "address",
-    "Market Name": "market",
-    Area: "area",
-    "Mobile No.": "mobile",
-    "Assign By": "assignBy",
-    "Assign To": "assignTo",
-    "Reason to Visit": "reason",
-    Status: "status",
+    };
   };
-
-  // Compute unique values for the selected filter field
-  const uniqueValues = useMemo(() => {
-    if (!selectedFilterField) return [];
-    const key = filterFieldToKey[selectedFilterField];
-    if (!key) return [];
-
-    const values = mapTasksToRows(assignTasks).map((row) => {
-      if (key === "company") {
-        return (row[key] as any)?.name || "N/A";
-      }
-      return String(row[key] || "N/A");
-    });
-    return Array.from(new Set(values)).sort();
-  }, [assignTasks, selectedFilterField]);
-
-  // Filter tasks by company first
-  const tasksFilteredByCompany = useMemo(() => {
-    return assignTasks.filter(task =>
-      task.companyName?._id === selectedCompanyId
-    );
-  }, [assignTasks, selectedCompanyId]);
-
-  const filteredTasks = useMemo(() => {
-    let filtered = tasksFilteredByCompany;
-
-    // Apply status filter
-    filtered = filtered.filter((task) => {
-      const taskDate = new Date(task.date);
-      const isTaskToday = isToday(
-        taskDate.toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
-      );
-
-      if (statusTab === 0) {
-        // Pending tab: Include Pending, Rescheduled, and Completed tasks from today
-        return (
-          ["Pending", "Rescheduled"].includes(task.status) ||
-          (task.status === "Completed" && isTaskToday)
-        );
-      } else {
-        // History tab: Include Completed tasks not from today and Cancelled tasks
-        return task.status === "Cancelled" || (task.status === "Completed" && !isTaskToday);
-      }
-    });
-
-    // Apply date range filter
-    if (startDate || endDate) {
-      filtered = filtered.filter((task) => {
-        const taskDate = new Date(task.date);
-        const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
-        const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-        return (!start || taskDate >= start) && (!end || taskDate <= end);
-      });
-    }
-
-    // Apply search query filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter((task) =>
-        [
-          task.partyName?.partyName,
-          task.companyName?.companyName,
-          task.reasonForVisit,
-        ].some((value) =>
-          value?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-    }
-
-    // Apply multiple filters
-    if (Object.keys(filters).length > 0) {
-      filtered = filtered.filter((task) => {
-        const row = mapTasksToRows([task])[0];
-        return Object.entries(filters).every(([field, values]) => {
-          const key = filterFieldToKey[field];
-          if (!key) return true;
-          const value = key === "company" ? (row[key] as any)?.name : row[key];
-          return values.includes(String(value));
-        });
-      });
-    }
-
-    return filtered;
-  }, [tasksFilteredByCompany, statusTab, startDate, endDate, searchQuery, filters]);
-
-  const filteredGroupedTasks = useMemo(() => {
-    return filteredTasks.reduce((acc, task) => {
-      const taskDate = new Date(task.date).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-      if (!acc[taskDate]) {
-        acc[taskDate] = [];
-      }
-      acc[taskDate].push(task);
-      return acc;
-    }, {} as Record<string, any[]>);
-  }, [filteredTasks]);
-
-  const filteredSortedDates = useMemo(() => {
-    return Object.keys(filteredGroupedTasks).sort((a, b) => {
-      const dateA = new Date(a?.split("/").reverse().join("-"));
-      const dateB = new Date(b?.split("/").reverse().join("-"));
-      return dateB.getTime() - dateA.getTime();
-    });
-  }, [filteredGroupedTasks]);
-
-  useEffect(() => {
-    if (todayRef.current) {
-      todayRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [filteredSortedDates, statusTab, startDate, endDate, searchQuery, filters]);
 
   const truncateText = (text: string, maxLength: number) => {
     if (!text) return "N/A";
@@ -539,8 +668,6 @@ const AssignTaskPage: React.FC = () => {
   };
 
   const renderRow = (row: RowData) => {
-    const isSelected = selectedTasks.includes(row.id);
-
     const getCellSx = (baseSx?: any) => ({
       ... (row.highlightYellow ? { backgroundColor: '#fff3cd' } : {}),
       ...baseSx
@@ -548,15 +675,6 @@ const AssignTaskPage: React.FC = () => {
 
     return (
       <>
-        {/* {candelete && (
-          <TableCell sx={getCellSx()}>
-            <Checkbox
-              checked={isSelected}
-              onChange={() => handleSelectTask(row.id)}
-              color="primary"
-            />
-          </TableCell>
-        )} */}
         <TableCell sx={getCellSx()}>
           <Box display="flex" alignItems="center" gap={1}>
             <Avatar
@@ -614,9 +732,11 @@ const AssignTaskPage: React.FC = () => {
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignBy}</TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignTo}</TableCell>
         <TableCell sx={getCellSx()}>
-          <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>{row.remarks && row.remarks.length > 10
-            ? `${row.remarks.substring(0, 10)}...`
-            : row.remarks}</Typography>
+          <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>
+            {row.remarks && row.remarks.length > 10
+              ? `${row.remarks.substring(0, 10)}...`
+              : row.remarks}
+          </Typography>
         </TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>
           <ThemeChip
@@ -668,7 +788,78 @@ const AssignTaskPage: React.FC = () => {
     );
   };
 
+  // Filter options fetch
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      if (!selectedFilterField) {
+        setFilterOptions([]);
+        return;
+      }
 
+      setLoadingFilterOptions(true);
+      try {
+        const fieldMap: Record<string, string> = {
+          'Company': 'companyName',
+          'Date': 'date',
+          'Party': 'partyName',
+          'Unit No': 'unitNo',
+          'Market Name': 'marketName',
+          'Area': 'area',
+          'Mobile No.': 'mobile',
+          'Reason to Visit': 'reason',
+          'Assign By': 'createdBy',
+          'Assign To': 'assignTo',
+          'Status': 'status'
+        };
+
+        const apiField = fieldMap[selectedFilterField] || selectedFilterField;
+
+        // Call API to get filter options
+        const response = await assignTaskService.searchFilterOptions(apiField, "", {
+          companyName: selectedCompanyId,
+          status: selectedStatus,
+          getFilterOptions: true,
+          filterField: apiField,
+        });
+
+        if (response?.data) {
+          setFilterOptions(response.data || []);
+        } else {
+          toast.error("Failed to load filter options");
+          setFilterOptions([]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching filter options:", error);
+        toast.error(error.message || "Failed to load filter options");
+        setFilterOptions([]);
+      } finally {
+        setLoadingFilterOptions(false);
+      }
+    };
+
+    fetchFilterOptions();
+  }, [dispatch, selectedFilterField, filters, selectedCompanyId, selectedStatus]);
+
+  // Handle search button click
+  const handleSearch = () => {
+    setAppliedSearchQuery(searchQuery);
+    setAppliedStartDate(startDate);
+    setAppliedEndDate(endDate);
+    setDatePagination({});
+    fetchDates();
+  };
+
+  // Handle clear button click
+  const handleClear = () => {
+    setSearchQuery("");
+    setStartDate(null);
+    setEndDate(null);
+    setAppliedSearchQuery("");
+    setAppliedStartDate(null);
+    setAppliedEndDate(null);
+    setDatePagination({});
+    fetchDates();
+  };
 
   return (
     <>
@@ -677,7 +868,14 @@ const AssignTaskPage: React.FC = () => {
         <Box sx={{ mb: 2 }}>
           <TabComponent
             activeTab={companyTab}
-            setActiveTab={setCompanyTab}
+            setActiveTab={(newTab) => {
+              setCompanyTab(newTab);
+              const companyName = newTab === 0 ? "Sakshi Prints" : "Quality Packaging";
+              router.push({
+                pathname: router.pathname,
+                query: { ...router.query, c: companyName }
+              });
+            }}
             tabs={companyTabs.map((c) => c.name)}
           />
         </Box>
@@ -740,11 +938,21 @@ const AssignTaskPage: React.FC = () => {
               sx={{ ml: 1, fontSize: 14 }}
             />
           </Box>
+
+          {/* Search and Clear buttons */}
+          <ThemeButton onClick={handleSearch}>
+            Search
+          </ThemeButton>
+          <ThemeButton onClick={handleClear} color="secondary">
+            Clear
+          </ThemeButton>
+
           <FilterDropdown
-            filterOptions={columns
-              .filter((col) => col.id !== "action")
-              .map((col) => col.label)}
-            uniqueValues={uniqueValues}
+            filterOptions={canViewOwn && !canViewGlobal ?
+              ['Date', 'Party', 'Unit No', 'Market Name', 'Area', 'Mobile No.', 'Reason to Visit', 'Assign By'] :
+              ['Date', 'Party', 'Unit No', 'Market Name', 'Area', 'Mobile No.', 'Reason to Visit', 'Assign By', 'Assign To']}
+            uniqueValues={filterOptions}
+            loading={loadingFilterOptions}
             onFiltersChange={setFilters}
             filters={filters}
             selectedField={selectedFilterField}
@@ -754,34 +962,42 @@ const AssignTaskPage: React.FC = () => {
             <ThemeButton
               onClick={() => {
                 setEditId(null);
-                setTempEditId(null)
+                setTempEditId(null);
                 setOpen(true);
               }}
             >
               + Assign New Task
             </ThemeButton>
           )}
-          {candelete && (
+          {candelete && selectedTaskIds.length > 0 && (
             <ThemeButton
               onClick={handleBulkDelete}
-              disabled={selectedTasksCount === 0}
-              sx={{
-                opacity: selectedTasksCount === 0 ? 0.6 : 1,
-                cursor: selectedTasksCount === 0 ? 'not-allowed' : 'pointer',
-              }}
+              color="error"
             >
-              Delete Selected ({selectedTasksCount})
+              Delete Selected ({selectedTaskIds.length})
             </ThemeButton>
           )}
         </Box>
       </Box>
 
       {/* Status Tabs */}
-      <TabComponent activeTab={statusTab} setActiveTab={setStatusTab} tabList={tabLabels} align="left" />
+      <TabComponent
+        activeTab={statusTab}
+        setActiveTab={(newTab) => {
+          setStatusTab(newTab);
+          const status = newTab === 0 ? "pending,rescheduled" : "completed,cancelled";
+          router.push({
+            pathname: router.pathname,
+            query: { ...router.query, status }
+          });
+        }}
+        tabList={tabLabels}
+        align="left"
+      />
 
       <Box
         sx={{
-          maxHeight: "70vh",
+          maxHeight: "110vh",
           overflowY: "auto",
           px: 2,
           py: 2,
@@ -800,27 +1016,39 @@ const AssignTaskPage: React.FC = () => {
           },
         }}
       >
-        {loading ? (
+        {loadingDates ? (
           <Loader />
-        ) : filteredSortedDates.length === 0 ? (
+        ) : availableDates.length === 0 ? (
           <Typography>
             No tasks found for {hasBothCompanies ? companyTabs[companyTab]?.name : (hasSakshi ? 'Sakshi' : 'QP')}
-            {startDate || endDate ? " for the selected date range" : ""}.
+            {appliedStartDate || appliedEndDate ? " for the selected date range" : ""}.
+            {appliedSearchQuery ? ` matching "${appliedSearchQuery}"` : ""}.
           </Typography>
         ) : (
-          filteredSortedDates.map((date) => (
-            <Box
-              key={date}
-              ref={isToday(date) ? todayRef : null}
-              mb={4}
-              sx={{
-                backgroundColor: isToday(date) ? "#a0d8b4ff" : "transparent",
-                borderRadius: 2,
-                p: 2,
-                border: isToday(date) ? "1px solid #D1FADF" : "none",
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          availableDates.map((dateInfo) => {
+            const { date, count } = dateInfo;
+            const pagination = datePagination[date] || {
+              currentPage: 1,
+              itemsPerPage: ITEMS_PER_PAGE,
+              totalItems: count,
+              loading: true,
+              data: [],
+            };
+
+            const { currentPage, itemsPerPage, loading, data } = pagination;
+
+            return (
+              <Box
+                key={date}
+                ref={isToday(date) ? todayRef : null}
+                mb={4}
+                sx={{
+                  backgroundColor: isToday(date) ? "#a0d8b4ff" : "transparent",
+                  borderRadius: 2,
+                  p: 2,
+                  border: isToday(date) ? "1px solid #D1FADF" : "none",
+                }}
+              >
                 <Typography variant="subtitle1" fontWeight={600}>
                   Task - <span style={{ color: "red" }}>{date}</span>
                   {isToday(date) && (
@@ -833,24 +1061,29 @@ const AssignTaskPage: React.FC = () => {
                   )}
                 </Typography>
 
+                {loading ? (
+                  <Loader />
+                ) : (
+                  <CustomTable2
+                    tableHeader={columns}
+                    rowData={data.map(mapTaskToRowData)}
+                    renderRow={renderRow}
+                    count={datePagination[date].totalItems}
+                    page={currentPage}
+                    handlePageChange={(dates, page) => handlePageChange(dates, page)}
+                    date={date}
+                    showHeaderCheckbox={true}
+                    onSelectAll={(event: React.ChangeEvent<HTMLInputElement>) => handleSelectAllTasks(event)}
+                    onSelectRow={(id: string) => handleSelectTask(id)}
+                    selectedRows={selectedTaskIds}
+                  />
+                )}
               </Box>
-              <BasicTable
-                tableHeader={columns}
-                rowData={mapTasksToRows(filteredGroupedTasks[date])}
-                showDatePicker={false}
-                showSearch={false}
-                showFillter={false}
-                renderRow={renderRow}
-                onSelectAll={handleSelectAllTasks}
-                onSelectRow={handleSelectTask}
-                selectedRows={selectedTasks}
-                showHeaderCheckbox={false}
-              />
-            </Box>
-          ))
+            );
+          })
         )}
       </Box>
-      {console.log(editId, 'editId')}
+
       <AssignTaskDialog
         open={open}
         onClose={() => {
@@ -861,41 +1094,40 @@ const AssignTaskPage: React.FC = () => {
         toggleQpDialog={toggleQpDialog}
         taskId={editId}
         refreshData={() => {
-          dispatch(getAllAssignTasksThunk({
-            companyName,
-            staffId: si,
-            startDate: st,
-            endDate: e,
-            status: s?.split(",").map(s => s.toLowerCase()),
-            reason: r
-          }));
+          setDatePagination({});
+          fetchDates();
         }}
         companyTab={companyTab}
         company={companies?.find((item) => item.companyName === StaticCompanyOptions[companyTab])}
       />
 
+      {qpDialog && (
+        <AddQPOrderDialog
+          company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
+          open={qpDialog}
+          onClose={() => {
+            toggleQpDialog();
+            setTempEditId(null);
+          }}
+          refreshData={() => {
+            setDatePagination({});
+            fetchDates();
+          }}
+          party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
+        />
+      )}
 
-      {qpDialog ? <AddQPOrderDialog
-        company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
-        open={qpDialog}
-        onClose={() => {
-          toggleQpDialog()
-          setTempEditId(null)
-          // refreshData();
-        }}
-        refreshData={() => { }}
-        party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
-      /> : null}
-
-      {scDialog ? <AddSakhiOrderDialog
-        company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id}
-        open={scDialog}
-        onClose={() => {
-          toggleScDialog()
-          setTempEditId(null)
-        }}
-        party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
-      /> : null}
+      {scDialog && (
+        <AddSakhiOrderDialog
+          company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id}
+          open={scDialog}
+          onClose={() => {
+            toggleScDialog();
+            setTempEditId(null);
+          }}
+          party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
+        />
+      )}
     </>
   );
 };

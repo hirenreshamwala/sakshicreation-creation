@@ -1,48 +1,48 @@
-import React, { useEffect, useState, useMemo } from "react"
-import { Avatar, Box, IconButton, TableCell, Typography, Button } from "@mui/material"
-import BasicTable from "@/component/common_component/Table/themetable"
-import { FaChevronRight } from "react-icons/fa6"
+import React, { useEffect, useState, useMemo, useCallback } from "react"
+import { Avatar, Box, TableCell, Typography, Button } from "@mui/material"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
-
 import { useAppDispatch, useAppSelector } from "@/store"
-import { getAllOrdersThunk, getOrdersByStaffIdThunk } from "@/store/slices/orderSlice"
-import { authService } from "@/services/auth.service"
-import FilterDropdown from "@/component/fillter"
-import DateRangePicker from "@/component/daterangepicker"
-import { FiSearch } from "react-icons/fi"
-import { InputBase } from "@mui/material"
 import { getCompanyWisePermission, getDisplayStatus, getUserData } from "@/utills/utills"
 import QpOrdersPage from "@/component/allorderdailog/QpOrder"
 import TabComponent from "@/component/Dialog/TabComponent"
-import { companyOptions, StaticCompanyOptions } from "@/constants"
+import { StaticCompanyOptions } from "@/constants"
 import Loader from "@/component/common_component/loader"
 import { toast } from "react-toastify"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import AddSakhiOrderDialog from "@/component/allorderdailog"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
-import ComplainDialogue from "../all-complains/ComplainDialogue"
+import ComplainDialogue from "../all-complains/ComplainDialogue";
+import CustomTable2 from "@/component/common_component/Table/CustomTable2";
+import { orderService } from "@/services/order.service";
+import { getAllOrdersThunk, getOrdersByStaffIdThunk } from "@/store/slices/orderSlice"; // Import thunks
+import _ from "lodash";
+import moment from "moment";
+import { FaChevronRight } from "react-icons/fa6"
 
 const columns = [
-  { id: "orderNumber", label: "Order No." },
-  { id: "company", label: "Company" },
-  { id: "party", label: "Party" },
-  { id: "date", label: "Date" },
-  { id: "item", label: "Item Name" },
-  { id: "size", label: "Size" },
-  { id: "remarks", label: "Remarks" },
-  { id: "orderedBy", label: "Ordered By" },
-  { id: "orderStatus", label: "Order Status" },
+  { id: "orderNumber", label: "Order No.", value: "orderNumber" },
+  { id: "company", label: "Company", value: "company" },
+  { id: "party", label: "Party", value: "party" },
+  { id: "date", label: "Date", value: "createdAt" },
+  { id: "item", label: "Item Name", value: "item" },
+  { id: "size", label: "Size", value: "size" },
+  { id: "remarks", label: "Remarks", value: "remarks" },
+  { id: "orderedBy", label: "Ordered By", value: "orderedBy" },
+  { id: "orderStatus", label: "Order Status", value: "orderStatus" },
   { id: "actions", label: "Actions" },
   // { id: "complain", label: "Complain" },
 ]
 
 type OrderRow = {
-  _id: string
-  orderNumber: string
+  _id: string;
+  id: string;
+  orderNumber: string;
   companyName: {
-    companyName: string
-  }
+    companyName: string;
+    _id?: string;
+    avatar?: string;
+  };
   party: {
     partyName: string
     ownerMobileNo?: string
@@ -59,7 +59,7 @@ type OrderRow = {
   productItem: {
     itemName: string
   }
-  size?: { size: string }
+  size?: string | { size: string }; 
   createdAt: string
   remarks: string
   createdBy: {
@@ -80,169 +80,149 @@ type OrderRow = {
   quotation?: Array<{ unitPrice: number; gst: number }>
   qty?: number
   daysAfterConfirmation?: number
+  lastStatusChangeDate?: string
 }
 
 const AllOrdersPage = () => {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.orders)
-
+  const { orderList: orders, loading } = useAppSelector((state) => state.orders) // Renamed to orderList to avoid confusion
   const { companies } = useAppSelector((state) => state.company)
-  const { user } = useAppSelector((state) => state.auth)
-  const { markets } = useAppSelector((state) => state.markets)
+  const { totalCount } = useAppSelector((state) => state.orders) // Add totalCount
   const userData = getUserData()
 
   // Filter state
   const { companyName, c, staffId, startDate: st, endDate: ed, party } = router.query
   const [activeTab, setActiveTab] = useState(c === "Quality Packaging" ? 1 : 0);
-  const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
-  const [selectedFilterValues, setSelectedFilterValues] = useState<string[] | null>(null)
-  const [searchQuery, setSearchQuery] = useState<string>("")
-  const [startDate, setStartDate] = useState<Date | null>(null)
-  const [endDate, setEndDate] = useState<Date | null>(null)
-  const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const [complainOpen, setComplainOpen] = useState(false);
   const [selectedOrderForComplain, setSelectedOrderForComplain] = useState<OrderRow | null>(null);
-
-
+  const [initialLoad, setInitialLoad] = useState(false);
+  const defaultOrderFilter = {
+    page: 1,
+    pageSize: 10,
+    searchQuery: "",
+    filters: {},
+    includeCounts: true,
+    isPagination: true,
+    dateRange: { start: null, end: null },
+    startDate: null,
+    endDate: null,
+    search: ""
+  };
+  const [currentFilterState, setCurrentFilterState] = useState<any>(defaultOrderFilter);
+  const [appliedFilterState, setAppliedFilterState] = useState<any>(defaultOrderFilter);
+  // State for filter options
+  const [filterOptionsData, setFilterOptionsData] = useState<{ [key: string]: string[] }>({});
+  const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
+  const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
   const canViewGlobal = userData?.role?.permissions?.all_orders?.view_global
   const canViewOwn = userData?.role?.permissions?.all_orders?.view_own
-  const canCreate = userData?.role?.permissions?.all_orders?.create
-
   // Determine user permissions
   const hasSakshiPermission = getCompanyWisePermission(1)
   const hasQpPermission = getCompanyWisePermission(2)
   const hasBothPermissions = getCompanyWisePermission(0)
-
-  // Get unique values for the selected filter field
-  const getUniqueValues = useMemo(() => {
-    if (!selectedFilterField) return [];
-    const columnId = columns.find((col) => col.label === selectedFilterField)?.id;
-    if (!columnId) return [];
-
-    const values = orders.map((order) => {
-      let value: string | undefined;
-
-      switch (columnId) {
-        case "company":
-          value = order.companyName?.companyName;
-          break;
-        case "party":
-          value = order.party?.partyName;
-          break;
-        case "orderNumber":
-          value = order.orderNumber;
-          break;
-        case "date":
-          value = formatDate(order.createdAt);
-          break;
-        case "item":
-          value = order.productItem?.itemName;
-          break;
-        case "size":
-          value = order.size?.size;
-          break;
-        case "remarks":
-          value = order.remarks;
-          break;
-        case "orderedBy":
-          value = order.createdBy ? `${order.createdBy.firstName} ${order.createdBy.lastName}` : undefined;
-          break;
-        case "orderStatus":
-          value = getDisplayStatus(order).text;
-          break;
+  
+  // Updated: Use thunk for loading orders
+  const loadOrders = useCallback(async () => {
+    const params = { 
+      ...currentFilterState, 
+      isPagination: true, 
+      includeCounts: true 
+    };
+    try {
+      if (canViewGlobal) {
+        dispatch(getAllOrdersThunk(params));
+      } else if (canViewOwn && userData?.id) {
+        dispatch(getOrdersByStaffIdThunk({ id: userData.id, filters: params }));
       }
-      return value || "N/A";
-    });
+    } catch (err: any) {
+      console.error("Error loading orders:", err);
+      toast.error(err.message || "Failed to load orders");
+    }
+  }, [dispatch, currentFilterState, canViewGlobal, canViewOwn, userData?.id]);
 
-    return Array.from(new Set(values)).filter((v) => v !== "N/A").sort();
-  }, [selectedFilterField, orders]);
-
-  useEffect(() => {
-    if (c)
-      setActiveTab(c === "Quality Packaging" || c === "QP" ? 1 : 0)
-
-  }, [c])
-
-  const handleComplainClick = (rowData: OrderRow) => {
-    setSelectedOrderForComplain(rowData);
-    setComplainOpen(true);
+  // Function to load filter options - FIXED: Add staffId if viewing own
+  const loadFilterOptions = async (field: string) => {
+    setLoadingFilterOptions(true);
+    try {
+      const extraFilters = canViewOwn && !canViewGlobal ? { staffId: userData.id } : {};
+      const filterPayload = { 
+        ...currentFilterState.filters, 
+        ...extraFilters,
+        startDate: currentFilterState.startDate,
+        endDate: currentFilterState.endDate,
+      };
+      const response = await orderService.searchFilterOptions(field, "", filterPayload);
+    
+      if (response.success && response.data) {
+        setFilterOptionsData(prev => ({
+          ...prev,
+          [field]: response.data || []
+        }));
+      }
+    } catch (error: any) {
+      console.error(`Error loading filter options for ${field}:`, error);
+      toast.error(`Failed to load filter options for ${field}`);
+    } finally {
+      setLoadingFilterOptions(false);
+    }
   };
 
-  // Filter orders based on search query, date range, and selected filters
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      const matchesDateRange =
-        (!startDate || new Date(order.createdAt) >= new Date(startDate).setHours(0, 0, 0, 0)) &&
-        (!endDate || new Date(order.createdAt) <= new Date(endDate).setHours(23, 59, 59, 999));
+  // Handle filter field selection
+  const handleFilterFieldSelect = useCallback(async (field: string | null) => {
+    console.log("handleFilterFieldSelect called with:", field);
+    setSelectedFilterField(field);
 
-      const matchesSearch = searchQuery
-        ? order.orderNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.companyName?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.party?.partyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.productItem?.itemName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.remarks?.toLowerCase().includes(searchQuery.toLowerCase())
-        : true;
-
-      const matchesFilters = Object.keys(filters).every((columnId) => {
-        if (filters[columnId].length === 0) return true;
-        let value: string | undefined;
-        switch (columnId) {
-          case "company":
-            value = order.companyName?.companyName;
-            break;
-          case "party":
-            value = order.party?.partyName;
-            break;
-          case "orderNumber":
-            value = order.orderNumber;
-            break;
-          case "date":
-            value = formatDate(order.createdAt);
-            break;
-          case "item":
-            value = order.productItem?.itemName;
-            break;
-          case "size":
-            value = order.size?.size;
-            break;
-          case "remarks":
-            value = order.remarks;
-            break;
-          case "orderedBy":
-            value = order.createdBy ? `${order.createdBy.firstName} ${order.createdBy.lastName}` : undefined;
-            break;
-          case "orderStatus":
-            value = getDisplayStatus(order).text;
-            break;
-        }
-        return value && filters[columnId].includes(value);
-      });
-
-      return matchesDateRange && matchesSearch && matchesFilters;
-    });
-  }, [orders, startDate, endDate, searchQuery, filters]);
-
-  useEffect(() => {
-    const token = authService.getToken();
-    if (!token) {
-      router.push("/login");
-      return;
+    if (field && !filterOptionsData[field]) {
+      try {
+        await loadFilterOptions(field);
+      } catch (error) {
+        console.error("Error loading filter options:", error);
+        toast.error(`Failed to load options for ${field}`);
+      }
     }
+    return Promise.resolve();
+  }, [filterOptionsData, currentFilterState, canViewOwn, canViewGlobal, userData.id]);
 
-    if (canViewGlobal) {
-      dispatch(getAllOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party, c })); // Increase limit to fetch more orders
-    } else if (canViewOwn && userData?.id) {
-      dispatch(getOrdersByStaffIdThunk(userData.id));
-    }
-  }, [dispatch, router, canViewGlobal, canViewOwn, userData?.id]);
+  // Handle filter changes
+  const handleFiltersChange = useCallback((newFilters: { [key: string]: string[] }) => {
+    console.log("Filters changed to:", newFilters);
+    setCurrentFilterState((prev: any) => ({
+      ...prev,
+      filters: newFilters,
+      page: 1,
+    }));
+  }, []);
 
+  // Effect to load orders when filters change - FIXED: Use applied state to prevent loops
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true))
-  }, [])
+    const isSame = _.isEqual(appliedFilterState, currentFilterState);
+    if (!isSame) {
+      console.log("Filter state changed, loading orders...");
+      loadOrders();
+      setAppliedFilterState(currentFilterState);
+    }
+  }, [currentFilterState, appliedFilterState, loadOrders]);
 
+  // Effect for initial load - FIXED: Dispatch thunk
+  useEffect(() => {
+    if (userData && router.isReady && !initialLoad) {
+      setCurrentFilterState((prev: any) => ({ ...prev, pageSize: 10 }));
+      loadOrders();
+      setInitialLoad(true);
+    }
+  }, [userData, router.isReady, initialLoad, loadOrders]);
 
+  // Initial companies load
+  useEffect(() => {
+    if (!companies.length) dispatch(getAllCompaniesThunk(true));
+  }, [dispatch, companies.length]);
+
+  // Tab sync
+  useEffect(() => {
+    if (c) setActiveTab(c === "Quality Packaging" || c === "QP" ? 1 : 0);
+  }, [c]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -251,6 +231,11 @@ const AllOrdersPage = () => {
       month: "2-digit",
       year: "2-digit",
     });
+  };
+
+  const handleComplainClick = (rowData: OrderRow) => {
+    setSelectedOrderForComplain(rowData);
+    setComplainOpen(true);
   };
 
   const getRouteByStatus = (row: OrderRow): string => {
@@ -418,135 +403,75 @@ const AllOrdersPage = () => {
     }
   };
 
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
-    }
-  }, [error, dispatch]);
+  // Format rows for table
+  const formattedRows = useMemo(() => {
+    if (!orders || !Array.isArray(orders)) return [];
+  
+    return orders.map((order: any) => ({
+      _id: order._id,
+      id: order._id,
+      orderNumber: order.orderNumber || "N/A",
+      companyName: order.companyName || { companyName: "N/A" },
+      party: order.party || { partyName: "N/A" },
+      productItem: order.productItem || { itemName: "N/A" },
+      size: order.size || { size: "N/A" },
+      createdAt: order.createdAt || new Date().toISOString(),
+      remarks: order.remarks || "N/A",
+      createdBy: order.createdBy || { firstName: "Unknown", lastName: "" },
+      status: order.status || "Received",
+      designerStatus: order.designerStatus,
+      printerStatus: order.printerStatus,
+      binderStatus: order.binderStatus,
+      bookletBinderStatus: order.bookletBinderStatus,
+      designer: order.designer,
+      printer: order.printer,
+      binder: order.binder,
+      bookletBinder: order.bookletBinder,
+      quotation: order.quotation || [],
+      qty: order.qty,
+      daysAfterConfirmation: order.daysAfterConfirmation,
+      lastStatusChangeDate: order.lastStatusChangeDate,
+    
+      // Add these fields for proper filtering
+      company: order.companyName?.companyName || "N/A",
+      partyName: order.party?.partyName || "N/A",
+      item: order.productItem?.itemName || "N/A",
+      orderedBy: order.createdBy ? `${order.createdBy.firstName} ${order.createdBy.lastName}` : "Unknown",
+      orderStatus: order.status || "Received",
+      createdDate: moment(order.createdAt).format("DD-MM-YYYY"),
+    }));
+  }, [orders]);
 
-  // Render content based on permissions
-  const renderContent = () => {
-    // If user has both permissions, show tab component
-    if (hasBothPermissions) {
-      return (
-        <>
-          <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />
-          {activeTab === 0 ? renderSakshiContent() : renderQpContent()}
-        </>
-      );
-    }
+  // Excel data
+  const excelHeaders = useMemo(() => [
+    "Order Number",
+    "Company",
+    "Party",
+    "Date",
+    "Item Name",
+    "Size",
+    "Remarks",
+    "Ordered By",
+    "Status",
+  ], []);
 
-    // If user has only sakshi permission
-    if (hasSakshiPermission) {
-      return renderSakshiContent();
-    }
+  const excelData = useMemo(() => {
+    return formattedRows.map((order) => ({
+      "Order Number": order.orderNumber || "N/A",
+      "Company": order.companyName?.companyName || "N/A",
+      "Party": order.party?.partyName || "N/A",
+      "Date": moment(order.createdAt).format("DD-MM-YYYY"),
+      "Item Name": order.productItem?.itemName || "N/A",
+      "Size": order.size?.size || "N/A",
+      "Remarks": order.remarks || "N/A",
+      "Ordered By": order.createdBy ? `${order.createdBy.firstName} ${order.createdBy.lastName}` : "Unknown",
+      "Status": order.status || "Received",
+    }));
+  }, [formattedRows]);
 
-    // If user has only qp permission
-    if (hasQpPermission) {
-      return renderQpContent();
-    }
-
-    // If user has no permissions
+  // Render row function
+  const renderRow = (row: OrderRow, index: number) => {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="200px">
-        <Typography variant="h6" color="error">
-          You don't have permission to view this page.
-        </Typography>
-      </Box>
-    );
-  };
-
-  const renderSakshiContent = () => (
-    <>
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={(date) => setStartDate(date)}
-            onEndDateChange={(date) => setEndDate(date)}
-          />
-          <ThemeButton
-            onClick={() => {
-              setStartDate(null);
-              setEndDate(null);
-            }}
-          >
-            Clear Date Range
-          </ThemeButton>
-        </Box>
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              border: "1px solid #D0D5DD",
-              borderRadius: 2,
-              px: 1.5,
-              width: 200,
-              height: 35,
-            }}
-          >
-            <IconButton size="small" sx={{ color: "#98A2B3" }}>
-              <FiSearch size={18} />
-            </IconButton>
-            <InputBase
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ ml: 1, fontSize: 14 }}
-            />
-          </Box>
-          <FilterDropdown
-            filterOptions={columns
-              .filter((col) => col.id !== "action")
-              .map((col) => col.label)}
-            uniqueValues={selectedFilterField ?
-              getUniqueValues :
-              []}
-            onFiltersChange={(newFilters) => {
-              const idBasedFilters: { [key: string]: string[] } = {};
-
-              Object.entries(newFilters).forEach(([label, values]) => {
-                const columnId = columns.find((col) => col.label === label)?.id;
-                if (columnId) {
-                  idBasedFilters[columnId] = values;
-                }
-              });
-
-              setFilters(idBasedFilters);
-            }}
-            filters={Object.keys(filters).reduce((acc, columnId) => {
-              const columnLabel = columns.find((col) => col.id === columnId)?.label;
-              if (columnLabel) {
-                acc[columnLabel] = filters[columnId];
-              }
-              return acc;
-            }, {} as { [key: string]: string[] })}
-            selectedField={selectedFilterField}
-            onFieldSelect={setSelectedFilterField}
-          />
-          <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
-        </Box>
-      </Box>
-      <Box px={2} py={2}>
-        <BasicTable
-          showDatePicker={false}
-          tableHeader={columns}
-          showFillter={false}
-          showSearch={false}
-          rowData={filteredOrders}
-          totalCount={totalCount}
-          pagination={pagination}
-          renderRow={(row: OrderRow) => (
             <>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
@@ -594,7 +519,7 @@ const AllOrdersPage = () => {
 
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {row?.size || "N/A"}
+                      {typeof row?.size === "object" ? row.size?.size : row?.size || "N/A"}
                 </Typography>
               </TableCell>
 
@@ -659,15 +584,80 @@ const AllOrdersPage = () => {
                 </ThemeButton>
               </TableCell> */}
             </>
-          )}
-        />
-      </Box>
+    );
+  };
 
-      {open ? <AddSakhiOrderDialog
-        company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id}
-        open={open}
-        onClose={() => setOpen(false)}
-      /> : null}
+  // Render content based on permissions
+  const renderContent = () => {
+    if (hasBothPermissions) {
+      return (
+        <>
+          <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />
+          {activeTab === 0 ? renderSakshiContent() : renderQpContent()}
+        </>
+      );
+    }
+    if (hasSakshiPermission) {
+      return renderSakshiContent();
+    }
+    if (hasQpPermission) {
+      return renderQpContent();
+    }
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+        <Typography variant="h6" color="error">
+          You don't have permission to view this page.
+        </Typography>
+      </Box>
+    );
+  };
+
+  const renderSakshiContent = () => (
+    <>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
+        </Box>
+      </Box>
+      {loading ? (
+        <Loader />
+      ) : (
+        <CustomTable2
+          showDatePicker={true}
+          tableHeader={columns}
+          showFillter={true}
+          showSearch={true}
+          title="All Orders"
+          showExcelDownload={true}
+          excelHeaders={excelHeaders}
+          excelData={excelData}
+          rowData={formattedRows}
+          setCurrentFilterState={setCurrentFilterState}
+          currentFilterState={currentFilterState}
+          renderRow={renderRow}
+          totalRows={totalCount || formattedRows.length} // FIXED: Use Redux totalCount
+          onFilterFieldSelect={handleFilterFieldSelect}
+          selectedFilterField={selectedFilterField}
+          filterOptionsData={filterOptionsData}
+          loadingFilterOptions={loadingFilterOptions}
+          onFiltersChange={handleFiltersChange}
+        />
+      )}
+      {open && (
+        <AddSakhiOrderDialog
+          company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id}
+          open={open}
+          onClose={() => setOpen(false)}
+        />
+      )}
       {complainOpen && selectedOrderForComplain && (
         <ComplainDialogue
           company={{
@@ -688,7 +678,7 @@ const AllOrdersPage = () => {
 
   const renderQpContent = () => <QpOrdersPage />;
 
-  if (loading) return <Typography><Loader /></Typography>;
+  if (loading && initialLoad === false) return <Typography><Loader /></Typography>;
 
   return <>{renderContent()}</>;
 }

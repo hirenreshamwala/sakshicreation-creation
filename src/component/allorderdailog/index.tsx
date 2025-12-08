@@ -484,29 +484,32 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
       ) : null}
 
       <Stack direction="row" spacing={2} mb={2}>
-        <Box sx={{ width: "100%" }}>
-          <ThemeInput
-            labelName="Rate"
-            placeholder="Enter rate"
-            fullWidth
-            type="number"
-            value={sakshiFormData.rate}
-            onChange={(e) => handleSakshiChange("rate", e.target.value)}
-          />
-          {sakshiFormData.rate && (
-            <FormControl component="fieldset" sx={{ mt: 1 }}>
-              <FormLabel component="legend">Rate Type</FormLabel>
-              <RadioGroup
-                row
-                value={sakshiFormData.rateType}
-                onChange={(e) => handleSakshiChange("rateType", e.target.value)}
-              >
-                <FormControlLabel value="old" control={<Radio />} label="Old Rate" />
-                <FormControlLabel value="new" control={<Radio />} label="New Rate" />
-              </RadioGroup>
-            </FormControl>
+        <Box sx={{ width: "100%" ,display:"flex"}}  >
+          <FormControl component="fieldset" >
+            {/* <FormLabel component="legend">Rate Type</FormLabel> */}
+            <RadioGroup
+              row
+              value={sakshiFormData.rateType}
+              onChange={(e) => handleSakshiChange("rateType", e.target.value)}
+            >
+              <FormControlLabel value="old" control={<Radio />} label="Old Rate" />
+              <FormControlLabel value="new" control={<Radio />} label="New Rate" />
+            </RadioGroup>
+          </FormControl>
+
+          {/* NEW RATE SELECT KIYA HO TO HI RATE INPUT SHOW HOGA */}
+          {sakshiFormData.rateType === "new" && (
+            <ThemeInput
+              labelName="Rate"
+              placeholder="Enter rate"
+              fullWidth
+              type="number"
+              value={sakshiFormData.rate}
+              onChange={(e) => handleSakshiChange("rate", e.target.value)}
+            />
           )}
         </Box>
+
         <Box sx={{ width: "100%" }}>
           <ThemeInput
             labelName="GST Number"

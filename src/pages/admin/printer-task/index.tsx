@@ -6,6 +6,7 @@ import { getPrinterOrdersThunk } from "@/store/slices/orderSlice";
 import { useRouter } from "next/router";
 import { authService } from "@/services/auth.service";
 import Loader from "@/component/common_component/loader";
+import { formatDateToDDMMYYYY } from "@/utills/utills";
 
 interface Column {
   id: string;
@@ -15,8 +16,8 @@ interface Column {
 
 const tableHeader: Column[] = [
   { id: "order", label: "Order No" },
-  { id: "party", label: "Party" },
   { id: "date", label: "Date" },
+  { id: "party", label: "Party" },
   { id: "size", label: "Size" },
   { id: "itemName", label: "Item Name" },
   { id: "itemName", label: "Printing Type" },
@@ -141,7 +142,8 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
   const rowData = tasks.map((order: any) => ({
     id: order._id,
     party: order.party?.partyName || "N/A",
-    date: new Date(order.createdAt).toLocaleDateString(),
+    date: formatDateToDDMMYYYY(order.createdAt),
+    // date: new Date(order.createdAt).toLocaleDateString(),
     size: order.size || "N/A",
     itemName: order.productItem?.itemName || "N/A",
     number: order.number || "N/A",
@@ -159,6 +161,7 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
     <>
 
       <TableCell>{row.orderNo}</TableCell>
+      <TableCell>{row.date}</TableCell>
       <TableCell
         onClick={() => handleRowClick(row.id)}
         sx={{
@@ -170,7 +173,6 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
       >
         {row.party}
       </TableCell>
-      <TableCell>{row.date}</TableCell>
       <TableCell>{row.size}</TableCell>
       <TableCell>{row.itemName}</TableCell>
       <TableCell>{row.printingType}</TableCell>

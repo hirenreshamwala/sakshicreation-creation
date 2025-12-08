@@ -7,6 +7,7 @@ import { getBinderOrdersThunk } from "@/store/slices/orderSlice";
 import { useRouter } from "next/router";
 import { authService } from "@/services/auth.service";
 import Loader from "@/component/common_component/loader";
+import { formatDateToDDMMYYYY } from "@/utills/utills";
 
 interface Column {
   id: string;
@@ -15,11 +16,15 @@ interface Column {
 }
 
 const tableHeader: Column[] = [
-  { id: "party", label: "Party" },
+  { id: "order", label: "Order No" },
   { id: "date", label: "Date" },
-  { id: "size", label: "Size" },
+  { id: "party", label: "Party" },
   { id: "itemName", label: "Item Name" },
-  { id: "remarks", label: "Remarks" },
+  { id: "itemName", label: "size" },
+  { id: "itemName", label: "Binding Type" },
+  { id: "itemName", label: "binding page" },
+  { id: "number", label: "Number" },
+  { id: "printerRemarks", label: "Remarks" },
   { id: "status", label: "Status", align: "center" as const },
   { id: "action", label: "Action", align: "center" as const },
 ];
@@ -114,16 +119,25 @@ const BinderTask: React.FC<BinderTaskProps> = ({ tasks }) => {
   // Transform orders data for table
   const rowData = tasks.map((order: any) => ({
     id: order._id,
+    orderNo: order.orderNumber,
+    date: formatDateToDDMMYYYY(order.createdAt),
     party: order.party?.partyName || "N/A",
-    date: new Date(order.createdAt).toLocaleDateString(),
-    size: order.size || "N/A",
     itemName: order.productItem?.itemName || "N/A",
+    bindingType: order.bindingType?.name || "N/A",
+    bindingPage: order.bindingPage || "N/A",
     remarks: order.binderRemarks || "N/A",
-    status: order.binderStatus || "Pending",
+    number: order.totalNumbering || "N/A",
+    status: order.printerStatus || "Pending",
+    binderStatus: order.binderStatus,
+    // date: new Date(order.createdAt).toLocaleDateString(),
+    size: order.size || "N/A",
   }));
 
-  const renderRow = (row: (typeof rowData)[number], index: number) => (
-    <>
+  const renderRow = (row: (typeof rowData)[number], index: number) => {
+    console.log("DEBUG : renderRow : row.binderStatus:", row.binderStatus);
+    return <>
+        <TableCell>{row.orderNo}</TableCell>
+        <TableCell>{row.date}</TableCell>
       <TableCell
         onClick={() => handleRowClick(row.id)}
         sx={{
@@ -135,15 +149,17 @@ const BinderTask: React.FC<BinderTaskProps> = ({ tasks }) => {
       >
         {row.party}
       </TableCell>
-      <TableCell>{row.date}</TableCell>
-      <TableCell>{row.size}</TableCell>
       <TableCell>{row.itemName}</TableCell>
+      <TableCell>{row.size}</TableCell>
+      <TableCell>{row.bindingType}</TableCell>
+      <TableCell>{row.bindingPage}</TableCell>
+      <TableCell>{row.number}</TableCell>
       <TableCell>{row.remarks}</TableCell>
       <TableCell align="center">
         <StatusBadge status={row.status} />
       </TableCell>
       <TableCell align="center">
-        {row.status === "Pending" && (
+        {row.binderStatus === "Pending" && (
           <Button
             variant="contained"
             size="small"
@@ -163,8 +179,8 @@ const BinderTask: React.FC<BinderTaskProps> = ({ tasks }) => {
           </Button>
         )}
       </TableCell>
-    </>
-  );
+    </>;
+  };
 
   return (
     <BasicTable

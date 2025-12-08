@@ -106,11 +106,8 @@ export const assignTaskService = {
       const response: AxiosResponse<ApiResponse<AssignTask[]>> = await Request.post(
         Endpoint.GET_ALL_ASSIGN_TASKS, filters);
 
-      return {
-        success: response.data.success,
-        data: response.data.data || [],
-        message: response.data.message,
-      };
+      return response.data
+      
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch assigned tasks');
     }
@@ -183,6 +180,28 @@ export const assignTaskService = {
       };
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to delete assigned tasks');
+    }
+  },
+
+   async searchFilterOptions(field: string, searchTerm: string, filters?: any): Promise<ApiResponse<string[]>> {
+    try {
+      const payload = {
+        ...(filters || {}),
+        search: searchTerm
+      };
+      
+      const response: AxiosResponse<ApiResponse<string[]>> = await Request.post(
+        `${Endpoint.ASSIGN_TASK_FILTER}/${field}`,
+        payload
+      );
+      return { 
+        success: true, 
+        data: response.data.data || [], 
+        message: response.data.message 
+      };
+    } catch (error: any) {
+      console.error(`Search ${field} options error:`, error);
+      throw new Error(error.response?.data?.message || `Failed to search ${field} options`);
     }
   }
 };

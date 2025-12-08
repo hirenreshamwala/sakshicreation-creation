@@ -1,6 +1,6 @@
 "use client"
 import { useRef, useState, useEffect } from "react"
-import { Box, Typography, Paper, Button, CircularProgress, Alert, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, List, ListItem, Chip, Divider, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Stack, FormControlLabel, Switch } from "@mui/material"
+import { Box, Typography, Paper, Button, CircularProgress, Alert, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, List, ListItem, Chip, Divider, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Stack, FormControlLabel, Switch, FormLabel, RadioGroup, Radio } from "@mui/material"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import StepperProgress from "@/component/common_component/stepperprogress"
@@ -36,6 +36,8 @@ interface FormValues {
   bindingPage: string
   bookletFolder: boolean
   bookletFolderType: string
+  rate: string // Add this
+  rateType: string // Add this (old/new)
 }
 
 const ViewOrderPage = () => {
@@ -77,6 +79,8 @@ const ViewOrderPage = () => {
       bindingPage: "",
       bookletFolder: false,
       bookletFolderType: "",
+      rate: "", // Add this
+      rateType: "new",
     },
     validationSchema: Yup.object({
       size: Yup.string().required("Size is required"),
@@ -142,6 +146,8 @@ const ViewOrderPage = () => {
           bindingPage: values.bindingPage,
           bookletFolder: values.bookletFolder,
           bookletFolderType: values.bookletFolderType,
+          rate: values.rate ? Number.parseFloat(values.rate) : undefined,
+          rateType: values.rateType,
           filePaths: [
             ...(Array.isArray(singleOrder?.filePaths)
               ? singleOrder.filePaths.map(f => typeof f === 'string' ? f : f.path)
@@ -271,6 +277,8 @@ const ViewOrderPage = () => {
           bindingPage: typeof singleOrder.bindingPage === "string" ? singleOrder.bindingPage : "",
           bookletFolder: Boolean(singleOrder.bookletFolder),
           bookletFolderType: typeof singleOrder.bookletFolderType === "string" ? singleOrder.bookletFolderType : "",
+          rate: singleOrder.rate ? singleOrder.rate.toString() : "", // Add this
+          rateType: singleOrder.rateType || "new", // Add this
         })
       } catch (error) {
         console.error("Error setting form values:", error)
@@ -379,6 +387,32 @@ const ViewOrderPage = () => {
               onChange={formik.handleChange}
               sx={{ flex: 1 }}
               disabled
+            />
+          </Box>
+          <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={3} alignItems="center">
+            <FormControl component="fieldset" sx={{ minWidth: 200 }}>
+              <FormLabel component="legend">Rate Type</FormLabel>
+              <RadioGroup
+                row
+                name="rateType"
+                value={formik.values.rateType}
+                onChange={formik.handleChange}
+              >
+                <FormControlLabel value="old" control={<Radio />} label="Old Rate" />
+                <FormControlLabel value="new" control={<Radio />} label="New Rate" />
+              </RadioGroup>
+            </FormControl>
+
+            <ThemeInput
+              labelName="Rate"
+              placeholder="Enter rate"
+              fullWidth
+              type="number"
+              name="rate"
+              value={formik.values.rate}
+              onChange={formik.handleChange}
+              // disabled={formik.values.rateType === "old"}
+              sx={{ flex: 1 }}
             />
           </Box>
 

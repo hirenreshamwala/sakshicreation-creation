@@ -24,6 +24,7 @@ interface InvoicePDFGeneratorProps {
     applyGST: boolean;
     gstPercentage?: number;
     daysAfterConfirmation?: number;
+    paymentDate?: number; 
   };
   isSaved: boolean;
   onClose: () => void;

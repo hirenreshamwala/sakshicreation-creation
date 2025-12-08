@@ -448,6 +448,18 @@ const BookletBinderTaskView = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
+          <ThemeInput
+            labelName="Size"
+            value={singleOrder?.size || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
+            labelName="Booklet Folder Type"
+            value={singleOrder.bookletFolderType || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
         </Box>
         <Box mb={2}>
           <ThemeInput
