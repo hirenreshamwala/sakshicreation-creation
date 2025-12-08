@@ -25,18 +25,26 @@ export interface ApiResponse<T> {
   data?: T;
   message?: string;
   count?: number;
+  totalCount?: number;
+  pagination?: any;
 }
 
 export const inventoryService = {
-  async getInventoryByCategory(category: string): Promise<ApiResponse<Inventory[]>> {
+  async getInventoryByCategory(params: { category: string; type?: string; page?: number; pageSize?: number; isPagination?: boolean }): Promise<ApiResponse<Inventory[]>> {
     try {
-      const response: AxiosResponse<ApiResponse<Inventory[]>> = await Request.get(
-        `${Endpoint.GET_BY_CATEGORY}/${category}`);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 'Failed to fetch inventory by category'
+      const response: AxiosResponse<ApiResponse<Inventory[]>> = await Request.post(
+        `${Endpoint.GET_BY_CATEGORY}/${params.category}`,
+        params // Send params in body for POST
       );
+      return {
+        success: response.data.success,
+        data: response.data.data || [],
+        totalCount: response.data.totalCount,
+        pagination: response.data.pagination,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch inventory by category');
     }
   },
 
@@ -63,7 +71,40 @@ export const inventoryService = {
       );
     }
   },
+  async getAllInventoryForQuality(params?: any): Promise<ApiResponse<Inventory[]>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Inventory[]>> = await Request.post(
+        Endpoint.GET_ALL_INVENTORY_FOR_QUALITY,
+        params || {}
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data || [],
+        totalCount: response.data.totalCount,
+        pagination: response.data.pagination,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch inventory');
+    }
+  },
 
+  // Added: For filter options
+  async searchFilterOptions(field: string, searchTerm: string, filters?: any): Promise<ApiResponse<string[]>> {
+    try {
+      const response: AxiosResponse<ApiResponse<string[]>> = await Request.post(
+        `${Endpoint.GET_INVENTORY_FILTER_OPTIONS}/${field}`,
+        { search: searchTerm, ...filters }
+      );
+      return {
+        success: true,
+        data: response.data.data || [],
+        message: response.data.message
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || `Failed to search ${field} options`);
+    }
+  },
   async getInventoryBoxSummery(data: any): Promise<ApiResponse<Inventory[]>> {
     try {
       const response: AxiosResponse<ApiResponse<Inventory[]>> = await Request.post(

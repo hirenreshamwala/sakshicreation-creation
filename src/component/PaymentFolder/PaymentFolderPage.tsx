@@ -59,17 +59,6 @@ const PaymentFolderPage: React.FC = () => {
   const candelete = user?.role?.permissions?.payment_folders?.delete;
 
   // Filter states - similar to ComplainPage
-  const [currentFilterState, setCurrentFilterState] = useState<any>({
-    page: 1,
-    pageSize: 10,
-    search: "",
-    filters: {},
-    includeCounts: true,
-    isPagination: true,
-    startDate: null,
-    endDate: null,
-  });
-  const [appliedFilterState, setAppliedFilterState] = useState<any>({});
   const [isInitialLoad, setIsInitialLoad] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
@@ -103,6 +92,26 @@ const PaymentFolderPage: React.FC = () => {
   }, [hasBothCompanies, companyTabs, companyTab, hasSakshi]);
 
   const areaTabs = useMemo(() => ['All', "K-1", "K-2", "K-3", "K-4"], []);
+
+  // Initialize currentFilterState with company and area filters after selectedCompanyName is computed
+  const [currentFilterState, setCurrentFilterState] = useState<any>(() => {
+    const initialState = {
+      page: 1,
+      pageSize: 10,
+      search: "",
+      filters: {
+        company: selectedCompanyName ? [selectedCompanyName] : [],
+        area: [], // Initial areaTab=0, so empty array for "All"
+      },
+      includeCounts: true,
+      isPagination: true,
+      startDate: null,
+      endDate: null,
+    };
+    return initialState;
+  });
+
+  const [appliedFilterState, setAppliedFilterState] = useState<any>({});
 
   // Add company filter to currentFilterState (using name)
   useEffect(() => {
@@ -240,12 +249,12 @@ const PaymentFolderPage: React.FC = () => {
   }, [currentFilterState, appliedFilterState, loadPaymentFolders, selectedCompanyName]);
 
   // Effect for initial load
-  useEffect(() => {
-    if (user && !isInitialLoad && selectedCompanyName) {
-      console.log("🚀 Initial load started for payment folders");
-      loadPaymentFolders();
-    }
-  }, [user, isInitialLoad, loadPaymentFolders, selectedCompanyName]);
+  // useEffect(() => {
+  //   if (user && !isInitialLoad && selectedCompanyName) {
+  //     console.log("🚀 Initial load started for payment folders");
+  //     loadPaymentFolders();
+  //   }
+  // }, [user, isInitialLoad, loadPaymentFolders, selectedCompanyName]);
 
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true as any));

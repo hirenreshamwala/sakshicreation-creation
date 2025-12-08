@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+"use client";
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Box, Button, Stack, TableCell, Chip } from '@mui/material';
 import { FaArrowDown, FaArrowUp } from 'react-icons/fa6';
 import { MdPeople } from 'react-icons/md';
-import BasicTable from '@/component/common_component/Table/themetable';
+import CustomTable2 from "@/component/common_component/Table/CustomTable2";
 import ThemeTabs, { TabItem } from '@/component/common_component/themetabs';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { getAllInventoryThunk } from '@/store/slices/inventorySlice';
+import { getAllInventoryForQualitThunk, getInventoryFilterOptionsThunk } from '@/store/slices/inventorySlice';
+import { toast } from 'react-toastify';
 
 enum InventoryCategory {
     FACTORY = 'factory',
@@ -46,7 +48,7 @@ const normalizeDeckal = (deckalValue: any): string => {
 const QpInventoryPage = () => {
     const dispatch = useAppDispatch();
     const { user }: any = useAppSelector((state) => state.auth)
-    const { allInventory } = useAppSelector(state => state.inventory);
+    const { allInventory, loading, filterOptions } = useAppSelector(state => state.inventory); // Added filterOptions from state
     const permissions = user.role.permissions;
     const paperKeys = ['deckal', 'gsm', 'bf', 'color']
     const boxKeys = ['boxSize', 'boxGSM', 'ply', 'isKantan', 'deckal'];
@@ -58,18 +60,48 @@ const QpInventoryPage = () => {
     const [activeMainTab, setActiveMainTab] = useState<InventoryCategory>(InventoryCategory.FACTORY);
     const [activeMaterialTab, setActiveMaterialTab] = useState(MaterialCategory.BOX);
 
-    const handleRowClick = (data: any) => detailOpen !== null ? null : setDetailOpen(data)
+    // Filter states - similar to PaymentFolderPage
+    const [isInitialLoad, setIsInitialLoad] = useState(false);
+    const [isLoadingData, setIsLoadingData] = useState(false);
+    // Filter options states - Now synced with redux state
+    const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
+    const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
+    // Use redux filterOptions directly
+    const filterOptionsData = useMemo(() => filterOptions, [filterOptions]);
 
-    const formatedInventory = allInventory.map((item: any) => ({
+    // Current filter state - similar to PaymentFolderPage
+    const [currentFilterState, setCurrentFilterState] = useState<any>({
+        page: 1,
+        pageSize: 10,
+        search: "",
+        filters: {
+            category: [activeMainTab], // Initial category filter from tab
+            inventoryType: [activeMaterialTab], // ✅ Added initial inventoryType filter
+            type: [], // Initial for "All" ward
+        },
+        includeCounts: true,
+        isPagination: true,
+        startDate: null,
+        endDate: null,
+    });
+    const [appliedFilterState, setAppliedFilterState] = useState<any>({});
+
+    const handleRowClick = (data: any) => {
+        if (detailOpen !== null) return null;
+        setCurrentFilterState(prev => ({ ...prev, page: 1 })); // Reset page to 1 when entering detail view
+        setDetailOpen(data);
+    };
+
+    const formatedInventory = useMemo(() => allInventory.map((item: any) => ({
         ...item,
-        boxSize: `${item?.boxLength} x ${item?.boxWidth} x ${item?.boxHeight}`,
-        boxGSM: `${item?.paper1GSM || ""} - ${item?.paper2GSM || ""} - ${item?.paper3GSM || ""}`,
+        boxSize: `${item?.boxLength || ''} x ${item?.boxWidth || ''} x ${item?.boxHeight || ''}`.trim() || 'N/A',
+        boxGSM: `${item?.paper1GSM || ""} - ${item?.paper2GSM || ""} - ${item?.paper3GSM || ""}`.replace(/ - $/, ''),
         usedBox: item?.usedBox || 0,
         // Normalize deckal in the formatted data
         deckal: normalizeDeckal(item?.deckal)
-    }))
+    })), [allInventory]);
 
-    const getPermissionWiseInventory = () => {
+    const getPermissionWiseInventory = useCallback(() => {
         if (permissions?.inventory?.view_global) return formatedInventory;
         else if (permissions?.inventory?.view_own)
             return formatedInventory?.filter(
@@ -77,15 +109,118 @@ const QpInventoryPage = () => {
                     item.forCompany?._id === user?.id
             );
         return [];
+    }, [formatedInventory, permissions, user]);
+
+    // Update filters for main tab (category)
+    useEffect(() => {
+        setCurrentFilterState(prev => ({
+            ...prev,
+            filters: {
+                ...prev.filters,
+                category: [activeMainTab]
+            },
+            page: 1
+        }));
+    }, [activeMainTab]);
+
+    // ✅ Added: Update filters for material tab (inventoryType)
+    useEffect(() => {
+        setCurrentFilterState(prev => ({
+            ...prev,
+            filters: {
+                ...prev.filters,
+                inventoryType: [activeMaterialTab]
+            },
+            page: 1
+        }));
+    }, [activeMaterialTab]);
+
+    // Load inventory with filters (similar to loadPaymentFolders)
+    const loadInventory = useCallback(async () => {
+        setIsLoadingData(true);
+        try {
+            const params = {
+                ...currentFilterState,
+                filters: {
+                    ...currentFilterState.filters,
+                },
+                isPagination: false, // Fetch all for grouping, but filters applied server-side
+                includeCounts: true
+            };
+            console.log("📡 Loading inventory with params:", params);
+            await dispatch(getAllInventoryForQualitThunk(params));
+            setIsInitialLoad(true);
+        } catch (err: any) {
+            console.error("❌ Error loading inventory:", err);
+            toast.error(err.message || "Failed to load inventory");
+        } finally {
+            setIsLoadingData(false);
+        }
+    }, [dispatch, currentFilterState]);
+
+    // Load filter options - Now dispatches thunk
+    const loadFilterOptions = async (field: string) => {
+        setLoadingFilterOptions(true);
+        try {
+            console.log(`🔍 Loading inventory filter options for ${field}:`, currentFilterState.filters);
+            await dispatch(getInventoryFilterOptionsThunk({ field, filters: currentFilterState.filters })).unwrap();
+            // Options will be set in redux state via slice
+        } catch (error: any) {
+            console.error(`Error loading inventory filter options for ${field}:`, error);
+            toast.error(`Failed to load filter options for ${field}`);
+        } finally {
+            setLoadingFilterOptions(false);
+        }
     };
 
-    useEffect(() => {
-        dispatch(getAllInventoryThunk());
+    // Handle filter field selection
+    const handleFilterFieldSelect = useCallback(async (field: string | null) => {
+        console.log("Inventory handleFilterFieldSelect called with:", field);
+        setSelectedFilterField(field);
+        if (field && !filterOptionsData[field]) { // Check if options not loaded
+            try {
+                await loadFilterOptions(field);
+            } catch (error) {
+                console.error("Error loading inventory filter options:", error);
+                toast.error(`Failed to load options for ${field}`);
+            }
+        }
+        return Promise.resolve();
+    }, [filterOptionsData, loadFilterOptions]);
+
+    // Handle filter changes
+    const handleFiltersChange = useCallback((newFilters: { [key: string]: string[] }) => {
+        console.log("Inventory Filters changed to:", newFilters);
+        setCurrentFilterState((prev: any) => ({
+            ...prev,
+            filters: newFilters,
+            page: 1,
+        }));
     }, []);
+
+    // Effect to load inventory when filters change
+    useEffect(() => {
+        const isSame = JSON.stringify(appliedFilterState) === JSON.stringify(currentFilterState);
+        if (!isSame) {
+            console.log("🔄 Inventory Filter state changed, loading inventory...");
+            const timer = setTimeout(() => {
+                loadInventory();
+                setAppliedFilterState(currentFilterState);
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+    }, [currentFilterState, appliedFilterState, loadInventory]);
+
+    // Initial load
+    useEffect(() => {
+        if (!isInitialLoad) {
+            loadInventory();
+        }
+    }, [loadInventory, isInitialLoad]);
 
     const handleMainTabChange = (_: React.SyntheticEvent, newValue: any) => {
         setActiveMainTab(newValue as InventoryCategory);
-        if (newValue.toLowerCase() === 'godown') setActiveMaterialTab("box")
+        if (newValue.toLowerCase() === 'godown') setActiveMaterialTab(MaterialCategory.BOX)
     }
 
     const handleWardTabChange = (_: React.SyntheticEvent, newValue: string | number) => setActiveWardTab(newValue as WardTab);
@@ -103,7 +238,7 @@ const QpInventoryPage = () => {
     const handleMaterialTabChange = (_: React.SyntheticEvent, newValue: string | number) => setActiveMaterialTab(newValue as any);
 
     // Calculate balance and pending orders for a specific inventory group
-    const calculateInventoryStats = (filteredInventory: any[]) => {
+    const calculateInventoryStats = useCallback((filteredInventory: any[]) => {
         if (!filteredInventory || !Array.isArray(filteredInventory)) {
             return { balance: 0, pendingOrders: 0, availableForNewOrders: 0 };
         }
@@ -133,16 +268,16 @@ const QpInventoryPage = () => {
             pendingOrders,
             availableForNewOrders: Math.max(0, availableForNewOrders)
         };
-    };
+    }, []);
 
-    const tableConfigs: Record<any, { header: any[]; render: (row: any) => any }> = {
+    const tableConfigs: Record<any, { header: any[]; render: (row: any, index: number) => any }> = {
         kantan: {
             header: [
-                { id: "kantanName", label: "KANTAN NAME" },
-                { id: "reel", label: "REEL" },
-                { id: "date", label: "DATE" },
+                { id: "kantanName", label: "KANTAN NAME", value: 'kantanName' },
+                { id: "reel", label: "REEL", value: 'reel' },
+                { id: "date", label: "DATE", value: null }, // Derived, no filter
             ],
-            render: (row) => (
+            render: (row, index) => (
                 <>
                     <TableCell>{row.kantan?.kantanName || "N/A"}</TableCell>
                     <TableCell>{row.reel || "N/A"}</TableCell>
@@ -152,29 +287,28 @@ const QpInventoryPage = () => {
         },
         box: {
             header: [
-                { id: "boxType", label: "TYPE" },
-                { id: "lwh", label: "SIZE" },
-                { id: "gsm", label: "GSM" },
-                { id: "deckal", label: "DECKAL" },
-                { id: "balance", label: "BALANCE" },
-                { id: "pending", label: "PENDING ORDERS" },
-                { id: "available", label: "AVAILABLE" },
-                { id: "ply", label: "PLY" },
-                { id: "kantan", label: "KANTAN" },
+                { id: "boxType", label: "TYPE", value: null },
+                { id: "lwh", label: "SIZE", value: 'boxSize' }, 
+                { id: "gsm", label: "GSM", value: 'boxGSM' },
+                { id: "deckal", label: "DECKAL", value: 'deckal' },
+                { id: "balance", label: "BALANCE", value: null },
+                { id: "pending", label: "PENDING ORDERS", value: null },
+                { id: "available", label: "AVAILABLE", value: null },
+                { id: "ply", label: "PLY", value: 'ply' },
+                { id: "kantan", label: "KANTAN", value: 'isKantan' },
                 detailOpen !== null && { id: "pcs", label: "PCS" },
                 detailOpen !== null && { id: "used", label: "USED" },
                 detailOpen !== null && { id: "date", label: "DATE" },
             ].filter(Boolean),
-            render: (row) => {
+            render: (row, index) => {
                 const type = row?.inventoryType?.toLowerCase();
                 const category = row?.category;
 
                 let keys: string[] = [];
                 if (type === "box") keys = boxKeys;
                 else if (type === "paper") keys = paperKeys;
-
-                // ✅ Filter all inventory matching this row's key combination
-                const filteredInventory = formatedInventory?.filter((item: any) =>
+                // Filter all inventory matching this row's key combination
+                const filteredInventory = getPermissionWiseInventory()?.filter((item: any) =>
                     item?.inventoryType?.toLowerCase() === type &&
                     item?.category === category &&
                     keys?.every((key) => {
@@ -182,9 +316,12 @@ const QpInventoryPage = () => {
                         if (key === 'deckal') {
                             return normalizeDeckal(item[key]) === normalizeDeckal(row[key]);
                         }
-                        return item[key] === row[key];
+                        // ✅ Handle empty strings properly
+                        const itemVal = item[key] ?? '';
+                        const rowVal = row[key] ?? '';
+                        return String(itemVal).trim() === String(rowVal).trim();
                     })
-                );
+                ) || [];
 
                 // ✅ Calculate stats
                 const { balance, pendingOrders, availableForNewOrders } = calculateInventoryStats(filteredInventory);
@@ -195,10 +332,10 @@ const QpInventoryPage = () => {
                             {row?.boxType || "Box"}
                         </TableCell>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
-                            {row?.boxSize}
+                            {row?.boxSize || 'N/A'}
                         </TableCell>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
-                            {row?.boxGSM}
+                            {row?.boxGSM || 'N/A'}
                         </TableCell>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
                             {normalizeDeckal(row?.deckal)}
@@ -229,7 +366,7 @@ const QpInventoryPage = () => {
                         </TableCell>
 
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
-                            {row?.ply}
+                            {row?.ply || 'N/A'}
                         </TableCell>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
                             {row?.isKantan ? "yes" : "no"}
@@ -237,7 +374,7 @@ const QpInventoryPage = () => {
                         
                         {detailOpen !== null && (
                             <>
-                                <TableCell sx={{ cursor: "pointer" }}>{row?.quantity}</TableCell>
+                                <TableCell sx={{ cursor: "pointer" }}>{row?.quantity || 0}</TableCell>
                                 <TableCell sx={{ cursor: "pointer" }}>{row?.usedBox || 0}</TableCell>
                                 <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
                             </>
@@ -276,29 +413,29 @@ const QpInventoryPage = () => {
         },
         paper: {
             header: [
-                { id: "paper", label: "PAPER" },
-                { id: "deckal", label: "DECKAL" },
-                { id: "gsm", label: "GSM" },
-                { id: "bf", label: "bf" },
-                { id: "color", label: "color" },
-                detailOpen !== null && { id: "kg", label: "kg" },
-                { id: "date", label: "DATE" },
+                { id: "paper", label: "PAPER", value: null },
+                { id: "deckal", label: "DECKAL", value: 'deckal' },
+                { id: "gsm", label: "GSM", value: 'gsm' },
+                { id: "bf", label: "BF", value: 'bf' }, // Fixed: Capitalize label for clarity
+                { id: "color", label: "COLOR", value: 'color' }, // Fixed: Capitalize label for clarity
+                detailOpen !== null && { id: "kg", label: "KG", value: 'kg' },
+                { id: "date", label: "DATE", value: null },
             ].filter(Boolean),
-            render: (row) => (
+            render: (row, index) => (
                 <>
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>Paper</TableCell>
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{normalizeDeckal(row?.deckal)}</TableCell>
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.gsm || "N/A"}</TableCell>
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.bf || "N/A"}</TableCell>
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.color || "N/A"}</TableCell>
-                    {detailOpen !== null ? <TableCell sx={{ cursor: 'pointer' }}>{row?.kg}</TableCell> : null}
+                    {detailOpen !== null ? <TableCell sx={{ cursor: 'pointer' }}>{row?.kg || 0}</TableCell> : null}
                     <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
                 </>
             ),
         },
     };
 
-    const getUniqueByKeys = (inventoryType: any, category: any) => {
+    const getUniqueByKeys = useCallback((inventoryType: any, category: any) => {
         if (!inventoryType) return [];
 
         const type = inventoryType.toString().toLowerCase().trim();
@@ -307,8 +444,7 @@ const QpInventoryPage = () => {
         if (type === 'box') keys = boxKeys;
         else if (type === 'paper') keys = paperKeys;
         else if (type === 'kantan') keys = [];
-
-        const inventoryList = getPermissionWiseInventory?.();
+        const inventoryList = getPermissionWiseInventory();
         if (!Array.isArray(inventoryList)) return [];
 
         const filtered = inventoryList?.filter(
@@ -318,21 +454,32 @@ const QpInventoryPage = () => {
         );  
 
         const seen = new Set();
-        return filtered?.filter((item: any) => {
+        const uniqueItems: any[] = [];
+        filtered?.forEach((item: any) => {
             // Create normalized key values for proper grouping
             const keyValue = keys?.map((k) => {
                 if (k === 'deckal') {
                     // Use normalized deckal value for grouping
                     return normalizeDeckal(item?.[k]);
                 }
-                return item?.[k] ?? '';
+                const val = item?.[k] ?? '';
+                return String(val).trim();
             }).join('|');
             
-            if (seen.has(keyValue)) return false;
-            seen.add(keyValue);
-            return true;
+            if (!seen.has(keyValue)) {
+                seen.add(keyValue);
+                // ✅ Create a representative row for the group (use first item or aggregate if needed)
+                uniqueItems.push({
+                    ...item,
+                    // Ensure formatted fields are set
+                    boxSize: item.boxSize || `${item?.boxLength || ''} x ${item?.boxWidth || ''} x ${item?.boxHeight || ''}`.trim() || 'N/A',
+                    boxGSM: item.boxGSM || `${item?.paper1GSM || ""} - ${item?.paper2GSM || ""} - ${item?.paper3GSM || ""}`.replace(/ - $/, ''),
+                    deckal: normalizeDeckal(item?.deckal)
+                });
+            }
         });
-    }
+        return uniqueItems;
+    }, [getPermissionWiseInventory]);
 
     useEffect(() => {
         if (detailOpen !== null) {
@@ -352,9 +499,12 @@ const QpInventoryPage = () => {
                     if (key === 'deckal') {
                         return normalizeDeckal(item[key]) === normalizeDeckal(detailOpen[key]);
                     }
-                    return item[key] === detailOpen[key];
+                    // ✅ Handle empty strings properly
+                    const itemVal = item[key] ?? '';
+                    const detailVal = detailOpen[key] ?? '';
+                    return String(itemVal).trim() === String(detailVal).trim();
                 })
-            );
+            ) || [];
 
             setAllSubData(filteredInventory)
             setSubData(filteredInventory.filter((item) => item.type.toLowerCase() === activeWardTab.toLowerCase()));
@@ -362,14 +512,33 @@ const QpInventoryPage = () => {
     }, [detailOpen, formatedInventory, activeWardTab]);
 
     // Calculate overall stats for the detail view
-    const getDetailStats = () => {
+    const getDetailStats = useCallback(() => {
         if (!allSubData || allSubData.length === 0) {
             return { balance: 0, pendingOrders: 0, availableForNewOrders: 0 };
         }
         return calculateInventoryStats(allSubData);
-    };
+    }, [allSubData, calculateInventoryStats]);
 
     const detailStats = getDetailStats();
+
+    // For CustomTable2 - dynamic based on detailOpen
+    const currentTableConfig = tableConfigs[activeMaterialTab];
+    const groupedRows = useMemo(() => detailOpen === null ? getUniqueByKeys(activeMaterialTab, activeMainTab) : subData, [detailOpen, getUniqueByKeys, activeMaterialTab, activeMainTab, subData]);
+    const totalRows = groupedRows.length; // Client-side total for grouped pagination
+
+    // ✅ FIX: Client-side pagination slicing for both grouped and detail views
+    // In detail view, perhaps disable pagination or show all - but since user says pagination right, keep it
+    const displayRows = useMemo(() => {
+        const { page, pageSize } = currentFilterState;
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        return groupedRows.slice(startIndex, endIndex);
+    }, [groupedRows, currentFilterState.page, currentFilterState.pageSize]);
+
+    // Loading check
+    if (loading || isLoadingData) {
+        return <div>Loading Inventory...</div>;
+    }
 
     return (
         <>
@@ -428,17 +597,25 @@ const QpInventoryPage = () => {
                     </Box>
                 </Stack>
             ) : null}
-
-            {detailOpen === null ? <BasicTable
-                tableHeader={tableConfigs[activeMaterialTab].header}
-                rowData={getUniqueByKeys(activeMaterialTab, activeMainTab)}
-                renderRow={tableConfigs[activeMaterialTab].render}
-            /> : <BasicTable
-                tableHeader={tableConfigs[activeMaterialTab].header}
-                rowData={subData}
-                renderRow={tableConfigs[activeMaterialTab].render}
-            />}
-
+            <CustomTable2
+                showDatePicker={true}
+                tableHeader={currentTableConfig.header}
+                rowData={displayRows} // ✅ Use sliced displayRows
+                renderRow={(row, index) => currentTableConfig.render(row, index)}
+                title={`Inventory - ${activeMaterialTab.toUpperCase()}`}
+                showFillter={true}
+                showSearch={true}
+                showExcelDownload={false} // Add if needed
+                // excelHeaders and excelData if needed
+                totalRows={totalRows} // Full total for pagination
+                setCurrentFilterState={setCurrentFilterState}
+                currentFilterState={currentFilterState}
+                onFilterFieldSelect={handleFilterFieldSelect}
+                selectedFilterField={selectedFilterField}
+                filterOptionsData={filterOptionsData}
+                loadingFilterOptions={loadingFilterOptions}
+                onFiltersChange={handleFiltersChange}
+            />
             {detailOpen !== null ? <Button variant='outlined' onClick={() => setDetailOpen(null)}> ← Back</Button> : null}
         </>
     );

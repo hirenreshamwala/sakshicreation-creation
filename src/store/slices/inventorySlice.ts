@@ -3,11 +3,19 @@ import { inventoryService, Inventory, ApiResponse } from '@/services/inventory.s
 
 export const getInventoryByCategoryThunk = createAsyncThunk(
   'inventory/getByCategory',
-  async (category: string, { rejectWithValue }) => {
+  async (paramsOrCategory: string | any, { rejectWithValue }) => {
     try {
-      const response = await inventoryService.getInventoryByCategory(category);
+      let response;
+      if (typeof paramsOrCategory === 'string') {
+        response = await inventoryService.getInventoryByCategory({ category: paramsOrCategory, isPagination: false });
+      } else {
+        response = await inventoryService.getInventoryByCategory(paramsOrCategory);
+      }
       if (response.success && Array.isArray(response.data)) {
-        return response.data;
+        return {
+          data: response.data,
+          totalCount: response.totalCount || 0, // For pagination
+        };
       } else {
         return rejectWithValue('Invalid response format: data array not found');
       }
@@ -34,17 +42,58 @@ export const getInventorySummaryThunk = createAsyncThunk(
 );
 
 export const getAllInventoryThunk = createAsyncThunk(
-  'inventory/getall',
+  'inventory/getAll',
   async (_, { rejectWithValue }) => {
     try {
       const response = await inventoryService.getAllInventory();
       if (response.success && response.data) {
-        return response.data;
+        return {
+          data: response.data,
+          totalCount: response.data.length || 0,
+          pagination: null,
+        };
       } else {
         return rejectWithValue('Invalid response format: data not found');
       }
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch inventory');
+    }
+  }
+);
+
+export const getAllInventoryForQualitThunk = createAsyncThunk(
+  'inventory/getAllForQuality',
+  async (params?: any, { rejectWithValue }) => { // Now accepts params
+    try {
+      const response = await inventoryService.getAllInventoryForQuality(params); 
+      if (response.success && response.data) {
+        return {
+          data: response.data,
+          totalCount: response.totalCount || 0,
+          pagination: response.pagination || null,
+        };
+      } else {
+        return rejectWithValue('Invalid response format: data not found');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch inventory');
+    }
+  }
+);
+
+// Add filter options thunk
+export const getInventoryFilterOptionsThunk = createAsyncThunk(
+  'inventory/getFilterOptions',
+  async ({ field, filters }: { field: string; filters: any }, { rejectWithValue }) => {
+    try {
+      const response = await inventoryService.searchFilterOptions(field, '', filters);
+      if (response.success && Array.isArray(response.data)) {
+        return { field, options: response.data };
+      } else {
+        return rejectWithValue('Invalid response format');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch filter options');
     }
   }
 );
@@ -73,6 +122,8 @@ interface InventoryState {
   loading: boolean;
   updating: boolean;
   error: string | null;
+  totalCount?: number;
+  filterOptions: { [key: string]: string[] }; // For filter data
 }
 
 const initialState: InventoryState = {
@@ -82,6 +133,8 @@ const initialState: InventoryState = {
   loading: false,
   updating: false,
   error: null,
+  totalCount: 0,
+  filterOptions: {},
 };
 
 const inventorySlice = createSlice({
@@ -90,6 +143,9 @@ const inventorySlice = createSlice({
   reducers: {
     clearError(state) {
       state.error = null;
+    },
+    setFilterOptions(state, action: PayloadAction<{ field: string; options: string[] }>) {
+      state.filterOptions[action.payload.field] = action.payload.options;
     },
   },
   extraReducers: (builder) => {
@@ -101,9 +157,10 @@ const inventorySlice = createSlice({
       })
       .addCase(
         getAllInventoryThunk.fulfilled,
-        (state, action: PayloadAction<Inventory[]>) => {
+        (state, action: PayloadAction<{ data: Inventory[]; totalCount: number; pagination: any }>) => {
           state.loading = false;
-          state.allInventory = action.payload;
+          state.allInventory = action.payload.data;
+          state.totalCount = action.payload.totalCount;
         }
       )
       .addCase(getAllInventoryThunk.rejected, (state, action) => {
@@ -111,7 +168,14 @@ const inventorySlice = createSlice({
         state.error = action.payload as string;
         state.allInventory = [];
       })
-      
+      // Filter options
+      .addCase(getInventoryFilterOptionsThunk.fulfilled, (state, action) => {
+        state.filterOptions[action.payload.field] = action.payload.options;
+      })
+      .addCase(getInventoryFilterOptionsThunk.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+     
       // Get inventory by category
       .addCase(getInventoryByCategoryThunk.pending, (state) => {
         state.loading = true;
@@ -119,15 +183,17 @@ const inventorySlice = createSlice({
       })
       .addCase(
         getInventoryByCategoryThunk.fulfilled,
-        (state, action: PayloadAction<Inventory[]>) => {
+        (state, action: PayloadAction<{ data: Inventory[]; totalCount: number }>) => {
           state.loading = false;
-          state.inventory = action.payload;
+          state.inventory = action.payload.data;
+          state.totalCount = action.payload.totalCount;
         }
       )
       .addCase(getInventoryByCategoryThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
         state.inventory = [];
+        state.totalCount = 0;
       })
       
       // Get inventory summary
@@ -147,7 +213,27 @@ const inventorySlice = createSlice({
         state.error = action.payload as string;
         state.summary = null;
       })
-      
+     
+      // Get all inventory for quality
+      .addCase(getAllInventoryForQualitThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getAllInventoryForQualitThunk.fulfilled,
+        (state, action: PayloadAction<{ data: Inventory[]; totalCount: number; pagination: any }>) => {
+          state.loading = false;
+          state.allInventory = action.payload.data || [];
+          state.totalCount = action.payload.totalCount || 0;
+          console.log('🔄 Redux: Inventory updated with', action.payload.data?.length || 0, 'items');
+        }
+      )
+      .addCase(getAllInventoryForQualitThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        state.allInventory = [];
+        state.totalCount = 0;
+      })
       // NEW: Update inventory item
       .addCase(updateInventoryItemThunk.pending, (state) => {
         state.updating = true;
@@ -178,5 +264,5 @@ const inventorySlice = createSlice({
   },
 });
 
-export const { clearError } = inventorySlice.actions;
+export const { clearError ,setFilterOptions} = inventorySlice.actions;
 export default inventorySlice.reducer;

@@ -252,5 +252,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   GET_QP_ORDER_FILTER_OPTIONS: `${BaseURL}/api/qporder/filter-options`,
   GET_COMPLAIN_FILTER_OPTIONS: `${BaseURL}/api/complain/filter-options`,
   GET_PAYMENT_FOLDER_FILTER_OPTIONS: `${BaseURL}/api/payment-folders/filter-options`,
+  GET_INVENTORY_FILTER_OPTIONS: `${BaseURL}/api/inventory/filter-options`,
+  GET_ALL_INVENTORY_FOR_QUALITY: `${BaseURL}/api/inventory/getallForQuality`,
 };
 export default Endpoint;
