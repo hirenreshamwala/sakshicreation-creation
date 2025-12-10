@@ -579,7 +579,7 @@ const LeadManagementPage: React.FC = () => {
       </TableCell>
       <TableCell
         sx={{ cursor: "pointer", fontSize: 14 }}
-        onClick={() => handleClick(row._id || "")}
+        onClick={() => handleClick(row.partyName?._id || "")}
       >
         {row.partyName?.partyName || "N/A"}
       </TableCell>

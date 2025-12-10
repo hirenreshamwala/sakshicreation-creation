@@ -33,6 +33,7 @@ import AddQPOrderDialog from "@/component/allorderdailog/QpOrderDialog";
 import AddSakhiOrderDialog from "@/component/allorderdailog";
 import CustomTable2 from "@/component/common_component/Table/CustomTable/CustomTable2";
 import { assignTaskService } from "@/services/assignTask.service";
+import Link from "next/link";
 
 interface Task {
   _id: string;
@@ -623,6 +624,7 @@ const AssignTaskPage: React.FC = () => {
 
   const mapTaskToRowData = (task: Task): RowData => {
     return {
+      ...task,
       id: task._id,
       company: {
         name: task.companyName?.companyName || "Unknown",
@@ -635,6 +637,7 @@ const AssignTaskPage: React.FC = () => {
       ).toLocaleDateString("en-GB"),
       reason: task.reasonForVisit || "N/A",
       party: task.partyName?.partyName || "Unknown",
+      partyId: task.partyName?._id || "Unknown",
       address: task.partyName?.address?.unitNo || "N/A",
       market: task.partyName?.address?.marketName?.marketName || "N/A",
       area: task.partyName?.address?.area?.area || "N/A",
@@ -706,12 +709,11 @@ const AssignTaskPage: React.FC = () => {
           </Box>
         </TableCell>
         <TableCell sx={getCellSx({ fontSize: 14, color: "blue" })}>{row.date}</TableCell>
-        <TableCell
-          onClick={() => handleClick(row.id)}
+        <Link href={`/admin/assign-task/view-task/${row.partyId}?taskId=${row?._id}`}><TableCell
           sx={getCellSx({ cursor: "pointer", fontSize: 14 })}
         >
           {row.party}
-        </TableCell>
+        </TableCell></Link>
 
         <TableCell sx={getCellSx({ fontSize: 14 })}>
           <Typography

@@ -268,5 +268,6 @@ const Endpoint = {
   GET_ALL_INVENTORY_FOR_QUALITY: `${BaseURL}/api/inventory/getallForQuality`,
   GET_DATA_BY_PARTY_AND_ACCOUNTMASTER: `${BaseURL}/api/lead/get-data-by-party-and-accountmaster`,
   GET_TASK_BY_PARTY_AND_ACCOUNTMASTER: `${BaseURL}/api/assign-task/get-task-by-party-and-accountmaster`,
+  GET_PARTY_TASK: `${BaseURL}/api/assign-task/get-party-task`,
 };
 export default Endpoint;

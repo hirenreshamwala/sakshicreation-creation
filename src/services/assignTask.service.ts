@@ -219,4 +219,18 @@ export const assignTaskService = {
       throw new Error(error.response?.data?.message || 'Failed to fetch leads by staff ID');
     }
   },
+  async getPartyTask(data: any): Promise<ApiResponse<AssignTask[]>> {
+    try {
+      const response: AxiosResponse<ApiResponse<AssignTask[]>> = await Request.post(
+        `${Endpoint.GET_PARTY_TASK}`, data);
+      return {
+        success: response.data.success,
+        data: response.data.data || [],
+        message: response.data.message,
+        count: response.data.count,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch leads by staff ID');
+    }
+  },
 };
