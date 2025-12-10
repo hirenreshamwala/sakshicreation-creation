@@ -101,6 +101,21 @@ export const leadService = {
       throw new Error(error.response?.data?.message || 'Failed to delete lead');
     }
   },
+
+  async getDataByPartyAndAccountMaster(data: any): Promise<ApiResponse<Lead[]>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Lead[]>> = await Request.post(
+        `${Endpoint.GET_DATA_BY_PARTY_AND_ACCOUNTMASTER}`,data);
+      return {
+        success: response.data.success,
+        data: response.data.data || [],
+        message: response.data.message,
+        count: response.data.count,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch leads by staff ID');
+    }
+  },
   async searchFilterOptions(field: string, searchTerm: string, filters?: any): Promise<ApiResponse<string[]>> {
     try {
       const payload = {

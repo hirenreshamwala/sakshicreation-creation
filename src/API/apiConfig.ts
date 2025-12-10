@@ -266,5 +266,7 @@ const Endpoint = {
   GET_PAYMENT_FOLDER_FILTER_OPTIONS: `${BaseURL}/api/payment-folders/filter-options`,
   GET_INVENTORY_FILTER_OPTIONS: `${BaseURL}/api/inventory/filter-options`,
   GET_ALL_INVENTORY_FOR_QUALITY: `${BaseURL}/api/inventory/getallForQuality`,
+  GET_DATA_BY_PARTY_AND_ACCOUNTMASTER: `${BaseURL}/api/lead/get-data-by-party-and-accountmaster`,
+  GET_TASK_BY_PARTY_AND_ACCOUNTMASTER: `${BaseURL}/api/assign-task/get-task-by-party-and-accountmaster`,
 };
 export default Endpoint;
