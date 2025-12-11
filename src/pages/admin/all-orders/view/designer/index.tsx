@@ -753,12 +753,123 @@ const FileSelectionDialog = ({
   )
 }
 
+const ProformaHistoryDialog = ({
+  open,
+  onClose,
+  history
+}: {
+  open: boolean;
+  onClose: () => void;
+  history: any[];
+}) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN') + ' ' + date.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // console.log("DEBUG : ProformaHistoryDialog : history:", history);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle>
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Typography fontWeight={600} fontSize={18}>
+            Proforma Invoice History
+          </Typography>
+          <IconButton onClick={onClose} size="small">
+            <MdClose />
+          </IconButton>
+        </Box>
+      </DialogTitle>
+      <DialogContent>
+        {history.length === 0 ? (
+          <Box textAlign="center" py={4}>
+            <Typography color="textSecondary">
+              No history available for this proforma invoice
+            </Typography>
+          </Box>
+        ) : (
+          <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+            {history.map((entry, index) => (
+              <ListItem
+                key={index}
+                divider={index < history.length - 1}
+                sx={{
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  py: 2
+                }}
+              >
+                <Box width="100%" display="flex" justifyContent="space-between" mb={1}>
+                  <Typography variant="body2" color="textSecondary" fontWeight={600}>
+                    Version {index + 1}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    {formatDate(entry.createdAt)}
+                  </Typography>
+                </Box>
+
+                <Box width="100%" display="grid" gridTemplateColumns="repeat(4, 1fr)" gap={1} mt={1}>
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">Unit Price</Typography>
+                    <Typography variant="body2" fontWeight={500}>₹{entry.unitPrice?.toFixed(2) || 0}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">Total</Typography>
+                    <Typography variant="body2" fontWeight={500}>₹{entry.total?.toFixed(2) || 0}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">GST %</Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {entry.gstPercentage || 0}%
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">Final Amount</Typography>
+                    <Typography variant="body2" fontWeight={500}>₹{entry.finalAmount?.toFixed(2) || 0}</Typography>
+                  </Box>
+
+                  {/* <Box>
+                    <Typography variant="caption" color="textSecondary">GST Applied</Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {entry.applyGST ? 'Yes' : 'No'}
+                    </Typography>
+                  </Box> */}
+
+                </Box>
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+
 const ViewOrderDesigner = () => {
   const fileUploadRef = useRef<any>(null)
   const router = useRouter()
   const { id: orderId } = router.query
   const dispatch = useAppDispatch()
   const { singleOrder } = useAppSelector((state) => state.orders)
+
+
   const [pageLoading, setPageLoading] = useState(true)
   const [loading, setLoading] = useState(false)
   const [files, setFiles] = useState<
@@ -797,6 +908,9 @@ const ViewOrderDesigner = () => {
   const { markets } = useAppSelector((state) => state.markets);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false)
   const [newSelectedDesigner, setNewSelectedDesigner] = useState<any>(null)
+  const [proformaHistoryOpen, setProformaHistoryOpen] = useState(false);
+  const [proformaHistory, setProformaHistory] = useState<any[]>([]);
+
   // const [quotationProofLoading, setQuotationProofLoading] = useState(false)
   // const [uploadedQuotationProofs, setUploadedQuotationProofs] = useState<any[]>([])
   // const [quotationHistoryDialog, setQuotationHistoryDialog] = useState(false)
@@ -806,6 +920,29 @@ const ViewOrderDesigner = () => {
   const isEditingDisabled = singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0;
   // const hasQuotationProof = Boolean(singleOrder?.quotationProof) || uploadedQuotationProofs.length > 0
   // const hasValidProof = Array.isArray(singleOrder?.invoiceValidProof) && singleOrder?.invoiceValidProof?.length > 0;
+
+  const fetchProformaHistory = async () => {
+    if (!singleOrder?.orderNumber) return;
+
+    try {
+      // ✅ सीधे singleOrder से history लें
+      // console.log("DEBUG : fetchProformaHistory : singleOrder:", singleOrder);
+
+      if (singleOrder.proformaHistory && singleOrder.proformaHistory.length > 0) {
+        console.log("✅ Found proforma history in order:", singleOrder.proformaHistory);
+        setProformaHistory(singleOrder.proformaHistory);
+      }
+    } catch (err) {
+      console.error("Failed to fetch proforma history:", err);
+      toast.error("Failed to load proforma history");
+    }
+  };
+
+  useEffect(() => {
+    if (singleOrder?.orderNumber && isPerformaInvoiceSaved) {
+      fetchProformaHistory();
+    }
+  }, [singleOrder, isPerformaInvoiceSaved]);
 
 
   const handleUpdateDesigner = async () => {
@@ -1207,6 +1344,7 @@ const ViewOrderDesigner = () => {
 
       const formData = {
         orderNumber: singleOrder?.orderNumber || "N/A",
+        description: singleOrder?.description || "N/A",
         companyName: singleOrder?.companyName?.companyName || "N/A",
         remarks: singleOrder?.remarks || "",
         ownerMobileNo: singleOrder?.party?.ownerMobileNo || "",
@@ -1223,8 +1361,9 @@ const ViewOrderDesigner = () => {
         gstPercentage: singleOrder?.gstPercentage || 18,
         daysAfterConfirmation: singleOrder?.daysAfterConfirmation || 0,
         paymentDate: singleOrder?.paymentDate || 0, // यदि available हो तो
+        quotation: true
       };
-      console.log("DEBUG : handleDownloadInvoice : formData:", formData);
+      // console.log("DEBUG : handleDownloadInvoice : formData:", formData);
 
 
       generateInvoicePDF(formData);
@@ -2271,10 +2410,11 @@ const ViewOrderDesigner = () => {
                   })}
                 </Box>
               )}
-              <Box display="flex" gap={2} mb={2}>
+              <Box display="flex" gap={2} mb={2} width="100%">
+                {/* Generate Proforma Invoice */}
                 <ThemeButton
-                  fullWidth
                   sx={{
+                    flex: 1,
                     background: isEditingDisabled ? "#ccc" : "#B100FF",
                     color: "#fff",
                     fontWeight: 600,
@@ -2288,10 +2428,29 @@ const ViewOrderDesigner = () => {
                 >
                   {isEditingDisabled ? "Invoice Already Generated" : "Generate Proforma Invoice"}
                 </ThemeButton>
+
+                {/* View History */}
+                <ThemeButton
+                  sx={{
+                    flex: 1,
+                    background: "#9C27B0",
+                    color: "#fff",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    borderRadius: 2,
+                    py: 1.2,
+                    "&:hover": { background: "#7B1FA2" },
+                  }}
+                  onClick={() => setProformaHistoryOpen(true)}
+                >
+                  View History
+                </ThemeButton>
+
+                {/* Download Invoice (Only when disabled) */}
                 {isEditingDisabled && (
                   <ThemeButton
-                    fullWidth
                     sx={{
+                      flex: 1,
                       background: "#2196F3",
                       color: "#fff",
                       fontWeight: 600,
@@ -2299,14 +2458,19 @@ const ViewOrderDesigner = () => {
                       borderRadius: 2,
                       py: 1.2,
                       "&:hover": { background: "#1976D2" },
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
                     }}
                     onClick={handleDownloadInvoice}
                   >
-                    <MdDownload style={{ marginRight: "8px" }} />
+                    <MdDownload />
                     Download Invoice
                   </ThemeButton>
                 )}
               </Box>
+
 
               <Collapse in={shouldShowInvoiceProofSection} timeout="auto" unmountOnExit>
                 <Box mb={3}>
@@ -2549,6 +2713,11 @@ const ViewOrderDesigner = () => {
         data={singleOrder}
         orderId={orderId as string}
         onInvoiceSaved={() => setIsPerformaInvoiceSaved(true)}
+      />
+      <ProformaHistoryDialog
+        open={proformaHistoryOpen}
+        onClose={() => setProformaHistoryOpen(false)}
+        history={proformaHistory}
       />
     </>
   )

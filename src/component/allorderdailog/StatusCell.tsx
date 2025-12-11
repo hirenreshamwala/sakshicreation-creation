@@ -30,12 +30,12 @@ const processLabels = {
 // ✅ Current process determine karne ka function - row.status ke basis pe
 const getCurrentProcess = (row) => {
   const currentStatus = row.status || "Pending";
-  
+
   // ✅ Agar final status mein hai to koi current process nahi
   if (["Completed", "Operator Completed", "Canceled", "On Hold"].includes(currentStatus)) {
     return null;
   }
-  
+
   // ✅ Agar status specific process mein hai to wahi return karo
   if (currentStatus === "Kanthan") {
     return "kanthan";
@@ -70,10 +70,10 @@ const getCurrentProcess = (row) => {
   if (currentStatus === "Pinning") {
     return "pinning";
   }
-  if (currentStatus === "Puching") {
+  if (currentStatus === "Punching") {
     return "punching";
   }
-  
+
   // ✅ Agar status "In Progress" hai to sequential flow check karo
   const hasDesigner = !!row.designer;
   const hasPrinter = !!row.printer;
@@ -286,7 +286,7 @@ const calculateNextStatus = (row, updatedData = {}) => {
     }
 
     if (!punchingDone) {
-      return "Puching";
+      return "Punching";
     }
 
     // ✅ Manual Pasting & Pinning (conditional) - ONLY in Flow 2
@@ -329,7 +329,7 @@ export const StatusCell = ({ row }: { row: any }) => {
 
   // ✅ Direct row.status use karo - yehi actual current status hai
   const currentStatus = row.status || "Pending";
-  
+
   const isAssignedDesigner = row.designer?._id === user?.id;
   const designer = user?.role?.roleName?.toLowerCase()?.includes("designer") || false
   const cutting = user?.role?.roleName?.toLowerCase()?.includes("cutting") || false
@@ -338,6 +338,9 @@ export const StatusCell = ({ row }: { row: any }) => {
   const binder = user?.role?.roleName?.toLowerCase()?.includes("lamination") || user?.role?.roleName?.toLowerCase()?.includes("binder") || false
   const operator = user?.role?.roleName?.toLowerCase()?.includes("operator") || false
   const admin = user?.role?.roleName?.toLowerCase()?.includes("admin") || false
+  const punchingRole = user?.role?.roleName?.toLowerCase()?.includes("punching") || false
+  const kantanRole = user?.role?.roleName?.toLowerCase()?.includes("kanthan") || false
+
   const canStatus = user?.role?.permissions?.all_orders?.status
   // ✅ Operator Completed ko bhi final status mein add karo
   const isStatusFinal = currentStatus === "Completed" || currentStatus === "Operator Completed" || currentStatus === "Canceled" || currentStatus === "On Hold"
@@ -357,20 +360,129 @@ export const StatusCell = ({ row }: { row: any }) => {
 
   const getUserAllowedActions = () => {
     if (designer && isAssignedDesigner) {
-      return { canDoDesign: true, canDoPaperCutting: false, canDoCorrugation: false, canDoPrinter: false, canDoLamination: false, canDoOtherProcesses: false, viewType: "designer" };
+      return {
+        canDoDesign: true,
+        canDoPaperCutting: false,
+        canDoCorrugation: false,
+        canDoPrinter: false,
+        canDoLamination: false,
+        canDoPunching: false,
+        canDoKanthan: false, // ✅ Kanthan permission false
+        canDoOtherProcesses: false,
+        viewType: "designer"
+      };
     } else if (cutting) {
-      return { canDoDesign: false, canDoPaperCutting: true, canDoCorrugation: false, canDoPrinter: false, canDoLamination: false, canDoOtherProcesses: false, viewType: "cutting" };
+      return {
+        canDoDesign: false,
+        canDoPaperCutting: true,
+        canDoCorrugation: false,
+        canDoPrinter: false,
+        canDoLamination: false,
+        canDoPunching: false,
+        canDoKanthan: false,
+        canDoOtherProcesses: false,
+        viewType: "cutting"
+      };
     } else if (corrugation) {
-      return { canDoDesign: false, canDoPaperCutting: false, canDoCorrugation: true, canDoPrinter: false, canDoLamination: false, canDoOtherProcesses: false, viewType: "corrugation" };
+      return {
+        canDoDesign: false,
+        canDoPaperCutting: false,
+        canDoCorrugation: true,
+        canDoPrinter: false,
+        canDoLamination: false,
+        canDoPunching: false,
+        canDoKanthan: false,
+        canDoOtherProcesses: false,
+        viewType: "corrugation"
+      };
     } else if (printer) {
-      return { canDoDesign: false, canDoPaperCutting: false, canDoCorrugation: false, canDoPrinter: true, canDoLamination: false, canDoOtherProcesses: false, viewType: "printer" };
+      return {
+        canDoDesign: false,
+        canDoPaperCutting: false,
+        canDoCorrugation: false,
+        canDoPrinter: true,
+        canDoLamination: false,
+        canDoPunching: false,
+        canDoKanthan: false,
+        canDoOtherProcesses: false,
+        viewType: "printer"
+      };
     } else if (binder) {
-      return { canDoDesign: false, canDoPaperCutting: false, canDoCorrugation: false, canDoPrinter: false, canDoLamination: true, canDoOtherProcesses: false, viewType: "binder" };
+      return {
+        canDoDesign: false,
+        canDoPaperCutting: false,
+        canDoCorrugation: false,
+        canDoPrinter: false,
+        canDoLamination: true,
+        canDoPunching: false,
+        canDoKanthan: false,
+        canDoOtherProcesses: false,
+        viewType: "binder"
+      };
     } else if (operator) {
-      return { canDoDesign: false, canDoPaperCutting: false, canDoCorrugation: true, canDoPrinter: false, canDoLamination: false, canDoOtherProcesses: true, viewType: "operator" };
-    } else if (admin) {
-      return { canDoDesign: true, canDoPaperCutting: true, canDoCorrugation: true, canDoPrinter: true, canDoLamination: true, canDoOtherProcesses: true, viewType: "admin" };
-    } return { canDoDesign: false, canDoPaperCutting: false, canDoCorrugation: false, canDoPrinter: false, canDoLamination: false, canDoOtherProcesses: false, viewType: "viewer" };
+      return {
+        canDoDesign: false,
+        canDoPaperCutting: false,
+        canDoCorrugation: true,
+        canDoPrinter: false,
+        canDoLamination: false,
+        canDoPunching: false,
+        canDoKanthan: false, // ✅ IMPORTANT: Operator को Kanthan permission नहीं
+        canDoOtherProcesses: true,
+        viewType: "operator"
+      };
+    }
+    // ✅ NEW: Punching role
+    else if (punchingRole) {
+      return {
+        canDoDesign: false,
+        canDoPaperCutting: false,
+        canDoCorrugation: false,
+        canDoPrinter: false,
+        canDoLamination: false,
+        canDoPunching: true,
+        canDoKanthan: false,
+        canDoOtherProcesses: false,
+        viewType: "punching"
+      };
+    }
+    else if (kantanRole) {
+      return {
+        canDoDesign: false,
+        canDoPaperCutting: false,
+        canDoCorrugation: false,
+        canDoPrinter: false,
+        canDoLamination: false,
+        canDoPunching: false,
+        canDoKanthan: true, // ✅ ONLY kantan role को यह permission
+        canDoOtherProcesses: false,
+        viewType: "kanthan"
+      };
+    }
+    else if (admin) {
+      return {
+        canDoDesign: true,
+        canDoPaperCutting: true,
+        canDoCorrugation: true,
+        canDoPrinter: true,
+        canDoLamination: true,
+        canDoPunching: true,
+        canDoKanthan: true,
+        canDoOtherProcesses: true,
+        viewType: "admin"
+      };
+    }
+    return {
+      canDoDesign: false,
+      canDoPaperCutting: false,
+      canDoCorrugation: false,
+      canDoPrinter: false,
+      canDoLamination: false,
+      canDoPunching: false,
+      canDoKanthan: false,
+      canDoOtherProcesses: false,
+      viewType: "viewer"
+    };
   };
 
   const userActions = getUserAllowedActions();
@@ -403,7 +515,14 @@ export const StatusCell = ({ row }: { row: any }) => {
     if (currentProcess === "corrugation" && !userActions.canDoCorrugation) return false;
     if (currentProcess === "printer" && !userActions.canDoPrinter) return false;
     if (currentProcess === "lamination" && !userActions.canDoLamination) return false;
-    if (currentProcess !== "design" && currentProcess !== "paper_cutting" && currentProcess !== "corrugation" && currentProcess !== "printer" && currentProcess !== "lamination" && !userActions.canDoOtherProcesses) return false;
+    if (currentProcess === "punching" && !userActions.canDoPunching) return false;
+    if (currentProcess !== "design" &&
+      currentProcess !== "paper_cutting" &&
+      currentProcess !== "corrugation" &&
+      currentProcess !== "printer" &&
+      currentProcess !== "lamination" &&
+      currentProcess !== "punching" &&
+      !userActions.canDoOtherProcesses) return false;
 
     // Sequential dependency check
     const hasDesigner = !!row.designer;
@@ -588,6 +707,12 @@ export const StatusCell = ({ row }: { row: any }) => {
   };
 
   const handleStart = async () => {
+    // ✅ Check if user has permission for Kanthan
+    if (!userActions.canDoKanthan) {
+      toast.error("You don't have permission to start Kanthan");
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "Do you want to start Kanthan?",
@@ -600,12 +725,12 @@ export const StatusCell = ({ row }: { row: any }) => {
 
     if (result.isConfirmed) {
       try {
-        await dispatch(updateQPOrderThunk({ 
-          id: row._id, 
-          data: { 
+        await dispatch(updateQPOrderThunk({
+          id: row._id,
+          data: {
             kantanStart: new Date(),
-            status: "Kanthan" // ✅ Status update karo
-          } 
+            status: "Kanthan"
+          }
         })).unwrap();
         toast.success("Kanthan started successfully");
       } catch (err: any) {
@@ -615,6 +740,12 @@ export const StatusCell = ({ row }: { row: any }) => {
   };
 
   const handleFinish = async () => {
+    // ✅ Check if user has permission for Kanthan
+    if (!userActions.canDoKanthan) {
+      toast.error("You don't have permission to finish Kanthan");
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "Do you want to finish Kanthan?",
@@ -627,10 +758,9 @@ export const StatusCell = ({ row }: { row: any }) => {
 
     if (result.isConfirmed) {
       try {
-        // ✅ Kanthan finish hone pe "Operator Completed" status set karo
         const updateData = {
           kantanEnd: new Date(),
-          status: "Operator Completed" // ✅ Changed from "Completed" to "Operator Completed"
+          status: "Operator Completed"
         };
 
         await dispatch(updateQPOrderThunk({
@@ -658,9 +788,9 @@ export const StatusCell = ({ row }: { row: any }) => {
 
     if (result.isConfirmed) {
       try {
-        await dispatch(updateQPOrderThunk({ 
-          id: row._id, 
-          data: { status: newStatus } 
+        await dispatch(updateQPOrderThunk({
+          id: row._id,
+          data: { status: newStatus }
         })).unwrap()
         toast.success("Status updated successfully")
       } catch (err: any) {
@@ -670,6 +800,12 @@ export const StatusCell = ({ row }: { row: any }) => {
   }
 
   const handleBoxFounded = async () => {
+    // ✅ Check if user has permission for Kanthan
+    if (!userActions.canDoKanthan) {
+      toast.error("You don't have permission to perform Kanthan operations");
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "Do you want to mark Box as Founded?",
@@ -693,8 +829,23 @@ export const StatusCell = ({ row }: { row: any }) => {
     }
   };
 
+
   const renderKanthanTimer = () => {
     if (currentStatus !== "Kanthan") return null;
+
+    // ✅ Check if user has permission to view Kanthan timer
+    if (!userActions.canDoKanthan && userActions.viewType !== "admin") {
+      return (
+        <Box sx={{ mt: 1, p: 1, backgroundColor: '#FEF2F2', borderRadius: 1 }}>
+          <Typography variant="body2" sx={{ fontSize: '0.7rem', fontWeight: 'bold', mb: 0.5, color: '#DC2626' }}>
+            Kanthan Timer (Restricted)
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#DC2626' }}>
+            ❌ Only Kanthan operators can access timer controls
+          </Typography>
+        </Box>
+      );
+    }
 
     return (
       <Box sx={{ mt: 1, p: 1, backgroundColor: '#F3F4F6', borderRadius: 1 }}>
@@ -703,19 +854,31 @@ export const StatusCell = ({ row }: { row: any }) => {
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {!row.isBoxFound ? (
-            <ThemeButton size="small" onClick={handleBoxFounded}>
+            <ThemeButton
+              size="small"
+              onClick={handleBoxFounded}
+              disabled={!userActions.canDoKanthan} // ✅ Disable if no permission
+            >
               Box Founded
             </ThemeButton>
           ) : (
             <>
               {!row.kantanStart ? (
-                <ThemeButton size="small" onClick={handleStart}>
+                <ThemeButton
+                  size="small"
+                  onClick={handleStart}
+                  disabled={!userActions.canDoKanthan} // ✅ Disable if no permission
+                >
                   Start
                 </ThemeButton>
               ) : !row.kantanEnd ? (
                 <>
                   <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{formatTime(elapsed)}</Typography>
-                  <ThemeButton size="small" onClick={handleFinish}>
+                  <ThemeButton
+                    size="small"
+                    onClick={handleFinish}
+                    disabled={!userActions.canDoKanthan} // ✅ Disable if no permission
+                  >
                     Finish
                   </ThemeButton>
                 </>
@@ -764,7 +927,7 @@ export const StatusCell = ({ row }: { row: any }) => {
 
   const renderProcessView = () => {
     const processInfo = processLabels[currentProcess];
-    
+
     // ✅ Agar order ready nahi hai processing ke liye
     if (currentProcess === "in_progress") {
       return (
@@ -779,6 +942,143 @@ export const StatusCell = ({ row }: { row: any }) => {
       );
     }
 
+    // ✅ Punching role के लिए विशेष view
+    if (userActions.viewType === "punching") {
+      // ✅ Punching role सिर्फ punching process देख और कर सकता है
+      if (currentProcess === "punching") {
+        return (
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: processInfo?.color || '#6B7280' }}>
+              Status: {currentStatus}
+            </Typography>
+            {canMarkCurrentProcessDone() ? (
+              <Button
+                variant="contained"
+                style={{ backgroundColor: processInfo?.color }}
+                onClick={handleMarkCurrentProcessDone}
+                sx={{ mb: 1, p: 0 }}
+              >
+                Mark Punching Done
+              </Button>
+            ) : (
+              <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+                {row.isPunching ? "Punching is required for this order" : "This order doesn't require punching"}
+              </Typography>
+            )}
+          </Box>
+        );
+      } else {
+        return (
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: processInfo?.color || '#6B7280' }}>
+              Status: {currentStatus}
+            </Typography>
+            {currentProcess === "punching" ? (
+              <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#F59E0B', mt: 1 }}>
+                ✅ Ready for Punching
+              </Typography>
+            ) : currentProcess && currentProcess !== "punching" ? (
+              <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+                Waiting for prerequisites...
+              </Typography>
+            ) : (
+              <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#10B981', mt: 1 }}>
+                All processes completed
+              </Typography>
+            )}
+          </Box>
+        );
+      }
+    }
+
+    // ✅ Kanthan role के लिए विशेष view
+    if (userActions.viewType === "kanthan") {
+      // ✅ Kanthan role सिर्फ kantan process देख और कर सकता है
+      if (currentProcess === "kanthan") {
+        return (
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: processInfo?.color || '#6B7280' }}>
+              Status: {currentStatus}
+            </Typography>
+
+            {/* ✅ Kanthan process के लिए controls - ONLY for kantanRole */}
+            {userActions.canDoKanthan ? (
+              <>
+                {!row.isBoxFound ? (
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    style={{ backgroundColor: processInfo.color }}
+                    onClick={handleBoxFounded}
+                    sx={{ mb: 1 }}
+                  >
+                    Box Founded
+                  </Button>
+                ) : (
+                  <>
+                    {!row.kantanStart ? (
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        style={{ backgroundColor: processInfo.color }}
+                        onClick={handleStart}
+                        sx={{ mb: 1 }}
+                      >
+                        Start Kanthan
+                      </Button>
+                    ) : !row.kantanEnd ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', flex: 1 }}>
+                          {formatTime(elapsed)}
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          style={{ backgroundColor: processInfo.color }}
+                          onClick={handleFinish}
+                        >
+                          Finish Kanthan
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Typography sx={{ color: '#10B981', fontSize: '0.8rem' }}>
+                        Kanthan Completed
+                      </Typography>
+                    )}
+                  </>
+                )}
+              </>
+            ) : (
+              <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#EF4444' }}>
+                ❌ You don't have permission to perform Kanthan operations
+              </Typography>
+            )}
+          </Box>
+        );
+      } else {
+        return (
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: processInfo?.color || '#6B7280' }}>
+              Status: {currentStatus}
+            </Typography>
+            {currentProcess === "kanthan" ? (
+              <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#F59E0B', mt: 1 }}>
+                ✅ Ready for Kanthan
+              </Typography>
+            ) : currentProcess && currentProcess !== "kanthan" ? (
+              <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#EF4444', mt: 1 }}>
+                ⏳ Waiting for {processLabels[currentProcess]?.label} to complete
+              </Typography>
+            ) : (
+              <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#10B981', mt: 1 }}>
+                All processes completed
+              </Typography>
+            )}
+          </Box>
+        );
+      }
+    }
+
+    // ✅ Default view for other roles (including operator)
     return (
       <Box>
         <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: processInfo?.color || '#6B7280' }}>
@@ -786,53 +1086,62 @@ export const StatusCell = ({ row }: { row: any }) => {
         </Typography>
 
         {currentProcess === "kanthan" ? (
-          // ✅ Kanthan ke liye sirf timer controls
+          // ✅ Kanthan के लिए timer controls - ONLY if user has permission
           <Box>
-            {!row.isBoxFound ? (
-              <Button
-                fullWidth
-                variant="contained"
-                style={{ backgroundColor: processInfo.color }}
-                onClick={handleBoxFounded}
-                sx={{ mb: 1 }}
-              >
-                Box Founded
-              </Button>
-            ) : (
+            {userActions.canDoKanthan ? (
               <>
-                {!row.kantanStart ? (
+                {!row.isBoxFound ? (
                   <Button
                     fullWidth
                     variant="contained"
                     style={{ backgroundColor: processInfo.color }}
-                    onClick={handleStart}
+                    onClick={handleBoxFounded}
                     sx={{ mb: 1 }}
                   >
-                    Start Kanthan
+                    Box Founded
                   </Button>
-                ) : !row.kantanEnd ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', flex: 1 }}>
-                      {formatTime(elapsed)}
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      style={{ backgroundColor: processInfo.color }}
-                      onClick={handleFinish}
-                    >
-                      Finish Kanthan
-                    </Button>
-                  </Box>
                 ) : (
-                  <Typography sx={{ color: '#10B981', fontSize: '0.8rem' }}>
-                    Kanthan Completed
-                  </Typography>
+                  <>
+                    {!row.kantanStart ? (
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        style={{ backgroundColor: processInfo.color }}
+                        onClick={handleStart}
+                        sx={{ mb: 1 }}
+                      >
+                        Start Kanthan
+                      </Button>
+                    ) : !row.kantanEnd ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', flex: 1 }}>
+                          {formatTime(elapsed)}
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          style={{ backgroundColor: processInfo.color }}
+                          onClick={handleFinish}
+                        >
+                          Finish Kanthan
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Typography sx={{ color: '#10B981', fontSize: '0.8rem' }}>
+                        Kanthan Completed
+                      </Typography>
+                    )}
+                  </>
                 )}
               </>
+            ) : (
+              // ✅ If user doesn't have Kanthan permission (like operator)
+              <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+                Waiting for prerequisites...
+              </Typography>
             )}
           </Box>
         ) : (
-          // ✅ Other processes ke liye normal button
+          // ✅ Other processes के लिए normal button
           canMarkCurrentProcessDone() ? (
             <Button
               variant="contained"
@@ -869,6 +1178,12 @@ export const StatusCell = ({ row }: { row: any }) => {
           Print: {isScreenPrinting ? "Screen/Sterio" : "Offset"} |
           Kantan: {row.isKantan ? "Yes" : "No"}
         </Typography>
+        {/* ✅ New: Punching and Kanthan requirement info */}
+        <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+          Punching Required: {row.isPunching ? "Yes" : "No"} |
+          Pasting Required: {row.isPasting ? "Yes" : "No"} |
+          Pinning Required: {row.isPinning ? "Yes" : "No"}
+        </Typography>
       </Box>
       {renderStatusDropdown()}
       {renderProcessView()}
@@ -877,6 +1192,12 @@ export const StatusCell = ({ row }: { row: any }) => {
 
   if (userActions.viewType === "admin") {
     return renderAdminView();
+  }
+  else if (userActions.viewType === "punching") {
+    return renderProcessView();
+  }
+  else if (userActions.viewType === "kanthan") {
+    return renderProcessView();
   }
   return renderProcessView();
 };

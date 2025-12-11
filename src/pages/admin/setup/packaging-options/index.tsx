@@ -10,6 +10,8 @@ import {
   Select,
   FormControl,
   InputLabel,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import { Add, Edit, Delete, CloudUpload } from "@mui/icons-material";
 import { useSelector } from "react-redux";
@@ -30,6 +32,7 @@ import {
 import { getQualityPackingPartiesThunk } from "@/store/slices/partySlice";
 import { downloadSkippedRecordsAsCSV } from "@/utills/utills";
 import moment from "moment";
+import { getAllKantansThunk } from "@/store/slices/kantanSlice";
 
 const columns = [
   { id: "id", label: "ID" },
@@ -44,6 +47,8 @@ const columns = [
   { id: "paper3GSM", label: "Paper 3 GSM" },
   { id: "noOfPieces", label: "No of Pieces" },
   { id: "ratePerPiece", label: "Rate Per Piece" },
+  { id: "isKantan", label: "Include Kantan" },
+  { id: "kantan", label: "Kantan" },
   { id: "date", label: "Date" },
   { id: "options", label: "Options" },
 ];
@@ -51,6 +56,7 @@ const columns = [
 const PackagingOptionsPage = () => {
   const dispatch = useAppDispatch();
   const { user } = useSelector((state: RootState) => state.auth)
+  const { kantans } = useSelector((state: RootState) => state.kantans);
   const { packagingOptions, loading, operationLoading, error, operationError } = useSelector(
     (state: RootState) => state.packagingOptions
   );
@@ -61,6 +67,7 @@ const PackagingOptionsPage = () => {
   useEffect(() => {
     dispatch(getQualityPackingPartiesThunk(companyId));
     if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
+    if (!kantans.length) dispatch(getAllKantansThunk());
   }, [dispatch]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -78,6 +85,8 @@ const PackagingOptionsPage = () => {
     paper3GSM: "",
     noOfPieces: "",
     ratePerPiece: "",
+    isKantan: false,
+    kantan: "",
   });
   const [file, setFile] = useState<File | null>(null);
   const [skippedRecords, setSkippedRecords] = useState<any[]>([]);
@@ -101,6 +110,10 @@ const PackagingOptionsPage = () => {
         paper1GSM: option.paper1GSM || "",
         paper2GSM: option.paper2GSM || "",
         paper3GSM: option.paper3GSM || "",
+        noOfPieces: option.noOfPieces || "",
+        ratePerPiece: option.ratePerPiece || "",
+        isKantan: option.isKantan || false, // नया
+        kantan: option.kantan?._id || option.kantan || "", // नया
       });
     } else {
       setEditId(null);
@@ -114,6 +127,10 @@ const PackagingOptionsPage = () => {
         paper1GSM: "",
         paper2GSM: "",
         paper3GSM: "",
+        noOfPieces: "",
+        ratePerPiece: "",
+        isKantan: false, // डिफ़ॉल्ट false
+        kantan: "", // डिफ़ॉल्ट खाली
       });
     }
     setDialogOpen(true);
@@ -136,9 +153,16 @@ const PackagingOptionsPage = () => {
       !form.paper2GSM.trim() ||
       !form.paper3GSM.trim()
     ) {
-      toast.error("All fields are required");
+      toast.error("All required fields are required");
       return;
     }
+
+    // अगर isKantan true है और kantan empty है, तो error दें
+    if (form.isKantan && !form.kantan.trim()) {
+      toast.error("Please select Kantan when Include Kantan is checked");
+      return;
+    }
+
     const packagingData = { ...form };
     if (editId) {
       dispatch(updatePackagingOptionThunk({ id: editId, updateData: packagingData }));
@@ -148,14 +172,14 @@ const PackagingOptionsPage = () => {
     setDialogOpen(false);
   };
 
-   const formatDate = (dateString: string) => {
-      try {
-        const date = new Date(dateString)
-        return moment(date).format('DD/MM/YY')
-      } catch {
-        return dateString
-      }
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString)
+      return moment(date).format('DD/MM/YY')
+    } catch {
+      return dateString
     }
+  }
 
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
@@ -223,13 +247,35 @@ const PackagingOptionsPage = () => {
   };
 
   const handleDownloadSample = () => {
-    const csvContent =
-      "party,ply,length,width,height,deckal,paper1GSM,paper2GSM,paper3GSM,noOfPieces,ratePerPiece\n" + // Add new headers
-      `${qpParties[0]?._id || "68cbd2df0973310763a2c45b"},5,22,22,27,46,150,120,150,1000,25\n`; // Add sample data
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", "sample_packaging_options.csv");
+    const { kantans } = useSelector((state: RootState) => state.kantans);
+
+    // Get kantans if not already loaded
+    useEffect(() => {
+      if (kantans.length === 0) {
+        dispatch(getAllKantansThunk());
+      }
+    }, [dispatch, kantans.length]);
+
+    // Wait for kantans to load or use default
+    const firstKantanName = kantans.length > 0 ? kantans[0].kantanName : "KANTAN_NAME_HERE";
+    const firstPartyName = qpParties.length > 0 ? qpParties[0].partyName : "PARTY_NAME_HERE";
+
+    const csvContent = [
+      "party,ply,length,width,height,deckal,paper1GSM,paper2GSM,paper3GSM,noOfPieces,ratePerPiece,isKantan,kantan",
+      `${firstPartyName},5,22,22,27,46,150,120,150,1000,25,false,`,
+      `${firstPartyName},3,20,20,25,40,120,100,120,500,30,true,${firstKantanName}`,
+      `${firstPartyName},7,24,24,30,50,180,150,180,2000,35,false,`,
+      `${firstPartyName},5,18,18,22,38,130,110,130,800,22,true,${firstKantanName}`
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'sample_packaging_options.csv');
+    link.style.visibility = 'hidden';
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -301,7 +347,11 @@ const PackagingOptionsPage = () => {
             <TableCell>{row.paper3GSM || ""}</TableCell>
             <TableCell>{row.noOfPieces || ""}</TableCell>
             <TableCell>{row.ratePerPiece || ""}</TableCell>
-            <TableCell>{formatDate(row.updatedAt)  || ""}</TableCell>
+            <TableCell>{row.isKantan ? "Yes" : "No"}</TableCell> {/* नया */}
+            <TableCell>
+              {row.kantan?.kantanName}
+            </TableCell>
+            <TableCell>{formatDate(row.updatedAt) || ""}</TableCell>
             <TableCell>
               <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                 <Edit />
@@ -319,7 +369,7 @@ const PackagingOptionsPage = () => {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         title={editId ? "Edit Cartoon" : "New Cartoon"}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
       >
         <Box display="flex" flexDirection="column" gap={2}>
@@ -430,6 +480,39 @@ const PackagingOptionsPage = () => {
               fullWidth
               type="number"
             />
+          </Box>
+          <Box display="flex" gap={2} alignItems="center">
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="isKantan"
+                  checked={form.isKantan}
+                  onChange={(e) =>
+                    setForm(prev => ({ ...prev, isKantan: e.target.checked }))
+                  }
+                  color="primary"
+                />
+              }
+              label="Include Kantan"
+            />
+
+            {form.isKantan && (
+              <FormControl fullWidth>
+                <InputLabel>KANTAN</InputLabel>
+                <Select
+                  name="kantan"
+                  value={form.kantan}
+                  onChange={handleFormChange}
+                  label="KANTAN"
+                >
+                  {kantans.map((kantan) => (
+                    <MenuItem key={kantan._id} value={kantan._id}>
+                      {kantan.kantanName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </Box>
         </Box>
 

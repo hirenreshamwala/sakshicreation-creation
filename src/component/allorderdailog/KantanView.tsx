@@ -110,6 +110,7 @@ const OperatorView = () => {
   const [selectedRow, setSelectedRow] = React.useState<OrderRow | null>(null)
   const [pieceInputs, setPieceInputs] = useState<{ [key: string]: string }>({});
   const [cuttingLengthInputs, setCuttingLengthInputs] = useState<{ [key: string]: string }>({});
+  const [completedBoxInputs, setCompletedBoxInputs] = useState<{ [key: string]: string }>({});
   const [remarksOpen, setRemarksOpen] = useState(false);
   const [remarksRow, setRemarksRow] = useState<OrderRow | null>(null);
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
@@ -132,25 +133,20 @@ const OperatorView = () => {
   const canStatus = user?.role?.permissions?.all_orders?.status;
 
 
-  // Define columns based on user role - UPDATED: Operator columns come before Status
   const columns = useMemo(() => [
     { id: "orderNo", label: "Order No" },
     { id: "unitNo", label: "Unit No" },
     { id: "date", label: "Date" },
     { id: "party", label: "Party Name" },
     { id: "boxSize", label: "Box Size" },
-    { id: "top", label: "Top" },
-    { id: "corogation", label: "Corogation" },
-    { id: "bottom", label: "Bottom" },
     { id: "ply", label: "Ply" },
     { id: "deckal", label: "Deckal" },
-    { id: "liner", label: "Liner" },
-    { id: "noofliner", label: "No of Liner" },
     { id: "noOfBox", label: "Piece" },
-    { id: "cuttingLength", label: "Cutting length" },
-    { id: "totalKG", label: "Total KG" },
+    { id: "kantan", label: "Kantan" },
+    { id: "pendingBox", label: "Pending Box" },
     { id: "status", label: "Status" },
     { id: "noOfPeice", label: "No of piece" },
+    { id: "completedBox", label: "Completed Box" },
     { id: "action", label: "Actions" },
   ], []);
 
@@ -227,6 +223,14 @@ const OperatorView = () => {
         return order.dyeSize || "NO";
       case "kantan":
         return order.kantan?.kantanName || "N/A";
+      case "completedBox":
+        return order.completedBoxCount?.toString() || "N/A";
+      case "pendingBox":
+        // Calculate pending boxes = Total pieces - Completed boxes
+        const totalPieces = order.noOfPieces || 0;
+        const completedBoxes = order.completedBoxCount || 0;
+        const pendingBoxes = Math.max(0, totalPieces - completedBoxes);
+        return pendingBoxes.toString();
       default:
         return "N/A";
     }
@@ -288,6 +292,7 @@ const OperatorView = () => {
     })
   }, [orders, startDate, endDate, selectedUnit, searchQuery, filters, columns])
 
+
   const getUniqueValues = useMemo(() => {
     if (!selectedFilterField) return []
 
@@ -327,104 +332,120 @@ const OperatorView = () => {
     }
   }, [error, dispatch]);
 
-  const handleSavePieces = async (row: OrderRow) => {
+  const handleSaveRowData = async (row: OrderRow) => {
+    const pieceValue = pieceInputs[row._id];
+    const completedBoxValue = completedBoxInputs[row._id];
 
-    const value = pieceInputs[row._id];
-    if (!value) {
-      toast.error("Please enter a number before saving");
+    // Check if at least one value has changed
+    const currentPieceValue = row.operatorNoOfPieces?.toString() || "";
+    const currentCompletedBoxValue = row.completedBoxCount?.toString() || "0";
+
+    const isPieceChanged = pieceValue !== undefined && pieceValue !== currentPieceValue;
+    const isCompletedBoxChanged = completedBoxValue !== undefined && completedBoxValue !== currentCompletedBoxValue;
+
+    // If no changes, show message
+    if (!isPieceChanged && !isCompletedBoxChanged) {
+      toast.info("No changes to save");
       return;
     }
 
-    const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
-      parseFloat(row?.orderdata?.length),
-      parseFloat(row.orderdata.width),
-      parseFloat(row.orderdata.height),
-      parseFloat(row.orderdata.deckal),
-      parseInt(row.orderdata.ply),
-      parseFloat(row.orderdata.paper3GSM),
-      parseFloat(row.orderdata.paper2GSM),
-      parseFloat(row.orderdata.paper1GSM),
-      Number(value)
-    );
+    // Validate at least one value is entered
+    if (!pieceValue && !completedBoxValue) {
+      toast.error("Please enter at least one value before saving");
+      return;
+    }
 
-    // 📝 build payload for operatorPaperKG
-    const operatorPaperKG = {
-      paper1: {
-        deckal: row.orderdata.deckal,
-        gsm: row.orderdata.paper1GSM,
-        totalKg: paper3Kg?.toFixed(2).toString(),
-      },
-      paper2: {
-        deckal: row.orderdata.deckal,
-        gsm: row.orderdata.paper2GSM,
-        totalKg: paper2Kg?.toFixed(2).toString(),
-      },
-      paper3: {
-        deckal: row.orderdata.deckal,
-        gsm: row.orderdata.paper3GSM,
-        totalKg: paper1Kg?.toFixed(2).toString(),
-      },
-    };
-    const operatorTotalKg = totalKgss?.toFixed(2).toString()
+    // Prepare update data object
+    const updateData: any = {};
+
+    // Add operatorNoOfPieces if entered and changed
+    if (pieceValue && isPieceChanged) {
+      const pieceNum = parseInt(pieceValue);
+      if (isNaN(pieceNum) || pieceNum < 0) {
+        toast.error("Please enter a valid number for pieces");
+        return;
+      }
+
+      // Calculate paper KG if piece value is entered
+      const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
+        parseFloat(row?.orderdata?.length || "0"),
+        parseFloat(row.orderdata?.width || "0"),
+        parseFloat(row.orderdata?.height || "0"),
+        parseFloat(row.orderdata?.deckal || "0"),
+        parseInt(row.orderdata?.ply || "0"),
+        parseFloat(row.orderdata?.paper3GSM || "0"),
+        parseFloat(row.orderdata?.paper2GSM || "0"),
+        parseFloat(row.orderdata?.paper1GSM || "0"),
+        pieceNum
+      );
+
+      // Build operatorPaperKG
+      const operatorPaperKG = {
+        paper1: {
+          deckal: row.orderdata?.deckal,
+          gsm: row.orderdata?.paper1GSM,
+          totalKg: paper3Kg?.toFixed(2).toString(),
+        },
+        paper2: {
+          deckal: row.orderdata?.deckal,
+          gsm: row.orderdata?.paper2GSM,
+          totalKg: paper2Kg?.toFixed(2).toString(),
+        },
+        paper3: {
+          deckal: row.orderdata?.deckal,
+          gsm: row.orderdata?.paper3GSM,
+          totalKg: paper1Kg?.toFixed(2).toString(),
+        },
+      };
+
+      updateData.operatorNoOfPieces = pieceNum;
+      updateData.operatorPaperKG = operatorPaperKG;
+      updateData.operatorTotalKg = totalKgss?.toFixed(2).toString();
+    }
+
+    // Add completedBoxCount if entered and changed
+    if (completedBoxValue && isCompletedBoxChanged) {
+      const completedBoxNum = parseInt(completedBoxValue);
+      if (isNaN(completedBoxNum) || completedBoxNum < 0) {
+        toast.error("Please enter a valid number for completed boxes");
+        return;
+      }
+
+      // Validate completed boxes don't exceed total pieces
+      if (completedBoxNum > (row.noOfPieces || 0)) {
+        toast.error("Completed boxes cannot exceed total pieces");
+        return;
+      }
+
+      updateData.completedBoxCount = completedBoxNum;
+    }
 
     try {
       await dispatch(
         updateQPOrderThunk({
           id: row._id,
-          data: {
-            operatorNoOfPieces: Number(value),
-            operatorPaperKG,
-            operatorTotalKg,
-          },
+          data: updateData,
         })
       ).unwrap();
-      // Set local input to the saved value for immediate UI feedback
-      setPieceInputs(prev => ({ ...prev, [row._id]: value }));
-      // Refresh data to update the table with new values from backend
+
+      // Update local states
+      if (pieceValue && isPieceChanged) {
+        setPieceInputs(prev => ({ ...prev, [row._id]: pieceValue }));
+      }
+      if (completedBoxValue && isCompletedBoxChanged) {
+        setCompletedBoxInputs(prev => ({ ...prev, [row._id]: completedBoxValue }));
+      }
+
+      // Refresh data
       refreshData();
       toast.success("Data saved successfully");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to save pieces");
-    }
-  };
-  // Handle saving cutting length
-  const handleSaveCuttingLength = async (row: OrderRow) => {
-    const cuttingLength = cuttingLengthInputs[row._id];
-
-    if (!cuttingLength) {
-      toast.error("Please enter a cutting length before saving");
-      return;
-    }
-    // Validate that it's a positive number
-    const cuttingLengthNum = parseFloat(cuttingLength);
-    if (isNaN(cuttingLengthNum) || cuttingLengthNum <= 0) {
-      toast.error("Please enter a valid positive number for cutting length");
-      return;
-    }
-    try {
-      await dispatch(
-        updateQPOrderThunk({
-          id: row._id,
-          data: {
-            cuttingLength: cuttingLength,
-          },
-        })
-      ).unwrap();
-
-      // Set local input to the saved value for immediate UI feedback
-      setCuttingLengthInputs(prev => ({
-        ...prev,
-        [row._id]: cuttingLength
-      }));
-
-      // Refresh data to update the table with new values from backend
-      refreshData();
-      toast.success("Cutting length updated successfully");
 
     } catch (err: any) {
-      toast.error(err?.message || "Failed to update cutting length");
+      toast.error(err?.message || "Failed to save data");
     }
   };
+
+
   // Function to get row background color based on unit
   const getRowBackgroundColor = (row: OrderRow) => {
     if (row?.unitNo === 'Unit1') {
@@ -638,21 +659,6 @@ const OperatorView = () => {
                 <Typography>{`${row.orderdata?.length || "N/A"} x ${row.orderdata?.width || "N/A"} x ${row.orderdata?.height || "N/A"}`}</Typography>
               </TableCell>
 
-              {/* Top */}
-              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>{`${row.orderdata?.paper1GSM || "N/A"}`}</Typography>
-              </TableCell>
-
-              {/* Corogation */}
-              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>{`${row.orderdata?.paper2GSM || "N/A"}`}</Typography>
-              </TableCell>
-
-              {/* Bottom */}
-              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>{row.orderdata?.paper3GSM || "N/A"}</Typography>
-              </TableCell>
-
               {/* Ply */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>{row.orderdata?.ply || "N/A"}</Typography>
@@ -663,36 +669,31 @@ const OperatorView = () => {
                 <Typography>{row.orderdata?.deckal || "N/A"}</Typography>
               </TableCell>
 
-              {/* Liner */}
-              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>
-                  {row.orderdata?.linear || Number(row.orderdata.ply) - 1}
-                </Typography>
-              </TableCell>
-
-              {/* No of Liner */}
-              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>
-                  {row.orderdata?.noOfLinear || Number(row.noOfPieces) * 2 * (Number(row.orderdata.ply) - 1)}
-                </Typography>
-              </TableCell>
-
               {/* Piece */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>{row.noOfPieces || "N/A"}</Typography>
               </TableCell>
 
-              {/* Cutting length */}
+              {/* kantan name */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>
-                  {row.orderdata?.cuttingLength || (Number(row.orderdata.length) + Number(row.orderdata.width) + 2).toString()}
+                <Typography>{row.kantan?.kantanName || "N/A"}</Typography>
+              </TableCell>
+
+              {/* Pending Box (Read-only) */}
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    color: (row.noOfPieces || 0) - (row.completedBoxCount || 0) > 0
+                      ? "#DC2626" // Red for pending boxes
+                      : "#22C55E", // Green when all completed
+                    fontSize: "14px"
+                  }}
+                >
+                  {Math.max(0, (row.noOfPieces || 0) - (row.completedBoxCount || 0))}
                 </Typography>
               </TableCell>
 
-              {/* Total KG */}
-              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>{row.totalKg || "N/A"}</Typography>
-              </TableCell>
 
               {/* Status */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
@@ -716,12 +717,33 @@ const OperatorView = () => {
                 />
               </TableCell>
 
+              {/* Completed Box */}
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                <ThemeInput
+                  placeholder="Completed"
+                  type="number"
+                  sx={{ width: 70, padding: "0" }}
+                  value={
+                    completedBoxInputs[row._id] !== undefined
+                      ? completedBoxInputs[row._id]
+                      : row.completedBoxCount || ""
+                  }
+                  onChange={(e) =>
+                    setCompletedBoxInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
+                  }
+                  inputProps={{
+                    max: row.noOfPieces || 0,
+                    min: 0
+                  }}
+                />
+              </TableCell>
+
               {/* Actions */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Box display="flex" gap={1}>
                   <ThemeButton
                     size="small"
-                    onClick={() => handleSavePieces(row)}
+                    onClick={() => handleSaveRowData(row)}
                   >
                     Save
                   </ThemeButton>

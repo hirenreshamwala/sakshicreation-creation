@@ -61,19 +61,16 @@ const Index = () => {
       case "printer":
         return orders.filter(
           (order) =>
-            order.designerStatus === STATUS.APPROVED &&
             order.printerStatus === STATUS.DONE
         );
       case "binder":
         return orders.filter(
           (order) =>
-            order.printerStatus === STATUS.DONE &&
             order.binderStatus === STATUS.DONE
         );
       case "booklet & folder binder":
         return orders.filter(
-          (order) =>
-            order.binderStatus === STATUS.DONE &&
+          (order) => 
             order.bookletBinderStatus === STATUS.DONE
         );
       case "admin":

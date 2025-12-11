@@ -274,7 +274,7 @@ export const ORDER_STATUSES = [
   // "Printing",
   "Manual pasting",
   "Pinning",
-  "Puching",
+  "Punching",
   "Kanthan",
   "Operator Completed",
   "Completed",

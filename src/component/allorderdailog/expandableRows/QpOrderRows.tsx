@@ -616,29 +616,33 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             }
 
             // ✅ 2. Designer file validation and upload
-            let uploadedDesignerFiles = [];
+            let uploadedDesignFiles = [];
+
+            console.log("DEBUG : handleSubmit : formData:", formData);
 
             if (formData.designer) {
-                if (!formData.designerFiles.length && !(formData.designerFiles && formData.designerFiles.length)) {
-                    toast.error("Please upload at least one designer file since a designer is selected.");
+                if (!formData.designFiles || formData.designFiles.length === 0) {
+                    toast.error("Please upload at least one design file since a designer is selected.");
                     return;
                 }
 
                 // Separate new files (File objects) from already uploaded file URLs
-                const newFiles = formData.designerFiles.filter((f: any) => f instanceof File);
-                const existingFiles = (formData.designerFiles || []).filter((f: any) => typeof f === "string");
+                const newFiles = formData.designFiles.filter((f: any) => f instanceof File);
+                const existingFiles = (formData.designFiles || []).filter((f: any) => typeof f === "string");
 
                 if (newFiles.length > 0) {
                     toast.info("Uploading designer files...");
                     const uploadRes = await fileUploadService.uploadMultipleFiles(newFiles, "designer");
+                    console.log("DEBUG : handleSubmit : uploadRes:", uploadRes);
+
                     if (!uploadRes.success) {
                         toast.error(uploadRes.message || "Failed to upload designer files");
                         return;
                     }
-                    uploadedDesignerFiles = uploadRes.data.map((file) => file.url);
+                    uploadedDesignFiles = uploadRes.data.map((file) => file.url);
                 }
 
-                formData.designerFiles = [...existingFiles, ...uploadedDesignerFiles];
+                formData.designFiles = [...existingFiles, ...uploadedDesignFiles];
             }
 
             // ✅ 3. Kantan and Paper calculations
@@ -808,7 +812,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
         setPaperUsageSummary(summaries);
     }, [paperSelections, allAllocations, availablePapers, newAllocations, row.paperKG]);
 
-    console.log(row, 'row', row.driver, row.status === "Completed" && row?.driver?._id === undefined)
+    // console.log(row, 'row', row.driver, row.status === "Completed" && row?.driver?._id === undefined)
 
     return (
         <Box sx={{ p: 2, backgroundColor: "#f9fafb" }}>
@@ -834,7 +838,7 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                         />
 
                         <PaperSelection
-                        row={row}
+                            row={row}
                             // setSelectedPrinter={setSelectedPrinter}
                             // setSelectedBinder={setSelectedBinder}
                             // setSelectedDesigner={setSelectedDesigner}

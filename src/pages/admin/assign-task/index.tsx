@@ -62,6 +62,7 @@ interface RowData {
   assignBy: string;
   assignTo: string;
   status: string;
+  feedback?: string;
   statusType: "success" | "warning" | "error";
   rescheduleDate?: string;
   isRescheduledTask?: boolean;
@@ -83,6 +84,7 @@ const AssignTaskPage: React.FC = () => {
     successMessage = null,
     selectedTasks = [],
   } = useAppSelector((state) => state.assignTasks || {});
+
   const { user } = useAppSelector((state) => state.auth);
   const [open, setOpen] = useState(false);
   const [companyTab, setCompanyTab] = useState(0);
@@ -123,6 +125,7 @@ const AssignTaskPage: React.FC = () => {
       { id: "assignBy", label: "Assign By" },
       { id: "assignTo", label: "Assign To" },
       { id: "remarks", label: "Remarks" },
+      { id: "feedback", label: "Feedback" },
       { id: "status", label: "Status" },
     ];
 
@@ -133,7 +136,6 @@ const AssignTaskPage: React.FC = () => {
     return baseColumns;
   }, [canedit, candelete]);
 
-  console.log(assignTasks, 'assignTasks')
 
   const handleSelectTask = (taskId: string) => {
     dispatch(toggleTaskSelection(taskId));
@@ -379,6 +381,7 @@ const AssignTaskPage: React.FC = () => {
       area: task.partyName?.address?.area?.area || "N/A",
       mobile: task.partyName?.ownerWhatsAppNo || "N/A",
       remarks: task.remarks || "N/A",
+      feedback: task.feedback || "N/A",
       assignBy: task.createdBy
         ? `${task.createdBy.firstName} ${task.createdBy.lastName}`
         : "Unknown",
@@ -539,6 +542,7 @@ const AssignTaskPage: React.FC = () => {
   };
 
   const renderRow = (row: RowData) => {
+
     const isSelected = selectedTasks.includes(row.id);
 
     const getCellSx = (baseSx?: any) => ({
@@ -618,6 +622,11 @@ const AssignTaskPage: React.FC = () => {
             ? `${row.remarks.substring(0, 10)}...`
             : row.remarks}</Typography>
         </TableCell>
+        <TableCell sx={getCellSx()}>
+          <Typography sx={{ fontSize: 14 }} title={row.feedback} noWrap>{row.feedback && row.feedback.length > 10
+            ? `${row?.feedback.substring(0, 10)}...`
+            : row?.feedback}</Typography>
+        </TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>
           <ThemeChip
             label={row.status}
@@ -667,6 +676,7 @@ const AssignTaskPage: React.FC = () => {
       </>
     );
   };
+
 
 
 
@@ -850,7 +860,6 @@ const AssignTaskPage: React.FC = () => {
           ))
         )}
       </Box>
-      {console.log(editId, 'editId')}
       <AssignTaskDialog
         open={open}
         onClose={() => {

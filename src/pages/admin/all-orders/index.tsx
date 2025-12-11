@@ -355,7 +355,7 @@ const AllOrdersPage = () => {
           }, ${typeof row?.party?.address?.area === 'object'
             ? row?.party?.address?.area?.area
             : row?.party?.address?.area || ""
-          } - ${row?.party?.address?.pincode || ""}`,
+          } - ${row?.party?.address?.pincode?.pincode || ""}`,
         GSTNo: row?.party?.GSTNo || "N/A",
         servicePerformance: row?.productItem?.itemName || "N/A",
         quantity: row?.qty || 0,
@@ -366,6 +366,8 @@ const AllOrdersPage = () => {
         gstPercentage: row?.gstPercentage || 18,
         daysAfterConfirmation: row?.daysAfterConfirmation || 0,
         paymentDate: row?.paymentDate || "",
+        quotation: true,
+        description: row?.description || "",
       }
 
       generateInvoicePDF(formData)
@@ -579,8 +581,6 @@ const AllOrdersPage = () => {
                   {row.party?.partyName || "N/A"}
                 </Typography>
               </TableCell>
-
-
 
 
               <TableCell>

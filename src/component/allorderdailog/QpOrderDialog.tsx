@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, Stack, CircularProgress, Autocomplete, TextField, FormControlLabel, Checkbox } from "@mui/material";
 import CustomDialog from "@/component/customdialog";
 import ThemeInput from "@/component/common_component/themeinput";
@@ -41,7 +41,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
 
     const [qpFormData, setQpFormData] = useState({
         companyName: company,
-        partyName:"",
+        partyName: "",
         date: "",
         orderFrom: "",
         ply: "",
@@ -68,20 +68,53 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         },
         kantanDeckal: "",
         salesRemark: "",
-        // New fields - using boolean for API
-        lamination: false, // true or false
-        laminationType: "", // "glossy" or "mate"
-        uv: false, // true or false - DEFAULT: false (No)
-        uvType: "", // "uv" or "uv_mate"
-        varnish: false, // true or false
-        isPinning: false, // true or false - DEFAULT: false
-        isPasting: false, // true or false - DEFAULT: true (Pasting selected by default)
-        isKantan: false, // true or false - DEFAULT: false
+        lamination: false,
+        laminationType: "",
+        uv: false,
+        uvType: "",
+        varnish: false,
+        isPinning: false,
+        isPasting: false,
+        isKantan: false,
     });
+
+    // Use useCallback for handleQpChange to avoid unnecessary re-renders
+    const handleQpChange = useCallback((field: string, value: any) => {
+        setQpFormData((prev) => {
+            const newState = { ...prev };
+
+            if (field === "isKantan" && value === false) {
+                // Only clear kantan related fields, not the kantan ID
+                newState.kantanPerUnit = "";
+                newState.totalKantan = { reel: "", inch: "" };
+                // DON'T clear kantan ID here
+            }
+
+            newState[field] = value;
+            return newState;
+        });
+    }, []);
 
     useEffect(() => {
         if (open && editData) {
-            setQpFormData({
+            // Extract kantan ID from editData
+            let kantanId = null;
+            if (editData.kantan) {
+                kantanId = typeof editData.kantan === 'object'
+                    ? editData.kantan._id
+                    : editData.kantan;
+            }
+
+            // Extract packaging option kantan ID
+            let packagingKantanId = null;
+            if (editData.orderdata?.kantan) {
+                packagingKantanId = typeof editData.orderdata.kantan === 'object'
+                    ? editData.orderdata.kantan._id
+                    : editData.orderdata.kantan;
+            }
+
+            // Set form data
+            const formData = {
                 companyName: editData.companyName || company,
                 partyName: editData?.party?._id || editData?.party || "",
                 date: editData.date || "",
@@ -97,12 +130,10 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 paper3GSM: editData.orderdata?.paper3GSM || "",
                 gsm: editData.gsm || "",
                 deckalCalculation: editData.deckalCalculation || "",
-                // noOfPieces: editData.noOfPieces?.toString() || "",
-                // ratePerPiece: editData.ratePerPiece?.toString() || "",
                 amount: editData.amount?.toString() || "",
                 kgPerUnit: editData.kgPerUnit?.toString() || "",
                 totalKg: editData.totalKg || "",
-                kantan: editData.kantan?._id || null,
+                kantan: kantanId || packagingKantanId || null,
                 kantanPerUnit: editData.kantanPerUnit?.toString() || "",
                 totalKantan: {
                     reel: editData.totalKantan?.reel?.toString() || "",
@@ -110,31 +141,37 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 },
                 kantanDeckal: editData.kantanDeckal || "",
                 salesRemark: editData.salesRemark || "",
-                // New fields with edit data - converting to boolean
                 lamination: editData.lamination || false,
                 laminationType: editData.laminationType || "",
-                uv: editData.uv || false, // Default to false if no edit data
+                uv: editData.uv || false,
                 uvType: editData.uvType || "",
                 varnish: editData.varnish || false,
                 isPinning: editData.isPinning,
                 isPasting: editData.isPasting,
-                // Set isKantan based on whether kantan data exists
-                isKantan: !!(editData.kantan || editData.kantanPerUnit || editData.totalKantan),
+                isKantan: editData.isKantan || editData.orderdata?.isKantan || false,
                 noOfPieces: editData.orderdata?.noOfPieces || editData.noOfPieces?.toString() || "",
                 ratePerPiece: editData.orderdata?.ratePerPiece || editData.ratePerPiece?.toString() || "",
-            });
+            };
+
+            console.log("DEBUG : Setting form data with kantan:", formData.kantan);
+            setQpFormData(formData);
         } else if (open && !editData) {
-            // Set default values for new form
             setQpFormData(prev => ({
                 ...prev,
                 uv: false,
                 isPasting: false,
                 isPinning: false,
-                isKantan: false, // Default to false for new orders
+                isKantan: false,
                 uom: "inch",
             }));
         }
     }, [open, editData, company]);
+
+    // Debug effect
+    useEffect(() => {
+        console.log("DEBUG: Current qpFormData.kantan:", qpFormData.kantan);
+        console.log("DEBUG: Current qpFormData.isKantan:", qpFormData.isKantan);
+    }, [qpFormData.kantan, qpFormData.isKantan]);
 
     // Clear messages when dialog opens
     useEffect(() => {
@@ -144,21 +181,17 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         }
     }, [open, dispatch]);
 
-    // Handle success message
+    // Handle success/error messages
     useEffect(() => {
         if (successMessage) {
             toast.success(successMessage);
             dispatch(clearOrderSuccessMessage());
         }
-    }, [successMessage, dispatch]);
-
-    // Handle error message
-    useEffect(() => {
         if (orderError) {
             toast.error(orderError);
             dispatch(clearOrderError());
         }
-    }, [orderError, dispatch]);
+    }, [successMessage, orderError, dispatch]);
 
     // Fetch data when dialog opens
     useEffect(() => {
@@ -169,20 +202,11 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         }
     }, [open, dispatch, packagingOptions.length, kantans.length]);
 
-    const handleQpChange = (field: string, value: any) => {
-        setQpFormData((prev) => {
-            const newState = { ...prev, [field]: value };
-
-            return newState;
-        });
-    };
-
     const handleQpSubmit = async () => {
-
         setIsSubmitting(true);
         try {
             const packagingOption = {
-                party: qpFormData.partyName, // Include party ID in packagingOption
+                party: qpFormData.partyName,
                 ply: qpFormData.ply,
                 uom: qpFormData.uom,
                 length: qpFormData.length,
@@ -193,16 +217,19 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 paper2GSM: qpFormData.paper2GSM,
                 paper3GSM: qpFormData.paper3GSM,
                 noOfPieces: qpFormData.noOfPieces,
-                ratePerPiece: qpFormData.ratePerPiece
+                ratePerPiece: qpFormData.ratePerPiece,
+                isKantan: qpFormData.isKantan,
+                kantan: qpFormData.kantan || undefined,
             };
+
             // Convert mm to inch helper
-            const mmToInch = (value) => value / 25.4;
+            const mmToInch = (value: number) => value / 25.4;
 
             // Before calling calculatePaperKg
-            let length = parseFloat(qpFormData.length);
-            let width = parseFloat(qpFormData.width);
-            let height = parseFloat(qpFormData.height);
-            let deckal = parseFloat(qpFormData.deckal);
+            let length = parseFloat(qpFormData.length) || 0;
+            let width = parseFloat(qpFormData.width) || 0;
+            let height = parseFloat(qpFormData.height) || 0;
+            let deckal = parseFloat(qpFormData.deckal) || 0;
 
             // Check UOM and convert if needed
             if (qpFormData.uom === "mm" || qpFormData.uom === "millimeter") {
@@ -213,17 +240,16 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             }
 
             // Now pass converted values to calculatePaperKg
-            const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
+            const { paper1Kg, paper2Kg, paper3Kg } = calculatePaperKg(
                 length,
                 width,
                 height,
                 deckal,
-                parseInt(qpFormData.ply),
-                // qpFormData.uom,
-                parseFloat(qpFormData.paper3GSM),
-                parseFloat(qpFormData.paper2GSM),
-                parseFloat(qpFormData.paper1GSM),
-                parseFloat(qpFormData.noOfPieces)
+                parseInt(qpFormData.ply) || 0,
+                parseFloat(qpFormData.paper3GSM) || 0,
+                parseFloat(qpFormData.paper2GSM) || 0,
+                parseFloat(qpFormData.paper1GSM) || 0,
+                parseFloat(qpFormData.noOfPieces) || 0
             );
 
             // Prepare order data with conditional Kantan fields
@@ -262,8 +288,8 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 },
             };
 
-            if (qpFormData.isKantan) {
-                orderData.kantan = qpFormData?.kantan?._id || qpFormData.kantan || undefined;
+            if (qpFormData.isKantan && qpFormData.kantan) {
+                orderData.kantan = qpFormData.kantan;
                 orderData.kantanPerUnit = qpFormData.kantanPerUnit ? Number(qpFormData.kantanPerUnit) : undefined;
                 orderData.totalKantan = {
                     reel: qpFormData.totalKantan.reel || "0",
@@ -272,12 +298,12 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 orderData.kantanDeckal = qpFormData.kantanDeckal || undefined;
             }
 
+            console.log("DEBUG: Submitting order data with kantan:", orderData.kantan);
+
             if (editData?._id) {
-                // Update existing order
                 await dispatch(type === 'sell' ? updateSaleQpOrderThunk({ id: editData._id, data: orderData }) : updateQPOrderThunk({ id: editData._id, data: orderData })).unwrap();
                 toast.success("Order updated successfully");
             } else {
-                // Create new order
                 await dispatch(type === 'sell' ? createSaleQpOrderThunk(orderData) : createQpOrderThunk(orderData)).unwrap();
                 toast.success("Order created successfully");
             }
@@ -297,7 +323,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         setQpFormData({
             companyName: "",
             date: "",
-            partyName:"",
+            partyName: "",
             orderFrom: "",
             ply: "",
             uom: "inch",
@@ -323,10 +349,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             },
             kantanDeckal: "",
             salesRemark: "",
-            // Reset new fields to default values
             lamination: false,
             laminationType: "",
-            uv: false, // Default to "No"
+            uv: false,
             uvType: "",
             varnish: false,
             isPinning: false,
@@ -359,7 +384,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     };
 
     const getUniqueUomOptions = () => {
-        // Only return inch and millimeter options
         return [
             { value: "inch", label: "Inch" },
             { value: "mm", label: "Millimeter" },
@@ -421,6 +445,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             label: gsm,
         }));
     };
+
     const getUniqueNoOfPiecesOptions = () => {
         const uniqueNoOfPieces = [...new Set(filteredPackagingOptions.map((item: any) => item.noOfPieces))].sort();
         return uniqueNoOfPieces.map((pieces) => ({
@@ -449,7 +474,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             "paper2GSM",
             "paper3GSM",
             "noOfPieces",
-            "ratePerPiece"
+            "ratePerPiece",
+            "isKantan",
+            "kantan"
         ];
 
         const matchedOption = filteredPackagingOptions.find(
@@ -460,7 +487,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             setQpFormData((prev) => {
                 const updated = { ...prev };
                 fields.forEach((field) => {
-                    (updated as any)[field] = (matchedOption as any)[field];
+                    if (field === "kantan" && matchedOption[field]) {
+                        updated[field] = typeof matchedOption[field] === 'object'
+                            ? matchedOption[field]._id
+                            : matchedOption[field];
+                    } else {
+                        updated[field] = matchedOption[field];
+                    }
                 });
                 return updated;
             });
@@ -490,28 +523,38 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 const partyOptions = packagingOptions.filter((opt: any) => opt.party?._id === partyId);
 
                 if (partyOptions.length > 0) {
-                    // Sort by createdAt in descending order to get the latest option first
                     const sortedOptions = partyOptions.sort((a: any, b: any) =>
                         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
                     );
 
                     const latestOption = sortedOptions[0];
 
+                    // Extract kantan ID from object if it exists
+                    let kantanId = null;
+                    if (latestOption.isKantan && latestOption.kantan) {
+                        kantanId = typeof latestOption.kantan === 'object'
+                            ? latestOption.kantan._id
+                            : latestOption.kantan;
+                    }
 
-                    setQpFormData((prev) => ({
-                        ...prev,
-                        ply: latestOption.ply || "",
-                        uom: latestOption.uom || "",
-                        length: latestOption.length || "",
-                        width: latestOption.width || "",
-                        height: latestOption.height || "",
-                        deckal: latestOption.deckal || "",
-                        paper1GSM: latestOption.paper1GSM || "",
-                        paper2GSM: latestOption.paper2GSM || "",
-                        paper3GSM: latestOption.paper3GSM || "",
-                        noOfPieces: latestOption.noOfPieces || "",
-                        ratePerPiece: latestOption.ratePerPiece || "",
-                    }));
+                    setQpFormData((prev) => {
+                        return {
+                            ...prev,
+                            ply: latestOption.ply || "",
+                            uom: latestOption.uom || "",
+                            length: latestOption.length || "",
+                            width: latestOption.width || "",
+                            height: latestOption.height || "",
+                            deckal: latestOption.deckal || "",
+                            paper1GSM: latestOption.paper1GSM || "",
+                            paper2GSM: latestOption.paper2GSM || "",
+                            paper3GSM: latestOption.paper3GSM || "",
+                            noOfPieces: latestOption.noOfPieces || "",
+                            ratePerPiece: latestOption.ratePerPiece || "",
+                            isKantan: latestOption.isKantan || false,
+                            kantan: kantanId,
+                        };
+                    });
                 }
             } catch (error) {
                 console.error("Failed to fetch account master data:", error);
@@ -519,6 +562,111 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             }
         }
     };
+
+    // Kantan calculations के लिए अलग useEffect - FIXED VERSION
+    useEffect(() => {
+        const { length, width, noOfPieces, uom, isKantan } = qpFormData;
+
+        // Convert dimensions to inches if uom is 'mm'
+        let lengthInInches = Number(length) || 0;
+        let widthInInches = Number(width) || 0;
+
+        if (uom === 'mm') {
+            lengthInInches = lengthInInches / 25.4;
+            widthInInches = widthInInches / 25.4;
+        }
+
+        if (isKantan && lengthInInches && widthInInches && Number(noOfPieces)) {
+            const { kantanPerUnit, reel, inch } = calculateKantan(lengthInInches, widthInInches, Number(noOfPieces));
+            setQpFormData(prev => ({
+                ...prev,
+                kantanPerUnit: kantanPerUnit.toString(),
+                totalKantan: { reel: reel.toString(), inch: inch.toString() }
+            }));
+        } else if (!isKantan) {
+            // Only clear kantanPerUnit and totalKantan, NOT kantan ID
+            setQpFormData(prev => ({
+                ...prev,
+                kantanPerUnit: "",
+                totalKantan: { reel: "", inch: "" }
+                // DON'T clear kantan field here
+            }));
+        }
+    }, [
+        qpFormData.length,
+        qpFormData.width,
+        qpFormData.noOfPieces,
+        qpFormData.uom,
+        qpFormData.isKantan
+    ]);
+
+    // अन्य calculations के लिए अलग useEffect
+    useEffect(() => {
+        const { length, width, height, ply, deckal, noOfPieces, ratePerPiece, paper1GSM, paper2GSM, paper3GSM, uom } = qpFormData;
+
+        // Convert dimensions to inches if uom is 'mm'
+        let lengthInInches = Number(length) || 0;
+        let widthInInches = Number(width) || 0;
+        let heightInInches = Number(height) || 0;
+        let deckalInInches = Number(deckal) || 0;
+
+        if (uom === 'mm') {
+            lengthInInches = lengthInInches / 25.4;
+            widthInInches = widthInInches / 25.4;
+            heightInInches = heightInInches / 25.4;
+            deckalInInches = deckalInInches / 25.4;
+        }
+
+        let deckalValue: number | null = null;
+        if (widthInInches && heightInInches) {
+            deckalValue = calculateDeckal(widthInInches, heightInInches);
+            setQpFormData(prev => ({ ...prev, deckalCalculation: deckalValue.toFixed(2) }));
+        } else {
+            setQpFormData(prev => ({ ...prev, deckalCalculation: "" }));
+        }
+
+        let gsmValue: number | null = null;
+        if (ply && paper1GSM && paper2GSM && paper3GSM) {
+            gsmValue = calculateGSM(Number(ply), Number(paper3GSM), Number(paper2GSM), Number(paper1GSM));
+            setQpFormData(prev => ({ ...prev, gsm: gsmValue.toFixed(2) }));
+        } else {
+            setQpFormData(prev => ({ ...prev, gsm: "" }));
+        }
+
+        if (lengthInInches && widthInInches && deckalValue && gsmValue) {
+            const kgPerPiece = calculateKgPerPiece(lengthInInches, widthInInches, deckalInInches, gsmValue);
+            setQpFormData(prev => ({ ...prev, kgPerUnit: kgPerPiece.toFixed(4) }));
+        } else {
+            setQpFormData(prev => ({ ...prev, kgPerUnit: "" }));
+        }
+
+        if (Number(noOfPieces) && Number(qpFormData.kgPerUnit)) {
+            const totalKg = calculateTotalKg(Number(noOfPieces), Number(qpFormData.kgPerUnit));
+            setQpFormData(prev => ({ ...prev, totalKg: totalKg.toFixed(2) }));
+        } else {
+            setQpFormData(prev => ({ ...prev, totalKg: "" }));
+        }
+
+        if (Number(noOfPieces) && Number(ratePerPiece)) {
+            const amount = calculateTotalAmount(Number(noOfPieces), Number(ratePerPiece));
+            setQpFormData(prev => ({ ...prev, amount: amount.toFixed(2) }));
+        } else {
+            setQpFormData(prev => ({ ...prev, amount: "" }));
+        }
+    }, [
+        qpFormData.length,
+        qpFormData.width,
+        qpFormData.height,
+        qpFormData.ply,
+        qpFormData.deckal,
+        qpFormData.paper1GSM,
+        qpFormData.paper2GSM,
+        qpFormData.paper3GSM,
+        qpFormData.noOfPieces,
+        qpFormData.ratePerPiece,
+        qpFormData.kgPerUnit,
+        qpFormData.uom
+    ]);
 
     const renderQpForm = () => {
         return (
@@ -536,22 +684,16 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 fullWidth
                                 {...params}
                                 label="Ply"
-                                onChange={(e) => {
-                                    handleQpChange("ply", e.target.value)
-                                }}
+                                onChange={(e) => handleQpChange("ply", e.target.value)}
                             />
                         )}
-                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
                         fullWidth
                         options={getUniqueUomOptions()}
                         getOptionLabel={(option) => option.label}
                         value={getSelectedOption(qpFormData.uom, getUniqueUomOptions())}
-                        onChange={(_, val) => {
-                            handleQpChange("uom", val?.value || "inch");
-                            // Don't call setAllData for UOM as it's a standalone field
-                        }}
+                        onChange={(_, val) => handleQpChange("uom", val?.value || "inch")}
                         renderInput={(params) => (
                             <TextField
                                 fullWidth
@@ -559,7 +701,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 label="Unit of Measurement"
                             />
                         )}
-                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
                         fullWidth
@@ -573,10 +714,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 fullWidth
                                 {...params}
                                 label="Length"
-                                onChange={(e) => { handleQpChange("length", e.target.value) }}
+                                onChange={(e) => handleQpChange("length", e.target.value)}
                             />
                         )}
-                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
                         fullWidth
@@ -590,10 +730,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 fullWidth
                                 {...params}
                                 label="Width"
-                                onChange={(e) => { handleQpChange("width", e.target.value) }}
+                                onChange={(e) => handleQpChange("width", e.target.value)}
                             />
                         )}
-                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
                         fullWidth
@@ -607,13 +746,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 fullWidth
                                 {...params}
                                 label="Height"
-                                onChange={(e) => { handleQpChange("height", e.target.value) }}
+                                onChange={(e) => handleQpChange("height", e.target.value)}
                             />
                         )}
-                    // sx={{ flex: 1 }}
                     />
                 </Stack>
-                <Stack direction="row" spacing={2} mb={2} >
+                
+                <Stack direction="row" spacing={2} mb={2}>
                     <Autocomplete
                         fullWidth
                         options={getUniqueDeckalOptions()}
@@ -626,10 +765,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 fullWidth
                                 {...params}
                                 label="Deckal"
-                                onChange={(e) => { handleQpChange("deckal", e.target.value) }}
+                                onChange={(e) => handleQpChange("deckal", e.target.value)}
                             />
                         )}
-                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
                         fullWidth
@@ -643,10 +781,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 fullWidth
                                 {...params}
                                 label="Paper 1 GSM"
-                                onChange={(e) => { handleQpChange("paper1GSM", e.target.value) }}
+                                onChange={(e) => handleQpChange("paper1GSM", e.target.value)}
                             />
                         )}
-                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
                         fullWidth
@@ -660,10 +797,9 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 fullWidth
                                 {...params}
                                 label="Paper 2 GSM"
-                                onChange={(e) => { handleQpChange("paper2GSM", e.target.value) }}
+                                onChange={(e) => handleQpChange("paper2GSM", e.target.value)}
                             />
                         )}
-                    // sx={{ flex: 1 }}
                     />
                     <Autocomplete
                         fullWidth
@@ -677,16 +813,13 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                                 fullWidth
                                 {...params}
                                 label="Paper 3 GSM"
-                                onChange={(e) => { handleQpChange("paper3GSM", e.target.value) }}
+                                onChange={(e) => handleQpChange("paper3GSM", e.target.value)}
                             />
                         )}
-                    // sx={{ flex: 1 }}
                     />
                 </Stack>
 
                 <Stack direction="row" spacing={2} mb={2}>
-
-                    {/* No of Pieces */}
                     <Autocomplete
                         fullWidth
                         options={getUniqueNoOfPiecesOptions()}
@@ -706,8 +839,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             />
                         )}
                     />
-
-                    {/* Rate Per Piece */}
                     <Autocomplete
                         fullWidth
                         options={getUniqueRatePerPieceOptions()}
@@ -727,8 +858,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             />
                         )}
                     />
-
-                    {/* Amount */}
                     <ThemeInput
                         labelName="Amount"
                         placeholder="Amount"
@@ -736,10 +865,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                         disabled
                         fullWidth
                     />
-
                 </Stack>
-
-
 
                 <Stack direction="row" spacing={2} mb={2}>
                     <ThemeInput
@@ -765,7 +891,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     />
                 </Stack>
 
-                {/* Kantan Toggle Checkbox */}
                 <Box mb={2}>
                     <FormControlLabel
                         control={
@@ -779,17 +904,32 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     />
                 </Box>
 
-                {/* Kantan Fields - Conditionally Rendered */}
                 {qpFormData.isKantan && (
                     <Stack direction="row" spacing={2} mb={2}>
                         <Autocomplete
-                            options={kantans.map((item: any) => ({ value: item?._id, label: item.kantanName }))}
+                            options={kantans.map((item: any) => ({
+                                value: item?._id,
+                                label: item.kantanName
+                            }))}
                             getOptionLabel={(option) => option.label}
-                            value={kantans
-                                .map((item: any) => ({ value: item?._id, label: item.kantanName }))
-                                .find((item) => item.value === qpFormData.kantan) || null}
+                            value={
+                                qpFormData.kantan
+                                    ? kantans
+                                        .map((item: any) => ({
+                                            value: item?._id,
+                                            label: item.kantanName
+                                        }))
+                                        .find((item) => item.value === qpFormData.kantan)
+                                    : null
+                            }
                             onChange={(_, val) => handleQpChange("kantan", val?.value || null)}
-                            renderInput={(params) => <TextField {...params} label="Kantan" sx={{ width: 200, mt: 2 }} />}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Kantan"
+                                    sx={{ width: 200, mt: 2 }}
+                                />
+                            )}
                             sx={{ flex: 1 }}
                         />
                         <ThemeInput
@@ -810,13 +950,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                             }
                             disabled
                         />
-                        {/* <ThemeInput
-                            labelName="Kantan Deckal"
-                            placeholder="Kantan Deckal"
-                            fullWidth
-                            value={qpFormData.kantanDeckal}
-                            onChange={(e) => handleQpChange("kantanDeckal", e.target.value)}
-                        /> */}
                     </Stack>
                 )}
 
@@ -833,75 +966,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             </>
         );
     };
-
-    useEffect(() => {
-        const { length, width, height, ply, deckal, noOfPieces, ratePerPiece, paper1GSM, paper2GSM, paper3GSM, uom } = qpFormData;
-
-        // Convert dimensions to inches if uom is 'mm'
-        let lengthInInches = Number(length) || 0;
-        let widthInInches = Number(width) || 0;
-        let heightInInches = Number(height) || 0;
-        let deckalInInches = Number(deckal) || 0;
-
-        if (uom === 'mm') {
-            lengthInInches = lengthInInches / 25.4;
-            widthInInches = widthInInches / 25.4;
-            heightInInches = heightInInches / 25.4;
-            deckalInInches = deckalInInches / 25.4;
-        }
-
-        let deckalValue: number | null = null;
-        if (widthInInches && heightInInches) {
-            deckalValue = calculateDeckal(widthInInches, heightInInches);
-            handleQpChange("deckalCalculation", deckalValue.toFixed(2));
-        } else handleQpChange("deckalCalculation", "");
-
-        let gsmValue: number | null = null;
-        if (ply && paper1GSM && paper2GSM && paper3GSM) {
-            gsmValue = calculateGSM(Number(ply), Number(paper3GSM), Number(paper2GSM), Number(paper1GSM));
-            handleQpChange("gsm", gsmValue.toFixed(2));
-        } else handleQpChange("gsm", "");
-
-        if (lengthInInches && widthInInches && deckalValue && gsmValue) {
-            const kgPerPiece = calculateKgPerPiece(lengthInInches, widthInInches, deckalInInches, gsmValue);
-            handleQpChange("kgPerUnit", kgPerPiece.toFixed(4));
-        } else handleQpChange("kgPerUnit", "");
-
-        if (Number(noOfPieces) && qpFormData.kgPerUnit) {
-            const totalKg = calculateTotalKg(Number(noOfPieces), Number(qpFormData.kgPerUnit));
-            handleQpChange("totalKg", totalKg.toFixed(2));
-        } else handleQpChange("totalKg", "");
-
-        if (Number(noOfPieces) && Number(ratePerPiece)) {
-            const amount = calculateTotalAmount(Number(noOfPieces), Number(ratePerPiece));
-            handleQpChange("amount", amount.toFixed(2));
-        } else handleQpChange("amount", "");
-
-        if (qpFormData.isKantan && lengthInInches && widthInInches && Number(noOfPieces)) {
-            const { kantanPerUnit, reel, inch } = calculateKantan(lengthInInches, widthInInches, Number(noOfPieces));
-            handleQpChange("kantanPerUnit", kantanPerUnit.toString());
-            handleQpChange("totalKantan", { reel: reel.toString(), inch: inch.toString() });
-        } else if (!qpFormData.isKantan) {
-            handleQpChange("kantanPerUnit", "");
-            handleQpChange("totalKantan", { reel: "", inch: "" });
-            handleQpChange("kantan", null);
-        }
-    }, [
-        qpFormData.length,
-        qpFormData.width,
-        qpFormData.height,
-        qpFormData.ply,
-        qpFormData.paper1GSM,
-        qpFormData.paper2GSM,
-        qpFormData.paper3GSM,
-        qpFormData.noOfPieces,
-        qpFormData.ratePerPiece,
-        qpFormData.totalKg,
-        qpFormData.uom,
-        qpFormData.isKantan,
-        packagingOptions,
-        qpFormData
-    ]);
 
     return (
         <CustomDialog open={open} onClose={handleClose} maxWidth="md" title={editData?._id ? `Update Order QP-${editData?.orderNo || ""}` : `Place New Order QP-${orderNo + 1 || ""}`}>

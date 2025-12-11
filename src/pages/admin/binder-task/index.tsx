@@ -130,7 +130,7 @@ const BinderTask: React.FC<BinderTaskProps> = ({ tasks }) => {
     bindingPage: order.bindingPage || "N/A",
     remarks: order.binderRemarks || "N/A",
     number: order.totalNumbering || "N/A",
-    status: order.printerStatus || "Pending",
+    status: order.binderStatus || "Pending",
     binderStatus: order.binderStatus,
     startnumber:order.startNumber,
     endnumber:order.endNumber,

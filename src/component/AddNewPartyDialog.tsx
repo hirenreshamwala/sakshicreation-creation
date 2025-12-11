@@ -73,30 +73,6 @@ interface AddNewPartyDialogProps {
   isBulkUpload?: boolean; // New prop to handle bulk upload mode
 }
 
-const validationSchema = Yup.object({
-  companyName: Yup.string().required("Company Name is required"),
-  partyName: Yup.string().required("Party Name is required"),
-  ownerMobileNo: Yup.string().matches(/^[0-9]{10}$/, "Owner Mobile No. must be 10 digits").required("Owner Mobile No. is required"),
-  ownerWhatsAppNo: Yup.string()
-    .matches(/^[0-9]{10}$/, "Owner WhatsApp No. must be 10 digits")
-    .required("Owner WhatsApp No. is required"),
-  GSTNo: Yup.string(),
-  address: Yup.object({
-    unitNo: Yup.string().required("Unit No. is required"),
-    marketName: Yup.string().required("Market Name is required"),
-    // streetAddress: Yup.string(),
-    landMark: Yup.string(),
-    area: Yup.string().required("Area is required"),
-    pincode: Yup.string()
-      .required("Pincode is required"),
-  }),
-  partyType: Yup.string()
-    .oneOf(['Stationery', 'booklet', 'other'], 'Please select a valid party type') // यहाँ options बदलें
-    .required('Party Type is required'),
-  reasonToVisit: Yup.string().required("Reason to Visit is required"),
-  // createdBy: Yup.string().required("Created By is required"),
-});
-
 const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   open,
   onClose,
@@ -115,6 +91,9 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     partySuggestions,
   } = useAppSelector((state) => state.accountMasters);
   const { markets } = useAppSelector((state) => state.markets);
+  const { companies } = useAppSelector((state) => state.company)
+  console.log("DEBUG : AddNewPartyDialog : companies:", companies);
+
   const [referenceOptions, setReferenceOptions] = useState<PartySuggestion[]>([]);
   const [recordSkipped, setRecordSkipped] = useState(false)
   const [skippedRecords, setSkippedRecords] = useState([])
@@ -127,7 +106,37 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
 
   const currentUser = authService.getUser();
 
-
+  // Dynamic validation schema function
+  const getValidationSchema = () => {
+    return Yup.object({
+      companyName: Yup.string().required("Company Name is required"),
+      partyName: Yup.string().required("Party Name is required"),
+      ownerMobileNo: Yup.string().matches(/^[0-9]{10}$/, "Owner Mobile No. must be 10 digits").required("Owner Mobile No. is required"),
+      ownerWhatsAppNo: Yup.string()
+        .matches(/^[0-9]{10}$/, "Owner WhatsApp No. must be 10 digits")
+        .required("Owner WhatsApp No. is required"),
+      GSTNo: Yup.string(),
+      address: Yup.object({
+        unitNo: Yup.string().required("Unit No. is required"),
+        marketName: Yup.string().required("Market Name is required"),
+        landMark: Yup.string(),
+        area: Yup.string().required("Area is required"),
+        pincode: Yup.string()
+          .required("Pincode is required"),
+      }),
+      partyType: Yup.string().when('companyName', {
+        is: (companyId: string) => {
+          const selectedCompany = companies.find(company => company._id === companyId);
+          return selectedCompany?.companyName === "Sakshi Creation";
+        },
+        then: (schema) => schema
+          .oneOf(['STATIONERY', 'BOOKLET', 'OTHER'], 'Please select a valid party type')
+          .required('Party Type is required'),
+        otherwise: (schema) => schema.optional()
+      }),
+      reasonToVisit: Yup.string().required("Reason to Visit is required"),
+    });
+  };
 
   useEffect(() => {
     if (open) {
@@ -168,13 +177,9 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     setReferenceOptions(partySuggestions);
   }, [partySuggestions]);
 
-  useEffect(() => {
-    setPartyOptions(partySuggestions);
-  }, [partySuggestions]);
-
   const formik = useFormik<FormData>({
     initialValues: {
-      companyName: company?._id,
+      companyName: company?._id || "",
       partyName: "",
       ownerName: "",
       ownerMobileNo: "",
@@ -192,7 +197,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       address: {
         unitNo: "",
         marketName: "",
-        // streetAddress: "",
         landMark: "",
         area: "",
         pincode: "",
@@ -202,9 +206,9 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       partyTag: "New",
       createdBy: isRequestMode ? (currentUser?.id || "") : "",
       isRequestMode,
-      partyType: "Stationery",
+      partyType: "", // Start with empty string
     },
-    validationSchema,
+    validationSchema: getValidationSchema(), // Call the function here
     validateOnBlur: false,
     validateOnChange: false,
     onSubmit: async (values) => {
@@ -213,9 +217,16 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         formik.setErrors(errors);
         return;
       }
+      
+      // Find selected company and check if it's Sakshi Creation
+      const selectedCompany = companies.find(company => company._id === values.companyName);
+      const isSakshiCreation = selectedCompany?.companyName === "Sakshi Creation";
+      
       const submissionValues = {
         ...values,
         reference: hasReference === "yes" ? values.reference : "",
+        // Remove partyType if not Sakshi Creation
+        ...(!isSakshiCreation && { partyType: undefined })
       };
       console.log("DEBUG : AddNewPartyDialog : submissionValues:", submissionValues);
 
@@ -237,6 +248,10 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       }
     },
   });
+
+  // Calculate selectedCompany and isSakshiCreation AFTER formik initialization
+  const selectedCompany = companies.find(company => company._id === formik.values.companyName);
+  const isSakshiCreation = selectedCompany?.companyName === "Sakshi Creation";
 
   useEffect(() => {
     if (formik.values.reference && formik.values.reference.trim() !== "") {
@@ -268,6 +283,10 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         await dispatch(getAllStaffThunk());
         if (isEditMode && accountId) {
           const result = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
+          
+          // Find the company from companies array
+          const resultCompany = companies.find(comp => comp._id === result.companyName);
+          const isResultSakshiCreation = resultCompany?.companyName === "Sakshi Creation";
 
           formik.setValues({
             ...result,
@@ -290,25 +309,53 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
             address: {
               unitNo: result.party.address?.unitNo || "",
               marketName: result.party.address?.marketName?._id || "",
-              // streetAddress: result.address?.streetAddress?._id || "",
               landMark: result.party.address?.landMark?._id || "",
               area: result.party.address?.area?._id || "",
               pincode: result.party.address?.pincode?._id || "",
             },
             reasonToVisit: result.reasonToVisit.toUpperCase() || "VISIT",
             reference: result.reference || "",
-            createdBy:
-              result.createdById || (typeof result.createdBy === "object" ? result.createdBy._id : ""),
+            createdBy: result.createdById || (typeof result.createdBy === "object" ? result.createdBy._id : ""),
             isRequestMode,
-            partyType: result.party.partyType || "Stationery",
+            // Set partyType only if it's Sakshi Creation
+            partyType: isResultSakshiCreation ? (result.party.partyType || "") : "",
           });
           setInputValue(result.partyName || "");
         } else {
+          // Check if the passed company prop is Sakshi Creation
+          const companyPropObj = companies.find(comp => comp._id === company?._id);
+          const isCompanySakshiCreation = companyPropObj?.companyName === "Sakshi Creation";
+          
           formik.resetForm({
             values: {
-              ...formik.initialValues,
+              companyName: company?._id || "",
+              partyName: "",
+              ownerName: "",
+              ownerMobileNo: "",
+              ownerWhatsAppNo: "",
+              ownerEmail: "",
+              contactPerson: "",
+              personMobileNo: "",
+              personWhatsAppNo: "",
+              contactPersonEmail: "",
+              contactForPayment: "",
+              contactMobileNo: "",
+              contactWhatsAppNo: "",
+              contactForPaymentEmail: "",
+              GSTNo: "",
+              address: {
+                unitNo: "",
+                marketName: "",
+                landMark: "",
+                area: "",
+                pincode: "",
+              },
+              reasonToVisit: "VISIT",
+              reference: "",
+              partyTag: "New",
               createdBy: isRequestMode ? (currentUser?.id || "") : "",
               isRequestMode,
+              partyType: isCompanySakshiCreation ? "Stationery" : "", // Set based on company
             },
           });
           setInputValue("");
@@ -321,7 +368,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     };
 
     fetchData();
-  }, [open, isEditMode, accountId, dispatch, isRequestMode, currentUser?.id]);
+  }, [open, isEditMode, accountId, dispatch, isRequestMode, currentUser?.id, companies, company?._id]);
 
   useEffect(() => {
     if (accountError) {
@@ -357,11 +404,10 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     const companyId = newValue ? newValue.value : "";
     formik.setFieldValue("companyName", companyId);
     formik.setFieldValue("partyName", "");
+    formik.setFieldValue("partyType", ""); // Reset partyType when company changes
     setInputValue("");
     dispatch(clearSuggestions());
   }
-
-
 
   const loadPartyDetails = async (selectedParty: PartySuggestion) => {
     if (!formik.values.companyName) {
@@ -378,8 +424,11 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       ).unwrap()
 
       const partyData = response.data?.party || response.accountMaster?.party
-      // console.log(partyData, 'partyData')
       if (partyData) {
+        // Check if current company is Sakshi Creation
+        const currentCompany = companies.find(comp => comp._id === formik.values.companyName);
+        const isCurrentSakshiCreation = currentCompany?.companyName === "Sakshi Creation";
+        
         formik.setValues({
           ...formik.values,
           partyName: partyData.partyName,
@@ -397,11 +446,11 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
           contactForPaymentEmail: partyData.contactForPaymentEmail || "",
           GSTNo: partyData.GSTNo || "",
           partyTag: partyData.partyTag || "",
-          partyType: partyData.partyType || "",
+          // Only set partyType if current company is Sakshi Creation
+          partyType: isCurrentSakshiCreation ? (partyData.partyType || "") : "",
           address: {
             unitNo: partyData.address?.unitNo || "",
             marketName: partyData.address?.marketName?._id || "",
-            // streetAddress: partyData.address?.streetAddress?._id || "",
             landMark: partyData.address?.landMark?._id || "",
             area: partyData.address?.area?._id || "",
             pincode: partyData.address?.pincode?._id || "",
@@ -412,7 +461,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       } else {
         toast.error("No party data found in response")
       }
-    } catch (err) {
+    } catch (err: any) {
       toast.error("Failed to load party details: " + err.message)
     }
   }
@@ -430,6 +479,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     dispatch(clearSuggestions());
     onClose();
   };
+
+  console.log("DEBUG : AddNewPartyDialog : formik:", formik);
 
   return (
     <CustomDialog
@@ -759,34 +810,39 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 />
               </Box>
 
-              {/* Party Type - नया field जोड़ें */}
-              <Box sx={{ width: '24.2%' }}>
-                <ThemeSelect
-                  label="Party Type"
-                  placeholder="Select Type"
-                  options={[
-                    { value: "Stationery", label: "Stationery" },
-                    { value: "booklet", label: "Booklet" },
-                    { value: "other", label: "Other" },
-                  ]}
-                  value={
-                    formik.values.partyType
-                      ? {
-                        value: formik.values.partyType,
-                        label: formik.values.partyType.charAt(0).toUpperCase() + formik.values.partyType.slice(1)
-                      }
-                      : { value: "Stationery", label: "Stationery" } // यहाँ default value सेट करें
-                  }
-                  onChange={(e, val: any) => {
-                    formik.setFieldValue("partyType", val?.value || "Stationery");
-                  }}
-                  error={Boolean(formik.errors.partyType)}
-                  helperText={formik.touched.partyType && formik.errors.partyType}
-                />
-              </Box>
+              {/* Party Type - Conditionally render based on company */}
+              {isSakshiCreation && (
+                <Box sx={{ width: '24.2%' }}>
+                  <ThemeSelect
+                    label="Party Type"
+                    placeholder="Select Type"
+                    options={[
+                      { value: "STATIONERY", label: "STATIONERY" },
+                      { value: "BOOKLET", label: "BOOKLET" },
+                      { value: "OTHER", label: "OTHER" },
+                    ]}
+                    value={
+                      formik.values.partyType
+                        ? {
+                          value: formik.values.partyType,
+                          label: formik.values.partyType.charAt(0).toUpperCase() + formik.values.partyType.slice(1)
+                        }
+                        : null
+                    }
+                    onChange={(e, val: any) => {
+                      formik.setFieldValue("partyType", val?.value || "");
+                    }}
+                    error={Boolean(formik.errors.partyType)}
+                    helperText={formik.touched.partyType && formik.errors.partyType}
+                  />
+                </Box>
+              )}
 
-              {/* Reference Radio Buttons */}
-              <Box sx={{ width: '20%', mt: 2 }}>
+              {/* Reference Radio Buttons - Adjust width based on whether Party Type is shown */}
+              <Box sx={{ 
+                width: isSakshiCreation ? '20%' : '44.2%', 
+                mt: 2 
+              }}>
                 <FormControl component="fieldset" fullWidth>
                   <FormLabel component="legend">Reference</FormLabel>
                   <RadioGroup
@@ -870,7 +926,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                       value: market._id, // Use _id as value
                       label: market.marketName // Show marketName as label
                     }))}
-
                     value={markets.find(market => market._id === formik.values?.address?.marketName) ? {
                       value: formik.values?.address?.marketName,
                       label: markets.find(market => market._id === formik.values?.address?.marketName)?.marketName
@@ -1106,20 +1161,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 required
                 showPartyName={false}
               />
-              {/* {!isRequestMode && (
-                <ThemeSelect
-                  label="Created By"
-                  options={staffOptions}
-                  value={getSelectedOption(formik.values.createdBy, staffOptions)}
-                  onChange={(event, newValue) => {
-                    formik.setFieldValue("createdBy", newValue ? newValue.value : "");
-                  }}
-                  name="createdBy"
-                  error={Boolean(formik.errors.createdBy)}
-                  helperText={formik.touched.createdBy && formik.errors.createdBy}
-                  required
-                />
-              )} */}
             </Box>
 
             <Box mt={2}>
@@ -1210,7 +1251,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 </ThemeButton>
               </Box> : null}
 
-
               <Box display="flex" gap={2} alignItems="center" justifyContent="center" mt={2}>
                 <ThemeButton
                   disabled={!formik.values.companyName || !file}
@@ -1223,7 +1263,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                         formData.append("companyName", formik.values.companyName);
                         formData.append("createdBy", formik.values.createdBy);
                         const res = await dispatch(bulkCreateAccountMastersThunk(formData)).unwrap();
-                        // console.log(res, 'jdshbfjkdhbjkn')
                         if (res?.skippedCount > 0) {
                           setRecordSkipped(true)
                           setSkippedRecords(res?.skippedRecords)
@@ -1248,7 +1287,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 >
                   {isLoading ? "Uploading..." : "Upload Bulk File"}
                 </ThemeButton>
-
 
                 {file && (
                   <ThemeButton

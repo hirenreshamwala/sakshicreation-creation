@@ -44,6 +44,7 @@ interface FormData {
   assignedTo?: string;
   daysAfterConfirmation?: number;
   paymentDate?: number;
+  description?: string;
 }
 
 interface Order {
@@ -84,6 +85,7 @@ interface Order {
   finalAmount?: number;
   daysAfterConfirmation?: number;
   paymentDate?: number;
+  description?: string;
 }
 
 interface AddNewPerformanceInvoiceDialogProps {
@@ -151,12 +153,12 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | undefined>(invoiceId);
   const [isSaved, setIsSaved] = useState(false);
   const [staffList, setStaffList] = useState<Staff[]>([]);
+  
 
   useEffect(() => {
     if (!markets.length) dispatch(getAllMarketsThunk())
   }, [])
 
-  console.log(data, 'soidfnjhoidefjhoi')
 
   useEffect(() => {
     if (!open) return;
@@ -230,6 +232,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       assignedTo: "",
       daysAfterConfirmation: undefined,
       paymentDate: undefined,
+      description: "",
     },
     validationSchema,
     validateOnBlur: true,
@@ -254,7 +257,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       setSubmitting(true);
 
       try {
-        const invoiceData = {
+        const invoiceData: any = {
           orderNumber: values.orderNumber,
           companyName: values.companyName,
           partyName: values.partyName,
@@ -276,35 +279,93 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           unitPrice: values.unitPrice || 0,
           total: values.total || 0,
           applyGST: values.applyGST,
-          gstPercentage: values.gstPercentage || 0,
+          gstPercentage: values.gstPercentage?.toString() || "0", // ✅ String में convert करें
           assignedTo: values.assignedTo,
           finalAmount: values.finalAmount || 0,
           daysAfterConfirmation: values.daysAfterConfirmation,
           paymentDate: values.paymentDate,
+          description: values.description || "",
         };
 
-        // 1️⃣ Order ID निकालें (orderNumber से)
+        // ✅ Order ID निकालें
         const selectedOrder = orders.find(order => order.orderNumber === values.orderNumber);
         if (!selectedOrder) {
           throw new Error("Order not found");
         }
 
-        // 2️⃣ Order update data तैयार करें
+        // ✅ HISTORY MANAGEMENT LOGIC - IMPROVED
+        if (isEditMode && currentInvoiceId) {
+          try {
+            // Existing invoice fetch करें
+            const existingInvoice = await performanceInvoiceService.getPerformanceInvoiceById(currentInvoiceId);
+
+            if (existingInvoice.success && existingInvoice.data) {
+              const existingData = existingInvoice.data;
+
+              // ✅ Old values को history में add करें (सभी required fields सही तरीके से)
+              const historyEntry = {
+                unitPrice: existingData.unitPrice || 0,
+                total: existingData.total || 0,
+                applyGST: existingData.applyGST || false,
+                gstPercentage: existingData.gstPercentage?.toString() || "0", // ✅ String ensure करें
+                finalAmount: existingData.finalAmount || 0,
+                createdAt: new Date()
+              };
+
+              // ✅ History array को set करें
+              invoiceData.proformaHistory = [
+                ...(existingData.proformaHistory || []),
+                historyEntry
+              ];
+
+              console.log("✅ Added to history:", historyEntry);
+              console.log("✅ Total history entries:", invoiceData.proformaHistory.length);
+            }
+          } catch (err) {
+            console.error("Could not fetch existing invoice:", err);
+            invoiceData.proformaHistory = [];
+          }
+        } else {
+          // नया invoice के लिए empty history
+          invoiceData.proformaHistory = [];
+        }
+
+        // Order update data
         const orderUpdateData = {
           unitPrice: values.unitPrice || 0,
           total: values.total || 0,
           applyGST: values.applyGST,
-          gstPercentage: values.gstPercentage || 0,
+          gstPercentage: values.gstPercentage?.toString() || "0", // ✅ String में convert
           finalAmount: values.finalAmount || 0,
           daysAfterConfirmation: values.daysAfterConfirmation,
           paymentDate: values.paymentDate,
-          // Quantity भी update करना चाहते हैं तो:
-          // qty: values.quantity,
+          description: values.description || "",
         };
 
         let response;
 
-        // 3️⃣ Parallel में दोनों operations run करें
+        // ✅ यहाँ भी Order में history update करें
+        const orderHistoryEntry = {
+          unitPrice: values.unitPrice || 0,
+          total: values.total || 0,
+          applyGST: values.applyGST,
+          gstPercentage: values.gstPercentage?.toString() || "0",
+          finalAmount: values.finalAmount || 0,
+          createdAt: new Date(),
+          invoiceId: currentInvoiceId || "new"
+        };
+
+        // Order में भी history add करें
+        if (selectedOrder) {
+          // Existing order history लें
+          const existingOrderHistory = selectedOrder.proformaHistory || [];
+          orderUpdateData.proformaHistory = [
+            ...existingOrderHistory,
+            orderHistoryEntry
+          ];
+        }
+
+        // Parallel operations
         if (isEditMode && currentInvoiceId) {
           [response] = await Promise.all([
             dispatch(updatePerformanceInvoiceThunk({
@@ -393,6 +454,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             assignedTo: assignedToValue,
             daysAfterConfirmation: result.daysAfterConfirmation,
             paymentDate: result.paymentDate,
+            description: result.description || "",
           });
           setIsSaved(true);
         }
@@ -430,15 +492,13 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       return;
     }
 
+    console.log("DEBUG : AddNewPerformanceInvoiceDialog : selectedOrder:", selectedOrder);
     const fullAddress = [
-      selectedOrder.party.address?.unitNo || "",
-      markets.find((item) => item._id === selectedOrder.party.address?.marketName)?.marketName || "",
-      markets.find((item) => item._id === selectedOrder.party.address?.landMark)?.landMark || "",
-      markets.find((item) => item._id === selectedOrder.party.address?.area)?.area || "",
-      markets.find((item) => item._id === selectedOrder.party.address?.pincode)?.pincode || "",
-    ]
+      selectedOrder.party.address?.unitNo || "", selectedOrder.party.address?.marketName?.marketName, selectedOrder.party.address?.area?.area, selectedOrder.party.address?.pincode
+?.pincode]
       .filter((part) => part?.trim() !== "")
       .join(", ");
+
 
     const checkInvoice = async () => {
       try {
@@ -460,6 +520,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           ]
             .filter((part) => part?.trim() !== "")
             .join(", ");
+          console.log("DEBUG : checkInvoice : invoiceAddress:", invoiceAddress);
+
 
           const assignedToValue = existingInvoice.assignedTo?._id
             ? existingInvoice.assignedTo._id.toString()
@@ -487,6 +549,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             assignedTo: assignedToValue,
             daysAfterConfirmation: existingInvoice.daysAfterConfirmation,
             paymentDate: existingInvoice.paymentDate,
+            description: existingInvoice.description || "",
+
           });
         } else {
           // नया invoice create करते समय:
@@ -518,6 +582,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             assignedTo: "",
             daysAfterConfirmation: selectedOrder?.daysAfterConfirmation || undefined,
             paymentDate: selectedOrder?.paymentDate || undefined,
+            description: selectedOrder?.description || "",
+            
           });
         }
       } catch (err: any) {
@@ -534,7 +600,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     const total = (formik.values.quantity || 0) * (formik.values.unitPrice || 0);
     const gstAmount = formik.values.applyGST ? total * (formik.values.gstPercentage / 100) : 0;
     const finalAmount = total + gstAmount;
-    
+
     formik.setFieldValue("total", total);
     formik.setFieldValue("finalAmount", finalAmount);
   }, [formik.values.quantity, formik.values.unitPrice, formik.values.gstPercentage, formik.values.applyGST]);
@@ -657,11 +723,21 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           </Box>
           <TextField
             label="Address Name"
-            value={`${data?.party?.address?.unitNo} ${markets?.find((item) => item._id === data?.party?.address?.marketName)?.marketName} ${markets?.find((item) => item._id === data?.party?.address?.landMark)?.landmark} ${markets?.find((item) => item._id === data?.party?.address?.area)?.area} ${markets?.find((item) => item._id === data?.party?.address?.pincode)?.pincode}`}
+            value={`${data?.party?.address?.unitNo}, ${data?.party?.address?.marketName?.marketName}, ${data?.party?.address?.area?.area}, ${data?.party?.address?.pincode?.pincode}`}
             onChange={formik.handleChange("addressName")}
             disabled
             fullWidth
             sx={disabledLabelStyle}
+          />
+          <TextField
+            label="Description"
+            name="description"
+            value={formik.values.description || ""}
+            onChange={formik.handleChange}
+            multiline
+            rows={2}
+            fullWidth
+            margin="normal"
           />
           <Autocomplete
             options={staffOptions}
@@ -806,6 +882,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               gstPercentage: formik.values.gstPercentage,
               daysAfterConfirmation: formik.values.daysAfterConfirmation,
               paymentDate: formik.values.paymentDate,
+              description: formik.values.description || "",
+              quotation: true
             }}
             isSaved={isSaved}
             onClose={onClose}

@@ -195,7 +195,7 @@ const BinderForm = () => {
   useEffect(() => {
     const totalAmt = parseFloat(formik.values.totalAmount) || 0;
     const totNum = parseFloat(formik.values.totalNumbering) || 0;
-    const numAmt = totalAmt * totNum;
+    const numAmt = totalAmt + totNum;
     formik.setFieldValue("numberingAmount", numAmt.toString());
   }, [formik.values.totalAmount, formik.values.totalNumbering]);
   useEffect(() => {

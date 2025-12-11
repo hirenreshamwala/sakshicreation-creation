@@ -114,8 +114,6 @@ const AdminManagerSalesView = () => {
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({})
-  const [complainOpen, setComplainOpen] = useState(false);
-  const [selectedOrderForComplain, setSelectedOrderForComplain] = useState<OrderRow | null>(null);
 
   const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
   const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
@@ -126,10 +124,19 @@ const AdminManagerSalesView = () => {
   const columns = [
     { id: "orderNo", label: "Order No" },
     { id: "companyName", label: "Company Name" },
-    { id: "party", label: "Party Name" },
     { id: "orderDate", label: "Order Date" },
+    { id: "size", label: "Size" },
+    { id: "ply", label: "Ply" },
+    { id: "party", label: "Party Name" },
+    { id: "deckal", label: "Deckal" },
+    { id: "gsm", label: "GSM" },
+    { id: "pcs", label: "PCS" },
+    { id: "created", label: "" },
+    { id: "kgs", label: "KGS" },
+    { id: "rate", label: "RATE" },
+    { id: "amount", label: "amount" },
     { id: "status", label: "Status" },
-    { id: "details", label: "Details" },
+    { id: "kantan", label: "kantan" },
     { id: "urgent", label: "Urgent" },
     { id: "actions", label: "Actions" },
   ]
@@ -180,10 +187,6 @@ const AdminManagerSalesView = () => {
     dispatch(getAllInventoryThunk());
   }, []);
 
-  const handleComplainClick = (rowData: OrderRow) => {
-    setSelectedOrderForComplain(rowData);
-    setComplainOpen(true);
-  };
 
   const handleRepeatOrder = (rowData: OrderRow) => {
     const repeatOrderData = {
@@ -211,42 +214,6 @@ const AdminManagerSalesView = () => {
     setEditData(repeatOrderData);
     setOpen(true);
   };
-
-  const handleViewDetails = (row: OrderRow) => {
-    setSelectedRow(row);
-  };
-
-  // const handleMarkAsUrgent = async (rowData: OrderRow) => {
-  //   const result = await Swal.fire({
-  //     title: 'Mark as Urgent?',
-  //     text: `Are you sure you want to mark order QP-${rowData.orderNo} as urgent? This action cannot be undone.`,
-  //     icon: 'warning',
-  //     showCancelButton: true,
-  //     confirmButtonColor: '#ff6b6b',
-  //     cancelButtonColor: '#6B7280',
-  //     confirmButtonText: 'Yes, mark as urgent!',
-  //     cancelButtonText: 'Cancel'
-  //   });
-
-  //   if (result.isConfirmed) {
-  //     try {
-  //       await dispatch(markOrderAsUrgentThunk(rowData._id)).unwrap();
-  //       Swal.fire(
-  //         'Marked as Urgent!',
-  //         `Order QP-${rowData.orderNo} has been marked as urgent.`,
-  //         'success'
-  //       );
-  //       refreshData();
-  //     } catch (error: any) {
-  //       Swal.fire(
-  //         'Error!',
-  //         error || 'Failed to mark order as urgent',
-  //         'error'
-  //       );
-  //     }
-  //   }
-  // };
-
 
 
   const formatDate = (dateString: string) => {
@@ -782,36 +749,12 @@ const AdminManagerSalesView = () => {
                   <Typography fontSize="14px" color="#6B7280">
                     QP-{row.orderNo || "N/A"}
                   </Typography>
-                  {row.isUrgent && (
-                    <Box
-                      sx={{
-                        backgroundColor: "#DC2626",
-                        color: "#FFFFFF",
-                        fontSize: "10px",
-                        fontWeight: 600,
-                        borderRadius: "4px",
-                        px: 1,
-                        py: 0.25,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      URGENT
-                    </Box>
-                  )}
                 </Box>
               </TableCell >
               <TableCell>
                 <Box display="flex" alignItems="center" gap={2}>
                   <Avatar src={row.companyName?.avatar} sx={{ width: 32, height: 32 }} alt={row.companyName?.companyName || "Company"} />
-                  <Typography fontWeight={600} fontSize="14px" color="#111827">
-                    {row.companyName?.companyName || "N/A"}
-                  </Typography>
                 </Box>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.party?.partyName || "N/A"}
-                </Typography>
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
@@ -820,16 +763,63 @@ const AdminManagerSalesView = () => {
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
+                  {`${row.orderdata?.length || "N/A"} x ${row.orderdata?.width || "N/A"} x ${row.orderdata?.height || "N/A"}`}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {`${row.orderdata?.ply || "N/A"}`}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.party?.partyName || "N/A"}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.orderdata?.deckal}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {`${row.orderdata?.paper1GSM || "N/A"} x ${row.orderdata?.paper2GSM || "N/A"} x ${row.orderdata?.paper3GSM || "N/A"}`}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.noOfPieces}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.createdBy?.firstName?.[0]}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.totalKg}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.ratePerPiece}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.amount}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography fontSize="14px" color="#6B7280">
                   {row.status}
                 </Typography>
               </TableCell>
               <TableCell>
-                  <ThemeButton
-                    size="small"
-                    onClick={() => handleViewDetails(row)}
-                  >
-                    View Details
-                  </ThemeButton>
+                <Typography fontSize="14px" color="#6B7280">
+                  {row.kantan?.kantanName}
+                </Typography>
               </TableCell>
               <TableCell>
                   <ThemeButton
@@ -855,12 +845,6 @@ const AdminManagerSalesView = () => {
                       Repeat Order
                     </ThemeButton>
                   )}
-                  <ThemeButton
-                    size="small"
-                    onClick={() => handleComplainClick(row)}
-                  >
-                    Complain
-                  </ThemeButton>
 
                 </Box>
               </TableCell>
@@ -868,49 +852,6 @@ const AdminManagerSalesView = () => {
           }}
         />
       </Box >
-
-      {selectedRow && (
-        <Dialog
-          open={true}
-          onClose={() => setSelectedRow(null)}
-          maxWidth="lg"
-          fullWidth
-        >
-          <DialogTitle>Order Details - QP-{selectedRow.orderNo}</DialogTitle>
-          <DialogContent>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, p: 1 }}>
-              {renderField("Ply", selectedRow.orderdata?.ply || "N/A")}
-              {renderField("Size", selectedRow.size?.size || `${selectedRow.orderdata?.length || "N/A"} x ${selectedRow.orderdata?.width || "N/A"} x ${selectedRow.orderdata?.height || "N/A"}`)}
-              {renderField("Unit of Measurement", selectedRow.orderdata?.uom || "N/A")}
-              {renderField("Paper GSM", `${selectedRow.orderdata?.paper1GSM || "N/A"} x ${selectedRow.orderdata?.paper2GSM || "N/A"} x ${selectedRow.orderdata?.paper3GSM || "N/A"}`)}
-              {renderField("GSM", selectedRow.gsm || "N/A")}
-              {renderField("Cal Deckal", selectedRow.deckalCalculation || "N/A")}
-              {renderField("Deckal", selectedRow.orderdata?.deckal || "N/A")}
-              {renderField("Piece No", selectedRow.noOfPieces || "N/A")}
-              {renderField("Cutting Length", selectedRow.orderdata?.length && selectedRow.orderdata?.width
-                ? Number(selectedRow.orderdata.length) + Number(selectedRow.orderdata.width) + 2
-                : "N/A")}
-              {renderField("Sheet to Cut", selectedRow.noOfPieces
-                ? Number(selectedRow.noOfPieces) * 2
-                : "N/A")}
-              {renderField("Rate/Piece", selectedRow.ratePerPiece ? `${selectedRow.ratePerPiece}` : "N/A")}
-              {renderField("Amount", selectedRow.amount || "N/A")}
-              {renderField("KG Per Unit", selectedRow.kgPerUnit || "N/A")}
-              {renderField("Total KG", selectedRow.totalKg || "N/A")}
-              {renderField("Kantan", selectedRow.kantan?.kantanName || "N/A")}
-              {renderField("Kantan/Piece", selectedRow.kantanPerUnit || "N/A")}
-              {renderField("Total Kantan", selectedRow.totalKantan ? `${selectedRow.totalKantan.reel} reel ${selectedRow.totalKantan.inch} inch` : "N/A")}
-              {renderField("Kantan Dec", selectedRow.kantanDeckal || "N/A")}
-              {renderField("Sales Remarks", selectedRow.salesRemark || "N/A")}
-              {renderField("Status", selectedRow.status)}
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setSelectedRow(null)}>Close</Button>
-          </DialogActions>
-        </Dialog>
-      )
-      }
 
       {
         open && (
@@ -939,23 +880,6 @@ const AdminManagerSalesView = () => {
               />
             )}
           </>
-        )
-      }
-      {
-        complainOpen && selectedOrderForComplain && (
-          <ComplainDialogue
-            company={{
-              _id: selectedOrderForComplain.companyName._id,
-              companyName: selectedOrderForComplain.companyName.companyName
-            }}
-            open={complainOpen}
-            onClose={() => {
-              setComplainOpen(false);
-              setSelectedOrderForComplain(null);
-            }}
-            selectedOrderData={selectedOrderForComplain} // Pass the selected order data
-            refreshData={refreshData}
-          />
         )
       }
 
