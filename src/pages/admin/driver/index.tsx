@@ -8,6 +8,7 @@ import { orderService } from "@/services/qpOrder.service";
 import { toast } from "react-toastify";
 import _ from "lodash";
 import moment from "moment";
+import Loader from "@/component/common_component/loader";
 
 const columns = [
   { id: "orderNo", label: "Order No", value: "orderNo" },
@@ -347,7 +348,7 @@ const QPOrdersPage = () => {
   
   // Show loading while initial data is being loaded
   if ((loading || isLoadingData) && !isInitialLoad && orders.length === 0) {
-    return <div>Loading QP Orders...</div>;
+    return <div><Loader /></div>;
   }
   
   return (

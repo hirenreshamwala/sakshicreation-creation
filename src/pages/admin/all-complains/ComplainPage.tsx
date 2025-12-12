@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Box, TableCell, IconButton, Typography, Button } from "@mui/material";
 import { Delete, Edit, Visibility, AttachFile } from '@mui/icons-material';
 import { toast } from 'react-toastify';
@@ -84,6 +84,9 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
     const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
     const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
 
+    // Prevent multiple API calls
+    const isLoadingRef = useRef(false);
+
     // Permissions
     const canViewGlobal = user?.role?.permissions?.all_complains?.view_global;
     const canViewOwn = user?.role?.permissions?.all_complains?.view_own;
@@ -93,12 +96,18 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
 
     // Load complains with filters
     const loadComplains = useCallback(async () => {
+        if (isLoadingRef.current) {
+            console.log("⚠️ Complain API call already in progress, skipping...");
+            return;
+        }
+
         if (!selectedCompany?._id) {
             console.error("Cannot load complains: Company ID is undefined");
             return;
         }
 
         setIsLoadingData(true);
+        isLoadingRef.current = true;
         
         try {
             const params = {
@@ -129,6 +138,7 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
             toast.error(err.message || "Failed to load complains");
         } finally {
             setIsLoadingData(false);
+            isLoadingRef.current = false;
         }
     }, [dispatch, currentFilterState, user, canViewGlobal, canViewOwn, selectedCompany]);
 
@@ -208,7 +218,7 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
 
             const timer = setTimeout(() => {
                 loadComplains();
-                setAppliedFilterState(currentFilterState);
+                setAppliedFilterState({ ...currentFilterState }); // Shallow copy to avoid reference issues
             }, 300); // Add small delay for better UX
 
             return () => clearTimeout(timer);
@@ -221,7 +231,7 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
             console.log("🚀 Initial load started for complains");
             loadComplains();
         }
-    }, [user, isInitialLoad, loadComplains, selectedCompany]);
+    }, []); // Empty deps: Run only once on mount (user/selectedCompany assumed stable after mount)
 
     // Handle add new complain
     const handleAddNewOrder = () => {

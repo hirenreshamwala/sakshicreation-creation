@@ -143,7 +143,12 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             varnish: Boolean(row.varnish),
             isPinning: Boolean(row.isPinning),
             isPasting: Boolean(row.isPasting),
-            isPunching: Boolean(row.isPunching)
+            isPunching: Boolean(row.isPunching),
+            // NEW FIELDS:   with row values or empty string
+            noOfSheetCut: row.noOfSheetCut || "",
+            cuttingLength: row.cuttingLength || "",
+            noOfLinear: row.noOfLinear || "",
+            linear: row.linear || ""
         };
 
         setFormData(newFormData);
