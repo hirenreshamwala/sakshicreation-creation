@@ -104,14 +104,17 @@ function PaperSelection({
       handleFormChange("printType", data.printType);
     }
     // Initialize printer details if they exist
-    if (data?.paperSize) {
-      handleFormChange("paperSize", data.paperSize);
+    if (data?.printerPaperSize) {
+      handleFormChange("printerPaperSize", data.printerPaperSize);
     }
-    if (data?.boxSize) {
-      handleFormChange("boxSize", data.boxSize);
+    if (data?.paperQuality) {
+      handleFormChange("paperQuality", data.paperQuality);
     }
-    if (data?.printerQty) {
-      handleFormChange("printerQty", data.printerQty);
+    if (data?.paperGsm) {
+      handleFormChange("paperGsm", data.paperGsm);
+    }
+    if (data?.printerPaperQty) {
+      handleFormChange("printerPaperQty", data.printerPaperQty);
     }
   }, [data]);
 
@@ -121,9 +124,10 @@ function PaperSelection({
     // Reset print type and printer details when printer changes
     if (!value) {
       handleFormChange("printType", "");
-      handleFormChange("paperSize", "");
-      handleFormChange("boxSize", "");
-      handleFormChange("printerQty", "");
+      handleFormChange("printerPaperSize", "");
+      handleFormChange("paperQuality", "");
+      handleFormChange("paperGsm", "");
+      handleFormChange("printerPaperQty", "");
     }
   };
 
@@ -317,9 +321,10 @@ function PaperSelection({
                       handleFormChange("designFiles", []);
                       handleFormChange("designerRemark", "");
                       // Reset printer details
-                      handleFormChange("paperSize", "");
-                      handleFormChange("boxSize", "");
-                      handleFormChange("printerQty", "");
+                      handleFormChange("printerPaperSize", "");
+                      handleFormChange("paperQuality", "");
+                      handleFormChange("paperGsm", "");
+                      handleFormChange("printerPaperQty", "");
                     }
                   }}
                   disabled={isCompleted}
@@ -457,9 +462,10 @@ function PaperSelection({
                         handleFormChange("printType", "");
                         handleFormChange("printerRemark", "");
                         // Reset printer details
-                        handleFormChange("paperSize", "");
-                        handleFormChange("boxSize", "");
-                        handleFormChange("printerQty", "");
+                        handleFormChange("printerPaperSize", "");
+                        handleFormChange("paperQuality", "");
+                        handleFormChange("paperGsm", "");
+                        handleFormChange("printerPaperQty", "");
                       }
                     }}
                     disabled={isCompleted}
@@ -528,8 +534,8 @@ function PaperSelection({
                   <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
                     <TextField
                       label="Paper Size"
-                      value={formData.paperSize || ""}
-                      onChange={(e) => handlePrinterDetailChange("paperSize", e.target.value)}
+                      value={formData.printerPaperSize || ""}
+                      onChange={(e) => handlePrinterDetailChange("printerPaperSize", e.target.value)}
                       variant="outlined"
                       size="small"
                       fullWidth
@@ -537,24 +543,36 @@ function PaperSelection({
                       disabled={isCompleted}
                     />
                     <TextField
-                      label="Box Size"
-                      value={formData.boxSize || ""}
-                      onChange={(e) => handlePrinterDetailChange("boxSize", e.target.value)}
+                      label="Paper Quality"
+                      value={formData.paperQuality || ""}
+                      onChange={(e) => handlePrinterDetailChange("paperQuality", e.target.value)}
                       variant="outlined"
                       size="small"
                       fullWidth
-                      placeholder="e.g., 10x10x10 cm"
+                      placeholder="e.g., Art Paper, Glossy, Matte"
                       disabled={isCompleted}
                     />
                     <TextField
-                      label="Quantity"
+                      label="Paper GSM"
                       type="number"
-                      value={formData.printerQty || ""}
-                      onChange={(e) => handlePrinterDetailChange("printerQty", e.target.value)}
+                      value={formData.paperGsm || ""}
+                      onChange={(e) => handlePrinterDetailChange("paperGsm", e.target.value)}
                       variant="outlined"
                       size="small"
                       fullWidth
-                      placeholder="e.g., 1000"
+                      placeholder="e.g., 100, 120, 150"
+                      InputProps={{ inputProps: { min: 0 } }}
+                      disabled={isCompleted}
+                    />
+                    <TextField
+                      label="Paper Quantity"
+                      type="number"
+                      value={formData.printerPaperQty || ""}
+                      onChange={(e) => handlePrinterDetailChange("printerPaperQty", e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      placeholder="e.g., 1000 sheets"
                       InputProps={{ inputProps: { min: 0 } }}
                       disabled={isCompleted}
                     />
