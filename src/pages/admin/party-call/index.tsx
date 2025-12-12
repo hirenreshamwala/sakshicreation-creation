@@ -159,7 +159,7 @@ const LeadManagementPage: React.FC = () => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = getCompanyWisePermission(0);
-  const { staffId: si, status: s, reason: r, c, companyName: routerCompanyName } = router.query;
+  const { staffId: si, status: s, reason: r, c, companyName: routerCompanyName,startDate: st, endDate: e } = router.query;
 
   // Company tab से company name निकालें
   const selectedCompany = useMemo(() => {

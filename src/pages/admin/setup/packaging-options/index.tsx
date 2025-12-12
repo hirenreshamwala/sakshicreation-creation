@@ -60,10 +60,6 @@ const PackagingOptionsPage = () => {
   const dispatch = useAppDispatch();
   const { user } = useSelector((state: RootState) => state.auth)
   const { kantans } = useSelector((state: RootState) => state.kantans);
-  const { packagingOptions, loading, operationLoading, error, operationError } = useSelector(
-    (state: RootState) => state.packagingOptions
-  );
-  const companyId = user?.company?._id
 
   const {
     packagingOptions = [],
