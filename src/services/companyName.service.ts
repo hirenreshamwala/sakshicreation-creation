@@ -32,16 +32,32 @@ export const companyNameService = {
     }
   },
 
-  async getAllCompanyNames(): Promise<ApiResponse<CompanyName[]>> {
-    try {
-      const response: AxiosResponse<ApiResponse<CompanyName[]>> = await Request.get(
-        Endpoint.GET_ALL_COMPANY_NAME);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || "Failed to fetch company names");
-    }
-  },
-
+// services/companyName.service.ts (update getAllCompanyNames and add getCompanyNameFilters)
+async getAllCompanyNames(filters: Partial<CompanyNameFilters>): Promise<ApiResponse<CompanyName[]>> {
+  try {
+    const params = new URLSearchParams();
+    if (filters.page) params.append("page", String(filters.page));
+    if (filters.limit) params.append("limit", String(filters.limit));
+    if (filters.search) params.append("search", filters.search);
+    if (filters.companyNames?.length) filters.companyNames.forEach(v => params.append("companyNames", v));
+    if (filters.defaults?.length) filters.defaults.forEach(v => params.append("defaults", v));
+    const response: AxiosResponse<ApiResponse<CompanyName[]>> = await Request.get(
+      `${Endpoint.GET_ALL_COMPANY_NAME}?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to fetch company names");
+  }
+},
+async getCompanyNameFilters(): Promise<AvailableFilters> {
+  try {
+    const response = await Request.get(Endpoint.GET_COMPANY_FILTERS);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to load filters");
+  }
+}
+,
   async getCompanyNameById(id: string): Promise<ApiResponse<CompanyName>> {
     try {
       const response: AxiosResponse<ApiResponse<CompanyName>> = await Request.get(

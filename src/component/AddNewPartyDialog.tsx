@@ -282,9 +282,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       try {
         await dispatch(getAllStaffThunk());
         if (isEditMode && accountId) {
-          const result = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
-          
-          // Find the company from companies array
+          const result:any = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
+
           const resultCompany = companies.find(comp => comp._id === result.companyName);
           const isResultSakshiCreation = resultCompany?.companyName === "Sakshi Creation";
 
@@ -958,8 +957,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                       // Get unique areas with their _ids
                       const uniqueAreas = sameMarketMarkets
                         .filter(market => market.area && market._id) // Ensure area and _id exist
-                        .reduce((acc, market) => {
-                          const existing = acc.find(item => item.area === market.area);
+                        .reduce((acc:any, market:any) => {
+                          const existing = acc.find((item:any) => item.area === market.area);
                           if (!existing) {
                             acc.push({
                               _id: market._id, // Use market _id as value
@@ -969,7 +968,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                           return acc;
                         }, []);
 
-                      return uniqueAreas.map(item => ({
+                      return uniqueAreas.map((item:any) => ({
                         value: item._id, // Use _id as value
                         label: item.area // Show area as label
                       }));
@@ -1016,8 +1015,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                       // Get unique landmarks with their _ids
                       const uniqueLandmarks = sameAreaMarkets
                         .filter(market => market.landmark && market._id)
-                        .reduce((acc, market) => {
-                          const existing = acc.find(item => item.landmark === market.landmark);
+                        .reduce((acc:any, market:any) => {
+                          const existing = acc.find((item:any) => item.landmark === market.landmark);
                           if (!existing) {
                             acc.push({
                               _id: market._id, // Use market _id as value
@@ -1027,7 +1026,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                           return acc;
                         }, []);
 
-                      return uniqueLandmarks.map(item => ({
+                      return uniqueLandmarks.map((item:any) => ({
                         value: item._id, // Use _id as value
                         label: item.landmark // Show landmark as label
                       }));

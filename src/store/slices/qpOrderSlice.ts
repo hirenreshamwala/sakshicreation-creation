@@ -18,6 +18,7 @@ interface PaperField {
 interface Order {
   _id: string;
   orderNumber: string;
+  orderNo?: string;
   companyName: {
     _id: string;
     companyName: string;
@@ -28,6 +29,7 @@ interface Order {
     contactPerson?: string;
     personWhatsAppNo?: string;
     GSTNo?: string;
+    address?: any;
   };
   productItem: {
     _id: string;
@@ -36,14 +38,18 @@ interface Order {
   qty: number;
   remarks: string;
   filePaths: string[];
-  status: "Pending" | "Processing" | "Completed" | "Cancelled";
+  status: string;
   deliveryStatus?: "not_started" | "loading" | "in_transit" | "delivered" | "cancelled";
-  driver?: any; // You can create a proper Driver interface
+  driver?: any;
   loadingStartDate?: string | null;
   loadingEndDate?: string | null;
+  deliveryStartTime?: string | null;
+  deliveryEndTime?: string | null;
   createdBy: {
     _id: string;
     name: string;
+    firstName?: string;
+    lastName?: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -133,6 +139,36 @@ export const getAllQPOrdersThunk = createAsyncThunk(
       }
     } catch (error: any) {
       console.error("Redux: Get all QP orders error:", error);
+      return rejectWithValue(error.message || "Failed to fetch QP orders");
+    }
+  }
+);
+export const getAllQPOrdersForDriverThunk = createAsyncThunk(
+  "qpOrder/getAll",
+  async (filters: any, { rejectWithValue }) => {
+    try {
+      console.log("🔄 Redux: Fetching QP orders with filters:", filters);
+      
+      const response = await orderService.getAllOrdersForDriver(filters);
+      
+      if (response.success && Array.isArray(response.data)) {
+        return {
+          data: response.data,
+          totalCount: response.totalCount || 0,
+          pagination: response.pagination || {
+            currentPage: filters?.page || 1,
+            totalPages: Math.ceil((response.totalCount || response.data?.length || 0) / (filters?.pageSize || 10)),
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
+      } else {
+        return rejectWithValue(
+          response.message || "Invalid response format: QP orders array not found"
+        );
+      }
+    } catch (error: any) {
+      console.error("❌ Redux: Get all QP orders error:", error);
       return rejectWithValue(error.message || "Failed to fetch QP orders");
     }
   }
@@ -355,23 +391,35 @@ export const getBookletBinderQPOrdersThunk = createAsyncThunk(
 // Get Orders by Staff ID
 export const getQPOrdersByStaffIdThunk = createAsyncThunk(
   "qpOrder/getByStaffId",
-  async (id: string, { rejectWithValue }) => {
+  async ({ id, filters }: { id: string; filters: any }, { rejectWithValue }) => {
     try {
-      const response = await orderService.getOrdersByStaffId(id);
+      console.log("🔄 Redux: Fetching QP orders by staff with filters:", { id, filters });
+      
+      const response = await orderService.getOrdersByStaffId(id, filters);
+      
       if (response.success && Array.isArray(response.data)) {
-        return response.data;
+        return {
+          data: response.data,
+          totalCount: response.totalCount || 0,
+          pagination: response.pagination || {
+            currentPage: filters?.page || 1,
+            totalPages: Math.ceil((response.totalCount || response.data?.length || 0) / (filters?.pageSize || 10)),
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
       } else {
         return rejectWithValue(
           response.message || "Invalid response format: QP orders array not found"
         );
       }
     } catch (error: any) {
-      return rejectWithValue(
-        error.message || "Failed to fetch QP orders by staff ID"
-      );
+      console.error("❌ Redux: Get QP orders by staff ID error:", error);
+      return rejectWithValue(error.message || "Failed to fetch QP orders by staff ID");
     }
   }
 );
+
 
 export const updateQPOrderStatusThunk = createAsyncThunk(
   "qpOrder/updateStatus",
@@ -528,27 +576,29 @@ const qpOrderSlice = createSlice({
           state,
           action: PayloadAction<{
             data: Order[];
-            pagination: {
-              currentPage: number;
-              totalPages: number;
-              hasNext: boolean;
-              hasPrev: boolean;
-            };
+            totalCount: number;
+            pagination?: any;
           }>
         ) => {
           state.loading = false;
           state.orders = action.payload.data;
-          state.pagination = action.payload.pagination;
-          state.totalCount = action.payload.data.length;
+          state.totalCount = action.payload.totalCount;
+          state.pagination = action.payload.pagination || {
+            currentPage: 1,
+            totalPages: Math.ceil(action.payload.totalCount / 10),
+            hasNext: false,
+            hasPrev: false,
+          };
           state.error = null;
+          console.log(`✅ Loaded ${action.payload.data.length} QP orders, total: ${action.payload.totalCount}`);
         }
       )
       .addCase(getAllQPOrdersThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
         state.orders = [];
+        state.totalCount = 0;
       })
-
       // Get Order By ID
       .addCase(getQPOrderByIdThunk.pending, (state) => {
         state.loading = true;
@@ -765,16 +815,20 @@ const qpOrderSlice = createSlice({
       })
       .addCase(
         getQPOrdersByStaffIdThunk.fulfilled,
-        (state, action: PayloadAction<Order[]>) => {
+        (state, action: PayloadAction<{ data: Order[]; totalCount: number; pagination?: any }>) => {
           state.loading = false;
-          state.orders = action.payload;
+          state.orders = action.payload.data;
+          state.totalCount = action.payload.totalCount;
+          state.pagination = action.payload.pagination || state.pagination;
           state.error = null;
+          console.log(`✅ Loaded ${action.payload.data.length} QP orders for staff, total: ${action.payload.totalCount}`);
         }
       )
       .addCase(getQPOrdersByStaffIdThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
         state.orders = [];
+        state.totalCount = 0;
       })
       .addCase(updateQPOrderStatusThunk.pending, (state) => {
         state.loading = true;

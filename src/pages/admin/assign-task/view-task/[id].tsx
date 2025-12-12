@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store';
-import { getAllAssignTasksThunk, getAssignTaskByIdThunk } from '@/store/slices/assignTaskSlice';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import ThemeInput from '@/component/common_component/themeinput';
 import ThemeChip from '@/component/common_component/themechip';
@@ -12,6 +11,7 @@ import ThemeButton from '@/component/common_component/themebutton';
 import { MdTurnLeft } from 'react-icons/md';
 import Loader from '@/component/common_component/loader';
 import AssignTaskDialog from '@/component/assigntaskdailog';
+import { assignTaskService } from '@/services/assignTask.service';
 
 // Interface for Address
 interface Address {
@@ -97,7 +97,6 @@ interface PartyDetails {
   };
 
 }
-
 
 // Format date and time
 const formatDate = (dateString: string): string => {
@@ -203,7 +202,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true,
         </Box>
         <ThemeButton
           variant="outlined"
-          onClick={() => onReschedule(task._id)}
+          onClick={() => onReschedule(task)}
           sx={{ py: 0.6 }}
           startIcon={<MdTurnLeft style={{ fontSize: 18, color: '#98A2B3' }} />}
         >
@@ -309,56 +308,100 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true,
 // ViewTaskPage Component
 const ViewTaskPage: React.FC = () => {
   const router = useRouter();
-  const { id } = router.query;
+  const { id, taskId } = router.query;
   const dispatch: AppDispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { assignTasks, singleAssignTask, loading } = useSelector((state: RootState) => state.assignTasks);
+  const { loading } = useSelector((state: RootState) => state.assignTasks);
   const [openRescheduleDialog, setOpenRescheduleDialog] = useState(false);
   const [editTaskId, setEditTaskId] = useState<string | null>(null);
+  const [rowData, setRowData] = useState()
   const [partyDetails, setPartyDetails] = useState<PartyDetails | null>(null);
   const todayRef = useRef<HTMLDivElement>(null);
+  const [assignTasks, setAssignTasks] = useState([])
+  const [singleAssignTask, setSingleAssignTask] = useState()
 
   const isDriverRole = user?.role?.roleName?.toLowerCase() === 'driver';
 
-  useEffect(() => {
-    dispatch(getAllAssignTasksThunk());
-    if (id) {
-      dispatch(getAssignTaskByIdThunk(id as string));
-    }
-  }, [dispatch, id]);
+  const getTaskByPartyAndAccountMaster = async () => {
+    try {
+      const response = await assignTaskService.getPartyTask({
+        partyId: id
+      });
 
-  useEffect(() => {
-    if (singleAssignTask && assignTasks.length > 0) {
-      const fullTask = assignTasks.find((task) => task._id === singleAssignTask._id);
-      const party = typeof fullTask?.partyName === 'object' ? fullTask.partyName : fullTask?.accountMaster?.party;
-      const company = typeof fullTask?.companyName === 'object' ? fullTask.companyName : null;
+      const tasks = response?.data || [];
+      setAssignTasks(tasks);
 
-      if (party) {
-        setPartyDetails({
-          partyName: party?.partyName || 'Unknown',
-          companyName: typeof fullTask?.companyName === 'string' ? fullTask.companyName : undefined,
-          companyNameObj: company ? { companyName: company.companyName } : undefined,
-          address: party.address
-            ? `${party.address.unitNo}, ${party.address?.marketName?.marketName}, ${party.address?.landMark?.landmark || ''}, ${party.address?.area?.area} - ${party.address?.pincode?.pincode}`
-            : 'Address not available',
-          createdByObj: fullTask?.createdBy || singleAssignTask?.createdBy,
-          ownerMobileNo: party.ownerMobileNo || 'Not available',
-          ownerName: party.ownerName || 'Unknown',
-          ownerEmail: party.ownerEmail || 'Unknown',
-          contactPersonEmail: party.contactPersonEmail || 'Unknown',
-          contactForPaymentEmail: party.contactForPaymentEmail || 'Unknown',
-          personMobileNo: party.personMobileNo || 'Not available',
-          contactPerson: party.contactPerson || 'Not available',
-          contactMobileNo: party.contactMobileNo || 'Not available',
-          contactForPayment: party.contactForPayment || 'Not available',
-          marketName: party.address?.marketName?.marketName || 'Not available',
-          area: party.address?.area?.area || 'Not available',
-        });
-      } else {
-        setPartyDetails(null);
+      // Find selected task only once
+      const fullTask = tasks.find((task) => task._id === taskId);
+      console.log(fullTask, 'fullTask', tasks)
+      setSingleAssignTask(fullTask);
+
+      if (!fullTask) {
+        console.warn("Task not found for taskId:", taskId);
+        return;
       }
+
+      const party = fullTask.party || {};
+      const address = party.address || {};
+
+      // Handle company name (string or object)
+      const company =
+        typeof fullTask.companyName === "object" ? fullTask.companyName : null;
+
+      const formattedAddress = party.address
+        ? [
+          address.unitNo,
+          address.marketName?.marketName,
+          address.landMark?.landmark,
+          address.area?.area,
+          address.pincode?.pincode && `- ${address.pincode.pincode}`,
+        ]
+          .filter(Boolean)
+          .join(", ")
+        : "Address not available";
+
+      setPartyDetails({
+        partyName: party.partyName || "Unknown",
+        companyName:
+          typeof fullTask.companyName === "string"
+            ? fullTask.companyName
+            : undefined,
+        companyNameObj: company
+          ? { companyName: company.companyName }
+          : undefined,
+
+        address: formattedAddress,
+
+        createdByObj: fullTask.createdBy || null,
+
+        ownerMobileNo: party.ownerMobileNo || "Not available",
+        ownerName: party.ownerName || "Unknown",
+        ownerEmail: party.ownerEmail || "Unknown",
+
+        contactPersonEmail: party.contactPersonEmail || "Unknown",
+        contactForPaymentEmail: party.contactForPaymentEmail || "Unknown",
+
+        personMobileNo: party.personMobileNo || "Not available",
+        contactPerson: party.contactPerson || "Not available",
+        contactMobileNo: party.contactMobileNo || "Not available",
+        contactForPayment: party.contactForPayment || "Not available",
+
+        marketName: address.marketName?.marketName || "Not available",
+        area: address.area?.area || "Not available",
+      });
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
     }
-  }, [singleAssignTask, assignTasks]);
+  };
+
+
+  console.log(partyDetails, 'partyDetails')
+
+  useEffect(() => {
+    if (id && taskId)
+      getTaskByPartyAndAccountMaster()
+
+  }, [dispatch, id]);
 
   // Filter tasks to only show those for this party
   const partyTasks = assignTasks.filter((task) => {
@@ -431,8 +474,9 @@ const ViewTaskPage: React.FC = () => {
   }, [groupedCompletedTasks]);
 
   // Handle reschedule button click
-  const handleReschedule = (taskId: string) => {
-    setEditTaskId(taskId);
+  const handleReschedule = (task: any) => {
+    setRowData(task)
+    setEditTaskId(task._id);
     setOpenRescheduleDialog(true);
   };
 
@@ -633,7 +677,9 @@ const ViewTaskPage: React.FC = () => {
         open={openRescheduleDialog}
         onClose={handleDialogClose}
         taskId={editTaskId}
-        refreshData={() => dispatch(getAllAssignTasksThunk())}
+        accountMasters={[]}
+        rowData={rowData}
+        refreshData={() => getTaskByPartyAndAccountMaster()}
       />
     </Box>
   );

@@ -2,6 +2,7 @@ const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
 const Endpoint = {
   LOGIN: `${BaseURL}/api/staff/login`,
   CREATE_STAFF: `${BaseURL}/api/staff/create`,
+   GET_STAFF_FILTERS:  `${BaseURL}/api/staff/filters`, 
   GET_ALL_STAFF: `${BaseURL}/api/staff/getall`,
   GET_STAFF_BY_ID: `${BaseURL}/api/staff/getbyid`,
   UPDATE_STAFF: `${BaseURL}/api/staff/update`,
@@ -70,13 +71,13 @@ const Endpoint = {
   GET_INVENTORY_BOX: `${BaseURL}/api/inventory/getbox`,
 
   GETALLOWSTOCKS: `${BaseURL}/api/lowstock/getall`,
-GETLOWSTOCKBYID: (id: string) => `${BaseURL}/api/lowstock/getbyid/${id}`,
-CREATELOWSTOCK: `${BaseURL}/api/lowstock/create`,
-UPDATELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/update/${id}`,
-DELETELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/delete/${id}`,
-CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
+  GETLOWSTOCKBYID: (id: string) => `${BaseURL}/api/lowstock/getbyid/${id}`,
+  CREATELOWSTOCK: `${BaseURL}/api/lowstock/create`,
+  UPDATELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/update/${id}`,
+  DELETELOWSTOCK: (id: string) => `${BaseURL}/api/lowstock/delete/${id}`,
+  CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
 
-  
+
   //staff
   GET_ROLE: `${BaseURL}/api/staff/getrol`,
 
@@ -92,6 +93,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
 
   //productitem
   CREATE_PRODUCT_ITEM: `${BaseURL}/api/productItem/create`,
+     GET_PRODUCT_ITEM_FILTERS:  `${BaseURL}/api/productItem/filters`, 
   DELETE_PRODUCT_ITEM: `${BaseURL}/api/productItem/delete`,
   GET_ALL_PRODUCT_ITEM: `${BaseURL}/api/productItem/getall`,
   GET_PRODUCT_ITEM_WITH_ID: `${BaseURL}/api/productItem/update`,
@@ -102,6 +104,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   //company name 
 
   CREATE_COMPANY_NAME: `${BaseURL}/api/company/create`,
+   GET_COMPANY_FILTERS:  `${BaseURL}/api/company/filters`, 
   GET_ALL_COMPANY_NAME: `${BaseURL}/api/company/getallCompany`,
   GET_COMPANY_NAME_WITH_ID: `${BaseURL}/api/company/getbyid`,
   UPDATE_COMPANY_NAME: `${BaseURL}/api/company/update`,
@@ -126,6 +129,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   GET_PRINTER_BINDER: `${BaseURL}/api/orders/binder`,
   GET_BOOKLET_BINDER: `${BaseURL}/api/orders/bookletBinder`,
   GET_ORDER_BY_STAFF_ID: `${BaseURL}/api/orders/getbystaffid`,
+  GET_ORDER_FILTER_OPTIONS: `${BaseURL}/api/orders/filter-options`,
 
   //performance invoice
   GET_ALL_PERFORMANCE_INVOICES: `${BaseURL}/api/performance-invoice/getall`,
@@ -140,6 +144,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   // Role endpoints
   CREATE_ROLE: `${BaseURL}/api/role/create`,
   GET_ALL_ROLES: `${BaseURL}/api/role/getall`,
+  GET_ROLE_FILTERS: `${BaseURL}/api/role/filters`,
   GET_ROLE_BY_ID: `${BaseURL}/api/role/getbyid`,
   UPDATE_ROLE: `${BaseURL}/api/role/updatebyid`,
   DELETE_ROLE: `${BaseURL}/api/role/delete`,
@@ -155,6 +160,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
 
   // New vendor endpoints
   GET_ALL_VENDORS: `${BaseURL}/api/vendor/getall`,
+  GET_ALL_VENDORS_FILTERS: `${BaseURL}/api/vendor/filters`,
   GET_VENDOR_BY_ID: `${BaseURL}/api/vendor/getbyid`,
   CREATE_VENDOR: `${BaseURL}/api/vendor/create`,
   UPDATE_VENDOR: `${BaseURL}/api/vendor/update`,
@@ -184,7 +190,7 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   UPDATE_BINDER_TYPE: `${BaseURL}/api/bindertype/update`,
   DELETE_BINDER_TYPE: `${BaseURL}/api/bindertype/delete`,
   BULK_CREATE_BINDER_TYPES: `${BaseURL}/api/bindertype/bulk`,
-
+   GET_BINDER_TYPE_FILTERS:  `${BaseURL}/api/bindertype/filters`,
 
   // quality packaging orders 
   CREATE_QP_ORDER: `${BaseURL}/api/qporder/create`,
@@ -198,9 +204,10 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   SEND_BOX_FROM_GODOWN_OR_FACTORY: `${BaseURL}/api/qporder/sendboxfromgodownorfactory`,
   DRIVER_SELECT_AND_INVENTORY_MANAGE: `${BaseURL}/api/qporder/driverselection`,
   MARK_ORDER_AS_URGENT: `${BaseURL}/api/qporder/mark-urgent`,
-
+  GET_ALL_QP_ORDER_FOR_DRIVER: `${BaseURL}/api/qporder/getalldriver`,
   CREATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/create`,
   UPDATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/update`,
+  GET_PACKAGING_FILTERS: `${BaseURL}/api/packagingOptions/filters`,
   DELETE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/delete`,
   GET_ALL_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/getall`,
   BULK_UPLOAD_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/bulk`,
@@ -216,12 +223,14 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
 
   CREATE_MARKET: `${BaseURL}/api/market/create`,
   GET_ALL_MARKETS: `${BaseURL}/api/market/getall`,
+  GET_MARKET_FILTERS: `${BaseURL}/api/market/filters`,
   UPDATE_MARKET: `${BaseURL}/api/market/update`,
   DELETE_MARKET: `${BaseURL}/api/market/delete`,
   BULK_UPLOAD_MARKETS: `${BaseURL}/api/market/bulk`,
 
   CREATE_KANTAN: `${BaseURL}/api/kantan/create`,
   GET_ALL_KANTANS: `${BaseURL}/api/kantan/getall`,
+  GET_KANTAN_FILTERS: `${BaseURL}/api/kantan/filters`,
   UPDATE_KANTAN: `${BaseURL}/api/kantan/update`,
   DELETE_KANTAN: `${BaseURL}/api/kantan/delete`,
   BULK_UPLOAD_KANTANS: `${BaseURL}/api/kantan/bulk`,
@@ -244,5 +253,21 @@ CHECKLOWSTOCKSTATUS: `${BaseURL}/api/lowstock/check-status`,
   DELETE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/delete`,
   DELETE_MULTIPLE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/multi-delete`,
 
+
+  // filteres data 
+  ACCOUNT_MASTER_FILTER: `${BaseURL}/api/account-master/filter-options`,
+  PARTY_CALL_FILTER: `${BaseURL}/api/lead/get-filter`,
+  ASSIGN_TASK_FILTER: `${BaseURL}/api/assign-task/get-filter`,
+
+  EXPORT_ACCOUNT_MASTERS_EXCEL: `${BaseURL}/api/account-master/download-excel`,
+
+  GET_QP_ORDER_FILTER_OPTIONS: `${BaseURL}/api/qporder/filter-options`,
+  GET_COMPLAIN_FILTER_OPTIONS: `${BaseURL}/api/complain/filter-options`,
+  GET_PAYMENT_FOLDER_FILTER_OPTIONS: `${BaseURL}/api/payment-folders/filter-options`,
+  GET_INVENTORY_FILTER_OPTIONS: `${BaseURL}/api/inventory/filter-options`,
+  GET_ALL_INVENTORY_FOR_QUALITY: `${BaseURL}/api/inventory/getallForQuality`,
+  GET_DATA_BY_PARTY_AND_ACCOUNTMASTER: `${BaseURL}/api/lead/get-data-by-party-and-accountmaster`,
+  GET_TASK_BY_PARTY_AND_ACCOUNTMASTER: `${BaseURL}/api/assign-task/get-task-by-party-and-accountmaster`,
+  GET_PARTY_TASK: `${BaseURL}/api/assign-task/get-party-task`,
 };
 export default Endpoint;

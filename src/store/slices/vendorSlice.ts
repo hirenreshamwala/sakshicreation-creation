@@ -1,27 +1,136 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import {
-  vendorService,
-  Vendor,
-  CreateVendor,
-  UpdateVendor,
-} from '@/services/vendor.service';
+// store/slices/vendorSlice.ts
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { vendorService, Vendor } from "@/services/vendor.service";
+
+// Types
+interface Pagination {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+}
+
+interface VendorFilters {
+  page: number;
+  limit: number;
+  search: string;
+  companyNames?: string[];
+  vendorNames?: string[];
+  contactNumbers?: string[];
+  whatsappNumbers?: string[];
+  gstNumbers?: string[];
+  address?: string[];
+
+
+}
+
+interface AvailableFilters {
+  companyNames: string[];
+  vendorNames: string[];
+  contactNumbers: string[];
+  whatsappNumbers: string[];
+  gstNumbers: string[];
+  address?: string[];
+}
+
+interface VendorsState {
+  vendors: Vendor[];
+  loading: boolean;
+  error: string | null;
+  operationLoading: boolean;     // for create/update/delete/bulk
+  operationError: string | null;
+
+  pagination: Pagination | null;
+  filters: VendorFilters;
+  availableFilters: AvailableFilters;
+}
+
+const initialState: VendorsState = {
+  vendors: [],
+  loading: false,
+  error: null,
+  operationLoading: false,
+  operationError: null,
+
+  pagination: null,
+  filters: {
+    page: 1,
+    limit: 10,
+    search: "",
+  },
+  availableFilters: {
+    companyNames: [],
+    vendorNames: [],
+    contactNumbers: [],
+    whatsappNumbers: [],
+    gstNumbers: [],
+    address: [],
+  },
+};
+
+// Thunks
 
 export const getAllVendorsThunk = createAsyncThunk(
-  'vendors/getAll',
-  async (_, { rejectWithValue }) => {
+  "vendors/getAll",
+  async (filters: Partial<VendorFilters> = {}, { rejectWithValue }) => {
     try {
-      const response = await vendorService.getVendors();
-      if (response.success && Array.isArray(response.data)) {
-        return response.data;
-      } else {
-        return rejectWithValue('Invalid response format: data array not found');
+      const params = new URLSearchParams();
+      if (filters.page) params.append("page", String(filters.page));
+      if (filters.limit) params.append("limit", String(filters.limit));
+      if (filters.search) params.append("search", filters.search);
+      if (filters.companyNames?.length) {
+        filters.companyNames.forEach((name) =>
+          params.append("companyNames", name)
+        );
       }
+      if (filters.vendorNames?.length) {
+        filters.vendorNames.forEach((name) =>
+          params.append("vendorNames", name)
+        );
+      } 
+      if (filters.contactNumbers?.length) {
+        filters.contactNumbers.forEach((number) =>
+          params.append("contactNumbers", number)
+        );
+      }
+      if (filters.whatsappNumbers?.length) {
+        filters.whatsappNumbers.forEach((number) =>
+          params.append("whatsappNumbers", number)
+        );
+      }
+      if (filters.gstNumbers?.length) {
+        filters.gstNumbers.forEach((gst) =>
+          params.append("gstNumbers", gst)
+        );
+      }
+      if (filters.address?.length) {
+        filters.address.forEach((addr) =>
+          params.append("address", addr)
+        );
+      }
+        
+
+      const response = await vendorService.getVendors(params.toString());
+      return response; // { data: Vendor[], pagination: Pagination }
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch vendors');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch vendors"
+      );
     }
   }
 );
 
+export const getVendorFiltersThunk = createAsyncThunk(
+  "vendors/getFilters",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await vendorService.getVendorFilters();
+      return response; // { companyNames: string[] }
+    } catch (error: any) {
+      return rejectWithValue("Failed to load filters");
+    }
+  }
+);
 export const getVendorByIdThunk = createAsyncThunk(
   'vendors/getById',
   async (id: string, { rejectWithValue }) => {
@@ -85,55 +194,45 @@ export const bulkCreateVendorsThunk = createAsyncThunk(
   }
 );
 
-interface VendorState {
-  vendors: Vendor[];
-  singleVendor: Vendor | null;
-  loading: boolean;
-  error: string | null;
-  successMessage: string | null;
-}
 
-const initialState: VendorState = {
-  vendors: [],
-  singleVendor: null,
-  loading: false,
-  error: null,
-  successMessage: null,
-};
-
+// Slice
 const vendorSlice = createSlice({
   name: 'vendors',
   initialState,
   reducers: {
+    setVendorFilters: (state, action: PayloadAction<Partial<VendorFilters>>) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
+    clearVendorFilters: (state) => {
+      state.filters = { page: 1, limit: 10, search: "" };
+    },
     clearError(state) {
       state.error = null;
-    },
-    clearSuccessMessage(state) {
-      state.successMessage = null;
-    },
-    clearSingleVendor(state) {
-      state.singleVendor = null;
+      state.operationError = null;
     },
   },
   extraReducers: (builder) => {
     builder
+      // Get All Vendors (with pagination + filters)
       .addCase(getAllVendorsThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        getAllVendorsThunk.fulfilled,
-        (state, action: PayloadAction<Vendor[]>) => {
-          state.loading = false;
-          state.vendors = action.payload;
-        }
-      )
+      .addCase(getAllVendorsThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.vendors = action.payload.data;
+        state.pagination = action.payload.pagination;
+      })
       .addCase(getAllVendorsThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.vendors = [];
       })
-      .addCase(getVendorByIdThunk.pending, (state) => {
+
+      // Filters
+      .addCase(getVendorFiltersThunk.fulfilled, (state, action) => {
+        state.availableFilters = action.payload;
+      })
+         .addCase(getVendorByIdThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -149,71 +248,56 @@ const vendorSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
+
+      // Create
       .addCase(createVendorThunk.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.operationLoading = true;
+        state.operationError = null;
       })
-      .addCase(
-        createVendorThunk.fulfilled,
-        (state, action: PayloadAction<Vendor>) => {
-          state.loading = false;
-          state.vendors = [...state.vendors, action.payload];
-          state.successMessage = 'Vendor created successfully';
-        }
-      )
+      .addCase(createVendorThunk.fulfilled, (state, action) => {
+        state.operationLoading = false;
+        state.vendors.unshift(action.payload); // add to top
+      })
       .addCase(createVendorThunk.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        state.operationLoading = false;
+        state.operationError = action.payload as string;
       })
+
+      // Update
       .addCase(updateVendorThunk.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.operationLoading = true;
       })
-      .addCase(
-        updateVendorThunk.fulfilled,
-        (state, action: PayloadAction<Vendor>) => {
-          state.loading = false;
-          state.vendors = state.vendors.map((vendor) =>
-            vendor._id === action.payload._id ? action.payload : vendor
-          );
-          state.successMessage = 'Vendor updated successfully';
-          state.error = null;
-        }
-      )
+      .addCase(updateVendorThunk.fulfilled, (state, action) => {
+        state.operationLoading = false;
+        const index = state.vendors.findIndex((v) => v._id === action.payload._id);
+        if (index !== -1) state.vendors[index] = action.payload;
+      })
       .addCase(updateVendorThunk.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        state.operationLoading = false;
+        state.operationError = action.payload as string;
       })
+
+      // Delete
       .addCase(deleteVendorThunk.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.operationLoading = true;
       })
-      .addCase(
-        deleteVendorThunk.fulfilled,
-        (state, action: PayloadAction<string>) => {
-          state.loading = false;
-          state.vendors = state.vendors.filter(
-            (vendor) => vendor._id !== action.payload
-          );
-          state.successMessage = 'Vendor deleted successfully';
-        }
-      )
+      .addCase(deleteVendorThunk.fulfilled, (state, action) => {
+        state.operationLoading = false;
+        state.vendors = state.vendors.filter((v) => v._id !== action.payload);
+      })
       .addCase(deleteVendorThunk.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        state.operationLoading = false;
+        state.operationError = action.payload as string;
       })
+
+      // Bulk Upload
       .addCase(bulkCreateVendorsThunk.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
-      .addCase(
-        bulkCreateVendorsThunk.fulfilled,
-        (state, action: PayloadAction<Vendor[]>) => {
-          state.loading = false;
-          state.vendors = [...state.vendors, ...action.payload];
-          state.successMessage = 'Bulk vendors created successfully';
-        }
-      )
+      .addCase(bulkCreateVendorsThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.vendors = [...action.payload, ...state.vendors]; // prepend new ones
+      })
       .addCase(bulkCreateVendorsThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
@@ -221,6 +305,5 @@ const vendorSlice = createSlice({
   },
 });
 
-export const { clearError, clearSuccessMessage, clearSingleVendor } =
-  vendorSlice.actions;
+export const { setVendorFilters, clearVendorFilters, clearError } = vendorSlice.actions;
 export default vendorSlice.reducer;

@@ -41,18 +41,26 @@ interface BasicTableProps<T> {
   showSearch?: boolean;
   showFillter?: boolean;
   showExcelDownload?: boolean;
-  excelHeaders?: string[]; // New prop for custom Excel headers
-  excelData?: { [key: string]: any }[]; // New prop for custom Excel data
+  excelHeaders?: string[];
+  excelData?: { [key: string]: any }[];
   onSelectAll?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSelectRow?: (id: string) => void;
   selectedRows?: string[];
+
+  // Server-side props
+  serverSide?: boolean;
   totalCount?: number;
   pagination?: {
     currentPage: number;
     totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
+    totalItems: number;
+    itemsPerPage: number;
   };
+  onPageChange?: (page: number) => void;
+  onSearchChange?: (search: string) => void;
+  onFilterChange?: (filters: { [key: string]: string[] }) => void;
+  onDateChange?: (startDate: string | null, endDate: string | null) => void;
+  availableFilters?: Record<string, string[]>; 
   renderExpandedRow?: (row: T) => React.ReactNode;
   showHeaderCheckbox?: boolean;
   getRowColor?: (row: T) => string;
@@ -101,25 +109,37 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
   onSelectRow,
   showHeaderCheckbox = true,
   selectedRows = [],
-  totalCount = rowData.length,
-  pagination = {
-    currentPage: 1,
-    totalPages: Math.ceil(rowData.length / 10),
-    hasNext: rowData.length > 10,
-    hasPrev: false,
-  },
+
+  // Server-side props
+  serverSide = false,
+  totalCount = 0,
+  pagination,
+  onPageChange,
+  onSearchChange,
+  onFilterChange,
+  onDateChange,
+  availableFilters = { roles: [], companies: [], joiningDates: [] },
+
   renderExpandedRow,
   getRowColor,
 }: BasicTableProps<T>) => {
-  const [page, setPage] = useState(pagination.currentPage - 1 || 0);
+  console.log("availableFilters",availableFilters);
+  // Client-side state
+  const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms delay
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+
+  // Use server-side or client-side pagination
+  const currentPage = serverSide ? (pagination?.currentPage || 1) - 1 : page;
+  const itemsPerPage = serverSide ? (pagination?.itemsPerPage || 10) : rowsPerPage;
+  const totalItems = serverSide ? totalCount : rowData.length;
+  const totalPages = serverSide ? (pagination?.totalPages || 0) : Math.ceil(totalItems / itemsPerPage);
 
   // Check if date range is selected
   const isDateRangeSelected = useMemo(() => {
@@ -130,7 +150,10 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
   const clearDateRange = useCallback(() => {
     setStartDate(null);
     setEndDate(null);
-  }, []);
+    if (serverSide && onDateChange) {
+      onDateChange(null, null);
+    }
+  }, [serverSide, onDateChange]);
 
   const getRowBackgroundColor = useCallback((row: T): string => {
     if (getRowColor) {
@@ -219,6 +242,29 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
         case "Last Status Change":
           key = "lastStatusChangeDate" as keyof T;
           break;
+        case "Role":
+          key = "role" as keyof T;
+          break;
+        case "Staff": // ADD THIS FOR STAFF NAME FILTER
+          key = "name" as keyof T;
+          break;
+        // Inside filterFieldToKey mapping in BasicTable.tsx
+        case "Date of Joining":
+        case "Joining Date":
+          key = "joiningDate" as keyof T;
+          break;
+        case "Market Name":
+          key = "marketName" as keyof T;
+          break;
+        case "Area":
+          key = "area" as keyof T;
+          break;
+        case "Landmark":
+          key = "landmark" as keyof T;
+          break;
+        case "Pincode":
+          key = "pincode" as keyof T;
+          break;
         default:
           key = col.id as keyof T;
       }
@@ -227,43 +273,37 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
     return mapping;
   }, [tableHeader]);
 
-  // Compute unique values for the selected filter field
-  const uniqueValues = useMemo(() => {
-    if (!selectedFilterField) return [];
-    const key = filterFieldToKey[selectedFilterField];
-    if (!key) return [];
+  // Update the uniqueValues function to handle staff names
+ const uniqueValues = useMemo(() => {
+  if (!selectedFilterField) return [];
 
-    const values = rowData.map((row) => {
-      if (key === "company") {
-        return (row[key] as any)?.name || "N/A";
-      }
-      if (key === "market") {
-        return (row[key] as any)?.marketName || "N/A";
-      }
-      if (key === "area") {
-        return (row[key] as any)?.area || "N/A";
-      }
-      if (key === "driverEmail") {
-        // For driver email, show only the part before @ in filter dropdown
-        const email = row[key] as string;
-        if (!email || email === "Not Started Delivery") return "Not Started Delivery";
-        return email?.split("@")[0];
-      }
-      if (key === "orderid") {
-        return String(row[key] || "N/A");
-      }
-      if (key === "lastStatusChangeDate") {
-        const dateValue = row[key];
-        if (!dateValue) return "N/A";
-        return moment(dateValue).format('DD/MM/YYYY');
-      }
-      return String(row[key] || "N/A");
-    });
-    return Array.from(new Set(values)).sort();
-  }, [rowData, selectedFilterField, filterFieldToKey]);
+  // SERVER-SIDE: Use availableFilters dynamically by column label
+if (serverSide && availableFilters) {
+    return availableFilters[selectedFilterField] || [];
+  }
+  // CLIENT-SIDE FALLBACK (if needed later)
+  const key = filterFieldToKey[selectedFilterField];
+  if (!key) return [];
 
-  // Filter rows based on search query, date range, and multiple filters
+  const values = rowData.map((row) => {
+    const value = (row as any)[key];
+    if (value === null || value === undefined) return "N/A";
+    return String(value);
+  });
+
+  return Array.from(new Set(values)).sort();
+}, [
+  selectedFilterField,
+  serverSide,
+  availableFilters,
+]);
+
+  // Update the filter logic for client-side to handle multiple filters
   const filteredRows = useMemo(() => {
+    if (serverSide) {
+      return rowData; // Server handles filtering
+    }
+
     let filtered = rowData;
 
     // Apply search query filter (using debounced value)
@@ -301,12 +341,12 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
       });
     }
 
-    // Apply multiple filters
+    // Apply multiple filters - UPDATED FOR MULTIPLE FILTERS
     if (Object.keys(filters).length > 0) {
       filtered = filtered.filter((row) =>
         Object.entries(filters).every(([field, values]) => {
           const key = filterFieldToKey[field];
-          if (!key) return true;
+          if (!key || values.length === 0) return true;
 
           let value;
           if (key === "company") {
@@ -316,7 +356,6 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
           } else if (key === "area") {
             value = (row[key] as any)?.area;
           } else if (key === "driverEmail") {
-            // For driver email filter, compare with the part before @
             const email = row[key] as string;
             if (!email || email === "Not Started Delivery") {
               value = "Not Started Delivery";
@@ -327,6 +366,10 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
             value = String(row[key] || "N/A");
           } else if (key === "lastStatusChangeDate") {
             value = row[key] ? moment(row[key] as string).format('DD/MM/YYYY') : "N/A";
+          } else if (key === "role") {
+            value = (row[key] as any)?.roleName || "N/A";
+          } else if (key === "name") {
+            value = (row as any).name || `${(row as any).firstName || ''} ${(row as any).lastName || ''}`.trim();
           } else {
             value = row[key];
           }
@@ -337,24 +380,62 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
     }
 
     return filtered;
-  }, [rowData, debouncedSearchQuery, startDate, endDate, filters, filterFieldToKey]);
+  }, [rowData, debouncedSearchQuery, startDate, endDate, filters, filterFieldToKey, serverSide]);
 
   // Use filteredRows length for pagination when using client-side filtering
-  const pageCount = Math.ceil(filteredRows.length / rowsPerPage);
-  const paginatedRows = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const pageCount = serverSide ? totalPages : Math.ceil(filteredRows.length / itemsPerPage);
+  const paginatedRows = serverSide ? rowData : filteredRows.slice(currentPage * itemsPerPage, currentPage * itemsPerPage + itemsPerPage);
 
-  // Reset page when filters or search change
+  // Reset page when filters or search change (client-side only)
   useEffect(() => {
-    setPage(0);
-  }, [debouncedSearchQuery, filters, startDate, endDate]);
+    if (!serverSide) {
+      setPage(0);
+    }
+  }, [debouncedSearchQuery, filters, startDate, endDate, serverSide]);
+
+  // Handle page change
+  const handlePageChange = useCallback((newPage: number) => {
+    if (serverSide && onPageChange) {
+      onPageChange(newPage + 1); // Server uses 1-based indexing
+    } else {
+      setPage(newPage);
+    }
+  }, [serverSide, onPageChange]);
+
+  // Handle search change
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    if (serverSide && onSearchChange) {
+      onSearchChange(value);
+    }
+  }, [serverSide, onSearchChange]);
+
+  // Handle date change
+  const handleDateChange = useCallback((start: string | null, end: string | null) => {
+    setStartDate(start);
+    setEndDate(end);
+    if (serverSide && onDateChange) {
+      onDateChange(start, end);
+    }
+  }, [serverSide, onDateChange]);
+
+  // Update the filter change handler to support multiple filters
+  const handleFilterChange = useCallback((newFilters: { [key: string]: string[] }) => {
+    setFilters(newFilters);
+    if (serverSide && onFilterChange) {
+      onFilterChange(newFilters);
+    }
+  }, [serverSide, onFilterChange]);
+
 
   // Handle rows per page change
   const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newRowsPerPage = parseInt(event.target.value);
     setRowsPerPage(newRowsPerPage);
-    setPage(0);
+    if (!serverSide) {
+      setPage(0);
+    }
   };
-
 
   const [colWidths, setColWidths] = useState<number[]>([]);
 
@@ -370,25 +451,25 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
         0
       );
       const length = Math.max(headerLen, maxRowLen);
-      return Math.min(110, Math.max(60, length * 2)); // heuristic 7px per char
+      return Math.min(110, Math.max(60, length * 2));
     });
     setColWidths(newWidths);
   }, [tableHeader, rowData]);
 
-
   // Excel download function
   const handleExcelDownload = useCallback(() => {
-    // Use custom excelHeaders and excelData if provided, otherwise fall back to table data
+    const dataToExport = serverSide ? rowData : filteredRows;
+
     const headers = excelHeaders
       ? excelHeaders
       : tableHeader
         .filter((col) => col.id !== "checkbox" && col.id !== "action")
         .map((col) => col.label);
 
-    const array = filteredRows.map((row) => id ? row.id : (row as any)._id);
+    const array = dataToExport.map((row) => id ? row.id : (row as any)._id);
     const data = excelData
       ? excelData?.filter((item) => array.includes(item.id))
-      : filteredRows.map((row) => {
+      : dataToExport.map((row) => {
         const rowData: { [key: string]: any } = {};
         tableHeader
           .filter((col) => col.id !== "checkbox" && col.id !== "action")
@@ -399,6 +480,8 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
               value = (row[key] as any)?.name || "N/A";
             } else if (key === "lastStatusChangeDate") {
               value = row[key] ? moment(row[key] as string).format('DD/MM/YYYY HH:mm') : "N/A";
+            } else if (key === "role") {
+              value = (row[key] as any)?.roleName || "N/A";
             } else {
               value = value ?? "N/A";
             }
@@ -407,16 +490,14 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
         return rowData;
       });
 
-    // Create worksheet
     const worksheet = XLSX.utils.json_to_sheet(data);
     XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "TableData");
     XLSX.writeFile(workbook, `${title || "Table"}.xlsx`);
-  }, [excelHeaders, excelData, filteredRows, tableHeader, filterFieldToKey, title]);
+  }, [excelHeaders, excelData, serverSide, rowData, filteredRows, tableHeader, filterFieldToKey, title]);
 
   const getPaginationItems = () => {
-    const maxVisiblePages = 5;
     const items: React.ReactNode[] = [];
 
     // Always show first page
@@ -425,11 +506,11 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
         key={0}
         variant="outlined"
         size="small"
-        onClick={() => setPage(0)}
+        onClick={() => handlePageChange(0)}
         sx={{
-          background: page === 0 ? "#F9F5FF" : "transparent",
-          color: page === 0 ? "#7F56D9" : "#667085",
-          fontWeight: page === 0 ? 600 : 500,
+          background: currentPage === 0 ? "#F9F5FF" : "transparent",
+          color: currentPage === 0 ? "#7F56D9" : "#667085",
+          fontWeight: currentPage === 0 ? 600 : 500,
           borderRadius: "6px",
           textTransform: "none",
         }}
@@ -439,7 +520,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
     );
 
     // Add ellipsis if needed after first page
-    if (page > 3) {
+    if (currentPage > 3) {
       items.push(
         <Typography key="ellipsis-start" sx={{ alignSelf: "center", px: 1, color: "#667085" }}>
           ...
@@ -448,8 +529,8 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
     }
 
     // Calculate the range of pages to show around the current page
-    const start = Math.max(1, page - 1);
-    const end = Math.min(pageCount - 2, page + 1);
+    const start = Math.max(1, currentPage - 1);
+    const end = Math.min(pageCount - 2, currentPage + 1);
 
     for (let i = start; i <= end; i++) {
       items.push(
@@ -457,11 +538,11 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
           key={i}
           variant="outlined"
           size="small"
-          onClick={() => setPage(i)}
+          onClick={() => handlePageChange(i)}
           sx={{
-            background: page === i ? "#F9F5FF" : "transparent",
-            color: page === i ? "#7F56D9" : "#667085",
-            fontWeight: page === i ? 600 : 500,
+            background: currentPage === i ? "#F9F5FF" : "transparent",
+            color: currentPage === i ? "#7F56D9" : "#667085",
+            fontWeight: currentPage === i ? 600 : 500,
             borderRadius: "6px",
             textTransform: "none",
           }}
@@ -472,7 +553,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
     }
 
     // Add ellipsis if needed before last page
-    if (page < pageCount - 4) {
+    if (currentPage < pageCount - 4) {
       items.push(
         <Typography key="ellipsis-end" sx={{ alignSelf: "center", px: 1, color: "#667085" }}>
           ...
@@ -487,11 +568,11 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
           key={pageCount - 1}
           variant="outlined"
           size="small"
-          onClick={() => setPage(pageCount - 1)}
+          onClick={() => handlePageChange(pageCount - 1)}
           sx={{
-            background: page === pageCount - 1 ? "#F9F5FF" : "transparent",
-            color: page === pageCount - 1 ? "#7F56D9" : "#667085",
-            fontWeight: page === pageCount - 1 ? 600 : 500,
+            background: currentPage === pageCount - 1 ? "#F9F5FF" : "transparent",
+            color: currentPage === pageCount - 1 ? "#7F56D9" : "#667085",
+            fontWeight: currentPage === pageCount - 1 ? 600 : 500,
             borderRadius: "6px",
             textTransform: "none",
           }}
@@ -507,6 +588,9 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
   const toggleExpandRow = (rowId: string) => {
     setExpandedRowId(expandedRowId === rowId ? null : rowId);
   };
+
+  const displayRows = serverSide ? rowData : paginatedRows;
+  const displayTotal = serverSide ? totalItems : filteredRows.length;
 
   return (
     <Paper elevation={0} sx={{ width: "100%", overflow: "hidden", p: 0, maxWidth: "100%" }}>
@@ -541,8 +625,8 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
               <DateRangePicker
                 startDate={startDate}
                 endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
+                onStartDateChange={(date) => handleDateChange(date, endDate)}
+                onEndDateChange={(date) => handleDateChange(startDate, date)}
               />
 
               {/* Clear Date Range Button */}
@@ -587,9 +671,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
                   placeholder="Search..."
                   fullWidth
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                  }}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   sx={{ ml: 1, fontSize: 14 }}
                 />
               </Box>
@@ -601,7 +683,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
                 <FilterDropdown
                   filterOptions={filterOptions}
                   uniqueValues={uniqueValues}
-                  onFiltersChange={setFilters}
+                  onFiltersChange={handleFilterChange}
                   filters={filters}
                   selectedField={selectedFilterField}
                   onFieldSelect={setSelectedFilterField}
@@ -627,7 +709,6 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
                   height="16"
                   width="16"
                   viewBox="0 0 384 512"
-                // style={{ marginRight: "8px" }}
                 >
                   <path
                     fill="#667085"
@@ -647,9 +728,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
                        10.6 7 16.9z"
                   />
                 </svg>
-                {/* <Typography fontSize={12}>Download excel</Typography>  */}
               </IconButton>
-
             )}
           </Box>
         </Box>
@@ -716,8 +795,8 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
             </TableHead>
 
             <TableBody>
-              {paginatedRows.length > 0 ? (
-                paginatedRows?.map((row, index) => (
+              {displayRows.length > 0 ? (
+                displayRows?.map((row, index) => (
                   <React.Fragment key={row?.id}>
                     <TableRow
                       hover
@@ -747,11 +826,11 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
                       {renderExpandedRow && (
                         <TableCell>
                           <IconButton
-                            onClick={() => toggleExpandRow(row._id)}
+                            onClick={() => toggleExpandRow((row as any)._id)}
                             size="small"
                             sx={{ padding: 0 }}
                           >
-                            {expandedRowId === row._id ? (
+                            {expandedRowId === (row as any)._id ? (
                               <FaChevronUp size={14} />
                             ) : (
                               <FaChevronDown size={14} />
@@ -762,7 +841,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
                     </TableRow>
 
                     {/* Expanded row content */}
-                    {renderExpandedRow && expandedRowId === row._id && (
+                    {renderExpandedRow && expandedRowId === (row as any)._id && (
                       <TableRow>
                         <TableCell
                           colSpan={tableHeader.length + (tableHeader[0].id === "checkbox" ? 1 : 0) + 1}
@@ -801,7 +880,7 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
       </TableContainer>
 
       {/* Pagination */}
-      {filteredRows.length > 0 && (
+      {displayTotal > 0 && (
         <Box
           sx={{
             display: "flex",
@@ -816,8 +895,8 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
           <Button
             variant="outlined"
             size="small"
-            disabled={page === 0}
-            onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+            disabled={currentPage === 0}
+            onClick={() => handlePageChange(currentPage - 1)}
           >
             ← Previous
           </Button>
@@ -829,11 +908,34 @@ const BasicTable = <T extends { id: string; lastStatusChangeDate?: string | Date
           <Button
             variant="outlined"
             size="small"
-            disabled={page >= pageCount - 1}
-            onClick={() => setPage((prev) => Math.min(prev + 1, pageCount - 1))}
+            disabled={currentPage >= pageCount - 1}
+            onClick={() => handlePageChange(currentPage + 1)}
           >
             Next →
           </Button>
+
+          {!serverSide && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="body2" sx={{ color: "#667085" }}>
+                Rows per page:
+              </Typography>
+              <Select
+                value={itemsPerPage}
+                onChange={(e) => handleRowsPerPageChange(e as any)}
+                size="small"
+                sx={{ minWidth: 60 }}
+              >
+                <MenuItem value={5}>5</MenuItem>
+                <MenuItem value={10}>10</MenuItem>
+                <MenuItem value={25}>25</MenuItem>
+                <MenuItem value={50}>50</MenuItem>
+              </Select>
+            </Box>
+          )}
+
+          <Typography variant="body2" sx={{ color: "#667085" }}>
+            Showing {displayRows.length} of {displayTotal} entries
+          </Typography>
         </Box>
       )}
     </Paper>

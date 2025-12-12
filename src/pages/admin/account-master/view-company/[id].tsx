@@ -1,31 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Box, Button, IconButton, Stack, Typography } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, IconButton, Stack, Typography } from '@mui/material';
 import ThemeInput from '@/component/common_component/themeinput';
-import ThemeSelect from '@/component/common_component/themeselect';
 import ThemeChip from '@/component/common_component/themechip';
 import ThemeButton from '@/component/common_component/themebutton';
 import { MdTurnLeft } from 'react-icons/md';
 import CustomDialog from '@/component/customdialog';
 import AssignTaskDialog from '@/component/assigntaskdailog';
-// import AddOrderDialog from '@/component/allorderdailog';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 import moment from 'moment'
+import { getAccountMasterByIdThunk } from '@/store/slices/accountMasterSlice';
 import {
-  getAccountMasterByIdThunk,
-  getAllAccountMastersThunk,
-} from '@/store/slices/accountMasterSlice';
-import {
-  getAllAssignTasksThunk,
   createAssignTaskThunk,
   updateAssignTaskThunk,
 } from '@/store/slices/assignTaskSlice';
-import { getAllLeadsThunk } from '@/store/slices/leadSlice';
 import { getAllStaffThunk } from '@/store/slices/staffSlice';
 import Loader from '@/component/common_component/loader';
 import AssignLeadDialog from '@/component/AssignLeadDialog';
+import { leadService } from '@/services/lead.service';
+import { assignTaskService } from '@/services/assignTask.service';
 
 interface Task {
   _id: string;
@@ -376,11 +371,11 @@ const ViewCompanyPage: React.FC = () => {
 
   // Redux state selectors
   const { singleAccountMaster, loading: accountLoading } = useSelector((state: any) => state.accountMasters);
-  const { assignTasks, loading: taskLoading } = useSelector((state: any) => state.assignTasks);
-  const { leads, loading: leadLoading } = useSelector((state: any) => state.leads);
+  const { loading: leadLoading } = useSelector((state: any) => state.leads);
   const { staffList, loading: staffLoading } = useSelector((state: any) => state.staff);
 
   // Local state
+  const [leads, setLeads] = useState([])
   const [openAssignTaskDialog, setOpenAssignTaskDialog] = useState(false);
   const [openAssignPartyDialog, setOpenAssignPartyDialog] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null)
@@ -389,6 +384,7 @@ const ViewCompanyPage: React.FC = () => {
   const [party, setParty] = useState<OptionType | null>(null);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [assignTasks, setAssignTasks] = useState([])
   const [reasons, setReasons] = useState<OptionType[]>([]);
   const [inputReasonOpen, setInputReasonOpen] = useState(false);
   const [staff, setStaff] = useState<OptionType | null>(null);
@@ -458,8 +454,6 @@ const ViewCompanyPage: React.FC = () => {
     },
   }));
 
-  // console.log(singleAccountMaster, 'singleAccountMaster')
-
   // Filter tasks and leads based on party/company ID
   const pendingTasks = transformedTasks.filter(
     (task) =>
@@ -485,14 +479,45 @@ const ViewCompanyPage: React.FC = () => {
       (lead.accountDetails._id === id || lead.partyName === singleAccountMaster?.partyName),
   );
 
+
+  const getDataByPartyAndAccountMaster = async () => {
+    try {
+      const response = await leadService.getDataByPartyAndAccountMaster({
+        partyId: id,
+        accountMasterId: id,
+      });
+      console.log(response, 'response======');
+      setLeads(response.data);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+    }
+  };
+
+  const getTaskByPartyAndAccountMaster = async () => {
+    try {
+      const response = await assignTaskService.getDataByPartyAndAccountMaster({
+        partyId: id,
+        accountMasterId: id,
+      });
+      console.log(response, 'response');
+      setAssignTasks(response.data);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+    }
+  };
   useEffect(() => {
     if (id) {
       dispatch(getAccountMasterByIdThunk(id as string));
-      dispatch(getAllAssignTasksThunk());
-      dispatch(getAllLeadsThunk());
       dispatch(getAllStaffThunk());
     }
   }, [dispatch, id]);
+
+  useEffect(() => {
+    if (id) {
+      getDataByPartyAndAccountMaster()
+      getTaskByPartyAndAccountMaster()
+    }
+  }, [id])
 
   useEffect(() => {
     if (singleAccountMaster) {
@@ -529,7 +554,7 @@ const ViewCompanyPage: React.FC = () => {
     dispatch(updateAssignTaskThunk({ id: taskId, data: updatedData }));
   };
 
-  if (accountLoading || taskLoading || leadLoading || staffLoading) {
+  if (accountLoading || leadLoading || staffLoading) {
     return <Loader />;
   }
 
@@ -735,6 +760,7 @@ const ViewCompanyPage: React.FC = () => {
         onClose={() => setOpenAssignTaskDialog(false)}
         company={company}
         setCompany={setCompany}
+        
         companyOptions={[
           {
             label: singleAccountMaster?.companyNameObj?.companyName || singleAccountMaster?.companyName || '',
@@ -776,15 +802,15 @@ const ViewCompanyPage: React.FC = () => {
         companyId={id as string}
       /> */}
 
-      <InputReasonDialog
+      {inputReasonOpen ? <InputReasonDialog
         open={inputReasonOpen}
         onClose={() => setInputReasonOpen(false)}
         onSave={(reason) => {
           setReasons([...reasons, { label: reason, value: reason }]);
         }}
-      />
+      /> : null}
 
-      <AssignLeadDialog
+      {openAssignPartyDialog ? <AssignLeadDialog
         open={openAssignPartyDialog}
         onClose={() => {
           setOpenAssignPartyDialog(false);
@@ -793,7 +819,7 @@ const ViewCompanyPage: React.FC = () => {
         type='add'
         lead={selectedLead}
         onSuccess={() => { }}
-      />
+      /> : null}
     </Box>
   );
 };

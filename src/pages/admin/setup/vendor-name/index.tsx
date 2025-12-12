@@ -1,262 +1,303 @@
-import React, { useState, useEffect } from 'react';
+"use client";
+
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   Box,
   Typography,
+  Button,
   IconButton,
   TableCell,
-  Stack,
-} from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
-import BasicTable from '@/component/common_component/Table/themetable';
-import Input from '@/component/common_component/themeinput';
-import Button from '@/component/common_component/themebutton';
-import CustomDialog from '@/component/customdialog';
-import CompanySelect from '@/component/reusablecomponents/CompanyWithPartyName';
-import AddNewVendorBulkDialog from '@/component/AddNewVendorBulkDialog';
-import { useAppDispatch, useAppSelector } from '@/store';
+  Chip,
+} from "@mui/material";
+import { Add, Edit, Delete, CloudUpload } from "@mui/icons-material";
+import { useSelector } from "react-redux";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+
+import BasicTable from "@/component/common_component/Table/themetable";
+import Input from "@/component/common_component/themeinput";
+import CustomDialog from "@/component/customdialog";
+
+import { RootState, useAppDispatch } from "@/store";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
+
 import {
   getAllVendorsThunk,
+  getVendorFiltersThunk,
   createVendorThunk,
   updateVendorThunk,
   deleteVendorThunk,
-  clearError,
-} from '@/store/slices/vendorSlice';
-import { toast } from 'react-toastify';
-import Swal from 'sweetalert2';
-
-interface VendorForm {
-  companyName: string;
-  name: string;
-  contactNumber: string;
-  whatsappNumber: string;
-  gst: string;
-  address: string;
-}
+  bulkCreateVendorsThunk,
+  setVendorFilters,
+} from "@/store/slices/vendorSlice";
+import CompanySelect from "@/component/reusablecomponents/CompanyWithPartyName";
 
 const columns = [
-  { id: 'id', label: 'ID' },
-  { id: 'companyName', label: 'Company Name' },
-  { id: 'name', label: 'Vendor Name' },
-  { id: 'contactNumber', label: 'Contact Number' },
-  { id: 'whatsappNumber', label: 'WhatsApp Number' },
-  { id: 'gst', label: 'GST' },
-  { id: 'address', label: 'Address' },
-  { id: 'action', label: 'Actions' },
+  { id: "id", label: "ID" },
+  { id: "companyName", label: "Company Name" },
+  { id: "name", label: "Vendor Name" },
+  { id: "contactNumber", label: "Contact" },
+  { id: "whatsappNumber", label: "WhatsApp" },
+  { id: "gst", label: "GST" },
+  { id: "address", label: "Address" },
+  { id: "actions", label: "Actions" },
 ];
 
 const VendorPage = () => {
   const dispatch = useAppDispatch();
-  const { vendors, loading, error } = useAppSelector((state) => state.vendors);
+
+  const {
+    vendors = [],
+    loading,
+    operationLoading,
+    pagination,
+    filters,
+    availableFilters = { companyNames: [], vendorNames: [], contactNumbers: [], whatsappNumbers: [], gstNumbers: [], address: [] },
+  } = useSelector((state: RootState) => state.vendors);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState<VendorForm>({
-    companyName: '',
-    name: '',
-    contactNumber: '',
-    whatsappNumber: '',
-    gst: '',
-    address: '',
-  });
-  const [gstError, setGstError] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [bulkCompanyName, setBulkCompanyName] = useState<string>("");
+  const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+  const searchTimeoutRef = useRef<number | null>(null);
+  
+ const fetchData = useCallback(() => {
+    const apiFilters: any = {
+      page: filters.page || 1,
+      limit: filters.limit || 10,
+      search: filters.search || "",
+    };
+    console.log("🚀 ~ VendorPage ~ apiFilters:", apiFilters)
 
-  // Fetch vendors on component mount
+    if (activeFilters["Company Name"]?.length) {
+      apiFilters.companyNames = activeFilters["Company Name"];
+    }
+    if (activeFilters["Vendor Name"]?.length) {
+      apiFilters.vendorNames = activeFilters["Vendor Name"];
+    }
+    if (activeFilters["Contact"]?.length) {
+      apiFilters.contactNumbers = activeFilters["Contact"];
+    }
+    if (activeFilters["WhatsApp"]?.length) {
+      apiFilters.whatsappNumbers = activeFilters["WhatsApp"];
+    }
+    if (activeFilters["GST"]?.length) {
+      apiFilters.gstNumbers = activeFilters["GST"];
+    }
+if (activeFilters["Address"]?.length) apiFilters.address = activeFilters["Address"];
+
+
+    dispatch(getAllVendorsThunk(apiFilters));
+  }, [dispatch, filters, activeFilters]);
+  const handleSearchDebounced = useCallback(
+    (search: string) => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = window.setTimeout(() => {
+        dispatch(setVendorFilters({ search: search.trim(), page: 1 }));
+      }, 500);
+    },
+    [dispatch]
+  );
+
   useEffect(() => {
-    dispatch(getAllVendorsThunk())
-      .unwrap()
-      .catch((err) => toast.error(err));
-  }, [dispatch]);
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
-  // Open dialog for add or edit
+ 
+
+  useEffect(() => {
+    fetchData();
+    dispatch(getVendorFiltersThunk());
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [filters.page, filters.search, activeFilters]);
+
+  const validationSchema = Yup.object({
+    companyName: Yup.string().required("Company Name is required"),
+    name: Yup.string().trim().required("Vendor Name is required"),
+    contactNumber: Yup.string().matches(/^[0-9]{10}$/, "Contact Number must be 10 digits").required("Contact Number is required"),
+    whatsappNumber: Yup.string().matches(/^[0-9]{10}$/, "WhatsApp Number must be 10 digits").required("WhatsApp Number is required"),
+    gst: Yup.string().matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Invalid GST format").notRequired(),
+    address: Yup.string().trim().required("Address is required"),
+  });
+
+  const formik = useFormik({
+    initialValues: { companyName: "", name: "", contactNumber: "", whatsappNumber: "", gst: "", address: "" },
+    validationSchema,
+    onSubmit: (values) => {
+      if (editId) {
+        dispatch(updateVendorThunk({ id: editId, updateData: values }));
+      } else {
+        dispatch(createVendorThunk(values));
+      }
+      setDialogOpen(false);
+    },
+    enableReinitialize: true,
+  });
+
   const handleOpenDialog = (vendor?: any) => {
     if (vendor) {
       setEditId(vendor._id);
-      setForm({
-        companyName: vendor.companyName?._id || vendor.companyName || '',
+      formik.setValues({
+        companyName: vendor.companyName?._id || "",
         name: vendor.name,
         contactNumber: vendor.contactNumber,
         whatsappNumber: vendor.whatsappNumber,
-        gst: vendor.gst || '',
+        gst: vendor.gst,
         address: vendor.address,
       });
-      setGstError(null); // Reset GST error on open
     } else {
       setEditId(null);
-      setForm({
-        companyName: '',
-        name: '',
-        contactNumber: '',
-        whatsappNumber: '',
-        gst: '',
-        address: '',
-      });
-      setGstError(null); // Reset GST error on open
+      formik.resetForm();
     }
     setDialogOpen(true);
   };
 
-  // GST validation function
-  const validateGST = (gst: string): string | null => {
-    if (!gst) return null; // GST is optional
-    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-    if (!gstRegex.test(gst)) {
-      return 'GST number must be a valid 15-character GSTIN (e.g., 27AAAAA0000A1Z5)';
-    }
-    return null;
-  };
-
-  // Handle GST input change with validation
-  const handleGstChange = (value: string) => {
-    const upperCaseValue = value.toUpperCase();
-    setForm((f) => ({ ...f, gst: upperCaseValue }));
-    setGstError(validateGST(upperCaseValue));
-  };
-
-  // Save new or edited vendor
-  const handleSave = async () => {
-    if (
-      !form.companyName.trim() ||
-      !form.name.trim() ||
-      !form.contactNumber.trim() ||
-      !form.whatsappNumber.trim() ||
-      !form.address.trim()
-    ) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-
-    if (
-      form.contactNumber.length !== 10 ||
-      form.whatsappNumber.length !== 10
-    ) {
-      toast.error('Contact and WhatsApp numbers must be 10 digits');
-      return;
-    }
-
-    if (form.gst && validateGST(form.gst)) {
-      toast.error(validateGST(form.gst));
-      return;
-    }
-
-    try {
-      if (editId) {
-        await dispatch(
-          updateVendorThunk({
-            id: editId,
-            data: {
-              companyName: form.companyName,
-              name: form.name,
-              contactNumber: form.contactNumber,
-              whatsappNumber: form.whatsappNumber,
-              gst: form.gst,
-              address: form.address,
-            },
-          })
-        ).unwrap();
-        toast.success('Vendor updated successfully');
-      } else {
-        await dispatch(
-          createVendorThunk({
-            companyName: form.companyName,
-            name: form.name,
-            contactNumber: form.contactNumber,
-            whatsappNumber: form.whatsappNumber,
-            gst: form.gst,
-            address: form.address,
-          })
-        ).unwrap();
-        toast.success('Vendor created successfully');
-      }
-      setDialogOpen(false);
-      setForm({
-        companyName: '',
-        name: '',
-        contactNumber: '',
-        whatsappNumber: '',
-        gst: '',
-        address: '',
-      });
-      setEditId(null);
-      setGstError(null);
-    } catch (err: any) {
-      toast.error(err || 'Failed to save vendor');
-    }
-  };
-
-  // Delete vendor with confirmation
-  const handleDelete = (id: string, name: string) => {
-    Swal.fire({
-      title: 'Are you sure?',
-      text: `Do you want to delete ${name}?`,
-      icon: 'warning',
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "Delete Vendor?",
+      text: "This action cannot be undone",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'Cancel',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        dispatch(deleteVendorThunk(id))
-          .unwrap()
-          .then(() => {
-            toast.success(`${name} has been deleted.`);
-          })
-          .catch((err) => {
-            toast.error(err || 'Failed to delete vendor');
-          });
-      }
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Yes, delete",
     });
+
+    if (result.isConfirmed) {
+      await dispatch(deleteVendorThunk(id)).unwrap();
+      toast.success("Vendor deleted successfully");
+      fetchData();
+    }
   };
+
+  const handleFileUpload = async () => {
+    if (!file) return toast.error("Please select a file");
+    if (!bulkCompanyName) return toast.error("Please select Company Name");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("companyName", bulkCompanyName);
+
+    await dispatch(bulkCreateVendorsThunk(formData)).unwrap();
+    toast.success("Bulk upload successful");
+    setBulkDialogOpen(false);
+    setFile(null);
+    setBulkCompanyName("");
+    fetchData();
+  };
+
+  const handleDownloadSample = () => {
+    const csv = "name,contactNumber,whatsappNumber,gst,address\nSample Vendor,1234567890,1234567890,27AAAAA0000A1Z5,Sample Address\n";
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "sample_vendors.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleFilterChange = (newFilters: { [key: string]: string[] }) => {
+    setActiveFilters(newFilters);
+    dispatch(setVendorFilters({ page: 1 }));
+  };
+
+  const clearAllFilters = () => {
+    setActiveFilters({});
+    dispatch(setVendorFilters({ page: 1, search: "" }));
+  };
+
+  const activeFilterCount = Object.values(activeFilters).flat().length;
 
   return (
     <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h5" fontWeight={600}>
-          Vendors
-        </Typography>
-        <Box>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => handleOpenDialog()}
-            sx={{ borderRadius: 2, fontWeight: 600, mr: 2, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
-          >
-            New Vendor
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h5" fontWeight={600}>Vendors</Typography>
+        <Box display="flex" gap={2}>
+          <Button variant="outlined" onClick={handleDownloadSample}>
+            Download Sample CSV
           </Button>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => setBulkDialogOpen(true)}
-            sx={{ borderRadius: 2, fontWeight: 600, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
-          >
+          <Button variant="contained" startIcon={<CloudUpload />} onClick={() => setBulkDialogOpen(true)}>
             Bulk Upload
+          </Button>
+          <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()}>
+            New Vendor
           </Button>
         </Box>
       </Box>
+
+      {/* Active Filter Chips */}
+      {activeFilterCount > 0 && (
+        <Box mb={2} display="flex" alignItems="center" gap={1} flexWrap="wrap">
+          <Typography variant="body2" color="textSecondary">Filters:</Typography>
+          {Object.entries(activeFilters).map(([field, values]) =>
+            values.map((val) => (
+              <Chip
+                key={`${field}-${val}`}
+                label={`${field}: ${val}`}
+                onDelete={() => {
+                  const updated = activeFilters[field].filter((v) => v !== val);
+                  setActiveFilters((prev) => ({
+                    ...prev,
+                    [field]: updated.length ? updated : [],
+                  }));
+                }}
+                size="small"
+                color="primary"
+              />
+            ))
+          )}
+          <Button size="small" onClick={clearAllFilters}>Clear All</Button>
+        </Box>
+      )}
+
+      {/* Table with Server-side Pagination + Filtering */}
       <BasicTable
-        showFillter={false}
-        showDatePicker={false}
-        showSearch={false}
+        serverSide={true}
         tableHeader={columns}
         rowData={vendors}
         loading={loading}
+        totalCount={pagination?.totalItems || 0}
+        pagination={pagination}
+        onPageChange={(page) => dispatch(setVendorFilters({ page }))}
+        onSearchChange={handleSearchDebounced}
+        onFilterChange={handleFilterChange}
+        availableFilters={{
+          "Company Name": availableFilters.companyNames || [],
+          "Vendor Name": availableFilters.vendorNames || [],
+          "Contact": availableFilters.contactNumbers || [],
+          "WhatsApp": availableFilters.whatsappNumbers || [],
+          "GST": availableFilters.gstNumbers || [],
+          "Address": availableFilters.address || [],
+        }}
+        showExcelDownload={true}
+        excelHeaders={["Company Name", "Vendor Name", "Contact", "WhatsApp", "GST", "Address"]}
         renderRow={(row: any, idx: number) => (
           <>
-            <TableCell>{idx + 1}</TableCell>
-            <TableCell>{row.companyName?.companyName || 'N/A'}</TableCell>
+            <TableCell>{(filters.page - 1) * filters.limit + idx + 1}</TableCell>
+            <TableCell>{row.companyName?.companyName || row.companyName}</TableCell>
             <TableCell>{row.name}</TableCell>
             <TableCell>{row.contactNumber}</TableCell>
             <TableCell>{row.whatsappNumber}</TableCell>
-            <TableCell>{row.gst || 'N/A'}</TableCell>
+            <TableCell>{row.gst || "—"}</TableCell>
             <TableCell>{row.address}</TableCell>
             <TableCell>
               <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                 <Edit />
               </IconButton>
-              <IconButton
-                color="error"
-                onClick={() => handleDelete(row._id, row.name)}
-              >
+              <IconButton color="error" onClick={() => handleDelete(row._id)}>
                 <Delete />
               </IconButton>
             </TableCell>
@@ -265,106 +306,113 @@ const VendorPage = () => {
       />
 
       {/* Add/Edit Dialog */}
-      <CustomDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        title={editId ? 'Edit Vendor' : 'New Vendor'}
-        maxWidth="md"
-        fullWidth
-      >
-        <Stack direction="row" spacing={2} mb={2}>
-          <CompanySelect
+      <CustomDialog open={dialogOpen} onClose={() => setDialogOpen(false)} title={editId ? "Edit Vendor" : "New Vendor"}>
+        <form onSubmit={formik.handleSubmit}>
+          <Input
+            label="Company Name"
             name="companyName"
-            value={form.companyName}
-            onChange={(event, newValue) => {
-              setForm((f) => ({ ...f, companyName: newValue ? newValue.value : '' }));
-            }}
-            required
-            sx={{ flex: 1 }}
+            value={formik.values.companyName}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.touched.companyName && Boolean(formik.errors.companyName)}
+            helperText={formik.touched.companyName && formik.errors.companyName}
+            fullWidth
           />
           <Input
-            labelName="Vendor Name"
-            value={form.name}
-            onChange={(e: any) =>
-              setForm((f) => ({ ...f, name: e.target.value }))
-            }
+            label="Vendor Name"
+            name="name"
+            value={formik.values.name}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.touched.name && Boolean(formik.errors.name)}
+            helperText={formik.touched.name && formik.errors.name}
             fullWidth
-            required
-            sx={{ flex: 1 }}
-          />
-        </Stack>
-        <Stack direction="row" spacing={2} mb={2}>
-          <Input
-            labelName="Contact Number"
-            value={form.contactNumber}
-            onChange={(e: any) =>
-              setForm((f) => ({
-                ...f,
-                contactNumber: e.target.value.replace(/\D/g, '').slice(0, 10),
-              }))
-            }
-            fullWidth
-            required
-            sx={{ flex: 1 }}
           />
           <Input
-            labelName="WhatsApp Number"
-            value={form.whatsappNumber}
-            onChange={(e: any) =>
-              setForm((f) => ({
-                ...f,
-                whatsappNumber: e.target.value.replace(/\D/g, '').slice(0, 10),
-              }))
-            }
+            label="Contact Number"
+            name="contactNumber"
+            value={formik.values.contactNumber}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.touched.contactNumber && Boolean(formik.errors.contactNumber)}
+            helperText={formik.touched.contactNumber && formik.errors.contactNumber}
             fullWidth
-            required
-            sx={{ flex: 1 }}
-          />
-        </Stack>
-        <Stack direction="row" spacing={2} mb={2}>
-          <Input
-            labelName="GST Number"
-            value={form.gst}
-            onChange={(e: any) => handleGstChange(e.target.value)}
-            fullWidth
-            error={!!gstError}
-            helperText={gstError}
-            sx={{ flex: 1 }}
           />
           <Input
-            labelName="Address"
-            value={form.address}
-            onChange={(e: any) =>
-              setForm((f) => ({ ...f, address: e.target.value }))
-            }
+            label="WhatsApp Number"
+            name="whatsappNumber"
+            value={formik.values.whatsappNumber}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.touched.whatsappNumber && Boolean(formik.errors.whatsappNumber)}
+            helperText={formik.touched.whatsappNumber && formik.errors.whatsappNumber}
             fullWidth
-            required
-            sx={{ flex: 1 }}
           />
-        </Stack>
-        <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-          <Button
-            onClick={() => setDialogOpen(false)}
-            variant="outlined"
-            sx={{ borderRadius: 2, borderColor: '#A409F8', color: '#A409F8', '&:hover': { borderColor: '#7B06C2', color: '#7B06C2' } }}
+          <Input
+            label="GST"
+            name="gst"
+            value={formik.values.gst}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.touched.gst && Boolean(formik.errors.gst)}
+            helperText={formik.touched.gst && formik.errors.gst}
+            fullWidth
+          />
+          <Input
+            label="Address"
+            name="address"
+            value={formik.values.address}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.touched.address && Boolean(formik.errors.address)}
+            helperText={formik.touched.address && formik.errors.address}
+            fullWidth
+          />
+          <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
+            <Button variant="outlined" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={operationLoading}>
+              {operationLoading ? "Saving..." : "Save"}
+            </Button>
+          </Box>
+        </form>
+      </CustomDialog>
+
+      {/* Bulk Upload Dialog */}
+      <CustomDialog open={bulkDialogOpen} onClose={() => { setBulkDialogOpen(false); setFile(null); setBulkCompanyName(""); }} title="Bulk Upload Vendors">
+        <Box textAlign="center" p={4}>
+          <CompanySelect
+            value={bulkCompanyName}
+            onChange={(_, newValue) => setBulkCompanyName(newValue?.value || "")}
+            required
+            sx={{ mb: 2 }}
+          />
+          <Box
+            onDrop={(e) => { e.preventDefault(); setFile(e.dataTransfer.files[0]); }}
+            onDragOver={(e) => e.preventDefault()}
+            sx={{ border: "2px dashed #7f56d9", borderRadius: 3, p: 6, background: "#f8f5ff", cursor: "pointer" }}
+            onClick={() => document.getElementById("vendorBulkFile")?.click()}
           >
-            Close
+            <Typography>Drop CSV here or click to browse</Typography>
+            <input
+              id="vendorBulkFile"
+              type="file"
+              accept=".csv"
+              style={{ display: "none" }}
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+          </Box>
+          {file && <Typography mt={2} color="primary">Selected: {file.name}</Typography>}
+          <Button variant="outlined" sx={{ mt: 2 }} onClick={handleDownloadSample}>
+            Download Sample
           </Button>
-          <Button
-            onClick={handleSave}
-            variant="contained"
-            sx={{ borderRadius: 2, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
-            disabled={loading || !!gstError}
-          >
-            Save
+        </Box>
+        <Box display="flex" justifyContent="flex-end" gap={2} p={2}>
+          <Button variant="outlined" onClick={() => { setBulkDialogOpen(false); setFile(null); setBulkCompanyName(""); }}>Cancel</Button>
+          <Button variant="contained" onClick={handleFileUpload} disabled={!file || !bulkCompanyName || operationLoading}>
+            Upload
           </Button>
         </Box>
       </CustomDialog>
-      <AddNewVendorBulkDialog
-        open={bulkDialogOpen}
-        onClose={() => setBulkDialogOpen(false)}
-        refreshData={() => dispatch(getAllVendorsThunk())}
-      />
     </Box>
   );
 };

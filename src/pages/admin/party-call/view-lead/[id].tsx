@@ -1,19 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useSelector } from 'react-redux';
 import { RootState, useAppDispatch } from '@/store';
-import { getAllLeadsThunk } from '@/store/slices/leadSlice';
 import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import ThemeInput from '@/component/common_component/themeinput';
 import ThemeChip from '@/component/common_component/themechip';
 import ThemeButton from '@/component/common_component/themebutton';
 import { MdTurnLeft } from 'react-icons/md';
 import AssignLeadDialog from '@/component/AssignLeadDialog';
-import Loader from '@/component/common_component/loader';
 import Swal from 'sweetalert2';
 import CallHistoryDialog from '@/component/Dialog/CallHistoryDialog';
+import { leadService } from '@/services/lead.service';
 
 interface Lead {
   _id: string;
@@ -278,22 +277,35 @@ const ViewLeadPage: React.FC = () => {
   const router = useRouter();
   const { id } = router.query;
   const dispatch = useAppDispatch();
-  const { leads, loading } = useSelector((state: RootState) => state.leads || {});
   const { user } = useSelector((state: RootState) => state.auth || {});
   const canEdit = user?.role?.permissions?.party_call?.edit;
+  const [leads, setLeads] = useState([])
   const [open, setOpen] = useState(false);
   const [partyDetails, setPartyDetails] = useState<PartyDetails | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [openHistoryDialog, setOpenHistoryDialog] = useState(false)
   const pendingPartyCallRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    dispatch(getAllLeadsThunk());
-  }, [dispatch]);
+  const getDataByPartyAndAccountMaster = async () => {
+    try {
+      const response = await leadService.getDataByPartyAndAccountMaster({
+        partyId: id,
+        accountMasterId: id,
+      });
+      setLeads(response.data);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+    }
+  };
 
   useEffect(() => {
-    if (leads.length > 0 && id) {
-      const lead = leads.find((lead) => lead._id === id);
+    if (id) getDataByPartyAndAccountMaster();
+  }, [id]);
+
+  useEffect(() => {
+    if (leads.length > 0) {
+      const lead = leads.find((lead) => lead.partyName?._id === id);
+
       if (lead) {
         setSelectedLead(lead);
         setPartyDetails({
@@ -325,17 +337,13 @@ const ViewLeadPage: React.FC = () => {
   }, [pendingPartyCallRef, leads]);
 
   const partyLeads = leads.filter((lead) => {
-    const mainLead = leads.find((l) => l._id === id);
+    const mainLead = leads.find((l) => l.partyName?._id === id);
     return mainLead && lead.partyName?._id === mainLead.partyName?._id;
   });
 
   // Separate pending and completed leads
-  const pendingLeads = partyLeads.filter((lead) =>
-    ['pending', 'rescheduled'].includes(lead.status)
-  );
-  const completedLeads = partyLeads.filter((lead) =>
-    ['completed', 'cancelled'].includes(lead.status)
-  );
+  const pendingLeads = partyLeads.filter((lead) => lead.status === 'pending' || lead.status === 'rescheduled');
+  const completedLeads = partyLeads.filter((lead) => lead.status === 'completed' || lead.status === 'cancelled');
 
   // Group leads by date for pending and completed leads
   const groupedPendingLeads = useMemo(() => {
@@ -406,7 +414,6 @@ const ViewLeadPage: React.FC = () => {
   const handleAssignSuccess = () => {
     setOpen(false);
     setSelectedLead(null);
-    dispatch(getAllLeadsThunk());
     Swal.fire({
       title: 'Success!',
       text: 'Lead rescheduled successfully!',
@@ -414,10 +421,6 @@ const ViewLeadPage: React.FC = () => {
       confirmButtonColor: '#7F56D9',
     });
   };
-
-  if (loading) {
-    return <Loader />;
-  }
 
   if (!partyDetails) {
     return <Typography>Party not found</Typography>;
@@ -604,7 +607,7 @@ const ViewLeadPage: React.FC = () => {
         )}
       </Box>
 
-      <AssignLeadDialog
+      {open ? <AssignLeadDialog
         open={open}
         onClose={() => {
           setOpen(false);
@@ -612,13 +615,13 @@ const ViewLeadPage: React.FC = () => {
         }}
         lead={selectedLead}
         onSuccess={handleAssignSuccess}
-      />
+      /> : null}
 
-      <CallHistoryDialog
+      {openHistoryDialog ? <CallHistoryDialog
         open={openHistoryDialog}
         onClose={() => setOpenHistoryDialog(false)}
         data={selectedLead?.callHistory}
-      />
+      /> : null}
     </Box>
   );
 };

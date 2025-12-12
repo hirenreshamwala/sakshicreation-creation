@@ -14,7 +14,6 @@ import {
   updatePaymentFolderInState,
   updatePaymentFolderThunk,
 } from "@/store/slices/paymentFolderSlice";
-import { getAllAccountMastersThunk } from "@/store/slices/accountMasterSlice";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
 import CompanySelect from "@/component/reusablecomponents/CompanyWithPartyName";
 import { toast } from "react-toastify";
@@ -72,7 +71,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
 }: any) => {
 
   const dispatch = useAppDispatch();
-  const { accountMasters } = useAppSelector((state) => state.accountMasters || {});
   const { staffList } = useAppSelector((state) => state.staff || {});
   const [isLoading, setIsLoading] = useState(false);
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -172,7 +170,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
   });
 
   useEffect(() => {
-    if (!accountMasters?.length) dispatch(getAllAccountMastersThunk());
     if (!staffList?.length) dispatch(getAllStaffThunk());
   }, []);
 

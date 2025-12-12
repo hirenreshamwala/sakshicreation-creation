@@ -1,8 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Select, MenuItem, Typography, Button, TableCell, SxProps, Theme } from '@mui/material';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { 
+  Box, 
+  Select, 
+  MenuItem, 
+  Typography, 
+  Button, 
+  TableCell, 
+  SxProps, 
+  Theme,
+  CircularProgress 
+} from '@mui/material';
 import { FaArrowDown, FaArrowUp, FaChevronRight } from 'react-icons/fa6';
 import { MdPeople } from 'react-icons/md';
 import BasicTable from '@/component/common_component/Table/themetable';
+import CustomTable2 from '@/component/common_component/Table/CustomTable2'; // Added for server-side pagination
 import ThemeTabs, { TabItem } from '@/component/common_component/themetabs';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { getInventoryByCategoryThunk, getInventorySummaryThunk } from '@/store/slices/inventorySlice';
@@ -92,7 +103,22 @@ const SakshiInventoryPage = () => {
   const [selectedPrinterFilter, setSelectedPrinterFilter] = useState<string>('');
   const permissions = user.role.permissions;
 
-  const getPermissionWiseInventory = () => {
+  // Server-side pagination state (only used for FACTORY tab)
+  const [currentFilterState, setCurrentFilterState] = useState<any>({
+    page: 1,
+    pageSize: 10,
+    search: "",
+    filters: {},
+    includeCounts: true,
+    isPagination: true, // Default true for FACTORY
+    startDate: null,
+    endDate: null,
+  });
+  const [appliedFilterState, setAppliedFilterState] = useState<any>({});
+  const [isInitialLoad, setIsInitialLoad] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+
+  const getPermissionWiseInventory = useCallback(() => {
     if (permissions?.inventory?.view_global) {
       return inventory;
     } else if (permissions?.inventory?.view_own) {
@@ -101,12 +127,58 @@ const SakshiInventoryPage = () => {
       );
     }
     return [];
-  };
+  }, [inventory, permissions?.inventory?.view_global, permissions?.inventory?.view_own, user?.id]);
+
+  // Load inventory with optional pagination (full fetch for aggregation tabs, paginated for FACTORY)
+  const loadInventory = useCallback(async () => {
+    setIsLoadingData(true);
+    try {
+      let params: any = { category: activeMainTab };
+      
+      // For non-FACTORY (aggregation), fetch all data
+      if (activeMainTab !== InventoryCategory.FACTORY) {
+        params.isPagination = false; // Fetch all for client-side aggregation
+      } else {
+        // For FACTORY, use pagination params
+        params = {
+          ...currentFilterState,
+          category: activeMainTab,
+          type: activeWardTab, // Filter by type server-side
+          isPagination: true,
+          includeCounts: true,
+        };
+      }
+
+      console.log("📡 Loading inventory with params:", params);
+      await dispatch(getInventoryByCategoryThunk(params));
+      setIsInitialLoad(true);
+    } catch (err: any) {
+      console.error("❌ Error loading inventory:", err);
+      toast.error(err.message || "Failed to load inventory");
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [dispatch, activeMainTab, activeWardTab, currentFilterState]);
+
+  // Effect: Load inventory when tab or pagination changes
+  useEffect(() => {
+    const isSame = JSON.stringify(appliedFilterState) === JSON.stringify(currentFilterState);
+    if (activeMainTab === InventoryCategory.FACTORY && !isSame) {
+      console.log("🔄 Inventory pagination state changed, loading...");
+      const timer = setTimeout(() => {
+        loadInventory();
+        setAppliedFilterState(currentFilterState);
+      }, 300);
+      return () => clearTimeout(timer);
+    } else if (activeMainTab !== InventoryCategory.FACTORY) {
+      // For aggregation tabs, always fetch all on tab change
+      loadInventory();
+    }
+  }, [activeMainTab, activeWardTab, currentFilterState, appliedFilterState, loadInventory]);
 
   useEffect(() => {
     dispatch(getAllMaterialsThunk());
     dispatch(getAllVendorsThunk());
-    dispatch(getInventoryByCategoryThunk(activeMainTab));
     dispatch(getInventorySummaryThunk(activeMainTab));
   }, [dispatch, activeMainTab]);
 
@@ -124,12 +196,18 @@ const SakshiInventoryPage = () => {
     setSelectedMaterial('');
     setSelectedVendor('');
     setSelectedPrinterFilter('');
+    if (newValue as InventoryCategory === InventoryCategory.FACTORY) {
+      setCurrentFilterState(prev => ({ ...prev, page: 1 })); // Reset page for FACTORY
+    }
   };
 
   const handleWardTabChange = (_: React.SyntheticEvent, newValue: string | number) => {
     setActiveWardTab(newValue as WardTab);
+    if (activeMainTab === InventoryCategory.FACTORY) {
+      setCurrentFilterState(prev => ({ ...prev, page: 1 })); // Reset page on ward change for FACTORY
+    }
   };
-  const aggregateInventory = (): AggregatedInventory[] => {
+  const aggregateInventory = useCallback((): AggregatedInventory[] => {
     const filtered = getPermissionWiseInventory().filter(item => item.type === activeWardTab);
     const aggregated: Record<string, AggregatedInventory> = {};
 
@@ -176,42 +254,20 @@ const SakshiInventoryPage = () => {
     // Second pass: calculate total inward and outward for balance
     // Get all items for the category to calculate proper balance
     const allCategoryItems = getPermissionWiseInventory().filter(item => item.category === activeMainTab);
-
     Object.keys(aggregated).forEach(key => {
-      const [printerId, materialId] = key?.split('-');
-
-      // Calculate total inward for this printer/material
+      const [printerId, materialId] = key.split('-');
       const totalInward = allCategoryItems
-        .filter(item =>
-          item.type === 'inward' &&
-          item.forCompany?._id === printerId &&
-          item.material?._id === materialId
-        )
+        .filter(item => item.type === 'inward' && item.forCompany?._id === printerId && item.material?._id === materialId)
         .reduce((sum, item) => sum + item.quantity, 0);
-
-      // Calculate total outward for this printer/material
       const totalOutward = allCategoryItems
-        .filter(item =>
-          item.type === 'outward' &&
-          item.forCompany?._id === printerId &&
-          item.material?._id === materialId
-        )
+        .filter(item => item.type === 'outward' && item.forCompany?._id === printerId && item.material?._id === materialId)
         .reduce((sum, item) => sum + item.quantity, 0);
-
-      // Update the aggregated data with proper calculations
       aggregated[key].totalQuantity = totalInward;
       aggregated[key].usedQty = totalOutward;
       aggregated[key].balance = totalInward - totalOutward;
-
-      // For outward tab, we need to show the current outward records
       if (activeWardTab === 'outward') {
-        // Find the most recent purchase for this material
         const lastPurchase = allCategoryItems
-          .filter(item =>
-            item.type === 'inward' &&
-            item.forCompany?._id === printerId &&
-            item.material?._id === materialId
-          )
+          .filter(item => item.type === 'inward' && item.forCompany?._id === printerId && item.material?._id === materialId)
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
 
         if (lastPurchase) {
@@ -222,8 +278,9 @@ const SakshiInventoryPage = () => {
     });
 
     return Object.values(aggregated);
-  };
-  const aggregatedData = aggregateInventory();
+  }, [getPermissionWiseInventory, activeWardTab, activeMainTab]);
+
+  const aggregatedData = useMemo(() => aggregateInventory(), [aggregateInventory]);
 
   const handleRowClick = (printerData: AggregatedInventory) => {
     setSelectedPrinter(printerData);
@@ -235,35 +292,96 @@ const SakshiInventoryPage = () => {
     setSelectedPrinter(null);
   };
 
-  const filteredInventory = getPermissionWiseInventory().filter(item =>
+  const filteredInventory = useMemo(() => getPermissionWiseInventory().filter(item =>
     item.type === activeWardTab &&
     (!selectedMaterial || item.material?._id === selectedMaterial) &&
     (!selectedVendor || item.vendor?._id === selectedVendor) &&
     (!selectedPrinterFilter || item.forCompany?._id === selectedPrinterFilter)
-  );
+  ), [getPermissionWiseInventory, activeWardTab, selectedMaterial, selectedVendor, selectedPrinterFilter]);
 
-  const materialOptions = materials.map(material => ({
+  const materialOptions = useMemo(() => materials.map(material => ({
     value: material._id,
     label: `${material.materialName} (${material.materialGSM} GSM, ${material.materialSize})`
-  }));
+  })), [materials]);
 
-  const vendorOptions = vendors.map(vendor => ({
+  const vendorOptions = useMemo(() => vendors.map(vendor => ({
     value: vendor._id,
     label: vendor.name
-  }));
+  })), [vendors]);
 
-  // Create unique printer options
-  const printerOptions = Array.from(new Set(
-    getPermissionWiseInventory()
-      .filter(item => item.forCompany)
-      .map(item => item.forCompany._id)
-  )).map(printerId => {
+  const printerOptions = useMemo(() => {
+    const uniquePrinterIds = Array.from(new Set(
+      getPermissionWiseInventory().filter(item => item.forCompany).map(item => item.forCompany._id)
+  ));
+  return uniquePrinterIds.map(printerId => {
     const printer = getPermissionWiseInventory().find(item => item.forCompany?._id === printerId)?.forCompany;
     return {
       value: printerId,
       label: printer ? `${printer.firstName} ${printer.lastName}` : 'Unknown'
     };
   });
+  }, [getPermissionWiseInventory]);
+
+  // Render row for aggregated data (BasicTable)
+  const renderAggregatedRow = useCallback((row: AggregatedInventory, index: number) => (
+    <>
+      <TableCell>{row.printerName}</TableCell>
+      <TableCell>{row.materialName}</TableCell>
+      <TableCell>{row.materialGSM}</TableCell>
+      <TableCell>{row.materialSize}</TableCell>
+      <TableCell>{row.totalQuantity}</TableCell>
+      <TableCell>{row.lastPurchase}</TableCell>
+      <TableCell>{row.usedQty}</TableCell>
+      <TableCell>{row.balance}</TableCell>
+      <TableCell>
+        <Box display="flex" justifyContent="flex-end" alignItems="center">
+          <FaChevronRight
+            style={styles.tableActionIcon}
+            onClick={() => handleRowClick(row)}
+          />
+        </Box>
+      </TableCell>
+    </>
+  ), [handleRowClick]);
+
+  // Render row for FACTORY (CustomTable2, raw data)
+  const renderFactoryRow = useCallback((row: any, index: number) => (
+    <>
+      <TableCell>{row.material?.materialName || 'N/A'}</TableCell>
+      <TableCell>{row.material?.materialSize || 'N/A'}</TableCell>
+      <TableCell>{row.material?.materialGSM || 'N/A'}</TableCell>
+      <TableCell>{row.kg || 0}</TableCell>
+      <TableCell>{row.quantity || 0}</TableCell>
+      <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+      <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
+    </>
+  ), []);
+
+  // Columns for FACTORY CustomTable2
+  const factoryColumns = useMemo(() => [
+    { id: 'material', label: 'MATERIAL', value: null },
+    { id: 'size', label: 'SIZE', value: null },
+    { id: 'gsm', label: 'GSM', value: null },
+    { id: 'kg', label: 'KG', value: null },
+    { id: 'qty', label: 'QTY', value: null },
+    { id: 'date', label: 'DATE', value: null },
+    { id: 'vendor', label: 'VENDOR', value: null },
+    { id: 'action', label: 'ACTIONS', value: null }, // No actions for now
+  ], []);
+
+  // Handle page change for FACTORY
+  const handleFactoryPageChange = useCallback((newPage: number) => {
+    setCurrentFilterState(prev => ({ ...prev, page: newPage + 1 }));
+  }, []);
+
+  // Loading for FACTORY
+  if (activeMainTab === InventoryCategory.FACTORY && (loading || isLoadingData) && !isInitialLoad) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <>
@@ -286,34 +404,21 @@ const SakshiInventoryPage = () => {
       </Box>
 
       {activeMainTab === InventoryCategory.FACTORY ? (
-        <>
-          <BasicTable
-            tableHeader={[
-              { id: 'material', label: 'MATERIAL' },
-              { id: 'size', label: 'SIZE' },
-              { id: 'gsm', label: 'GSM' },
-              { id: 'kg', label: 'KG' },
-              { id: 'qty', label: 'QTY' },
-              { id: 'date', label: 'DATE' },
-              { id: 'vendor', label: 'VENDOR' },
-            ]}
-            rowData={filteredInventory}
-            renderRow={(row) => (
-              <>
-                <TableCell>{row.material?.materialName || 'N/A'}</TableCell>
-                <TableCell>{row.material?.materialSize || 'N/A'}</TableCell>
-                <TableCell>{row.material?.materialGSM || 'N/A'}</TableCell>
-                <TableCell>{row.kg}</TableCell>
-                <TableCell>{row.quantity}</TableCell>
-                <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
-                <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
-              </>
-            )}
+        // Paginated table for FACTORY using CustomTable2
+        <CustomTable2
+          tableHeader={factoryColumns}
+          rowData={getPermissionWiseInventory()} // Paginated raw data from server
+          renderRow={renderFactoryRow}
+          title={`Factory Inventory - ${activeWardTab.toUpperCase()}`}
             showDatePicker={false}
             showSearch={false}
             showFillter={false}
+            showExcelDownload={false}
+            totalRows={inventory.length || 0} // Update with totalCount from API if available
+            currentFilterState={currentFilterState}
+            setCurrentFilterState={setCurrentFilterState}
+            // No filter props needed
           />
-        </>
       ) : (
         <>
           {!showDetails ? (
@@ -366,26 +471,7 @@ const SakshiInventoryPage = () => {
                   (!selectedMaterial || item.materialId === selectedMaterial) &&
                   (!selectedPrinterFilter || item.printerId === selectedPrinterFilter)
                 )}
-                renderRow={(row) => (
-                  <>
-                    <TableCell>{row.printerName}</TableCell>
-                    <TableCell>{row.materialName}</TableCell>
-                    <TableCell>{row.materialGSM}</TableCell>
-                    <TableCell>{row.materialSize}</TableCell>
-                    <TableCell>{row.totalQuantity}</TableCell>
-                    <TableCell>{row.lastPurchase}</TableCell>
-                    <TableCell>{row.usedQty}</TableCell>
-                    <TableCell>{row.balance}</TableCell>
-                    <TableCell>
-                      <Box display="flex" justifyContent="flex-end" alignItems="center">
-                        <FaChevronRight
-                          style={styles.tableActionIcon}
-                          onClick={() => handleRowClick(row)}
-                        />
-                      </Box>
-                    </TableCell>
-                  </>
-                )}
+                renderRow={renderAggregatedRow}
                 showDatePicker={false}
                 showSearch={false}
                 showFillter={false}

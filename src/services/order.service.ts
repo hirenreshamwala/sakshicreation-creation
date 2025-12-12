@@ -50,6 +50,7 @@ interface ApiResponse<T> {
     hasNext: boolean;
     hasPrev: boolean;
   };
+  count?: number;
 }
 
 export const orderService = {
@@ -80,13 +81,19 @@ export const orderService = {
       const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
         Endpoint.GET_ALL_ORDERS,filters
       );
-
+      if (response.data.success) {
       return {
-        success: response.data.success,
+        success: true,
         data: response.data.data || [],
-        count: response.data.count,
+        count: response.data.totalCount, // FIXED: Use totalCount as count
         pagination: response.data.pagination,
       };
+      } else {
+        return {
+          success: false,
+          message: response.data.message,
+        };
+      }
     } catch (error: any) {
       console.error("Service: Get all orders error:", error);
       throw new Error(
@@ -94,17 +101,23 @@ export const orderService = {
       );
     }
   },
-  // Add this method to your orderService in order.service.ts
-  async getOrdersByStaffId(id: string): Promise<ApiResponse<Order[]>> {
+
+  // FIXED: getOrdersByStaffId now accepts filters and returns count/pagination
+  async getOrdersByStaffId(id: string, filters: any): Promise<ApiResponse<Order[]>> {
     try {
-
-      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.get(
-        `${Endpoint.GET_ORDER_BY_STAFF_ID}/${id}`);
-
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
+        `${Endpoint.GET_ORDER_BY_STAFF_ID}/${id}`,
+        filters
+      );
+      
+      console.log("Orders by Staff API Response:", response.data);
+      
       return {
         success: response.data.success,
         data: response.data.data || [],
         message: response.data.message,
+        count: response.data.totalCount, // FIXED: Add count
+        pagination: response.data.pagination,
       };
     } catch (error: any) {
       console.error("Service: Get orders by staff ID error:", error);
@@ -242,6 +255,18 @@ export const orderService = {
       throw new Error(
         error.response?.data?.message || "Failed to fetch designer orders"
       );
+    }
+  },
+  async searchFilterOptions(field: string, search: string = "", filters: any = {}): Promise<ApiResponse<string[]>> {
+    try {
+      const response: AxiosResponse<ApiResponse<string[]>> = await Request.post(
+        `${Endpoint.GET_ORDER_FILTER_OPTIONS}/${field}`,
+        { search, ...filters }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error(`Error fetching ${field} filter options:`, error);
+      throw new Error(error.response?.data?.message || "Failed to fetch filter options");
     }
   },
 

@@ -24,6 +24,21 @@ export interface ApiResponse<T> {
     data?: T;
     message?: string;
     count?: number;
+    pagination?: {
+        currentPage: number;
+        totalPages: number;
+        totalCount: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+    };
+    totalCount?: number;
+}
+
+interface MultipleDeleteResponse {
+    success: boolean;
+    message: string;
+    deletedCount: number;
+    deletedIds: string[];
 }
 
 export const paymentFolderService = {
@@ -34,24 +49,44 @@ export const paymentFolderService = {
                 Endpoint.CREATE_PAYMENT_FOLDER,
                 data
             );
-            return response.data;
+            return response.data.data;
         } catch (error: any) {
             throw new Error(error.response?.data?.message || 'Failed to create payment folder');
         }
     },
 
-    async getAllPaymentFolders(): Promise<ApiResponse<PaymentFolder[]>> {
+    async getAllPaymentFolders(filters?: any): Promise<ApiResponse<PaymentFolder[]>> {
         try {
-            const response: AxiosResponse<{ data: PaymentFolder[] }> = await Request.get(
-                Endpoint.GET_ALL_PAYMENT_FOLDERS
+            const response: AxiosResponse<ApiResponse<PaymentFolder[]>> = await Request.post(
+                `${Endpoint.GET_ALL_PAYMENT_FOLDERS}`,
+                filters || {}
             );
             return {
                 success: true,
                 data: response.data.data || [],
-                count: response.data.data?.length || 0,
+                message: response.data.message,
+                pagination: response.data.pagination,
+                totalCount: response.data.totalCount
             };
         } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to fetch payment folders');
+            throw new Error(error.response?.data?.message || "Failed to fetch payment folders");
+        }
+    },
+
+    // Fixed: Renamed to searchFilterOptions to match complainService and page call
+    async searchFilterOptions(field: string, searchTerm: string, filters?: any): Promise<ApiResponse<string[]>> {
+        try {
+            const response: AxiosResponse<ApiResponse<string[]>> = await Request.post(
+                `${Endpoint.GET_PAYMENT_FOLDER_FILTER_OPTIONS}/${field}`,
+                { search: searchTerm, ...filters }
+            );
+            return {
+                success: true,
+                data: response.data.data || [],
+                message: response.data.message
+            };
+        } catch (error: any) {
+            throw new Error(error.response?.data?.message || `Failed to search ${field} options`);
         }
     },
 
@@ -93,7 +128,7 @@ export const paymentFolderService = {
 
     async deletePaymentFolder(id: string): Promise<void> {
         try {
-            await Request.post(`${Endpoint.DELETE_PAYMENT_FOLDER}/${id}`);
+            await Request.delete(`${Endpoint.DELETE_PAYMENT_FOLDER}/${id}`);
         } catch (error: any) {
             throw new Error(error.response?.data?.message || 'Failed to delete payment folder');
         }

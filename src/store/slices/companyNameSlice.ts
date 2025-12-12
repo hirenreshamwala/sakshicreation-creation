@@ -1,5 +1,27 @@
+// store/slices/companyNameSlice.ts
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import { companyNameService, CompanyName, CreateCompanyNameData, ApiResponse } from "@/services/companyName.service";
+
+interface Pagination {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+}
+
+interface CompanyNameFilters {
+  page: number;
+  limit: number;
+  search: string;
+  companyNames?: string[];
+  defaults?: string[];
+}
+
+interface AvailableFilters {
+  companyNames: string[];
+  defaults: string[];
+  logoStatus: string[];  // ← ADD THIS
+}
 
 interface CompanyNameState {
   companyNames: CompanyName[];
@@ -7,7 +29,9 @@ interface CompanyNameState {
   loading: boolean;
   error: string | null;
   successMessage: string | null;
-  totalCount: number;
+  pagination: Pagination | null;
+  filters: CompanyNameFilters;
+  availableFilters: AvailableFilters;
 }
 
 const initialState: CompanyNameState = {
@@ -16,91 +40,95 @@ const initialState: CompanyNameState = {
   loading: false,
   error: null,
   successMessage: null,
-  totalCount: 0,
+  pagination: null,
+  filters: {
+    page: 1,
+    limit: 10,
+    search: "",
+  },
+  availableFilters: {
+    companyNames: [],
+    defaults: ["Yes", "No"], // static for default filter
+  },
 };
 
-// Create Company Name
+// Thunks (unchanged)
 export const createCompanyNameThunk = createAsyncThunk(
   "companyName/create",
   async (data: CreateCompanyNameData, { rejectWithValue }) => {
     try {
       const response = await companyNameService.createCompanyName(data);
-      if (response.success) {
-        return response.data;
-      } else {
-        return rejectWithValue(response.message || "Failed to create company name");
-      }
+      if (response.success) return response.data;
+      return rejectWithValue(response.message || "Failed to create company name");
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to create company name");
     }
   }
 );
 
-// Get All Company Names
 export const getAllCompanyNamesThunk = createAsyncThunk(
   "companyName/getAll",
-  async (_, { rejectWithValue }) => {
+  async (filters: Partial<CompanyNameFilters> = {}, { rejectWithValue }) => {
     try {
-      const response = await companyNameService.getAllCompanyNames();
+      const response = await companyNameService.getAllCompanyNames(filters);
       if (response.success && Array.isArray(response.data)) {
         return {
           data: response.data,
-          totalCount: response.data.length,
+          pagination: response.pagination,
         };
-      } else {
-        return rejectWithValue("Invalid response format: company names array not found");
       }
+      return rejectWithValue("Invalid response format");
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch company names");
     }
   }
 );
 
-// Get Company Name By ID
+export const getCompanyNameFiltersThunk = createAsyncThunk(
+  "companyName/getFilters",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await companyNameService.getCompanyNameFilters();
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to load filters");
+    }
+  }
+);
+
 export const getCompanyNameByIdThunk = createAsyncThunk(
   "companyName/getById",
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await companyNameService.getCompanyNameById(id);
-      if (response.success && response.data) {
-        return response.data;
-      } else {
-        return rejectWithValue(response.message || "Company name not found");
-      }
+      if (response.success && response.data) return response.data;
+      return rejectWithValue(response.message || "Company name not found");
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch company name");
     }
   }
 );
 
-// Update Company Name
 export const updateCompanyNameThunk = createAsyncThunk(
   "companyName/update",
   async ({ id, data }: { id: string; data: Partial<CreateCompanyNameData> }, { rejectWithValue }) => {
     try {
       const response = await companyNameService.updateCompanyName(id, data);
-      if (response.success) {
-        return response.data;
-      } else {
-        return rejectWithValue(response.message || "Failed to update company name");
-      }
+      if (response.success) return response.data;
+      return rejectWithValue(response.message || "Failed to update company name");
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to update company name");
     }
   }
 );
 
-// Delete Company Name
 export const deleteCompanyNameThunk = createAsyncThunk(
   "companyName/delete",
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await companyNameService.deleteCompanyName(id);
-      if (response.success) {
-        return id;
-      } else {
-        return rejectWithValue(response.message || "Failed to delete company name");
-      }
+      if (response.success) return id;
+      return rejectWithValue(response.message || "Failed to delete company name");
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to delete company name");
     }
@@ -120,49 +148,55 @@ const companyNameSlice = createSlice({
     clearSingleCompanyName(state) {
       state.singleCompanyName = null;
     },
-    setCompanyNames(state, action: PayloadAction<CompanyName[]>) {
-      state.companyNames = action.payload;
+    setCompanyNameFilters(state, action: PayloadAction<Partial<CompanyNameFilters>>) {
+      state.filters = { ...state.filters, ...action.payload };
+    },
+    clearCompanyNameFilters(state) {
+      state.filters = { page: 1, limit: 10, search: "" };
     },
   },
   extraReducers: (builder) => {
     builder
-      // Create Company Name
+      // === Create ===
       .addCase(createCompanyNameThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(createCompanyNameThunk.fulfilled, (state, action: PayloadAction<CompanyName>) => {
         state.loading = false;
-        state.companyNames = [action.payload, ...state.companyNames];
+        state.companyNames.unshift(action.payload); // Add to top
         state.successMessage = "Company name created successfully";
-        state.error = null;
       })
       .addCase(createCompanyNameThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
 
-      // Get All Company Names
+      // === Get All (with pagination & filters) ===
       .addCase(getAllCompanyNamesThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        getAllCompanyNamesThunk.fulfilled,
-        (state, action: PayloadAction<{ data: CompanyName[]; totalCount: number }>) => {
-          state.loading = false;
-          state.companyNames = action.payload.data;
-          state.totalCount = action.payload.totalCount;
-          state.error = null;
-        }
-      )
+      .addCase(getAllCompanyNamesThunk.fulfilled, (state, action: PayloadAction<{ data: CompanyName[]; pagination: Pagination }>) => {
+        state.loading = false;
+        state.companyNames = action.payload.data;
+        state.pagination = action.payload.pagination;
+      })
       .addCase(getAllCompanyNamesThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
         state.companyNames = [];
       })
 
-      // Get Company Name By ID
+      // === Get Filters ===
+    .addCase(getCompanyNameFiltersThunk.fulfilled, (state, action: PayloadAction<AvailableFilters>) => {
+  state.availableFilters = {
+    companyNames: action.payload.companyNames || [],
+    defaults: action.payload.defaults || ["Yes", "No"],
+    logoStatus: action.payload.logoStatus || ["Has Logo", "No Logo"],
+  };
+})
+      // === Get By ID ===
       .addCase(getCompanyNameByIdThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -170,15 +204,13 @@ const companyNameSlice = createSlice({
       .addCase(getCompanyNameByIdThunk.fulfilled, (state, action: PayloadAction<CompanyName>) => {
         state.loading = false;
         state.singleCompanyName = action.payload;
-        state.error = null;
       })
       .addCase(getCompanyNameByIdThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.singleCompanyName = null;
       })
 
-      // Update Company Name
+      // === Update ===
       .addCase(updateCompanyNameThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -186,19 +218,16 @@ const companyNameSlice = createSlice({
       .addCase(updateCompanyNameThunk.fulfilled, (state, action: PayloadAction<CompanyName>) => {
         state.loading = false;
         const index = state.companyNames.findIndex((item) => item._id === action.payload._id);
-        if (index !== -1) {
-          state.companyNames[index] = action.payload;
-        }
+        if (index !== -1) state.companyNames[index] = action.payload;
         state.singleCompanyName = action.payload;
         state.successMessage = "Company name updated successfully";
-        state.error = null;
       })
       .addCase(updateCompanyNameThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
 
-      // Delete Company Name
+      // === Delete ===
       .addCase(deleteCompanyNameThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -207,7 +236,6 @@ const companyNameSlice = createSlice({
         state.loading = false;
         state.companyNames = state.companyNames.filter((item) => item._id !== action.payload);
         state.successMessage = "Company name deleted successfully";
-        state.error = null;
       })
       .addCase(deleteCompanyNameThunk.rejected, (state, action) => {
         state.loading = false;
@@ -220,7 +248,8 @@ export const {
   clearCompanyNameError,
   clearCompanyNameSuccessMessage,
   clearSingleCompanyName,
-  setCompanyNames,
+  setCompanyNameFilters,
+  clearCompanyNameFilters,
 } = companyNameSlice.actions;
 
 export default companyNameSlice.reducer;

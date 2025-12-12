@@ -2,32 +2,61 @@ import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/tool
 import { complainService, Complaint } from "@/services/complain.service";
 
 interface ComplainState {
-  complains: Complaint[];
-  loading: boolean;
-  error: string | null;
-  successMessage: string | null;
+    complains: Complaint[];
+    loading: boolean;
+    error: string | null;
+    successMessage: string | null;
+    totalCount: number;
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+    };
 }
 
+
 const initialState: ComplainState = {
-  complains: [],
-  loading: false,
-  error: null,
-  successMessage: null,
+    complains: [],
+    loading: false,
+    error: null,
+    successMessage: null,
+    totalCount: 0,
+    pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+    },
 };
+
 
 // =================== THUNKS ===================
 export const getAllComplainsThunk = createAsyncThunk(
-  "complain/getAll",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await complainService.getAllComplains();
-      if (response.success && Array.isArray(response.data)) return response.data;
-      else return rejectWithValue("Invalid response format: complains array not found");
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to fetch complains");
+    "complain/getAll",
+    async (filters: any, { rejectWithValue }) => {
+        try {
+            const response = await complainService.getAllComplains(filters);
+            if (response.success && Array.isArray(response.data)) {
+                return {
+                    data: response.data,
+                    totalCount: response.totalCount || 0,
+                    pagination: response.pagination || {
+                        currentPage: filters?.page || 1,
+                        totalPages: Math.ceil((response.totalCount || 0) / (filters?.pageSize || 10)),
+                        hasNext: false,
+                        hasPrev: false,
+                    },
+                };
+            } else {
+                return rejectWithValue("Invalid response format: complains array not found");
+            }
+        } catch (error: any) {
+            return rejectWithValue(error.message || "Failed to fetch complains");
+        }
     }
-  }
 );
+
 
 export const createComplainThunk = createAsyncThunk(
   "complain/create",
@@ -65,21 +94,31 @@ export const deleteComplainThunk = createAsyncThunk(
   }
 );
 
-export const getComplainsByStaffThunk = createAsyncThunk<
-  Complaint[],
-  string,
-  { rejectValue: string }
->(
-  "complains/getByStaff",
-  async (staffId, { rejectWithValue }) => {
-    try {
-      const res = await complainService.getComplainsByStaff(staffId);
-      return res.data || [];
-    } catch (err: any) {
-      return rejectWithValue(err.message);
+export const getComplainsByStaffThunk = createAsyncThunk<{
+    data: Complaint[];
+    totalCount: number;
+    pagination: any;
+}, { staffId: string; filters?: any }, { rejectValue: string }>(
+    "complains/getByStaff",
+    async ({ staffId, filters }, { rejectWithValue }) => {
+        try {
+            const res = await complainService.getComplainsByStaff(staffId, filters);
+            return {
+                data: res.data || [],
+                totalCount: res.totalCount || 0,
+                pagination: res.pagination || {
+                    currentPage: filters?.page || 1,
+                    totalPages: Math.ceil((res.totalCount || 0) / (filters?.pageSize || 10)),
+                    hasNext: false,
+                    hasPrev: false,
+                },
+            };
+        } catch (err: any) {
+            return rejectWithValue(err.message);
+        }
     }
-  }
 );
+
 
 // =================== SLICE ===================
 const complainSlice = createSlice({
@@ -99,18 +138,25 @@ const complainSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // GET ALL
-      .addCase(getAllComplainsThunk.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(getAllComplainsThunk.fulfilled, (state, action: PayloadAction<Complaint[]>) => {
-        state.loading = false;
-        state.complains = action.payload;
-      })
-      .addCase(getAllComplainsThunk.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
+                  .addCase(getAllComplainsThunk.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(getAllComplainsThunk.fulfilled, (state, action: PayloadAction<{
+                data: Complaint[];
+                totalCount: number;
+                pagination: any;
+            }>) => {
+                state.loading = false;
+                state.complains = action.payload.data;
+                state.totalCount = action.payload.totalCount;
+                state.pagination = action.payload.pagination;
+            })
+            .addCase(getAllComplainsThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+
 
       // CREATE
       .addCase(createComplainThunk.pending, (state) => { state.loading = true; state.error = null; })
@@ -140,17 +186,19 @@ const complainSlice = createSlice({
       })
       .addCase(deleteComplainThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
       .addCase(getComplainsByStaffThunk.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+          state.loading = true;
+          state.error = null;
       })
       .addCase(getComplainsByStaffThunk.fulfilled, (state, action) => {
-        state.loading = false;
-        state.complains = action.payload;
+          state.loading = false;
+          state.complains = action.payload.data;
+          state.totalCount = action.payload.totalCount;
+          state.pagination = action.payload.pagination;
       })
       .addCase(getComplainsByStaffThunk.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || "Failed to fetch complains by staff";
-      });
+          state.loading = false;
+          state.error = action.payload || "Failed to fetch complains by staff";
+      })
   },
 });
 

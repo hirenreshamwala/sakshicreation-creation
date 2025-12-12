@@ -34,6 +34,13 @@ export interface PaymentFolderState {
   currentPaymentFolder: PaymentFolder | null;
   loading: boolean;
   error: string | null;
+  totalCount: number;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 }
 
 // Add this multiple delete thunk
@@ -54,7 +61,7 @@ export const createPaymentFolderThunk = createAsyncThunk(
   async (data: Partial<PaymentFolder>, { rejectWithValue }) => {
     try {
       const response = await paymentFolderService.createPaymentFolder(data);
-      return response;
+      return { newData: response };
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to create payment folder');
     }
@@ -62,17 +69,26 @@ export const createPaymentFolderThunk = createAsyncThunk(
 );
 
 export const getAllPaymentFoldersThunk = createAsyncThunk(
-  'paymentFolders/getAll',
-  async (_, { rejectWithValue }) => {
+  "paymentFolders/getAll",
+  async (filters: any, { rejectWithValue }) => {
     try {
-      const response = await paymentFolderService.getAllPaymentFolders();
+      const response = await paymentFolderService.getAllPaymentFolders(filters);
       if (response.success && Array.isArray(response.data)) {
-        return response.data;
+        return {
+          data: response.data,
+          totalCount: response.totalCount || 0,
+          pagination: response.pagination || {
+            currentPage: filters?.page || 1,
+            totalPages: Math.ceil((response.totalCount || 0) / (filters?.pageSize || 10)),
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
       } else {
-        return rejectWithValue(response.message || 'Invalid response format');
+        return rejectWithValue("Invalid response format");
       }
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch payment folders');
+      return rejectWithValue(error.message || "Failed to fetch payment folders");
     }
   }
 );
@@ -132,6 +148,13 @@ const initialState: PaymentFolderState = {
   currentPaymentFolder: null,
   loading: false,
   error: null,
+  totalCount: 0,
+  pagination: {
+    currentPage: 1,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false,
+  },
 };
 
 const paymentFolderSlice = createSlice({
@@ -191,34 +214,51 @@ const paymentFolderSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // Create Payment Folder
-      .addCase(createPaymentFolderThunk.fulfilled, (state, action: PayloadAction<any>) => {
+      .addCase(createPaymentFolderThunk.fulfilled, (state, action: PayloadAction<{ newData: PaymentFolder }>) => {
         if (action.payload.newData) {
           state.paymentFolders.unshift(action.payload.newData);
+          state.totalCount += 1; // Increment total if needed
         }
       })
       // Get All Payment Folders
-      .addCase(getAllPaymentFoldersThunk.fulfilled, (state, action: PayloadAction<PaymentFolder[]>) => {
-        state.paymentFolders = action.payload;
+      .addCase(getAllPaymentFoldersThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getAllPaymentFoldersThunk.fulfilled, (state, action: PayloadAction<{
+        data: PaymentFolder[];
+        totalCount: number;
+        pagination: any;
+      }>) => {
+        state.loading = false;
+        state.paymentFolders = action.payload.data;
+        state.totalCount = action.payload.totalCount;
+        state.pagination = action.payload.pagination;
+      })
+      .addCase(getAllPaymentFoldersThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       })
       // Get Payment Folder by ID
       .addCase(getPaymentFolderByIdThunk.fulfilled, (state, action: PayloadAction<PaymentFolder>) => {
         state.currentPaymentFolder = action.payload;
       })
-      // Update Payment Folder
-      // .addCase(updatePaymentFolderThunk.fulfilled, (state, action: PayloadAction<any>) => {
-      //   const updatedFolder = action.payload.data;
-      //   if (updatedFolder && updatedFolder._id) {
-      //     state.paymentFolders = state.paymentFolders.map((folder) =>
-      //       folder._id === updatedFolder._id ? updatedFolder : folder
-      //     );
-      //     if (state.currentPaymentFolder && state.currentPaymentFolder._id === updatedFolder._id) {
-      //       state.currentPaymentFolder = updatedFolder;
-      //     }
-      //   }
-      // })
+      // Update Payment Folder - Uncomment and fix if using thunk update
+      .addCase(updatePaymentFolderThunk.fulfilled, (state, action: PayloadAction<PaymentFolder>) => {
+        const updatedFolder = action.payload;
+        if (updatedFolder && updatedFolder._id) {
+          state.paymentFolders = state.paymentFolders.map((folder) =>
+            folder._id === updatedFolder._id ? updatedFolder : folder
+          );
+          if (state.currentPaymentFolder && state.currentPaymentFolder._id === updatedFolder._id) {
+            state.currentPaymentFolder = updatedFolder;
+          }
+        }
+      })
       // Delete Payment Folder (Single)
       .addCase(deletePaymentFolderThunk.fulfilled, (state, action: PayloadAction<string>) => {
         state.paymentFolders = state.paymentFolders.filter((folder) => folder._id !== action.payload);
+        state.totalCount -= 1; // Decrement total
         if (state.currentPaymentFolder && state.currentPaymentFolder._id === action.payload) {
           state.currentPaymentFolder = null;
         }
@@ -236,7 +276,7 @@ const paymentFolderSlice = createSlice({
         state.paymentFolders = state.paymentFolders.filter(
           (folder) => !deletedIds.includes(folder._id)
         );
-
+        state.totalCount -= deletedIds.length; // Decrement total
         // Clear current payment folder if it was deleted
         if (state.currentPaymentFolder && deletedIds.includes(state.currentPaymentFolder._id)) {
           state.currentPaymentFolder = null;
@@ -245,29 +285,18 @@ const paymentFolderSlice = createSlice({
       .addCase(deleteMultiplePaymentFoldersThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(addPaymentToFolderThunk.fulfilled, (state, action: PayloadAction<PaymentFolder>) => {
+        const updatedFolder = action.payload;
+        if (updatedFolder && updatedFolder._id) {
+          state.paymentFolders = state.paymentFolders.map((folder) =>
+            folder._id === updatedFolder._id ? updatedFolder : folder
+          );
+          if (state.currentPaymentFolder && state.currentPaymentFolder._id === updatedFolder._id) {
+            state.currentPaymentFolder = updatedFolder;
+          }
+        }
       });
-    // Add Payment to Folder
-    // .addCase(addPaymentToFolderThunk.pending, (state) => {
-    //   state.loading = true;
-    //   state.error = null;
-    // })
-    // .addCase(addPaymentToFolderThunk.fulfilled, (state, action: PayloadAction<any>) => {
-    //   state.loading = false;
-    //   const updatedFolder = action.payload.data;
-    //   // Add safety check for updatedFolder and _id
-    //   if (updatedFolder && updatedFolder._id) {
-    //     state.paymentFolders = state.paymentFolders.map((folder) =>
-    //       folder._id === updatedFolder._id ? updatedFolder : folder
-    //     );
-    //     if (state.currentPaymentFolder && state.currentPaymentFolder._id === updatedFolder._id) {
-    //       state.currentPaymentFolder = updatedFolder;
-    //     }
-    //   }
-    // })
-    // .addCase(addPaymentToFolderThunk.rejected, (state, action) => {
-    //   state.loading = false;
-    //   state.error = action.payload as string;
-    // });
   },
 });
 

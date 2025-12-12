@@ -1,4 +1,5 @@
-import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
+// store/slices/binderTypeSlice.ts
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { binderTypeService } from "@/services/binderType.service";
 
 interface BinderType {
@@ -12,25 +13,51 @@ interface CreateBinderTypeData {
   name: string;
 }
 
+interface Pagination {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+}
+
+interface BinderTypeFilters {
+  page: number;
+  limit: number;
+  search: string;
+}
+
+interface AvailableFilters {
+  binderNames: string[];
+}
+
 interface BinderTypeState {
   binderTypes: BinderType[];
-  singleBinderType: BinderType | null;
   loading: boolean;
   error: string | null;
   successMessage: string | null;
-  totalCount: number;
+  pagination: Pagination | null;
+  filters: BinderTypeFilters;
+  availableFilters: AvailableFilters;
 }
 
 const initialState: BinderTypeState = {
   binderTypes: [],
-  singleBinderType: null,
   loading: false,
   error: null,
   successMessage: null,
-  totalCount: 0,
+  pagination: null,
+  filters: {
+    page: 1,
+    limit: 10,
+    search: "",
+  },
+  availableFilters: {
+    binderNames: [],
+  },
 };
 
-// Thunks
+// THUNKS
+
 export const createBinderTypeThunk = createAsyncThunk(
   "binderType/create",
   async (data: CreateBinderTypeData, { rejectWithValue }) => {
@@ -48,24 +75,34 @@ export const createBinderTypeThunk = createAsyncThunk(
     }
   }
 );
+// 1. Get Filter Options (for dropdown)
+export const getBinderTypeFiltersThunk = createAsyncThunk(
+  "binderType/getFilters",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await binderTypeService.getBinderTypeFilters();
+      return response; // { binderNames: string[] }
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to load filters");
+    }
+  }
+);
 
+// 2. Get All with Pagination + Search + Filter
 export const getAllBinderTypesThunk = createAsyncThunk(
   "binderType/getAll",
-  async (params?: { page?: number; limit?: number; search?: string }, { rejectWithValue }) => {
+  async (filters: Partial<BinderTypeFilters & { binderNames?: string[] }> = {}, { rejectWithValue }) => {
     try {
-      const response = await binderTypeService.getAllBinderTypes(params);
-
-      if (response.success && Array.isArray(response.data)) {
+      const response = await binderTypeService.getAllBinderTypes(filters);
+      if (response.success) {
         return {
           data: response.data,
-          totalCount: response.totalCount || response.data.length,
+          pagination: response.pagination,
         };
-      } else {
-        return rejectWithValue("Invalid response format: binder types array not found");
       }
+      return rejectWithValue("Failed to fetch binder types");
     } catch (error: any) {
-      console.error("Get All Binder Types Error:", error);
-      return rejectWithValue(error.message || "Failed to fetch binder types");
+      return rejectWithValue(error.message || "Network error");
     }
   }
 );
@@ -153,11 +190,11 @@ const binderTypeSlice = createSlice({
     clearBinderTypeSuccessMessage(state) {
       state.successMessage = null;
     },
-    clearSingleBinderType(state) {
-      state.singleBinderType = null;
+    setBinderTypeFilters(state, action: PayloadAction<Partial<BinderTypeFilters>>) {
+      state.filters = { ...state.filters, ...action.payload };
     },
-    setBinderTypes(state, action: PayloadAction<BinderType[]>) {
-      state.binderTypes = action.payload;
+    clearBinderTypeFilters(state) {
+      state.filters = { page: 1, limit: 10, search: "" };
     },
   },
   extraReducers: (builder) => {
@@ -179,18 +216,19 @@ const binderTypeSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        getAllBinderTypesThunk.fulfilled,
-        (state, action: PayloadAction<{ data: BinderType[]; totalCount: number }>) => {
-          state.loading = false;
-          state.binderTypes = action.payload.data;
-          state.totalCount = action.payload.totalCount;
-        }
-      )
+      .addCase(getAllBinderTypesThunk.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.binderTypes = action.payload.data;
+        state.pagination = action.payload.pagination;
+      })
       .addCase(getAllBinderTypesThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.binderTypes = [];
+      })
+
+      // === GET FILTERS ===
+      .addCase(getBinderTypeFiltersThunk.fulfilled, (state, action: PayloadAction<AvailableFilters>) => {
+        state.availableFilters = action.payload;
       })
       .addCase(getBinderTypeByIdThunk.pending, (state) => {
         state.loading = true;
@@ -254,8 +292,8 @@ const binderTypeSlice = createSlice({
 export const {
   clearBinderTypeError,
   clearBinderTypeSuccessMessage,
-  clearSingleBinderType,
-  setBinderTypes,
+  setBinderTypeFilters,
+  clearBinderTypeFilters,
 } = binderTypeSlice.actions;
 
 export default binderTypeSlice.reducer;

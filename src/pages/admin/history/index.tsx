@@ -12,14 +12,6 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store";
-import {
-  getAllAccountMastersThunk,
-  deleteAccountMasterThunk,
-  approvePartyThunk,
-  clearError,
-  clearSuccessMessage,
-  getAccountMasterByStaffIdThunk,
-} from "@/store/slices/accountMasterSlice";
 import Dashboard from "@/component/Dashboard";
 import BasicTable from "@/component/common_component/Table/themetable";
 import ThemeButton from "@/component/common_component/themebutton";

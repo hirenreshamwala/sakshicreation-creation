@@ -1,102 +1,131 @@
-import React, { useEffect, useRef } from "react";
+"use client";
+
+import React, { useEffect, useState, useCallback,useRef} from "react";
 import {
   Box,
+  Typography,
   IconButton,
   TableCell,
-  Typography,
+  Chip,
+  Button,
 } from "@mui/material";
-import { Add } from "@mui/icons-material";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import Button from "@/component/common_component/themebutton";
+import { Add, Edit, Delete } from "@mui/icons-material";
 import BasicTable from "@/component/common_component/Table/themetable";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import {
   getAllRolesThunk,
   deleteRoleThunk,
-  clearError,
-  clearSuccessMessage,
+  setRoleFilters,
+  getRoleFiltersThunk,
 } from "@/store/slices/roleSlice";
-import { Role } from "@/services/role.service";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import Loader from "@/component/common_component/loader";
 
-interface RoleRow {
-  id: string;
-  name: string;
-  totalStaff: number;
-  canDelete: boolean;
-}
-
 const columns = [
   { id: "name", label: "Role Name" },
+  { id: "totalStaff", label: "Total Staff" },
   { id: "options", label: "Options", align: "right" as const },
 ];
 
-const RoleTable: React.FC = () => {
+const RoleTable = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
-  const rolesState = useSelector((state: RootState) => state.roles || {
-    roles: [],
-    loading: false,
-    error: null,
-    successMessage: null,
-  });
-  const { roles, loading, error, successMessage } = rolesState;
+  const {
+    roles = [],
+    loading,
+    pagination,
+    filters,
+    availableFilters = { roleNames: [] , totalStaff: []  },
+  } = useSelector((state: RootState) => state.roles);
 
-  const prevErrorRef = useRef<string | null>(null);
-  const prevSuccessRef = useRef<string | null>(null);
+  const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+  const searchTimeoutRef = useRef<number | null>(null);
 
-  const roleRows: RoleRow[] = roles.map((role: Role) => ({
-    id: role._id,
-    name: role.roleName,
-    totalStaff: role.totalUser,
-    canDelete: role.totalUser === 0,
-  }));
+  const handleSearchDebounced = useCallback(
+    (search: string) => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = window.setTimeout(() => {
+        dispatch(setRoleFilters({ search: search.trim(), page: 1 }));
+      }, 500);
+    },
+    [dispatch]
+  );
 
   useEffect(() => {
-    if (router.pathname === "/admin/setup/role")
-      dispatch(getAllRolesThunk());
-  }, [router.pathname, dispatch]);
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+  const fetchData = useCallback(() => {
+    const apiFilters: any = {
+      page: filters.page || 1,
+      limit: filters.limit || 10,
+      search: filters.search || "",
+    };
+
+    if (activeFilters["Role Name"]?.length) {
+      apiFilters.roleNames = activeFilters["Role Name"];
+    }
+    if (activeFilters["Total Staff"]?.length) {
+  apiFilters.totalStaff = activeFilters["Total Staff"];
+}
+
+    dispatch(getAllRolesThunk(apiFilters));
+  }, [dispatch, filters, activeFilters]);
 
   useEffect(() => {
-    if (error && error !== prevErrorRef.current) {
-      toast.error(error);
-      prevErrorRef.current = error;
-      dispatch(clearError());
-    }
-    if (successMessage && successMessage !== prevSuccessRef.current) {
-      toast.success(successMessage);
-      prevSuccessRef.current = successMessage;
-      dispatch(clearSuccessMessage());
-    }
-  }, [error, successMessage, dispatch]);
+    dispatch(getRoleFiltersThunk());
+    fetchData();
+  }, []);
 
-  const handleDelete = (id: string, name: string) => {
-    Swal.fire({
-      title: `Delete Role ?`,
+  useEffect(() => {
+    fetchData();
+  }, [filters.page, filters.search, activeFilters]);
+
+  const handleDelete = async (id: string, name: string) => {
+    const result = await Swal.fire({
+      title: "Delete Role?",
       text: "This action cannot be undone!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
       confirmButtonText: "Yes, delete it!",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        dispatch(deleteRoleThunk(id));
-        Swal.fire("Deleted!", `${name} has been deleted.`, "success");
-      }
     });
+
+    if (result.isConfirmed) {
+      await dispatch(deleteRoleThunk(id)).unwrap();
+      toast.success(`${name} deleted successfully`);
+      fetchData();
+    }
   };
+
+  const handleFilterChange = (newFilters: { [key: string]: string[] }) => {
+    setActiveFilters(newFilters);
+    dispatch(setRoleFilters({ page: 1 }));
+  };
+
+  const clearAllFilters = () => {
+    setActiveFilters({});
+    dispatch(setRoleFilters({ page: 1, search: "" }));
+  };
+
+  const activeFilterCount = Object.values(activeFilters).flat().length;
 
   return (
     <Box p={3}>
-      {/* Top Actions */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h5" fontWeight={600}>
+          Roles
+        </Typography>
         <Button
           variant="contained"
           startIcon={<Add />}
@@ -106,40 +135,74 @@ const RoleTable: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Loading */}
-      {loading && <Loader />}
-
-      {/* Empty */}
-      {!loading && roleRows.length === 0 && (
-        <Typography sx={{ mt: 2 }}>No roles found.</Typography>
+      {/* Active Filters */}
+      {activeFilterCount > 0 && (
+        <Box mb={2} display="flex" gap={1} flexWrap="wrap" alignItems="center">
+          <Typography variant="body2" color="textSecondary">
+            Filters:
+          </Typography>
+          {Object.entries(activeFilters).map(([field, values]) =>
+            values.map((val) => (
+              <Chip
+                key={`${field}-${val}`}
+                label={`${field}: ${val}`}
+                onDelete={() => {
+                  setActiveFilters((prev) => ({
+                    ...prev,
+                    [field]: prev[field].filter((v) => v !== val),
+                  }));
+                }}
+                size="small"
+                color="primary"
+              />
+            ))
+          )}
+          <Button size="small" onClick={clearAllFilters}>
+            Clear All
+          </Button>
+        </Box>
       )}
 
-      {/* Table */}
-      {!loading && roleRows.length > 0 && (
+      {/* Table with Server-side Pagination + Filtering */}
+      {loading ? (
+        <Loader />
+      ) : roles.length === 0 ? (
+        <Typography textAlign="center" mt={4}>
+          No roles found.
+        </Typography>
+      ) : (
         <BasicTable
+          serverSide={true}
           tableHeader={columns}
-          rowData={roleRows}
-          showSearch
-          renderRow={(row: RoleRow) => (
+          rowData={roles}
+          loading={loading}
+          totalCount={pagination?.totalItems || 0}
+          pagination={pagination}
+          onPageChange={(page) => dispatch(setRoleFilters({ page }))}
+          onSearchChange={handleSearchDebounced}
+          onFilterChange={handleFilterChange}
+availableFilters={{
+  "Role Name": availableFilters.roleNames || [],
+  "Total Staff": availableFilters.totalStaff || [],   // <-- NEW
+}}
+          renderRow={(row: any, idx: number) => (
             <>
               <TableCell>
-                <Box>
-                  <Typography fontWeight={600}>{row.name}</Typography>
-                  <Typography fontSize={13} color="text.secondary">
-                    Total Staff: {row.totalStaff}
-                  </Typography>
-                </Box>
+                <Typography fontWeight={600}>{row.roleName}</Typography>
               </TableCell>
+              <TableCell>{row.totalUser || 0}</TableCell>
               <TableCell align="right">
-                <IconButton onClick={() => router.push(`/admin/setup/role/edit-role/${row?.id}`)}>
-                  <EditIcon color="primary" />
+                <IconButton
+                  onClick={() => router.push(`/admin/setup/role/edit-role/${row._id}`)}
+                >
+                  <Edit color="primary" />
                 </IconButton>
                 <IconButton
                   color="error"
-                  onClick={() => row.canDelete && handleDelete(row.id, row.name)}
-                  disabled={!row.canDelete}
+                  disabled={row.totalUser > 0}
+                  onClick={() => row.totalUser === 0 && handleDelete(row._id, row.roleName)}
                 >
-                  <DeleteIcon />
+                  <Delete />
                 </IconButton>
               </TableCell>
             </>
