@@ -820,12 +820,15 @@ const ProformaHistoryDialog = ({
                 <Box width="100%" display="grid" gridTemplateColumns="repeat(4, 1fr)" gap={1} mt={1}>
                   <Box>
                     <Typography variant="caption" color="textSecondary">Unit Price</Typography>
-                    <Typography variant="body2" fontWeight={500}>₹{entry.unitPrice?.toFixed(2) || 0}</Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      ₹{Number(entry.unitPrice || 0).toFixed(2)}
+                    </Typography>
+
                   </Box>
 
                   <Box>
                     <Typography variant="caption" color="textSecondary">Total</Typography>
-                    <Typography variant="body2" fontWeight={500}>₹{entry.total?.toFixed(2) || 0}</Typography>
+                    <Typography variant="body2" fontWeight={500}>₹{Number(entry.total || 0)?.toFixed(2) || 0}</Typography>
                   </Box>
 
                   <Box>
@@ -836,7 +839,7 @@ const ProformaHistoryDialog = ({
                   </Box>
                   <Box>
                     <Typography variant="caption" color="textSecondary">Final Amount</Typography>
-                    <Typography variant="body2" fontWeight={500}>₹{entry.finalAmount?.toFixed(2) || 0}</Typography>
+                    <Typography variant="body2" fontWeight={500}>₹{Number(entry.finalAmount || 0)?.toFixed(2) || 0}</Typography>
                   </Box>
 
                   {/* <Box>

@@ -105,9 +105,34 @@ export const createOrderThunk = createAsyncThunk(
 // Get All Orders
 export const getAllOrdersThunk = createAsyncThunk(
   "order/getAll",
-  async (filters, { rejectWithValue }) => {
+  async (filters,{ rejectWithValue }
+  ) => {
     try {
       const response = await orderService.getAllOrders(filters);
+
+      if (response.success && Array.isArray(response.data)) {
+        return {
+          data: response.data,
+          count: response.count
+          // pagination: response.pagination,
+        };
+      } else {
+        return rejectWithValue(
+          "Invalid response format: orders array not found"
+        );
+      }
+    } catch (error: any) {
+      console.error("Redux: Get all orders error:", error);
+      return rejectWithValue(error.message || "Failed to fetch orders");
+    }
+  }
+);
+
+export const getAllPaginationOrdersThunk = createAsyncThunk(
+  "order/getPaginationAll",
+  async (filters, { rejectWithValue }) => {
+    try {
+      const response = await orderService.getAllPaginationOrders(filters);
 
       if (response.success && Array.isArray(response.data)) {
         return {
@@ -453,6 +478,32 @@ const orderSlice = createSlice({
         }
       )
       .addCase(getAllOrdersThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        state.orderList = [];
+      })
+      .addCase(getAllPaginationOrdersThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getAllPaginationOrdersThunk.fulfilled,
+        (
+          state,
+          action: PayloadAction<{
+            data: Order[];
+            count: number;
+            pagination?: any;
+          }>
+        ) => {
+          state.loading = false;
+          state.orderList = action.payload.data;
+          state.totalCount = action.payload.count;
+          state.pagination = action.payload.pagination || state.pagination; // FIXED: Set pagination
+          state.error = null;
+        }
+      )
+      .addCase(getAllPaginationOrdersThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
         state.orderList = [];

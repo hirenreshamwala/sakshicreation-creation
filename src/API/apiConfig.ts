@@ -120,6 +120,7 @@ const Endpoint = {
   // Order endpoints
   CREATE_ORDER: `${BaseURL}/api/orders/create`,
   GET_ALL_ORDERS: `${BaseURL}/api/orders/all`,
+  GET_ALL_ORDERS_PAGINATION: `${BaseURL}/api/orders/all-pagination`,
   GET_ORDER_BY_ID: `${BaseURL}/api/orders`,
   UPDATE_ORDER: `${BaseURL}/api/orders/update`,
   DELETE_ORDER: `${BaseURL}/api/orders/delete`,

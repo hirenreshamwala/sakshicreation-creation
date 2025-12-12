@@ -75,19 +75,37 @@ export const orderService = {
     }
   },
 
-  // Get All Orders
   async getAllOrders(filters): Promise<ApiResponse<Order[]>> {
     try {
       const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
         Endpoint.GET_ALL_ORDERS,filters
       );
-      if (response.data.success) {
+
       return {
-        success: true,
+        success: response.data.success,
         data: response.data.data || [],
-        count: response.data.totalCount, // FIXED: Use totalCount as count
+        count: response.data.count,
         pagination: response.data.pagination,
       };
+    } catch (error: any) {
+      console.error("Service: Get all orders error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to fetch orders"
+      );
+    }
+  },
+  async getAllPaginationOrders(filters): Promise<ApiResponse<Order[]>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
+        Endpoint.GET_ALL_ORDERS_PAGINATION, filters
+      );
+      if (response.data.success) {
+        return {
+          success: true,
+          data: response.data.data || [],
+          count: response.data.totalCount, // FIXED: Use totalCount as count
+          pagination: response.data.pagination,
+        };
       } else {
         return {
           success: false,
@@ -109,9 +127,9 @@ export const orderService = {
         `${Endpoint.GET_ORDER_BY_STAFF_ID}/${id}`,
         filters
       );
-      
+
       console.log("Orders by Staff API Response:", response.data);
-      
+
       return {
         success: response.data.success,
         data: response.data.data || [],

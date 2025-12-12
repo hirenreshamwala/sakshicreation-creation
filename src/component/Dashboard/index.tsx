@@ -44,6 +44,7 @@ import {
   getDesignerOrdersThunk,
   getPrinterOrdersThunk,
 } from "@/store/slices/orderSlice";
+import { orderService } from "@/services/order.service";
 
 const permissionMapping: { [key: string]: string } = {
   "Account Master": "account_master",
@@ -56,7 +57,7 @@ const permissionMapping: { [key: string]: string } = {
   "Performance invoice": "proforma_invoice",
   "Payment Folders": "payment_folders",
   Reports: "reports",
-  LowStockManagement:"inventory",
+  LowStockManagement: "inventory",
   Inventory: "inventory",
   Purchase: "purchase",
   Task: "task",
@@ -215,6 +216,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [pageLoading, setPageLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [dateTime, setDateTime] = useState<Date | null>(null);
+  const [tasks,setTask] = useState([])
   const [activeSubSidebar, setActiveSubSidebar] = useState<string | null>(
     router.pathname.startsWith("/admin/setup") ? "setup" : null
   );
@@ -229,53 +231,63 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     REWORK: "Rework",
     DONE: "Done",
   };
-  const getRoleSpecificTasks = () => {
-    if (!orders || orders.length === 0) return [];
-
-    switch (role) {
-      case "designer":
-        return orders.filter(
-          (order) => order?.designerStatus !== STATUS?.APPROVED
-        );
-      case "printer":
-        return orders.filter(
-          (order) =>
-            order?.designerStatus === STATUS?.APPROVED &&
-            order?.printerStatus !== STATUS?.DONE
-        );
-      case "binder":
-        return orders.filter(
-          (order) =>
-            order?.printerStatus === STATUS?.DONE &&
-            order?.binderStatus !== STATUS?.DONE
-        );
-      case "booklet & folder binder":
-        return orders.filter(
-          (order) =>
-            (order?.binderStatus === STATUS?.DONE ||
-              order?.binderStatus === STATUS?.PENDING) &&
-            order?.bookletBinderStatus !== STATUS?.DONE
-        );
-      case "admin":
-        return orders;
-      default:
-        return [];
+ const getRoleSpecificTasks = async () => {
+  switch (role) {
+    case "designer": {
+      const res = await orderService.getDesignerOrders();
+      return res.data.filter(
+        (order) =>  order?.designerStatus !== STATUS?.APPROVED
+      ) || [];
     }
-  };
 
-  const tasks = getRoleSpecificTasks();
+    case "printer": {
+      const res1 = await orderService.getPrinterOrders();
+      return res1.data.filter(
+        (order) =>
+          order?.designerStatus === STATUS.APPROVED &&
+          order?.printerStatus !== STATUS.DONE
+      )|| [];
+    }
+
+    case "binder": {
+      const res2 = await orderService.getBinderOrders();
+      return res2.data.filter(
+        (order) =>
+          order?.printerStatus === STATUS.DONE &&
+          order?.binderStatus !== STATUS.DONE
+      )|| [];
+    }
+
+    case "booklet & folder binder": {
+      const res3 = await orderService.getBookletBinder();
+      return res3.data.filter(
+        (order) =>
+          (order?.binderStatus === STATUS.DONE ||
+            order?.binderStatus === STATUS.PENDING) &&
+          order?.bookletBinderStatus !== STATUS.DONE
+      )|| [];
+    }
+
+    case "admin":
+      return orders;
+    default:
+      return [];
+  }
+};
+
 
 useEffect(() => {
   if (user) {
-    dispatch(getDesignerOrdersThunk());
-    dispatch(getPrinterOrdersThunk());
-    dispatch(getBinderOrdersThunk());
-    dispatch(getBookletBinderThunk());
+    (async () => {
+     const res =  await getRoleSpecificTasks();
+     setTask(res);  
+    })();
   }
 }, [user]);
 
+
   // Function to get current page title
-  const getCurrentPageTitle = () => { 
+  const getCurrentPageTitle = () => {
     // First check if we're in setup submenu
     if (activeSubSidebar === "setup") {
       const setupItem = setupSubMenuItems.find(

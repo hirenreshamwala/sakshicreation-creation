@@ -14,15 +14,15 @@ interface Column {
 }
 
 const tableHeader: Column[] = [
-  { id: "date", label: "order number" },
+  { id: "ono", label: "order number" },
   { id: "date", label: "Date" },
   { id: "party", label: "Party" },
   { id: "size", label: "Size" },
   { id: "itemName", label: "Item Name" },
-  { id: "itemName", label: "Printing Type" },
-  { id: "itemName", label: "Binding Type" },
-  { id: "itemName", label: "binding page" },
-  { id: "itemName", label: "booklet folder type" },
+  { id: "ptype", label: "Printing Type" },
+  { id: "btype", label: "Binding Type" },
+  { id: "bpage", label: "binding page" },
+  { id: "bftype", label: "booklet folder type" },
   { id: "remarks", label: "Remarks" },
   { id: "status", label: "Status", align: "center" as const },
 ];
