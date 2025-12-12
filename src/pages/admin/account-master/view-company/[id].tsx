@@ -760,6 +760,7 @@ const ViewCompanyPage: React.FC = () => {
         onClose={() => setOpenAssignTaskDialog(false)}
         company={company}
         setCompany={setCompany}
+        
         companyOptions={[
           {
             label: singleAccountMaster?.companyNameObj?.companyName || singleAccountMaster?.companyName || '',

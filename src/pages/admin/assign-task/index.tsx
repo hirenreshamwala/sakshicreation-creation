@@ -1092,6 +1092,7 @@ const AssignTaskPage: React.FC = () => {
           setOpen(false);
           setEditId(null);
         }}
+        // accountMasters={accountMasters}
         toggleScDialog={toggleScDialog}
         toggleQpDialog={toggleQpDialog}
         taskId={editId}

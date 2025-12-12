@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store';
-import { getAllAssignTasksThunk, getAssignTaskByIdThunk } from '@/store/slices/assignTaskSlice';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import ThemeInput from '@/component/common_component/themeinput';
 import ThemeChip from '@/component/common_component/themechip';
@@ -203,7 +202,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true,
         </Box>
         <ThemeButton
           variant="outlined"
-          onClick={() => onReschedule(task._id)}
+          onClick={() => onReschedule(task)}
           sx={{ py: 0.6 }}
           startIcon={<MdTurnLeft style={{ fontSize: 18, color: '#98A2B3' }} />}
         >
@@ -315,6 +314,7 @@ const ViewTaskPage: React.FC = () => {
   const { loading } = useSelector((state: RootState) => state.assignTasks);
   const [openRescheduleDialog, setOpenRescheduleDialog] = useState(false);
   const [editTaskId, setEditTaskId] = useState<string | null>(null);
+  const [rowData, setRowData] = useState()
   const [partyDetails, setPartyDetails] = useState<PartyDetails | null>(null);
   const todayRef = useRef<HTMLDivElement>(null);
   const [assignTasks, setAssignTasks] = useState([])
@@ -398,10 +398,9 @@ const ViewTaskPage: React.FC = () => {
   console.log(partyDetails, 'partyDetails')
 
   useEffect(() => {
-    if (id && taskId) {
+    if (id && taskId)
       getTaskByPartyAndAccountMaster()
-      // dispatch(getAssignTaskByIdThunk(id as string));
-    }
+
   }, [dispatch, id]);
 
   // Filter tasks to only show those for this party
@@ -475,8 +474,9 @@ const ViewTaskPage: React.FC = () => {
   }, [groupedCompletedTasks]);
 
   // Handle reschedule button click
-  const handleReschedule = (taskId: string) => {
-    setEditTaskId(taskId);
+  const handleReschedule = (task: any) => {
+    setRowData(task)
+    setEditTaskId(task._id);
     setOpenRescheduleDialog(true);
   };
 
@@ -677,7 +677,9 @@ const ViewTaskPage: React.FC = () => {
         open={openRescheduleDialog}
         onClose={handleDialogClose}
         taskId={editTaskId}
-        refreshData={() => dispatch(getAllAssignTasksThunk())}
+        accountMasters={[]}
+        rowData={rowData}
+        refreshData={() => getTaskByPartyAndAccountMaster()}
       />
     </Box>
   );

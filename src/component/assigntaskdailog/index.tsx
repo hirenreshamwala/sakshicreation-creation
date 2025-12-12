@@ -13,12 +13,9 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import {
   createAssignTaskThunk,
   updateAssignTaskThunk,
-  getAllAssignTasksThunk,
-  getAssignTaskByIdThunk,
   clearSuccessMessage,
   clearError,
 } from "@/store/slices/assignTaskSlice";
-import { getAllAccountMastersThunk } from "@/store/slices/accountMasterSlice";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
 import type { CreateAssignTask, UpdateAssignTask } from "@/services/assignTask.service";
 import Swal from "sweetalert2";
@@ -60,12 +57,15 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   companyOptions,
   toggleScDialog,
   toggleQpDialog,
+  accountMasters,
+  rowData,
   companyTab
 }) => {
   const router = useRouter()
   const dispatch = useAppDispatch();
+  const singleAssignTask = rowData
   const {
-    accountMasters = [],
+    // accountMasters = [],
     loading: accountLoading,
     error: accountError,
   } = useAppSelector((state) => state.accountMasters || {});
@@ -73,7 +73,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
     (state) => state.staff || {}
   );
   const {
-    singleAssignTask,
+    // singleAssignTask,
     loading: taskLoading,
     error: taskError,
     successMessage,
@@ -175,8 +175,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
               } as UpdateAssignTask,
             })
           ).unwrap();
-          // Refetch the single task to update singleAssignTask in state
-          dispatch(getAssignTaskByIdThunk(taskId));
           toast.success("Task updated successfully")
           // Swal.fire({
           //   title: "Success!",
@@ -338,14 +336,8 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
 
   useEffect(() => {
     if (open) {
-      if (!accountMasters?.length) {
-        dispatch(getAllAccountMastersThunk());
-      }
       if (!staffList?.length) {
         dispatch(getAllStaffThunk());
-      }
-      if (isEditMode && taskId) {
-        dispatch(getAssignTaskByIdThunk(taskId));
       }
       if (!isEditMode && !isBulkMode) {
         formik.resetForm();

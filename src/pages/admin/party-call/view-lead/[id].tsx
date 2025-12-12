@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useSelector } from 'react-redux';
 import { RootState, useAppDispatch } from '@/store';
-import { getAllLeadsThunk } from '@/store/slices/leadSlice';
 import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import ThemeInput from '@/component/common_component/themeinput';
 import ThemeChip from '@/component/common_component/themechip';
@@ -415,7 +414,6 @@ const ViewLeadPage: React.FC = () => {
   const handleAssignSuccess = () => {
     setOpen(false);
     setSelectedLead(null);
-    dispatch(getAllLeadsThunk());
     Swal.fire({
       title: 'Success!',
       text: 'Lead rescheduled successfully!',

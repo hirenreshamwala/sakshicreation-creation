@@ -661,6 +661,7 @@ const AccountMasterPage: React.FC = memo(() => {
             setOpenBulkAssignTask(false);
             setSelectedRows([]);
           }}
+          accountMasters={accountMasters}
           selectedParties={selectedParties}
           onSuccess={() => {
             setOpenBulkAssignTask(false);

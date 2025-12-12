@@ -10,7 +10,6 @@ import ThemeButton from '@/component/common_component/themebutton';
 import InputReasonDialog from '@/component/assigntaskdailog/InputReasonDialog';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { createLeadThunk, updateLeadThunk, bulkCreateLeadsThunk, clearSuccessMessage, clearError } from '@/store/slices/leadSlice';
-import { getAllAccountMastersThunk } from '@/store/slices/accountMasterSlice';
 import { getAllStaffThunk } from '@/store/slices/staffSlice';
 import { Lead, OptionType } from '@/services/types';
 import Swal from 'sweetalert2';
@@ -229,7 +228,6 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accou
     );
 
     useEffect(() => {
-        // if (!accountMasters.length) dispatch(getAllAccountMastersThunk());
         if (!staffList.length) dispatch(getAllStaffThunk());
     }, [])
     useEffect(() => {
