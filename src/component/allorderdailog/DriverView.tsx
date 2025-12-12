@@ -252,12 +252,20 @@ const DriverView = () => {
 
     const handleDispatchSubmit = async () => {
         if (!currentDispatchOrder) return;
-        if (dispatchPhotos.length === 0) return toast.warning("Please upload dispatch photos");
-        if (!billNumber) return toast.warning("Please enter a bill number");
+        // if (dispatchPhotos.length === 0) return toast.warning("Please upload dispatch photos");
+        //  if (!billNumber) return toast.warning("Please enter a bill number");
 
         try {
-            const uploadedPhotos = await uploadFilesToServer(dispatchPhotos, "dispatch-photos", billNumber);
-            const imageUrls = uploadedPhotos.map((p) => p.path);
+            let imageUrls: string[] = [];
+            if (dispatchPhotos.length > 0) {
+                // Only upload if photos are provided
+                const uploadedPhotos = await uploadFilesToServer(dispatchPhotos, "dispatch-photos");
+                imageUrls = uploadedPhotos.map((p) => p.path);
+                toast.info("Dispatch photos uploaded successfully");
+            } else {
+                // Proceed without photos - show a warning but don't block
+                // toast.warning("Dispatching without photos - recommended to upload for records");
+            }
 
             const response:any = await dispatch(
                 bulkUpdateQPOrderStatusThunk({
@@ -265,7 +273,7 @@ const DriverView = () => {
                     deliveryStatus: "in_transit",
                     dispatchPhotos: imageUrls,
                     dispatchTime: new Date().toISOString(),
-                    billNumber,
+                    billNumber: billNumber || "", 
                 })
             ).unwrap();
 
@@ -285,18 +293,30 @@ const DriverView = () => {
             setBillNumber("");
             setCurrentDispatchOrder(null);
             refreshData();
-        } catch {
-            toast.error("Failed to dispatch order");
+        } catch (error: any) {
+            if (error.message?.includes("photos required")) {
+                toast.error("Dispatch failed: Please upload dispatch photos as required by system.");
+            } else {
+                toast.error("Failed to dispatch order");
+            }
         }
     };
 
     const handleDeliveredSubmit = async () => {
         if (!currentDeliveredOrder) return;
-        if (billPhotos.length === 0) return toast.warning("Please upload delivery photos");
 
         try {
-            const uploadedPhotos = await uploadFilesToServer(billPhotos, "delivery-photos", "");
-            const imageUrls = uploadedPhotos.map((p) => p.path);
+            let imageUrls: string[] = [];
+            if (billPhotos.length > 0) {
+                // Only upload if photos are provided
+                const uploadedPhotos = await uploadFilesToServer(billPhotos, "delivery-photos");
+                imageUrls = uploadedPhotos.map((p) => p.path);
+                toast.info("Delivery photos uploaded successfully");
+            } else {
+                // Proceed without photos - show a warning but don't block
+                // toast.warning("Marking as delivered without photos - recommended to upload for records");
+                imageUrls = []; // Empty array if no photos
+            }
 
             const response = await dispatch(
                 bulkUpdateQPOrderStatusThunk({
@@ -322,17 +342,27 @@ const DriverView = () => {
             setBillPhotos([]);
             setCurrentDeliveredOrder(null);
             refreshData();
-        } catch {
-            toast.error("Failed to mark order as delivered");
+        } catch (error: any) {
+            if (error.message?.includes("photos required")) {
+                toast.error("Delivery failed: Please upload delivery photos as required by system.");
+            } else {
+                toast.error("Failed to mark order as delivered");
+            }
         }
     };
 
     const handleBackToFactorySubmit = async () => {
-        if (factoryPhotos.length === 0) return toast.warning("Please upload factory photos");
-
-        try {
-            const uploadedPhotos = await uploadFilesToServer(factoryPhotos, "factory-photos", "");
-            const imageUrls = uploadedPhotos.map((p) => p.path);
+    try {
+        let imageUrls: string[] = [];
+        if (factoryPhotos.length > 0) {
+            const uploadedPhotos = await uploadFilesToServer(factoryPhotos, "factory-photos");
+            imageUrls = uploadedPhotos.map((p) => p.path);
+            toast.info("Factory photos uploaded successfully");
+        } else {
+            // Proceed without photos - show a warning but don't block
+            // toast.warning("Back to factory recorded without photos - recommended to upload for records");
+            imageUrls = []; // Empty array if no photos
+        }
 
             const response = await driverService.backToFactory(user?.id, imageUrls);
 
@@ -593,7 +623,7 @@ const DriverView = () => {
                         </ThemeButton>
                         <ThemeButton
                             onClick={handleDispatchSubmit}
-                            disabled={dispatchPhotos.length === 0 || !billNumber}
+                            // disabled={dispatchPhotos.length === 0 || !billNumber}
                         >
                             Dispatch Order
                         </ThemeButton>
@@ -653,7 +683,7 @@ const DriverView = () => {
 
                     <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 2 }}>
                         <ThemeButton onClick={() => setDeliveredModalOpen(false)}>Cancel</ThemeButton>
-                        <ThemeButton onClick={handleDeliveredSubmit} disabled={billPhotos.length === 0}>Mark as Delivered</ThemeButton>
+                        <ThemeButton onClick={handleDeliveredSubmit} /*disabled={billPhotos.length === 0}*/>Mark as Delivered</ThemeButton>
                     </Box>
                 </Box>
             </Modal>
@@ -712,7 +742,7 @@ const DriverView = () => {
                         <ThemeButton onClick={() => setFactoryModalOpen(false)}>Cancel</ThemeButton>
                         <ThemeButton
                             onClick={handleBackToFactorySubmit}
-                            disabled={factoryPhotos.length === 0}
+                            // disabled={factoryPhotos.length === 0}
                         >
                             Submit
                         </ThemeButton>

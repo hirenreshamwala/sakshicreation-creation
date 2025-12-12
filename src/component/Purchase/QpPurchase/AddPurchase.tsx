@@ -404,7 +404,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
 
           {(formData.type === 'glue' || formData.type === 'wire') && (
             <ThemeInput
-              labelName="KG"
+              labelName={formData.type === 'glue' ? "KG/PCS" : "KG"}
               name="kg"
               type="number"
               value={formData.kg}

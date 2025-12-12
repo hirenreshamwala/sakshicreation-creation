@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Box, Button, Stack, TableCell, Chip } from '@mui/material';
 import { FaArrowDown, FaArrowUp } from 'react-icons/fa6';
 import { MdPeople } from 'react-icons/md';
@@ -8,6 +8,7 @@ import ThemeTabs, { TabItem } from '@/component/common_component/themetabs';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { getAllInventoryForQualitThunk, getInventoryFilterOptionsThunk } from '@/store/slices/inventorySlice';
 import { toast } from 'react-toastify';
+import Loader from '../common_component/loader';
 
 enum InventoryCategory {
     FACTORY = 'factory',
@@ -61,7 +62,6 @@ const QpInventoryPage = () => {
     const [activeMaterialTab, setActiveMaterialTab] = useState(MaterialCategory.BOX);
 
     // Filter states - similar to PaymentFolderPage
-    const [isInitialLoad, setIsInitialLoad] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(false);
     // Filter options states - Now synced with redux state
     const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
@@ -85,6 +85,8 @@ const QpInventoryPage = () => {
         endDate: null,
     });
     const [appliedFilterState, setAppliedFilterState] = useState<any>({});
+
+    const isMounted = useRef(false);
 
     const handleRowClick = (data: any) => {
         if (detailOpen !== null) return null;
@@ -149,7 +151,6 @@ const QpInventoryPage = () => {
             };
             console.log("📡 Loading inventory with params:", params);
             await dispatch(getAllInventoryForQualitThunk(params));
-            setIsInitialLoad(true);
         } catch (err: any) {
             console.error("❌ Error loading inventory:", err);
             toast.error(err.message || "Failed to load inventory");
@@ -157,6 +158,13 @@ const QpInventoryPage = () => {
             setIsLoadingData(false);
         }
     }, [dispatch, currentFilterState]);
+    useEffect(() => {
+        if (!isMounted.current) {
+            isMounted.current = true;
+            loadInventory();
+            setAppliedFilterState(currentFilterState);
+        }
+    }, [loadInventory]);    
 
     // Load filter options - Now dispatches thunk
     const loadFilterOptions = async (field: string) => {
@@ -210,13 +218,6 @@ const QpInventoryPage = () => {
             return () => clearTimeout(timer);
         }
     }, [currentFilterState, appliedFilterState, loadInventory]);
-
-    // Initial load
-    useEffect(() => {
-        if (!isInitialLoad) {
-            loadInventory();
-        }
-    }, [loadInventory, isInitialLoad]);
 
     const handleMainTabChange = (_: React.SyntheticEvent, newValue: any) => {
         setActiveMainTab(newValue as InventoryCategory);
@@ -537,7 +538,7 @@ const QpInventoryPage = () => {
 
     // Loading check
     if (loading || isLoadingData) {
-        return <div>Loading Inventory...</div>;
+        return <div><Loader/></div>;
     }
 
     return (

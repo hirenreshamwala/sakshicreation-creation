@@ -59,7 +59,7 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                     InputLabelProps={{ shrink: true }}
                     disabled={isCompleted}
                 />
-                <TextField
+                {/* <TextField
                     label="Delivery Date"
                     type="date"
                     value={formData.deliveryDate}
@@ -72,7 +72,7 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                         min: moment().format("YYYY-MM-DD"), // Restrict to today or future dates
                     }}
                     disabled={isCompleted}
-                />
+                /> */}
                 <TextField
                     label="Dye Number"
                     value={formData.dyeNumber}
@@ -80,6 +80,7 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                     variant="outlined"
                     size="small"
                     sx={{ minWidth: 100 }}
+                    InputLabelProps={{ shrink: true }}
                     disabled={isCompleted}
                     required={formData.isPunching}
                     error={formData.isPunching && !formData.dyeNumber}
@@ -142,6 +143,45 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                 </TextField>
             </Stack>
 
+            <Stack direction="row" spacing={2} mb={2}>
+                {/* NEW FIELDS: No required validation, string type, null if empty */}
+                <TextField
+                    label="No. of Sheet Cut"
+                    value={formData.noOfSheetCut || ""}
+                    onChange={(e) => handleFormChange("noOfSheetCut", e.target.value || null)}
+                    variant="outlined"
+                    size="small"
+                    sx={{ minWidth: 120 }}
+                    disabled={isCompleted}
+                />
+                <TextField
+                    label="Cutting Length"
+                    value={formData.cuttingLength || ""}
+                    onChange={(e) => handleFormChange("cuttingLength", e.target.value || null)}
+                    variant="outlined"
+                    size="small"
+                    sx={{ minWidth: 120 }}
+                    disabled={isCompleted}
+                />
+                <TextField
+                    label="No. of Linear"
+                    value={formData.noOfLinear || ""}
+                    onChange={(e) => handleFormChange("noOfLinear", e.target.value || null)}
+                    variant="outlined"
+                    size="small"
+                    sx={{ minWidth: 120 }}
+                    disabled={isCompleted}
+                />
+                <TextField
+                    label="Linear"
+                    value={formData.linear || ""}
+                    onChange={(e) => handleFormChange("linear", e.target.value || null)}
+                    variant="outlined"
+                    size="small"
+                    sx={{ minWidth: 100 }}
+                    disabled={isCompleted}
+                />
+            </Stack>
             <Stack direction="row" spacing={2} mb={2}>
                 {/* Process Selection - Multiple Checkboxes */}
                 <FormControl component="fieldset">

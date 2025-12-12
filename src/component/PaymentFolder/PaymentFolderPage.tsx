@@ -34,6 +34,7 @@ import moment from "moment";
 import PaymentHistoryDialog from "./PaymentHistoryDialog";
 import { paymentFolderService } from "@/services/paymentFolder.service";
 import { toast } from 'react-toastify'; // Add if using toast
+import Loader from "../common_component/loader";
 
 const PaymentFolderPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -483,7 +484,9 @@ const PaymentFolderPage: React.FC = () => {
 
   // Show loading while initial data is being loaded
   if ((loading || isLoadingData) && !isInitialLoad && paymentFolders.length === 0) {
-    return <div>Loading Payment Folders...</div>;
+    return <div>
+      <Loader />
+    </div>;
   }
 
   // Show error if company is not available
