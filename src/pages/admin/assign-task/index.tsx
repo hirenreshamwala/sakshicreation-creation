@@ -25,7 +25,7 @@ import Loader from "@/component/common_component/loader";
 import { FiSearch } from "react-icons/fi";
 import { toast } from "react-toastify";
 import TabComponent from "@/component/Dialog/TabComponent";
-import { getCompanyWisePermission } from "@/utills/utills";
+import { formatDateToDDMMYYYY, getCompanyWisePermission } from "@/utills/utills";
 import { useRouter } from "next/router";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { StaticCompanyOptions } from "@/constants";
@@ -1062,7 +1062,7 @@ const AssignTaskPage: React.FC = () => {
                 }}
               >
                 <Typography variant="subtitle1" fontWeight={600}>
-                  Task - <span style={{ color: "red" }}>{date}</span>
+                  Task - <span style={{ color: "red" }}>{formatDateToDDMMYYYY(date)}</span>
                   {isToday(date) && (
                     <ThemeChip
                       label="Today"

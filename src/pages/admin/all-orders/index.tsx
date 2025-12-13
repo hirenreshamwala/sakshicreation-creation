@@ -3,7 +3,7 @@ import { Avatar, Box, TableCell, Typography, Button } from "@mui/material"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
 import { useAppDispatch, useAppSelector } from "@/store"
-import { getCompanyWisePermission, getDisplayStatus, getUserData } from "@/utills/utills"
+import { formatDateToDDMMYYYY, getCompanyWisePermission, getDisplayStatus, getUserData } from "@/utills/utills"
 import QpOrdersPage from "@/component/allorderdailog/QpOrder"
 import TabComponent from "@/component/Dialog/TabComponent"
 import { StaticCompanyOptions } from "@/constants"
@@ -530,7 +530,7 @@ const AllOrdersPage = () => {
               </TableCell>
               <TableCell>
                 <Typography fontSize="14px" color="#6B7280">
-                  {formatDate(row.createdAt)}
+                  {formatDateToDDMMYYYY(row.createdAt)}
                 </Typography>
               </TableCell>
 
