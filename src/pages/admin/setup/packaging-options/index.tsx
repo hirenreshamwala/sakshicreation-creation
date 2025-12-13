@@ -1,18 +1,17 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
   IconButton,
   TableCell,
-  Chip,
+  MenuItem,
+  Select,
   FormControl,
   InputLabel,
   FormControlLabel,
   Checkbox,
-  Select,
-  MenuItem,
 } from "@mui/material";
 import { Add, Edit, Delete, CloudUpload } from "@mui/icons-material";
 import { useSelector } from "react-redux";
@@ -24,13 +23,11 @@ import { RootState, useAppDispatch } from "@/store";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import {
-  getAllPackagingOptionsThunk,
-  getPackagingFiltersThunk,
   createPackagingOptionThunk,
+  getAllPackagingOptionsThunk,
   updatePackagingOptionThunk,
   deletePackagingOptionThunk,
   bulkCreatePackagingOptionThunk,
-  setPackagingFilters,
 } from "@/store/slices/packagingOptionSlice";
 import { getQualityPackingPartiesThunk } from "@/store/slices/partySlice";
 import { downloadSkippedRecordsAsCSV } from "@/utills/utills";
@@ -53,103 +50,29 @@ const columns = [
   { id: "isKantan", label: "Include Kantan" },
   { id: "kantan", label: "Kantan" },
   { id: "date", label: "Date" },
-  { id: "actions", label: "Actions" },
+  { id: "options", label: "Options" },
 ];
 
 const PackagingOptionsPage = () => {
   const dispatch = useAppDispatch();
   const { user } = useSelector((state: RootState) => state.auth)
   const { kantans } = useSelector((state: RootState) => state.kantans);
+  const { packagingOptions, loading, operationLoading, error, operationError } = useSelector(
+    (state: RootState) => state.packagingOptions
+  );
+  const companyId = user?.company?._id
 
-  const {
-    packagingOptions = [],
-    loading,
-    operationLoading,
-    pagination,
-    filters,
-    availableFilters = {
-      parties: [],
-      plys: [],
-      lengths: [],
-      widths: [],
-      heights: [],
-      deckals: [],
-      paper1GSMs: [],
-      paper2GSMs: [],
-      paper3GSMs: [],
-      noOfPiecesOptions: [],
-      ratePerPieceOptions: [],
-      dates: [],
-    },
-  } = useSelector((state: RootState) => state.packagingOptions);
-  console.log("🚀 ~ PackagingOptionsPage ~ availableFilters:", availableFilters)
-
-  const companyId = user?.company?._id;
-  const { qpParties = [] } = useSelector((state: RootState) => state.party);
+  const { qpParties } = useSelector((state: RootState) => state.party);
 
   useEffect(() => {
-    if (companyId) dispatch(getQualityPackingPartiesThunk(companyId));
+    dispatch(getQualityPackingPartiesThunk(companyId));
     if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
     if (!kantans.length) dispatch(getAllKantansThunk());
-    dispatch(getPackagingFiltersThunk());
-  }, [dispatch, companyId]);
+  }, [dispatch]);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [skippedRecords, setSkippedRecords] = useState<any[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
-  console.log("🚀 ~ PackagingOptionsPage ~ activeFilters:", activeFilters)
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Debounced search
-  const handleSearchDebounced = useCallback(
-    (search: string) => {
-      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = setTimeout(() => {
-        dispatch(setPackagingFilters({ search: search.trim(), page: 1 }));
-      }, 600);
-    },
-    [dispatch]
-  );
-
-  // Cleanup timeout
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    };
-  }, []);
-
-  // Fetch data when filters change
-  useEffect(() => {
-    const apiFilters: any = {
-      page: filters.page || 1,
-      limit: filters.limit || 10,
-      search: filters.search || "",
-    };
-    console.log("🚀 ~ PackagingOptionsPage ~ apiFilters:", apiFilters)
-
-    if (activeFilters["Party"]?.length) apiFilters.parties = activeFilters["Party"];
-    if (activeFilters["Ply"]?.length) apiFilters.plys = activeFilters["Ply"];
-    if (activeFilters["Length"]?.length) apiFilters.lengths = activeFilters["Length"];
-    if (activeFilters["Width"]?.length) apiFilters.widths = activeFilters["Width"];
-    if (activeFilters["Height"]?.length) apiFilters.heights = activeFilters["Height"];
-    if (activeFilters["Deckal"]?.length) apiFilters.deckals = activeFilters["Deckal"];
-    if (activeFilters["Paper 1 GSM"]?.length) apiFilters.paper1GSMs = activeFilters["Paper 1 GSM"];
-    if (activeFilters["Paper 2 GSM"]?.length) apiFilters.paper2GSMs = activeFilters["Paper 2 GSM"];
-    if (activeFilters["Paper 3 GSM"]?.length) apiFilters.paper3GSMs = activeFilters["Paper 3 GSM"];
-    if (activeFilters["No of Pieces"]?.length) apiFilters.noOfPieces = activeFilters["No of Pieces"];
-    if (activeFilters["Rate Per Piece"]?.length) apiFilters.ratePerPiece = activeFilters["Rate Per Piece"];
-// NEW - Perfect & Clean
-if (activeFilters["Date"]?.length > 0) {
-  apiFilters.dates = activeFilters["Date"]; // Send exactly as "06/12/2025"
-}
-   console.log("Final API Payload →", apiFilters);
-    dispatch(getAllPackagingOptionsThunk(apiFilters));
-  }, [filters.page, filters.search, activeFilters, dispatch]);
-
-  // Form state
   const [form, setForm] = useState({
     party: "",
     ply: "",
@@ -165,23 +88,14 @@ if (activeFilters["Date"]?.length > 0) {
     isKantan: false,
     kantan: "",
   });
+  const [file, setFile] = useState<File | null>(null);
+  const [skippedRecords, setSkippedRecords] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-
-  // const handleSave = () => {
-  //   const required = ["party", "ply", "length", "width", "height", "deckal", "paper1GSM", "paper2GSM", "paper3GSM"];
-  //   if (required.some((key) => !form[key as keyof typeof form]?.toString().trim())) {
-  //     toast.error("All required fields are mandatory");
-  //     return;
-  //   }
-
-  //   const payload = { ...form };
-  //   if (editId) {
-  //     dispatch(updatePackagingOptionThunk({ id: editId, updateData: payload }));
-  //   } else {
-  //     dispatch(createPackagingOptionThunk(payload));
-  //   }
-  //   setDialogOpen(false);
-  // };
+  useEffect(() => {
+    if (error) toast.error(error);
+    if (operationError) toast.error(operationError);
+  }, [error, operationError]);
 
   const handleOpenDialog = (option?: any) => {
     if (option) {
@@ -222,9 +136,9 @@ if (activeFilters["Date"]?.length > 0) {
     setDialogOpen(true);
   };
 
-  const handleFormChange = (e: any) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name as string]: value }));
   };
 
   const handleSave = () => {
@@ -298,27 +212,37 @@ if (activeFilters["Date"]?.length > 0) {
     }
   };
 
-  const handleBulkUpload = async () => {
-    if (!file) return toast.error("Please select a file");
+  const handleFileUpload = async () => {
+    if (!file) {
+      toast.error("Please select a file");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
 
-    const fd = new FormData();
-    fd.append("file", file);
-    setIsUploading(true);
-
+    setIsLoading(true);
     try {
-      const res: any = await dispatch(bulkCreatePackagingOptionThunk(fd)).unwrap();
+      const res = await dispatch(bulkCreatePackagingOptionThunk(formData)).unwrap();
 
       if (res.skippedCount > 0) {
-        setSkippedRecords(res.skippedRecords || []);
-        toast.warn(`${res.skippedCount} records were skipped`);
-      } else {
-        toast.success("Bulk upload successful!");
-        setBulkDialogOpen(false);
+        setSkippedRecords(res.skippedRecords);
+        setFile(null);
+        const input = document.getElementById("fileInput") as HTMLInputElement;
+        if (input) input.value = "";
+        toast.success("Bulk upload completed with some skipped records");
+        dispatch(getAllPackagingOptionsThunk());
+        return; // Keep dialog open to show skipped records
       }
-    } catch (err: any) {
-      toast.error(err || "Upload failed");
+      toast.success("Bulk upload completed successfully");
+      setBulkDialogOpen(false);
+      setFile(null);
+      setSkippedRecords([]);
+      dispatch(getAllPackagingOptionsThunk());
+    } catch (error: any) {
+      toast.error(error?.message || "Bulk upload failed");
+      setSkippedRecords([]);
     } finally {
-      setIsUploading(false);
+      setIsLoading(false);
     }
   };
 
@@ -357,7 +281,6 @@ if (activeFilters["Date"]?.length > 0) {
     document.body.removeChild(link);
   };
 
-  const activeFilterCount = Object.values(activeFilters).flat().length;
   const openBulkDialog = () => {
     setFile(null);
     setSkippedRecords([]);
@@ -372,17 +295,22 @@ if (activeFilters["Date"]?.length > 0) {
 
   return (
     <Box p={3}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" fontWeight={600}>Cartoon (Packaging)</Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h5" fontWeight={600}>
+          Cartoon
+        </Typography>
         <Box display="flex" gap={2}>
-          <Button variant="outlined" onClick={handleDownloadSample}>
+          <Button
+            variant="outlined"
+            onClick={handleDownloadSample}
+            sx={{ borderRadius: 2 }}
+          >
             Download Sample CSV
           </Button>
           <Button
             variant="contained"
             startIcon={<CloudUpload />}
-            onClick={() => setBulkDialogOpen(true)}
+            onClick={openBulkDialog}
           >
             Bulk Upload
           </Button>
@@ -401,86 +329,29 @@ if (activeFilters["Date"]?.length > 0) {
         </Box>
       </Box>
 
-      {/* Active Filter Chips */}
-      {activeFilterCount > 0 && (
-        <Box mb={2} display="flex" gap={1} flexWrap="wrap" alignItems="center">
-          <Typography variant="body2" color="textSecondary">Active filters:</Typography>
-          {Object.entries(activeFilters).map(([key, values]) =>
-            values.map((val) => (
-              <Chip
-                key={`${key}-${val}`}
-               label={key === "Date" ? `Date: ${val}` : `${key}: ${val}`}
-                onDelete={() => {
-                  setActiveFilters((prev) => ({
-                    ...prev,
-                    [key]: prev[key].filter((v) => v !== val),
-                  }));
-                  dispatch(setPackagingFilters({ page: 1 }));
-                }}
-                size="small"
-                color="primary"
-              />
-            ))
-          )}
-          <Button
-            size="small"
-            onClick={() => {
-              setActiveFilters({});
-              dispatch(setPackagingFilters({ page: 1, search: "" }));
-            }}
-          >
-            Clear all
-          </Button>
-        </Box>
-      )}
-
-      {/* Server-Side Table */}
       <BasicTable
-        serverSide={true}
         tableHeader={columns}
-        rowData={packagingOptions}
-        loading={loading}
-        totalCount={pagination?.totalItems || 0}
-        pagination={pagination}
-        onPageChange={(page) => dispatch(setPackagingFilters({ page }))}
-        onSearchChange={handleSearchDebounced}
-        onFilterChange={(newFilters) => {
-          setActiveFilters(newFilters);
-          dispatch(setPackagingFilters({ page: 1 }));
-        }}
-        availableFilters={{
-          Party: availableFilters.parties || [],
-          Ply: availableFilters.plys || [],
-          Length: availableFilters.lengths || [],
-          Width: availableFilters.widths || [],
-          Height: availableFilters.heights || [],
-          Deckal: availableFilters.deckals || [],
-          "Paper 1 GSM": availableFilters.paper1GSMs || [],
-          "Paper 2 GSM": availableFilters.paper2GSMs || [],
-          "Paper 3 GSM": availableFilters.paper3GSMs || [],
-          "No of Pieces": availableFilters.noOfPiecesOptions || [],
-          "Rate Per Piece": availableFilters.ratePerPieceOptions || [],
-          Date: availableFilters.dates || [],
-        }}
+        rowData={packagingOptions as any}
+        showDatePicker={false}
         renderRow={(row: any, idx: number) => (
           <>
-            <TableCell>{(filters.page - 1) * filters.limit + idx + 1}</TableCell>
-            <TableCell>{row.party?.partyName || "-"}</TableCell>
-            <TableCell>{row.ply}</TableCell>
-            <TableCell>{row.length}</TableCell>
-            <TableCell>{row.width}</TableCell>
-            <TableCell>{row.height}</TableCell>
-            <TableCell>{row.deckal}</TableCell>
-            <TableCell>{row.paper1GSM}</TableCell>
-            <TableCell>{row.paper2GSM}</TableCell>
-            <TableCell>{row.paper3GSM}</TableCell>
-            <TableCell>{row.noOfPieces || "-"}</TableCell>
-            <TableCell>{row.ratePerPiece || "-"}</TableCell>
+            <TableCell>{idx + 1}</TableCell>
+            <TableCell>{row.party?.partyName || ""}</TableCell>
+            <TableCell>{row.ply || ""}</TableCell>
+            <TableCell>{row.length || ""}</TableCell>
+            <TableCell>{row.width || ""}</TableCell>
+            <TableCell>{row.height || ""}</TableCell>
+            <TableCell>{row.deckal || ""}</TableCell>
+            <TableCell>{row.paper1GSM || ""}</TableCell>
+            <TableCell>{row.paper2GSM || ""}</TableCell>
+            <TableCell>{row.paper3GSM || ""}</TableCell>
+            <TableCell>{row.noOfPieces || ""}</TableCell>
+            <TableCell>{row.ratePerPiece || ""}</TableCell>
             <TableCell>{row.isKantan ? "Yes" : "No"}</TableCell> {/* नया */}
             <TableCell>
               {row.kantan?.kantanName}
             </TableCell>
-            <TableCell>{moment(row.updatedAt).format("DD/MM/YY")}</TableCell>
+            <TableCell>{formatDate(row.updatedAt) || ""}</TableCell>
             <TableCell>
               <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
                 <Edit />
@@ -647,36 +518,74 @@ if (activeFilters["Date"]?.length > 0) {
 
         {/* Footer Buttons */}
         <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
-          <Button variant="outlined" onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave} disabled={operationLoading}>
+          <Button variant="outlined" onClick={() => setDialogOpen(false)}>
+            Close
+          </Button>
+          <Button variant="contained" onClick={handleSave}>
             {operationLoading ? "Saving..." : "Save"}
           </Button>
         </Box>
       </CustomDialog>
 
       {/* Bulk Upload Dialog */}
-      <CustomDialog open={bulkDialogOpen} onClose={() => setBulkDialogOpen(false)} title="Bulk Upload Cartoon" maxWidth="sm" fullWidth>
-        <Box display="flex" flexDirection="column" alignItems="center" gap={3} p={3}>
+      <CustomDialog
+        open={bulkDialogOpen}
+        onClose={closeBulkDialog}
+        title="Bulk Upload Packaging Options"
+        maxWidth="sm"
+        fullWidth
+      >
+        <Box display="flex" flexDirection="column" alignItems="center" gap={3}>
           <Box
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
-              if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+              if (e.dataTransfer.files.length > 0) {
+                setFile(e.dataTransfer.files[0]);
+              }
             }}
             sx={{
               border: "2px dashed #7f56d9",
               borderRadius: 3,
-              p: 6,
-              width: "100%",
+              p: 4,
               textAlign: "center",
-              background: "#f8f5ff",
+              width: "100%",
               cursor: "pointer",
-              "&:hover": { background: "#f3e8ff" },
+              background: "#FAF5FF",
+              "&:hover": { background: "#F3E8FF" },
+              ...(file && {
+                borderColor: "#4caf50",
+                backgroundColor: "#f1f8e9",
+              }),
             }}
             onClick={() => document.getElementById("fileInput")?.click()}
           >
-            <Typography>
-              {file ? `Selected: ${file.name}` : "Drop CSV file here or click to browse"}
+            <Typography variant="body1" color="textSecondary">
+              {file ? (
+                <>
+                  <Typography variant="h6" color="success.main" sx={{ mb: 1 }}>
+                    ✅ File Selected
+                  </Typography>
+                  <Typography variant="body2" color="textPrimary" fontWeight={500}>
+                    {file.name}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
+                    Size: {(file.size / 1024).toFixed(2)} KB
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
+                    📁 Choose File to Upload
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Drag & Drop CSV file here or click to select
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
+                    Supported formats: .csv
+                  </Typography>
+                </>
+              )}
             </Typography>
             <input
               type="file"
@@ -706,7 +615,7 @@ if (activeFilters["Date"]?.length > 0) {
                 onClick={() => {
                   downloadSkippedRecordsAsCSV(skippedRecords);
                   setSkippedRecords([]);
-                  setBulkDialogOpen(false);
+                  closeBulkDialog();
                 }}
               >
                 Download Skipped Records
@@ -722,13 +631,33 @@ if (activeFilters["Date"]?.length > 0) {
           </Button>
         </Box>
 
-        <Box display="flex" justifyContent="flex-end" gap={2} p={2}>
-          <Button variant="outlined" onClick={() => setBulkDialogOpen(false)}>
+        <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
+          <Button
+            variant="outlined"
+            onClick={closeBulkDialog}
+          >
             Close
           </Button>
-          <Button variant="contained" onClick={handleBulkUpload} disabled={!file || isUploading}>
-            {isUploading ? "Uploading..." : "Upload"}
+          <Button
+            variant="contained"
+            onClick={handleFileUpload}
+            disabled={!file || isLoading}
+            sx={{ background: "primary", "&:hover": { background: "primary" } }}
+          >
+            {isLoading ? "Uploading..." : "Upload"}
           </Button>
+          {file && (
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setFile(null);
+                const input = document.getElementById("fileInput") as HTMLInputElement;
+                if (input) input.value = "";
+              }}
+            >
+              Clear File
+            </Button>
+          )}
         </Box>
       </CustomDialog>
     </Box>

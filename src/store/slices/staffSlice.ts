@@ -33,43 +33,12 @@ interface RoleDetails {
   staffMembers: Staff[];
 }
 
-interface Pagination {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-}
-
-interface StaffFilters {
-  page: number;
-  limit: number;
-  search: string;
-  role: string;
-  company: string;
-  startDate: string;
-  endDate: string;
-  // Add multiple filter support
-  filters: {
-    role: string[];
-    staff: string[];
-    company: string[];
-  };
-}
-
 interface StaffState {
   staffList: Staff[];
   roleDetails: RoleDetails | null;
-  currentStaff: any | null;
   loading: boolean;
   error: string | null;
-  pagination: Pagination;
-  filters: StaffFilters;
-  availableFilters: {
-    roles: string[];
-    companies: string[];
-     staff: string[];
-     joiningDates: string[];
-  };
+  currentStaff: any | null; // For detailed staff view
 }
 
 const initialState: StaffState = {
@@ -78,31 +47,6 @@ const initialState: StaffState = {
   currentStaff: null,
   loading: false,
   error: null,
-  pagination: {
-    currentPage: 1,
-    totalPages: 0,
-    totalItems: 0,
-    itemsPerPage: 10,
-  },
-   filters: {
-    page: 1,
-    limit: 10,
-    search: "",
-    role: "",
-    company: "",
-    startDate: "",
-    endDate: "",
-    filters: { // ADD MULTIPLE FILTERS
-      role: [],
-      staff: [],
-      company: []
-    }
-  },
-  availableFilters: {
-    roles: [],
-    companies: [],
-     staff: [],
-  },
 };
 
 // Helper function for API calls
@@ -125,119 +69,70 @@ const staffApiCall = async (url: string, method: string, data?: any) => {
   return response.data.data;
 };
 
-// In your staffSlice.ts - Update the getAllStaffThunk to properly handle arrays
-export const getAllStaffThunk = createAsyncThunk(
-  "staff/getAll", 
-  async (filters: Partial<StaffFilters> & { roles?: string[]; staffNames?: string[] } = {}, { rejectWithValue }) => {
-    try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      // Build query parameters properly for arrays
-      const params = new URLSearchParams();
-      
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value === undefined || value === null || value === '') return;
-        
-        // Handle arrays properly
-        if (Array.isArray(value)) {
-          // For arrays, append each value separately
-          value.forEach(item => {
-            if (item) params.append(key, item);
-          });
-        } else {
-          // For single values
-          params.append(key, value.toString());
-        }
-      });
-
-      console.log('API Params:', params.toString()); // Debug log
-
-      const response = await Request.get(`${Endpoint.GET_ALL_STAFF}?${params.toString()}`);
-
-      if (response.data.success && Array.isArray(response.data.data)) {
-        const staffList = response.data.data.map((staff: any) => ({
-          id: staff._id || staff.id,
-          name: staff.name || `${staff.firstName} ${staff.lastName}`,
-          ...staff,
-          firstName: staff.firstName,
-          lastName: staff.lastName,
-          email: staff.email,
-          mobileNo: staff.mobileNo,
-          mobileCode: staff.mobileCode,
-          whatsappNo: staff.whatsappNo,
-          whatsappCode: staff.whatsappCode,
-          address: staff.address,
-          aadharNo: staff.aadharNo,
-          joiningDate: staff.joiningDate,
-          birthDay: staff.birthDay,
-          role: staff.role,
-          companyName: staff.companyName,
-          status: staff.status,
-          aadharFiles: staff.aadharFiles || [],
-          addressFiles: staff.addressFiles || [],
-        }));
-
-        return {
-          staffList,
-          fullStaffData: response.data.data,
-          pagination: response.data.pagination || {
-            currentPage: filters.page || 1,
-            totalPages: Math.ceil(response.data.data.length / (filters.limit || 10)),
-            totalItems: response.data.data.length,
-            itemsPerPage: filters.limit || 10,
-          }
-        };
-      } else {
-        return rejectWithValue("Invalid staff response format");
-      }
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to fetch staff list");
+// Get all staff
+export const getAllStaffThunk = createAsyncThunk("staff/getAll", async (_, { rejectWithValue }) => {
+  try {
+    const token = authService.getToken();
+    if (!token) {
+      throw new Error("No authentication token found");
     }
-  }
-);
+    const response = await Request.get(Endpoint.GET_ALL_STAFF);
 
-// Get available filters for staff
-export const getStaffFiltersThunk = createAsyncThunk(
-  "staff/getFilters",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await Request.get(Endpoint.GET_STAFF_FILTERS);
-      
-      if (response.data.success) {
-        return response.data.data;
-      } else {
-        return rejectWithValue(response.data.message || "Failed to fetch filters");
+    if (response.data.success && Array.isArray(response.data.data)) {
+      const staffList = response.data.data.map((staff: any) => ({
+        id: staff._id || staff.id,
+        name: staff.name || `${staff.firstName} ${staff.lastName}`,
+        ...staff, // Spread all properties, including new file fields
+        firstName: staff.firstName,
+        lastName: staff.lastName,
+        email: staff.email,
+        mobileNo: staff.mobileNo,
+        mobileCode: staff.mobileCode,
+        whatsappNo: staff.whatsappNo,
+        whatsappCode: staff.whatsappCode,
+        address: staff.address,
+        aadharNo: staff.aadharNo,
+        joiningDate: staff.joiningDate,
+        birthDay: staff.birthDay,
+        role: staff.role,
+        companyName: staff.companyName,
+        status: staff.status,
+        aadharFiles: staff.aadharFiles || [], // Ensure it's an array
+        addressFiles: staff.addressFiles || [], // Ensure it's an array
+      }))
+      return {
+        staffList,
+        fullStaffData: response.data.data,
       }
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to fetch filters");
+    } else {
+      return rejectWithValue("Invalid staff response format")
     }
+  } catch (error: any) {
+    return rejectWithValue(error.message || "Failed to fetch staff list")
   }
-);
+})
 
 export const getRoleThunk = createAsyncThunk("staff/getRole", async (roleName: string, { rejectWithValue }) => {
   try {
     const response = await Request.post(
       Endpoint.GET_ROLE,
-      { roleName });
+      { roleName })
 
     if (response.data.success) {
-      return response.data;
+      return response.data
     } else {
-      return rejectWithValue(response.data.message || "Failed to fetch role details");
+      return rejectWithValue(response.data.message || "Failed to fetch role details")
     }
   } catch (error: any) {
-    return rejectWithValue(error.message || "Failed to fetch role details");
+    return rejectWithValue(error.message || "Failed to fetch role details")
   }
-});
+})
 
 // Get staff by ID
 export const getStaffByIdThunk = createAsyncThunk("staff/getById", async (id: string, { rejectWithValue }) => {
   try {
-    const data = await staffApiCall(`${Endpoint.GET_STAFF_BY_ID}/${id}`, "get");
-    console.log(data,'data');
+    const data = await staffApiCall(`${Endpoint.GET_STAFF_BY_ID}/${id}`, "get")
+    console.log(data,'data')
     return {
       id: data._id,
       firstName: data.firstName,
@@ -253,28 +148,28 @@ export const getStaffByIdThunk = createAsyncThunk("staff/getById", async (id: st
       companyName: data.CompanyName,
       password: data.password,
       status: data.status,
-      aadharFiles: data.aadharFiles || [],
-      addressFiles: data.addressFiles || [],
-    };
+      aadharFiles: data.aadharFiles || [], // Include new field
+      addressFiles: data.addressFiles || [], // Include new field
+    }
   } catch (error: any) {
-    return rejectWithValue(error.message || "Failed to fetch staff details");
+    return rejectWithValue(error.message || "Failed to fetch staff details")
   }
-});
+})
 
 // Create staff
 export const createStaffThunk = createAsyncThunk(
   "staff/create",
   async (staffData: Omit<Staff, "id">, { rejectWithValue }) => {
     try {
-      const data = await staffApiCall(Endpoint.CREATE_STAFF, "post", staffData);
+      const data = await staffApiCall(Endpoint.CREATE_STAFF, "post", staffData)
       return {
         id: data._id,
         ...staffData,
-        aadharFiles: staffData.aadharFiles || [],
-        addressFiles: staffData.addressFiles || [],
-      };
+        aadharFiles: staffData.aadharFiles || [], // Ensure it's an array
+        addressFiles: staffData.addressFiles || [], // Ensure it's an array
+      }
     } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to create staff");
+      return rejectWithValue(error.message || "Failed to create staff")
     }
   },
 );
@@ -284,15 +179,15 @@ export const updateStaffThunk = createAsyncThunk(
   "staff/update",
   async ({ id, ...staffData }: Partial<Staff> & { id: string }, { rejectWithValue }) => {
     try {
-      const data = await staffApiCall(`${Endpoint.UPDATE_STAFF}/${id}`, "patch", staffData);
+      const data = await staffApiCall(`${Endpoint.UPDATE_STAFF}/${id}`, "patch", staffData)
       return {
         id,
         ...data,
-        aadharFiles: data.aadharFiles || [],
-        addressFiles: data.addressFiles || [],
-      };
+        aadharFiles: data.aadharFiles || [], // Ensure it's an array
+        addressFiles: data.addressFiles || [], // Ensure it's an array
+      }
     } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to update staff");
+      return rejectWithValue(error.message || "Failed to update staff")
     }
   }
 );
@@ -302,13 +197,13 @@ export const updateStaffStatusThunk = createAsyncThunk(
   "staff/updateStatus",
   async ({ id, status }: { id: string; status: boolean }, { rejectWithValue }) => {
     try {
-      const data = await staffApiCall(`${Endpoint.UPDATE_STAFF_STATUS}/${id}`, "patch", { status });
+      const data = await staffApiCall(`${Endpoint.UPDATE_STAFF_STATUS}/${id}`, "patch", { status })
       return {
         id,
         status: data.status,
       };
     } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to update staff status");
+      return rejectWithValue(error.message || "Failed to update staff status")
     }
   }
 );
@@ -316,13 +211,12 @@ export const updateStaffStatusThunk = createAsyncThunk(
 // Delete staff
 export const deleteStaffThunk = createAsyncThunk("staff/delete", async (id: string, { rejectWithValue }) => {
   try {
-    await staffApiCall(`${Endpoint.DELETE_STAFF}/${id}`, "delete");
+    await staffApiCall(`${Endpoint.DELETE_STAFF}/${id}`, "delete")
     return id;
   } catch (error: any) {
-    return rejectWithValue(error.message || "Failed to delete staff");
+    return rejectWithValue(error.message || "Failed to delete staff")
   }
 });
-
 export const bulkCreateStaffThunk = createAsyncThunk(
   'staff/bulkCreate',
   async (formData: FormData, { rejectWithValue }) => {
@@ -337,7 +231,6 @@ export const bulkCreateStaffThunk = createAsyncThunk(
     }
   }
 );
-
 export const updateStaffPasswordThunk = createAsyncThunk(
   "staff/updatePassword",
   async (
@@ -355,6 +248,7 @@ export const updateStaffPasswordThunk = createAsyncThunk(
 
       return { id, message: response.data.message };
     } catch (error: any) {
+      // Extract the error message from the response
       const errorMessage = error.response?.data?.message || error.message || "Failed to update password";
       return rejectWithValue(errorMessage);
     }
@@ -373,21 +267,10 @@ const staffSlice = createSlice({
     },
     clearCurrentStaff(state) {
       state.currentStaff = null;
-    },
-    // New reducers for filters and pagination
-    setFilters(state, action: PayloadAction<Partial<StaffFilters>>) {
-      state.filters = { ...state.filters, ...action.payload };
-    },
-    resetFilters(state) {
-      state.filters = initialState.filters;
-    },
-    setPagination(state, action: PayloadAction<Partial<Pagination>>) {
-      state.pagination = { ...state.pagination, ...action.payload };
-    },
+    }
   },
   extraReducers: (builder) => {
     builder
-      // Get all staff with filters
       .addCase(getAllStaffThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -398,13 +281,11 @@ const staffSlice = createSlice({
           state,
           action: PayloadAction<{
             staffList: Staff[];
-            fullStaffData: any[];
-            pagination: Pagination;
+            fullStaffData: any[]
           }>,
         ) => {
           state.loading = false;
-          state.staffList = action.payload.staffList;
-          state.pagination = action.payload.pagination;
+          state.staffList = action.payload.staffList
         },
       )
       .addCase(getAllStaffThunk.rejected, (state, action) => {
@@ -412,15 +293,6 @@ const staffSlice = createSlice({
         state.error = action.payload as string;
         state.staffList = [];
       })
-      
-      // Get staff filters
-      .addCase(getStaffFiltersThunk.fulfilled, (state, action: PayloadAction<{ roles: string[]; companies: string[] }>) => {
-        state.availableFilters = action.payload;
-      })
-      .addCase(getStaffFiltersThunk.rejected, (state, action) => {
-        console.error("Failed to fetch staff filters:", action.payload);
-      })
-      
       .addCase(getRoleThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -440,7 +312,7 @@ const staffSlice = createSlice({
       })
       .addCase(getRoleThunk.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = action.payload as string
         state.roleDetails = null;
       })
       .addCase(getStaffByIdThunk.pending, (state) => {
@@ -464,8 +336,6 @@ const staffSlice = createSlice({
       .addCase(createStaffThunk.fulfilled, (state, action: PayloadAction<Staff>) => {
         state.loading = false;
         state.staffList.push(action.payload);
-        // Update total items count
-        state.pagination.totalItems += 1;
       })
       .addCase(createStaffThunk.rejected, (state, action) => {
         state.loading = false;
@@ -479,7 +349,7 @@ const staffSlice = createSlice({
       })
       .addCase(updateStaffThunk.fulfilled, (state, action: PayloadAction<Staff>) => {
         state.loading = false;
-        const index = state.staffList.findIndex((staff) => staff.id === action.payload.id);
+        const index = state.staffList.findIndex((staff) => staff.id === action.payload.id)
         if (index !== -1) {
           state.staffList[index] = action.payload;
         }
@@ -499,12 +369,12 @@ const staffSlice = createSlice({
       })
       .addCase(updateStaffStatusThunk.fulfilled, (state, action: PayloadAction<{ id: string; status: boolean }>) => {
         state.loading = false;
-        const index = state.staffList.findIndex((staff) => staff.id === action.payload.id);
+        const index = state.staffList.findIndex((staff) => staff.id === action.payload.id)
         if (index !== -1) {
-          state.staffList[index].status = action.payload.status;
+          state.staffList[index].status = action.payload.status
         }
         if (state.currentStaff?.id === action.payload.id) {
-          state.currentStaff.status = action.payload.status;
+          state.currentStaff.status = action.payload.status
         }
       })
       .addCase(updateStaffStatusThunk.rejected, (state, action) => {
@@ -519,9 +389,7 @@ const staffSlice = createSlice({
       })
       .addCase(deleteStaffThunk.fulfilled, (state, action: PayloadAction<string>) => {
         state.loading = false;
-        state.staffList = state.staffList.filter((staff) => staff.id !== action.payload);
-        // Update total items count
-        state.pagination.totalItems = Math.max(0, state.pagination.totalItems - 1);
+        state.staffList = state.staffList.filter((staff) => staff.id !== action.payload)
         if (state.currentStaff?.id === action.payload) {
           state.currentStaff = null;
         }
@@ -537,8 +405,6 @@ const staffSlice = createSlice({
       .addCase(bulkCreateStaffThunk.fulfilled, (state, action: PayloadAction<Staff[]>) => {
         state.loading = false;
         state.staffList = [...state.staffList, ...action.payload];
-        // Update total items count
-        state.pagination.totalItems += action.payload.length;
       })
       .addCase(bulkCreateStaffThunk.rejected, (state, action) => {
         state.loading = false;
@@ -556,15 +422,8 @@ const staffSlice = createSlice({
         state.error = action.payload as string;
       });
   },
-});
 
-export const { 
-  clearError, 
-  clearCurrentStaff, 
-  clearRoleDetails,
-  setFilters, 
-  resetFilters, 
-  setPagination 
-} = staffSlice.actions;
+})
 
-export default staffSlice.reducer;
+export const { clearError, clearCurrentStaff } = staffSlice.actions
+export default staffSlice.reducer

@@ -1,15 +1,12 @@
-// pages/ProductsPage.tsx
-"use client";
-import React, { useEffect, useState, useCallback,useRef} from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
   IconButton,
   TableCell,
-  Chip,
-  Button as MuiButton,
 } from "@mui/material";
-import { Add, Edit, Delete, CloudUpload } from "@mui/icons-material";
+import { Add, Edit, Delete } from "@mui/icons-material";
+import { useDispatch, useSelector } from "react-redux";
 import BasicTable from "@/component/common_component/Table/themetable";
 import Input from "@/component/common_component/themeinput";
 import Button from "@/component/common_component/themebutton";
@@ -18,15 +15,12 @@ import AddNewProductBulkDialog from "@/component/AddNewProductBulkDialog";
 import {
   createProductItemThunk,
   getAllProductItemsThunk,
-  getProductItemFiltersThunk,
   updateProductItemThunk,
   deleteProductItemThunk,
-  bulkCreateProductItemsThunk,
   clearProductItemError,
   clearProductItemSuccessMessage,
-  setProductItemFilters,
 } from "@/store/slices/productItemSlice";
-import { RootState, useAppDispatch, useAppSelector } from "@/store";
+import { RootState } from "@/store";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 
@@ -44,75 +38,31 @@ const columns = [
 ];
 
 const ProductsPage = () => {
-  const dispatch = useAppDispatch();
-  const {
-    productItems,
-    loading,
-    error,
-    successMessage,
-    pagination,
-    filters,
-    availableFilters = { itemNames: [] },
-  } = useAppSelector((state: RootState) => state.productItems);
-
+  const dispatch = useDispatch();
+  const { productItems, loading, error, successMessage } = useSelector(
+    (state: RootState) => state.productItems
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ itemName: "" });
-  const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
-  const searchTimeoutRef = useRef<number | null>(null);
 
-  const handleSearchDebounced = useCallback(
-    (search: string) => {
-      if (searchTimeoutRef.current) {
-        window.clearTimeout(searchTimeoutRef.current);
-      }
-      searchTimeoutRef.current = window.setTimeout(() => {
-        dispatch(setProductItemFilters({ search: search.trim(), page: 1 }));
-      }, 500);
-    },
-    [dispatch]
-  );
-
+  // Fetch all products on component mount
   useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        window.clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
-  // Fetch data
-  const fetchData = useCallback(() => {
-    const apiFilters: any = {
-      page: filters.page || 1,
-      limit: filters.limit || 10,
-      search: filters.search || "",
-    };
-    if (activeFilters["Name"]?.length) apiFilters.itemNames = activeFilters["Name"];
-    dispatch(getAllProductItemsThunk(apiFilters));
-  }, [dispatch, filters, activeFilters]);
-
-  useEffect(() => {
-    dispatch(getProductItemFiltersThunk());
-    fetchData();
-  }, [dispatch, fetchData]);
-
-  useEffect(() => {
-    fetchData();
-  }, [filters.page, filters.search, activeFilters]);
+    dispatch(getAllProductItemsThunk());
+  }, [dispatch]);
 
   // Handle success and error messages
   useEffect(() => {
     if (successMessage) {
       toast.success(successMessage);
       dispatch(clearProductItemSuccessMessage());
-      fetchData(); // Refresh after create/update/delete/bulk
     }
     if (error) {
       toast.error(error);
       dispatch(clearProductItemError());
     }
-  }, [successMessage, error, dispatch, fetchData]);
+  }, [successMessage, error, dispatch]);
 
   // Open dialog for add or edit
   const handleOpenDialog = (product?: ProductItem) => {
@@ -138,7 +88,9 @@ const ProductsPage = () => {
       return;
     }
 
-    const productData = { itemName: form.itemName };
+    const productData = {
+      itemName: form.itemName,
+    };
 
     if (editId) {
       dispatch(updateProductItemThunk({ id: editId, data: productData }));
@@ -150,6 +102,10 @@ const ProductsPage = () => {
     setForm({ itemName: "" });
     setEditId(null);
   };
+
+
+
+  // ...
 
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
@@ -174,7 +130,7 @@ const ProductsPage = () => {
       } catch (err: any) {
         Swal.fire({
           title: "Error!",
-          text: err.message || "Failed to delete product",
+          text: err?.message || "Failed to delete product",
           icon: "error",
           confirmButtonColor: "#7F56D9",
         });
@@ -182,83 +138,55 @@ const ProductsPage = () => {
     }
   };
 
-  const handleFilterChange = (newFilters: { [key: string]: string[] }) => {
-    setActiveFilters(newFilters);
-    dispatch(setProductItemFilters({ page: 1 }));
-  };
-
-  const clearAllFilters = () => {
-    setActiveFilters({});
-    dispatch(setProductItemFilters({ page: 1, search: "" }));
-  };
-
-  const activeFilterCount = Object.values(activeFilters).flat().length;
 
   return (
     <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" fontWeight={600}>Products</Typography>
-        <Box display="flex" gap={2}>
-          <Button variant="outlined" onClick={() => {/* Download Sample */}}>
-            Download Sample CSV
-          </Button>
-          <Button variant="contained" startIcon={<CloudUpload />} onClick={() => setBulkDialogOpen(true)}>
-            Bulk Upload
-          </Button>
-          <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h5" fontWeight={600}>
+          Products
+        </Typography>
+        <Box>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => handleOpenDialog()}
+            disabled={loading}
+            sx={{ borderRadius: 2, fontWeight: 600, mr: 2, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
+          >
             New Product
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setBulkDialogOpen(true)}
+            disabled={loading}
+            sx={{ borderRadius: 2, fontWeight: 600, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
+          >
+            Bulk Upload
           </Button>
         </Box>
       </Box>
-
-      {activeFilterCount > 0 && (
-        <Box mb={2} display="flex" alignItems="center" gap={1} flexWrap="wrap">
-          <Typography variant="body2" color="textSecondary">Filters:</Typography>
-          {Object.entries(activeFilters).map(([field, values]) =>
-            values.map((val) => (
-              <Chip
-                key={`${field}-${val}`}
-                label={`${field}: ${val}`}
-                onDelete={() => {
-                  const updated = activeFilters[field].filter((v) => v !== val);
-                  setActiveFilters((prev) => ({
-                    ...prev,
-                    [field]: updated.length ? updated : [],
-                  }));
-                }}
-                size="small"
-                color="primary"
-              />
-            ))
-          )}
-          <Button size="small" onClick={clearAllFilters}>Clear All</Button>
-        </Box>
-      )}
-
       <BasicTable
-        serverSide={true}
         tableHeader={columns}
         rowData={productItems}
-        loading={loading}
-        totalCount={pagination?.totalItems || 0}
-        pagination={pagination}
-        onPageChange={(page) => dispatch(setProductItemFilters({ page }))}
-        onSearchChange={handleSearchDebounced}
-        onFilterChange={handleFilterChange}
-        availableFilters={{
-          "Name": availableFilters.itemNames,
-        }}
-        showExcelDownload={true}
-        excelHeaders={["Name"]}
+        showDatePicker={false}
         renderRow={(row: ProductItem, idx: number) => (
           <>
-            <TableCell>{(filters.page - 1) * filters.limit + idx + 1}</TableCell>
+            <TableCell>{idx + 1}</TableCell>
             <TableCell>{row.itemName}</TableCell>
             <TableCell>
-              <IconButton color="primary" onClick={() => handleOpenDialog(row)}>
+              <IconButton
+                color="primary"
+                onClick={() => handleOpenDialog(row)}
+                disabled={loading}
+              >
                 <Edit />
               </IconButton>
-              <IconButton color="error" onClick={() => handleDelete(row._id)}>
+              <IconButton
+                color="error"
+                onClick={() => handleDelete(row._id)}
+                disabled={loading}
+              >
                 <Delete />
               </IconButton>
             </TableCell>
@@ -267,22 +195,45 @@ const ProductsPage = () => {
       />
 
       {/* Add/Edit Dialog */}
-      <CustomDialog open={dialogOpen} onClose={() => setDialogOpen(false)} title={editId ? "Edit Product" : "New Product"}>
-        <form>
-          <Box display="grid" gap={2}>
-            <Input label="Product Name" name="itemName" value={form.itemName} onChange={handleFormChange} />
-          </Box>
-          <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
-            <Button variant="outlined" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button type="button" variant="contained" onClick={handleSave}>
-              Save
-            </Button>
-          </Box>
-        </form>
+      <CustomDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title={editId ? "Edit Product" : "New Product"}
+        maxWidth="xs"
+        fullWidth
+      >
+        <Input
+          label="Product Name"
+          name="itemName"
+          value={form.itemName}
+          onChange={handleFormChange}
+          fullWidth
+          required
+          sx={{ mb: 2, mt: 1 }}
+        />
+        <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
+          <Button
+            onClick={() => setDialogOpen(false)}
+            variant="outlined"
+            sx={{ borderRadius: 2, borderColor: '#A409F8', color: '#A409F8', '&:hover': { borderColor: '#7B06C2', color: '#7B06C2' } }}
+          >
+            Close
+          </Button>
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            disabled={loading}
+            sx={{ borderRadius: 2, background: '#A409F8', '&:hover': { background: '#7B06C2' } }}
+          >
+            Save
+          </Button>
+        </Box>
       </CustomDialog>
-
-      {/* Bulk Dialog */}
-      <AddNewProductBulkDialog open={bulkDialogOpen} onClose={() => setBulkDialogOpen(false)} refreshData={fetchData} />
+      <AddNewProductBulkDialog
+        open={bulkDialogOpen}
+        onClose={() => setBulkDialogOpen(false)}
+        refreshData={() => dispatch(getAllProductItemsThunk())}
+      />
     </Box>
   );
 };
