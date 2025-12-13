@@ -82,6 +82,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   isBulkUpload = false,
   company
 }) => {
+  console.log("DEBUG : AddNewPartyDialog : company:", company);
+
   const dispatch = useAppDispatch();
   const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
     (state) => state.staff

@@ -46,31 +46,36 @@ export const productItemService = {
     }
   },
 
-  // services/productItem.service.ts (update getAllProductItems and add getProductItemFilters)
-async getAllProductItems(filters: Partial<ProductItemFilters> = {}): Promise<ApiResponse<ProductItem[]>> {
-  try {
-    const params = new URLSearchParams();
-    if (filters.page) params.append("page", String(filters.page));
-    if (filters.limit) params.append("limit", String(filters.limit));
-    if (filters.search) params.append("search", filters.search);
-    if (filters.itemNames?.length) filters.itemNames.forEach(v => params.append("itemNames", v));
-    const response: AxiosResponse<ApiResponse<ProductItem[]>> = await Request.get(
-      `${Endpoint.GET_ALL_PRODUCT_ITEM}?${params.toString()}`
-    );
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || "Failed to fetch product items");
-  }
-},
+  // Get All Product Items
+  async getAllProductItems(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<ApiResponse<ProductItem[]>> {
+    try {
 
-async getProductItemFilters(): Promise<AvailableFilters> {
-  try {
-    const response = await Request.get(Endpoint.GET_PRODUCT_ITEM_FILTERS);
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || "Failed to load filters");
-  }
-},
+      const queryParams: any = {};
+      if (params?.page) queryParams.page = params.page;
+      if (params?.limit) queryParams.limit = params.limit;
+      if (params?.search) queryParams.search = params.search;
+
+      const response: AxiosResponse<ApiResponse<ProductItem[]>> = await Request.get(
+        Endpoint.GET_ALL_PRODUCT_ITEM,
+        {params: queryParams}
+      );
+
+      return {
+        success: response.data.success,
+        data: response.data.data || [],
+        message: response.data.message,
+        totalCount: response.data.totalCount,
+        pagination: response.data.pagination,
+      };
+    } catch (error: any) {
+      console.error("Get All Product Items Service Error:", error);
+      throw new Error(error.response?.data?.message || "Failed to fetch product items");
+    }
+  },
 
   // Get Product Item By ID
   async getProductItemById(id: string): Promise<ApiResponse<ProductItem>> {

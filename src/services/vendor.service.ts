@@ -1,5 +1,3 @@
-// services/vendor.service.ts
-
 import { AxiosResponse } from 'axios';
 import Endpoint from '@/API/apiConfig';
 import Request from './axios';
@@ -38,46 +36,30 @@ export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
-  pagination?: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
-  };
 }
-
-// ADD THIS INTERFACE (for filters dropdown)
-export interface VendorFiltersResponse {
-  companyNames: string[];
-  vendorNames: string[];
-  contactNumbers: string[];
-  whatsappNumbers: string[];
-  gstNumbers: string[];
-}
-
-// THE REST OF YOUR SERVICE (only small changes + 1 new method)
 
 export const vendorService = {
-  // This already exists – keep it exactly like this (it accepts query string)
-  async getVendors(query = '') {
-    const res = await Request.get(`${Endpoint.GET_ALL_VENDORS}?${query}`);
-    return res.data; // now returns { data: Vendor[], pagination: {...} }
-  },
-
-  // NEW METHOD – ADD THIS
-  async getVendorFilters(): Promise<VendorFiltersResponse> {
-    const response = await Request.get(Endpoint.GET_ALL_VENDORS_FILTERS);
-    return response.data; // { companyNames: ["ABC Ltd", "XYZ Corp", ...] }
+  async getVendors(): Promise<ApiResponse<Vendor[]>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Vendor[]>> = await Request.get(
+        Endpoint.GET_ALL_VENDORS);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 'Failed to fetch vendors'
+      );
+    }
   },
 
   async getVendorById(id: string): Promise<ApiResponse<Vendor>> {
     try {
       const response: AxiosResponse<ApiResponse<Vendor>> = await Request.get(
-        `${Endpoint.GET_VENDOR_BY_ID}/${id}`
-      );
+        `${Endpoint.GET_VENDOR_BY_ID}/${id}`);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch vendor');
+      throw new Error(
+        error.response?.data?.message || 'Failed to fetch vendor'
+      );
     }
   },
 
@@ -85,11 +67,12 @@ export const vendorService = {
     try {
       const response: AxiosResponse<ApiResponse<Vendor>> = await Request.post(
         Endpoint.CREATE_VENDOR,
-        data
-      );
-      return response.data.data!; // populated vendor
+        data);
+      return response.data.data!;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to create vendor');
+      throw new Error(
+        error.response?.data?.message || 'Failed to create vendor'
+      );
     }
   },
 
@@ -97,11 +80,12 @@ export const vendorService = {
     try {
       const response: AxiosResponse<ApiResponse<Vendor>> = await Request.patch(
         `${Endpoint.UPDATE_VENDOR}/${id}`,
-        data
-      );
+        data);
       return response.data.data!;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to update vendor');
+      throw new Error(
+        error.response?.data?.message || 'Failed to update vendor'
+      );
     }
   },
 
@@ -109,7 +93,9 @@ export const vendorService = {
     try {
       await Request.delete(`${Endpoint.DELETE_VENDOR}/${id}`);
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to delete vendor');
+      throw new Error(
+        error.response?.data?.message || 'Failed to delete vendor'
+      );
     }
   },
 
@@ -117,11 +103,12 @@ export const vendorService = {
     try {
       const response: AxiosResponse<ApiResponse<Vendor[]>> = await Request.post(
         Endpoint.BULK_CREATE_VENDORS,
-        formData
-      );
+        formData);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to bulk create vendors');
+      throw new Error(
+        error.response?.data?.message || 'Failed to bulk create vendors'
+      );
     }
   },
 };

@@ -1,160 +1,7 @@
-// store/slices/packagingOptionSlice.ts
-
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import Request from "@/services/axios";
-import Endpoint from "@/API/apiConfig";
-import { packagingOptionService } from "@/services/packagingOption.service";
-
-// Types
-export interface PackagingOption {
-  _id: string;
-  party: { _id: string; partyName: string } | string;
-  ply: string;
-  length: string;
-  width: string;
-  height: string;
-  deckal: string;
-  paper1GSM: string;
-  paper2GSM: string;
-  paper3GSM: string;
-  noOfPieces?: string;
-  ratePerPiece?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Pagination {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-}
-
-interface Filters {
-  page: number;
-  limit: number;
-  search: string;
-  parties?: string[];   // array of party _id
-  plys?: string[];      // array of ply values like "5", "7"
-  lengths?: string;
-  widths?: string;
-  heights?: string;
-  deckals?: string;
-  paper1GSMs?: string;
-  paper2GSMs?: string;
-  paper3GSMs?: string;
-  noOfPieces?: string;
-  ratePerPiece?: string;
-  dates?: string;
-
-}
-
-interface AvailableFilters {
-  parties: string[];    // party names for dropdown
-  plys: string[];       // unique ply values
-  lengths?: string[];
-  widths?: string[];
-  heights?: string[];
-  deckals?: string[];
-  paper1GSMs?: string[];
-  paper2GSMs?: string[];
-  paper3GSMs?: string[];  
-  noOfPiecesOptions?: string[];
-  ratePerPieceOptions?: string[];
-  dates?: string[];
-}
-
-interface PackagingOptionsState {
-  packagingOptions: PackagingOption[];
-  loading: boolean;
-  error: string | null;
-  operationLoading: boolean;
-  operationError: string | null;
-
-  // Server-side state
-  pagination: Pagination | null;
-  filters: Filters;
-  availableFilters: AvailableFilters;
-}
-
-const initialState: PackagingOptionsState = {
-  packagingOptions: [],
-  loading: false,
-  error: null,
-  operationLoading: false,
-  operationError: null,
-
-  pagination: null,
-  filters: {
-    page: 1,
-    limit: 10,
-    search: "",
-  },
-  availableFilters: {
-    parties: [],
-    plys: [],
-  lengths: [],
-  widths: [],
-  heights: [],
-  deckals: [],
-  paper1GSMs: [],
-  paper2GSMs: [],
-  paper3GSMs: [],
-  noOfPiecesOptions: [],
-  ratePerPieceOptions: [],
-  dates: []
-  
-  },
-};
-
-// Thunks
-
-export const getAllPackagingOptionsThunk = createAsyncThunk(
-  "packagingOptions/getAll",
-  async (filters: Partial<Filters> = {}, { rejectWithValue }) => {
-    console.log("🚀 ~ filters:", filters)
-    try {
-      const params = new URLSearchParams();
-      if (filters.page) params.append("page", String(filters.page));
-      if (filters.limit) params.append("limit", String(filters.limit));
-      if (filters.search) params.append("search", filters.search);
-      filters.parties?.forEach((id) => params.append("parties", id));
-      filters.plys?.forEach((ply) => params.append("plys", ply));
-      if (filters.lengths) params.append("lengths", filters.lengths);
-      if (filters.widths) params.append("widths", filters.widths);
-      if (filters.heights) params.append("heights", filters.heights);
-      if (filters.deckals) params.append("deckals", filters.deckals);
-      if (filters.paper1GSMs) params.append("paper1GSMs", filters.paper1GSMs);
-      if (filters.paper2GSMs) params.append("paper2GSMs", filters.paper2GSMs);
-      if (filters.paper3GSMs) params.append("paper3GSMs", filters.paper3GSMs);
-      if (filters.noOfPieces) params.append("noOfPieces", filters.noOfPieces);
-      if (filters.ratePerPiece) params.append("ratePerPiece", filters.ratePerPiece);
-      if (filters.dates) params.append("dates", filters.dates);
-
-      const response = await Request.get(
-        `${Endpoint.GET_ALL_PACKAGING_OPTION}?${params.toString()}`
-      );
-
-      return response.data; // Expected: { data: PackagingOption[], pagination: Pagination }
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch packaging options"
-      );
-    }
-  }
-);
-
-export const getPackagingFiltersThunk = createAsyncThunk(
-  "packagingOptions/getFilters",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await Request.get(Endpoint.GET_PACKAGING_FILTERS);
-      return response.data; // { parties: string[], plys: string[] }
-    } catch (error: any) {
-      return rejectWithValue("Failed to load filters");
-    }
-  }
-);
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { packagingOptionService, PackagingOption, ApiResponse } from '@/services/packagingOption.service';
+import Endpoint from '@/API/apiConfig';
+import Request from '@/services/axios';
 
 // Async thunks
 export const createPackagingOptionThunk = createAsyncThunk(
@@ -173,6 +20,21 @@ export const createPackagingOptionThunk = createAsyncThunk(
   }
 );
 
+export const getAllPackagingOptionsThunk = createAsyncThunk(
+  'packagingOptions/getAll',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await packagingOptionService.getAllPackagingOptions();
+      if (response && Array.isArray(response)) {
+        return response;
+      } else {
+        return rejectWithValue('Invalid response format: data array not found');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch packaging options');
+    }
+  }
+);
 
 export const updatePackagingOptionThunk = createAsyncThunk(
   'packagingOptions/update',
@@ -231,19 +93,33 @@ export const bulkCreatePackagingOptionThunk = createAsyncThunk(
     }
   }
 );
-// Slice
+
+
+interface PackagingOptionsState {
+  packagingOptions: PackagingOption[];
+  loading: boolean;
+  error: string | null;
+  operationLoading: boolean; // For create/update/delete operations
+  operationError: string | null;
+}
+
+const initialState: PackagingOptionsState = {
+  packagingOptions: [],
+  loading: false,
+  error: null,
+  operationLoading: false,
+  operationError: null,
+};
+
 const packagingOptionsSlice = createSlice({
-  name: "packagingOptions",
+  name: 'packagingOptions',
   initialState,
   reducers: {
-    setPackagingFilters: (state, action: PayloadAction<Partial<Filters>>) => {
-      state.filters = { ...state.filters, ...action.payload };
-    },
-    clearPackagingFilters: (state) => {
-      state.filters = { page: 1, limit: 10, search: "" };
-    },
     clearError(state) {
       state.error = null;
+      state.operationError = null;
+    },
+    clearOperationError(state) {
       state.operationError = null;
     },
   },
@@ -252,11 +128,15 @@ const packagingOptionsSlice = createSlice({
       // Create Packaging Option
       .addCase(createPackagingOptionThunk.pending, (state) => {
         state.operationLoading = true;
+        state.operationError = null;
       })
-      .addCase(createPackagingOptionThunk.fulfilled, (state, action) => {
-        state.operationLoading = false;
-        state.packagingOptions.unshift(action.payload);
-      })
+      .addCase(
+        createPackagingOptionThunk.fulfilled,
+        (state, action: PayloadAction<PackagingOption>) => {
+          state.operationLoading = false;
+          state.packagingOptions = [action.payload, ...state.packagingOptions];
+        }
+      )
       .addCase(createPackagingOptionThunk.rejected, (state, action) => {
         state.operationLoading = false;
         state.operationError = action.payload as string;
@@ -266,58 +146,64 @@ const packagingOptionsSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(getAllPackagingOptionsThunk.fulfilled, (state, action) => {
-        state.loading = false;
-        state.packagingOptions = action.payload.data;
-        state.pagination = action.payload.pagination;
-      })
+      .addCase(
+        getAllPackagingOptionsThunk.fulfilled,
+        (state, action: PayloadAction<PackagingOption[]>) => {
+          state.loading = false;
+          state.packagingOptions = action.payload;
+        }
+      )
       .addCase(getAllPackagingOptionsThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        state.packagingOptions = [];
       })
-
-      // === FILTERS (Party & Ply dropdown) ===
-      .addCase(getPackagingFiltersThunk.fulfilled, (state, action) => {
-        state.availableFilters = action.payload;
-      })
-      // === UPDATE ===
+      // Update Packaging Option
       .addCase(updatePackagingOptionThunk.pending, (state) => {
         state.operationLoading = true;
+        state.operationError = null;
       })
-      .addCase(updatePackagingOptionThunk.fulfilled, (state, action) => {
-        state.operationLoading = false;
-        const idx = state.packagingOptions.findIndex((item) => item._id === action.payload._id);
-        if (idx !== -1) state.packagingOptions[idx] = action.payload;
-      })
+      .addCase(
+        updatePackagingOptionThunk.fulfilled,
+        (state, action: PayloadAction<PackagingOption>) => {
+          state.operationLoading = false;
+          const index = state.packagingOptions.findIndex(
+            (option) => option._id === action.payload._id
+          );
+          if (index !== -1) {
+            state.packagingOptions[index] = action.payload;
+          }
+        }
+      )
       .addCase(updatePackagingOptionThunk.rejected, (state, action) => {
         state.operationLoading = false;
         state.operationError = action.payload as string;
       })
-
-      // === DELETE ===
+      // Delete Packaging Option
       .addCase(deletePackagingOptionThunk.pending, (state) => {
         state.operationLoading = true;
+        state.operationError = null;
       })
-      .addCase(deletePackagingOptionThunk.fulfilled, (state, action) => {
-        state.operationLoading = false;
-        state.packagingOptions = state.packagingOptions.filter((item) => item._id !== action.payload);
-      })
+      .addCase(
+        deletePackagingOptionThunk.fulfilled,
+        (state, action: PayloadAction<string>) => {
+          state.operationLoading = false;
+          state.packagingOptions = state.packagingOptions.filter(
+            (option) => option._id !== action.payload
+          );
+        }
+      )
       .addCase(deletePackagingOptionThunk.rejected, (state, action) => {
         state.operationLoading = false;
         state.operationError = action.payload as string;
       })
-
-      // === BULK UPLOAD ===
       .addCase(bulkCreatePackagingOptionThunk.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(bulkCreatePackagingOptionThunk.fulfilled, (state, action) => {
+      .addCase(bulkCreatePackagingOptionThunk.fulfilled, (state, action: any) => {
         state.loading = false;
-        // If you want to refresh list after bulk, better to re-fetch via getAll
-        // Or prepend new ones if API returns them
-        if (action.payload.data?.length) {
-          state.packagingOptions = [...action.payload.data, ...state.packagingOptions];
-        }
+        state.packagingOptions = [...state.packagingOptions, ...action.payload.data];
       })
       .addCase(bulkCreatePackagingOptionThunk.rejected, (state, action) => {
         state.loading = false;
@@ -326,5 +212,5 @@ const packagingOptionsSlice = createSlice({
   },
 });
 
-export const { setPackagingFilters, clearPackagingFilters, clearError } = packagingOptionsSlice.actions;
+export const { clearError, clearOperationError } = packagingOptionsSlice.actions;
 export default packagingOptionsSlice.reducer;

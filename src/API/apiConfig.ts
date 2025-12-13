@@ -2,7 +2,6 @@ const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
 const Endpoint = {
   LOGIN: `${BaseURL}/api/staff/login`,
   CREATE_STAFF: `${BaseURL}/api/staff/create`,
-   GET_STAFF_FILTERS:  `${BaseURL}/api/staff/filters`, 
   GET_ALL_STAFF: `${BaseURL}/api/staff/getall`,
   GET_STAFF_BY_ID: `${BaseURL}/api/staff/getbyid`,
   UPDATE_STAFF: `${BaseURL}/api/staff/update`,
@@ -93,7 +92,6 @@ const Endpoint = {
 
   //productitem
   CREATE_PRODUCT_ITEM: `${BaseURL}/api/productItem/create`,
-     GET_PRODUCT_ITEM_FILTERS:  `${BaseURL}/api/productItem/filters`, 
   DELETE_PRODUCT_ITEM: `${BaseURL}/api/productItem/delete`,
   GET_ALL_PRODUCT_ITEM: `${BaseURL}/api/productItem/getall`,
   GET_PRODUCT_ITEM_WITH_ID: `${BaseURL}/api/productItem/update`,
@@ -104,7 +102,6 @@ const Endpoint = {
   //company name 
 
   CREATE_COMPANY_NAME: `${BaseURL}/api/company/create`,
-   GET_COMPANY_FILTERS:  `${BaseURL}/api/company/filters`, 
   GET_ALL_COMPANY_NAME: `${BaseURL}/api/company/getallCompany`,
   GET_COMPANY_NAME_WITH_ID: `${BaseURL}/api/company/getbyid`,
   UPDATE_COMPANY_NAME: `${BaseURL}/api/company/update`,
@@ -145,7 +142,6 @@ const Endpoint = {
   // Role endpoints
   CREATE_ROLE: `${BaseURL}/api/role/create`,
   GET_ALL_ROLES: `${BaseURL}/api/role/getall`,
-  GET_ROLE_FILTERS: `${BaseURL}/api/role/filters`,
   GET_ROLE_BY_ID: `${BaseURL}/api/role/getbyid`,
   UPDATE_ROLE: `${BaseURL}/api/role/updatebyid`,
   DELETE_ROLE: `${BaseURL}/api/role/delete`,
@@ -161,7 +157,6 @@ const Endpoint = {
 
   // New vendor endpoints
   GET_ALL_VENDORS: `${BaseURL}/api/vendor/getall`,
-  GET_ALL_VENDORS_FILTERS: `${BaseURL}/api/vendor/filters`,
   GET_VENDOR_BY_ID: `${BaseURL}/api/vendor/getbyid`,
   CREATE_VENDOR: `${BaseURL}/api/vendor/create`,
   UPDATE_VENDOR: `${BaseURL}/api/vendor/update`,
@@ -191,7 +186,7 @@ const Endpoint = {
   UPDATE_BINDER_TYPE: `${BaseURL}/api/bindertype/update`,
   DELETE_BINDER_TYPE: `${BaseURL}/api/bindertype/delete`,
   BULK_CREATE_BINDER_TYPES: `${BaseURL}/api/bindertype/bulk`,
-   GET_BINDER_TYPE_FILTERS:  `${BaseURL}/api/bindertype/filters`,
+
 
   // quality packaging orders 
   CREATE_QP_ORDER: `${BaseURL}/api/qporder/create`,
@@ -208,7 +203,6 @@ const Endpoint = {
   GET_ALL_QP_ORDER_FOR_DRIVER: `${BaseURL}/api/qporder/getalldriver`,
   CREATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/create`,
   UPDATE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/update`,
-  GET_PACKAGING_FILTERS: `${BaseURL}/api/packagingOptions/filters`,
   DELETE_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/delete`,
   GET_ALL_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/getall`,
   BULK_UPLOAD_PACKAGING_OPTION: `${BaseURL}/api/packagingOptions/bulk`,
@@ -224,14 +218,12 @@ const Endpoint = {
 
   CREATE_MARKET: `${BaseURL}/api/market/create`,
   GET_ALL_MARKETS: `${BaseURL}/api/market/getall`,
-  GET_MARKET_FILTERS: `${BaseURL}/api/market/filters`,
   UPDATE_MARKET: `${BaseURL}/api/market/update`,
   DELETE_MARKET: `${BaseURL}/api/market/delete`,
   BULK_UPLOAD_MARKETS: `${BaseURL}/api/market/bulk`,
 
   CREATE_KANTAN: `${BaseURL}/api/kantan/create`,
   GET_ALL_KANTANS: `${BaseURL}/api/kantan/getall`,
-  GET_KANTAN_FILTERS: `${BaseURL}/api/kantan/filters`,
   UPDATE_KANTAN: `${BaseURL}/api/kantan/update`,
   DELETE_KANTAN: `${BaseURL}/api/kantan/delete`,
   BULK_UPLOAD_KANTANS: `${BaseURL}/api/kantan/bulk`,
