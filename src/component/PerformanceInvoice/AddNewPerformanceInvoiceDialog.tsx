@@ -22,6 +22,7 @@ import InvoicePDFGenerator from "../InvoicePDFGenerator"
 import { assignTaskService } from "@/services/assignTask.service";
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice";
 import { updateOrderThunk } from "@/store/slices/orderSlice";
+import { getAllStaffThunk } from "@/store/slices/staffSlice";
 
 interface FormData {
   orderNumber: string;
@@ -153,7 +154,11 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
   const [isEditMode, setIsEditMode] = useState(!!invoiceId);
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | undefined>(invoiceId);
   const [isSaved, setIsSaved] = useState(false);
-  const [staffList, setStaffList] = useState<Staff[]>([]);
+  const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
+    (state) => state.staff
+  );
+  console.log("DEBUG : AddNewPerformanceInvoiceDialog : staffList:", staffList);
+
 
 
   useEffect(() => {
@@ -165,28 +170,8 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     if (!open) return;
     dispatch(clearSuccessMessage());
     dispatch(clearError());
+    dispatch(getAllStaffThunk())
 
-    const fetchStaffList = async () => {
-      try {
-        const response = await assignTaskService.getAllAssignTasks();
-        if (response.success && response.data) {
-          const uniqueStaff = new Map<string, Staff>();
-          response.data.forEach(task => {
-            if (task.assignTo && typeof task.assignTo === 'object') {
-              const staff = task.assignTo as unknown as Staff;
-              if (!uniqueStaff.has(staff._id)) {
-                uniqueStaff.set(staff._id, staff);
-              }
-            }
-          });
-          setStaffList(Array.from(uniqueStaff.values()));
-        }
-      } catch (err: any) {
-        toast.error(err.message || "Failed to fetch staff list");
-      }
-    };
-
-    fetchStaffList();
 
     const fetchOrders = async () => {
       try {
@@ -404,10 +389,16 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     },
   });
 
-  const staffOptions = staffList.map((staff) => ({
-    label: `${staff.firstName} ${staff.lastName}`,
-    value: staff._id,
-  }));
+  const staffOptions = staffList
+    .filter(
+      (staff) =>
+        staff.role?.roleName?.toLowerCase() === "sales staff"
+    )
+    .map((staff) => ({
+      label: `${staff.firstName} ${staff.lastName}`,
+      value: staff._id,
+    }));
+
 
   useEffect(() => {
     if (!open || !invoiceId || !isEditMode) return;
