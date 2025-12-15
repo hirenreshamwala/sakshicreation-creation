@@ -409,16 +409,16 @@ const AccountMasterPage: React.FC = memo(() => {
     unitno: account.party?.address?.unitNo || "N/A",
     market: account.party?.address?.marketName || account.party?.address?.marketName?.marketName,
     area: account.party?.address?.area || account.party?.address?.area?.area,
-    remarks: account.assignment?.remarks || "N/A",
-    status: account.assignment?.status || "Not Started",
-    statusType: mapStatusToType(account.assignment?.status || "Not Started"),
+    remarks: account.latestTask?.remarks || "N/A",
+    status: account.latestTask?.status || "Not Started",
+    statusType: mapStatusToType(account.latestTask?.status || "Not Started"),
     createdBy:
       account.createdBy && typeof account.createdBy === "object"
         ? `${account.createdBy.firstName} ${account.createdBy.lastName}`
         : "Unknown",
     assignedTo:
-      account.assignment?.assignedTo && typeof account.assignment.assignedTo === "object"
-        ? `${account.assignment.assignedTo.firstName} ${account.assignment.assignedTo.lastName}`
+      account.latestTask?.assignTo && typeof account.latestTask.assignTo === "object"
+        ? `${account.latestTask.assignTo.firstName} ${account.latestTask.assignTo.lastName}`
         : "Unassigned",
     statusApproval: account.party?.statusApproval === "APPROVED" ? "Approved" : "Pending",
   }));
@@ -562,8 +562,8 @@ const AccountMasterPage: React.FC = memo(() => {
               <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.unitno}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.market?.marketName}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.area?.area}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.market}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>
                 <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>
                   {row.remarks && row.remarks.length > 10 ? `${row.remarks.substring(0, 10)}...` : row.remarks}
