@@ -486,10 +486,25 @@ const DesignerViewTask = () => {
                         startIcon={<AiOutlineEye />}
                         onClick={() => {
                           const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383"
-                          const viewUrl = `${BaseURL}/api/filedownload/download/${encodeURIComponent(
-                            file.path,
-                          )}?view=true`
-                          window.open(viewUrl, "_blank")
+
+                          let fileUrl = file.path;
+
+                          if (file.path.startsWith("http")) {
+                            fileUrl = file.path;
+                          } else if (file.path.startsWith("/uploads")) {
+                            fileUrl = `${BaseURL}${file.path}`;
+                          } else {
+                            if (file.path.startsWith("design/") ||
+                              file.path.startsWith("general/") ||
+                              file.path.startsWith("rework/") ||
+                              file.path.startsWith("orders/")) {
+                              fileUrl = `${BaseURL}/uploads/${file.path}`;
+                            } else {
+                              fileUrl = `${BaseURL}/api/filedownload/download/${encodeURIComponent(file.path)}?view=true`;
+                            }
+                          }
+
+                          window.open(fileUrl, "_blank");
                         }}
                         sx={{
                           mr: 1,
