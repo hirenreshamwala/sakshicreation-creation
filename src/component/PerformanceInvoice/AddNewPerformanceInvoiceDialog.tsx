@@ -79,6 +79,7 @@ interface Order {
   remarks?: string;
   status: string;
   unitPrice?: number;
+  rate?: number;
   applyGST?: boolean;
   gstPercentage?: number;
   total?: number;
@@ -153,7 +154,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | undefined>(invoiceId);
   const [isSaved, setIsSaved] = useState(false);
   const [staffList, setStaffList] = useState<Staff[]>([]);
-  
+
 
   useEffect(() => {
     if (!markets.length) dispatch(getAllMarketsThunk())
@@ -469,7 +470,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     fetchData();
   }, [open, isEditMode, invoiceId, dispatch, data]);
 
-  // इस पूरे useEffect को नए कोड से बदलें:
   useEffect(() => {
     if (!open || orders.length === 0) {
       if (!invoiceId && !data?.orderNumber) {
@@ -493,12 +493,17 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
     }
 
     console.log("DEBUG : AddNewPerformanceInvoiceDialog : selectedOrder:", selectedOrder);
+    console.log("DEBUG : selectedOrder.rate:", selectedOrder.rate); // ✅ Debug log
+    console.log("DEBUG : selectedOrder.unitPrice:", selectedOrder.unitPrice); // ✅ Debug log
+
     const fullAddress = [
-      selectedOrder.party.address?.unitNo || "", selectedOrder.party.address?.marketName?.marketName, selectedOrder.party.address?.area?.area, selectedOrder.party.address?.pincode
-?.pincode]
+      selectedOrder.party.address?.unitNo || "",
+      selectedOrder.party.address?.marketName?.marketName,
+      selectedOrder.party.address?.area?.area,
+      selectedOrder.party.address?.pincode?.pincode
+    ]
       .filter((part) => part?.trim() !== "")
       .join(", ");
-
 
     const checkInvoice = async () => {
       try {
@@ -506,6 +511,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
         const existingInvoice = response.data?.find((invoice) => invoice.orderNumber === orderNumber);
 
         if (existingInvoice && !invoiceId) {
+          // ✅ Existing invoice है - EDIT mode
           setIsEditMode(true);
           setInvoiceData(existingInvoice);
           setCurrentInvoiceId(existingInvoice._id);
@@ -520,14 +526,12 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           ]
             .filter((part) => part?.trim() !== "")
             .join(", ");
-          console.log("DEBUG : checkInvoice : invoiceAddress:", invoiceAddress);
-
 
           const assignedToValue = existingInvoice.assignedTo?._id
             ? existingInvoice.assignedTo._id.toString()
             : existingInvoice.assignedTo || "";
 
-          // ✅ यहाँ existing invoice के values set करें
+          // ✅ Existing invoice के values set करें
           formik.setValues({
             orderNumber: existingInvoice.orderNumber || "",
             companyName: existingInvoice.companyName?._id?.toString() || existingInvoice.companyName || "",
@@ -550,22 +554,31 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             daysAfterConfirmation: existingInvoice.daysAfterConfirmation,
             paymentDate: existingInvoice.paymentDate,
             description: existingInvoice.description || "",
-
           });
         } else {
-          // नया invoice create करते समय:
-          // Order से unitPrice और अन्य values लें यदि available हों
-          const orderUnitPrice = selectedOrder?.unitPrice || 0;
-          const orderTotal = selectedOrder?.total || 0;
-          const orderFinalAmount = selectedOrder?.finalAmount || 0;
-          const orderApplyGST = selectedOrder?.applyGST || false;
-          const orderGSTPercentage = selectedOrder?.gstPercentage || 0;
+
+          let finalUnitPrice = 0;
+
+          // Check if order already has unitPrice (from previous invoice)
+          if (selectedOrder.unitPrice && selectedOrder.unitPrice > 0) {
+            finalUnitPrice = selectedOrder.unitPrice;
+            console.log("DEBUG : Using existing unitPrice from order:", finalUnitPrice);
+          } else {
+            // First time - use rate from order
+            finalUnitPrice = selectedOrder.rate || 0;
+            console.log("DEBUG : First time, using rate from order:", finalUnitPrice);
+          }
+
+          const initialTotal = finalUnitPrice * (selectedOrder.qty || 0);
+          const initialGstAmount = (selectedOrder?.applyGST ? initialTotal * ((selectedOrder?.gstPercentage || 0) / 100) : 0);
+          const initialFinalAmount = initialTotal + initialGstAmount;
+
 
           formik.setValues({
             orderNumber,
             companyName: selectedOrder.companyName._id || "",
             partyName: selectedOrder.party._id || "",
-            quantity: selectedOrder.qty || 0, // Order से quantity लें
+            quantity: selectedOrder.qty || 0,
             color: selectedOrder.color || "",
             pType: selectedOrder.pType || "",
             size: selectedOrder.size || "",
@@ -574,16 +587,15 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
             ownerMobileNo: selectedOrder.party.ownerMobileNo || "",
             addressName: fullAddress || "",
             servicePerformance: selectedOrder.productItem.itemName || "",
-            unitPrice: orderUnitPrice, // Order से unitPrice लें
-            total: orderTotal, // Order से total लें
-            applyGST: orderApplyGST, // Order से applyGST लें
-            gstPercentage: orderGSTPercentage, // Order से gstPercentage लें
-            finalAmount: orderFinalAmount, // Order से finalAmount लें
+            unitPrice: finalUnitPrice,
+            total: initialTotal, // ✅ Pre-calculated
+            applyGST: selectedOrder?.applyGST || false,
+            gstPercentage: selectedOrder?.gstPercentage || 0,
+            finalAmount: initialFinalAmount, // ✅ Pre-calculated
             assignedTo: "",
             daysAfterConfirmation: selectedOrder?.daysAfterConfirmation || undefined,
             paymentDate: selectedOrder?.paymentDate || undefined,
             description: selectedOrder?.description || "",
-            
           });
         }
       } catch (err: any) {
@@ -775,7 +787,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
               name="unitPrice"
               type="number"
               value={formik.values.unitPrice}
-              onChange={formik.handleChange("unitPrice")} // ✅ Change होंगे
+              onChange={formik.handleChange("unitPrice")}
               error={formik.touched.unitPrice && Boolean(formik.errors.unitPrice)}
               helperText={formik.touched.unitPrice && formik.errors.unitPrice}
               fullWidth
@@ -810,8 +822,12 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
                   <Checkbox
                     checked={formik.values.applyGST}
                     onChange={(e) => {
-                      formik.setFieldValue("applyGST", e.target.checked);
-                      if (!e.target.checked) {
+                      const checked = e.target.checked;
+                      formik.setFieldValue("applyGST", checked);
+
+                      if (checked) {
+                        formik.setFieldValue("gstPercentage", 18);
+                      } else {
                         formik.setFieldValue("gstPercentage", 0);
                       }
                     }}

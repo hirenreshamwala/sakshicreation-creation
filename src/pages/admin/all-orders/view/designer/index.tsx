@@ -41,6 +41,7 @@ import { performanceInvoiceService } from "@/services/performanceInvoice.service
 import Request from "@/services/axios"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
+import { formatDateToDDMMYYYY } from "@/utills/utills"
 
 const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]> => {
   const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
@@ -67,7 +68,7 @@ const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]
 const ReworkEntry: React.FC<{ entry: any }> = ({ entry }) => {
   return <Box sx={{ borderBottom: "1px solid #ccc", pb: 2, mb: 2 }}>
     <Typography sx={{ color: "#333", fontSize: 14, mb: 1 }}>
-      Date: {new Date(entry.date).toLocaleString()}
+      Date: {formatDateToDDMMYYYY(entry.date)}
     </Typography>
     <Typography sx={{ color: "#666", fontSize: 13, mb: 1 }}>
       Remark: {entry.remark}

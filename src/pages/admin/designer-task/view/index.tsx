@@ -11,6 +11,7 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { useRouter } from "next/router"
 import { toast } from "react-toastify"
 import { MdRemoveRedEye } from "react-icons/md" // Import MdRemoveRedEye
+import { formatDateToDDMMYYYY } from "@/utills/utills"
 
 const DesignerViewTask = () => {
   const dispatch = useAppDispatch()
@@ -467,7 +468,7 @@ const DesignerViewTask = () => {
                   Rework #{index + 1}
                 </Typography>
                 <Typography fontSize={12} color="#666" mb={1}>
-                  Date: {new Date(rework.createdAt).toLocaleString()}
+                  Date: {formatDateToDDMMYYYY(rework.date)}
                 </Typography>
                 <Typography fontSize={13} color="#FF9800" mb={1}>
                   Remark: {rework.remark}
