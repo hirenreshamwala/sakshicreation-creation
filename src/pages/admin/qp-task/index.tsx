@@ -94,10 +94,10 @@ const OrdersList: React.FC = () => {
             <TableCell>{row.companyName.companyName}</TableCell>
             <TableCell>{row.party?.partyName}</TableCell>
             <TableCell>{`${row.orderdata?.length} x ${row.orderdata?.width} x ${row.orderdata?.height}`}</TableCell>
-            {printer ? <TableCell>{row.paperQty}</TableCell> : null}
+            {printer ? <TableCell>{row.printerPaperQty}</TableCell> : null}
             {printer ? <TableCell>{row.paperGsm}</TableCell> : null}
+            {printer ? <TableCell>{row.printerPaperSize}</TableCell> : null}
             {printer ? <TableCell>{row.paperQuality}</TableCell> : null}
-            {printer ? <TableCell>{row.paperSize}</TableCell> : null}
             <TableCell>{row.orderdata?.ply}</TableCell>
             <TableCell>{row.orderdata?.deckal}</TableCell>
             <TableCell>{row.varnish ? "YES" : "NO"}</TableCell>
