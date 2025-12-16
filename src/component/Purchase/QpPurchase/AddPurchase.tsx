@@ -299,7 +299,8 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
 
       if (result.isConfirmed) {
         if (isEditMode && purchaseId) {
-          await dispatch(updateQpPurchaseThunk({ id: purchaseId, data: purchaseData })).unwrap();
+          const updateData = purchaseData.type === 'Box' ? { ...purchaseData, quantity: Number(purchaseData.noOfBox) } : purchaseData;
+          await dispatch(updateQpPurchaseThunk({ id: purchaseId, data: updateData })).unwrap();
           toast.success('Purchase updated successfully!');
           router.push('/admin/purchase');
         } else {
