@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Stack, Button, Autocomplete, TextField, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Box, Stack, Button, Autocomplete } from '@mui/material';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ThemeInput from '@/component/common_component/themeinput';
@@ -25,6 +25,14 @@ interface Option {
   label: string;
 }
 
+const typeOptions = [
+  { value: 'kantan', label: 'Kantan' },
+  { value: 'paper', label: 'Paper' },
+  { value: 'glue', label: 'Glue' },
+  { value: 'wire', label: 'Wire' },
+  { value: 'Box', label: 'Box' },
+];
+
 const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchaseId }) => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -34,8 +42,6 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
   const { companies, roles, staff, singlePurchase, error } = useAppSelector(state => state.purchase);
   const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
 
-  // State for individual options
-  const [paperOptions, setPaperOptions] = useState<Option[]>([]);
   const [deckalOptions, setDeckalOptions] = useState<Option[]>([]);
   const [gsmOptions, setGsmOptions] = useState<Option[]>([]);
   const [vendorOptions, setVendorOptions] = useState<Option[]>([]);
@@ -57,6 +63,15 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     paperMil: '',
     bf: '',
     color: '',
+    boxLength: "",
+    boxWidth: "",
+    boxHeight: "",
+    ply: "",
+    paper1GSM: "",
+    paper2GSM: "",
+    paper3GSM: "",
+    noOfBox: "",
+
   });
 
   const colorOptions = [
@@ -68,8 +83,10 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     if (!paperGSM.length) dispatch(getAllPaperGSMThunk());
     if (!packagingOptions.length) dispatch(getAllPackagingOptionsThunk());
     if (!kantans.length) dispatch(getAllKantansThunk());
+    if (!companies.length) dispatch(getCompaniesThunk());
+    dispatch(getRolesThunk());
+    dispatch(getAllVendorsThunk());
   }, []);
-
 
   useEffect(() => {
     if (packagingOptions.length) {
@@ -100,19 +117,8 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
 
   // Fetch data on component mount
   useEffect(() => {
-    dispatch(getCompaniesThunk());
-    dispatch(getRolesThunk());
-    dispatch(getAllVendorsThunk());
-
     if (isEditMode && purchaseId) dispatch(getQpPurchaseByIdThunk(purchaseId));
-  }, [dispatch, isEditMode, purchaseId]);
-
-  const typeOptions = [
-    { value: 'kantan', label: 'Kantan' },
-    { value: 'paper', label: 'Paper' },
-    { value: 'glue', label: 'Glue' },
-    { value: 'wire', label: 'Wire' },
-  ];
+  }, [isEditMode, purchaseId]);
 
   const qualityPackagingCompany = companies.find(company =>
     company.companyName?.toLowerCase().includes('quality packaging')
@@ -152,57 +158,37 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     }
   }, [vendors]);
 
-  // Create paper options without blank values
-  useEffect(() => {
-    if (paperGSM.length > 0) {
-      const options = paperGSM
-        .filter(paper => paper.name && paper.name.trim() !== '')
-        .map(paper => ({
-          value: paper._id,
-          label: paper.name,
-        }));
-      setPaperOptions(options);
-    }
-  }, [paperGSM]);
-
   // Deckal options for paper
   useEffect(() => {
-    if (paperGSM.length > 0) {
-      const uniqueDeckals = Array.from(
-        new Map(
-          paperGSM
-            .filter(paper => paper.deckal && paper.deckal.trim() !== '')
-            .map(paper => [paper.deckal, paper])
-        ).values()
-      );
+    if (!paperGSM || paperGSM.length === 0) return;
 
-      const options = uniqueDeckals.map(paper => ({
-        value: paper._id,
-        label: paper.deckal,
-      }));
+    // 🔹 Deckal options
+    const deckalOptions = Array.from(
+      new Map(
+        paperGSM
+          .filter(p => p.deckal && p.deckal.trim() !== '')
+          .map(p => [p.deckal, p])
+      ).values()
+    ).map(p => ({
+      value: p._id,
+      label: p.deckal,
+    }));
 
-      setDeckalOptions(options);
-    }
-  }, [paperGSM]);
+    // 🔹 GSM options
+    const gsmOptions = Array.from(
+      new Map(
+        paperGSM
+          .filter(p => p.gsm && p.gsm.trim() !== '')
+          .map(p => [p.gsm, p])
+      ).values()
+    ).map(p => ({
+      value: p._id,
+      label: p.gsm,
+    }));
 
-  // GSM options
-  useEffect(() => {
-    if (paperGSM.length > 0) {
-      const uniqueGsms = Array.from(
-        new Map(
-          paperGSM
-            .filter(paper => paper.gsm && paper.gsm.trim() !== '')
-            .map(paper => [paper.gsm, paper])
-        ).values()
-      );
+    setDeckalOptions(deckalOptions);
+    setGsmOptions(gsmOptions);
 
-      const options = uniqueGsms.map(paper => ({
-        value: paper._id,
-        label: paper.gsm,
-      }));
-
-      setGsmOptions(options);
-    }
   }, [paperGSM]);
 
   useEffect(() => {
@@ -231,6 +217,14 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         paperMil: singlePurchase.paperMil || '',
         bf: singlePurchase.bf || '',
         color: singlePurchase.color || '',
+        paper1GSM: singlePurchase.paper1GSM || '',
+        paper2GSM: singlePurchase.paper2GSM || '',
+        paper3GSM: singlePurchase.paper3GSM || '',
+        ply: singlePurchase.ply || '',
+        boxHeight: singlePurchase.boxHeight || '',
+        boxWidth: singlePurchase.boxWidth || '',
+        boxLength: singlePurchase.boxLength || '',
+        noOfBox: singlePurchase.noOfBox || '',
       });
 
       if (singlePurchase.for?._id) {
@@ -305,7 +299,8 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
 
       if (result.isConfirmed) {
         if (isEditMode && purchaseId) {
-          await dispatch(updateQpPurchaseThunk({ id: purchaseId, data: purchaseData })).unwrap();
+          const updateData = purchaseData.type === 'Box' ? { ...purchaseData, quantity: Number(purchaseData.noOfBox) } : purchaseData;
+          await dispatch(updateQpPurchaseThunk({ id: purchaseId, data: updateData })).unwrap();
           toast.success('Purchase updated successfully!');
           router.push('/admin/purchase');
         } else {
@@ -329,7 +324,6 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
 
   return (
     <Box>
-
       <form onSubmit={handleSubmit}>
         <Stack direction="row" spacing={2} mb={2}>
           <ThemeSelect
@@ -390,15 +384,6 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                 fullWidth
                 required
               />
-              {/* <ThemeInput
-                labelName="REEL/BATCH NO"
-                name="reelBatchNo"
-                value={formData.reelBatchNo}
-                onChange={handleChange}
-                fullWidth
-                required
-                placeholder="Enter reel/batch number"
-              /> */}
             </>
           )}
 
@@ -412,6 +397,38 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
               fullWidth
               required
             />
+          )}
+
+          {formData.type === 'Box' && (
+            <>
+              <ThemeInput
+                labelName="BOX HEIGHT"
+                name="boxHeight"
+                type="number"
+                value={formData.boxHeight}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+              <ThemeInput
+                labelName="BOX WIDTH"
+                name="boxWidth"
+                type="number"
+                value={formData.boxWidth}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+              <ThemeInput
+                labelName="BOX LENGTH"
+                name="boxLength"
+                type="number"
+                value={formData.boxLength}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+            </>
           )}
 
           {formData.type === 'paper' && (
@@ -467,7 +484,6 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                   value={formData.reelBatchNo}
                   onChange={handleChange}
                   fullWidth
-                  // required
                   placeholder="Enter TAKA/batch number"
                 />
                 <Autocomplete
@@ -505,7 +521,70 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
             )}
           </Stack>
         )}
+        {formData.type === 'Box' && (
+          <>
+            <Stack direction="row" spacing={2} mb={2}>
+              <ThemeInput
+                labelName="paper1 gsm"
+                name="paper1GSM"
+                type="number"
+                value={formData.paper1GSM}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+              <ThemeInput
+                labelName="paper2 gsm"
+                name="paper2GSM"
+                type="number"
+                value={formData.paper2GSM}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+              <ThemeInput
+                labelName="paper3 gsm"
+                name="paper3GSM"
+                type="number"
+                value={formData.paper3GSM}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
 
+            </Stack>
+            <Stack direction="row" spacing={2} mb={2}>
+
+              <ThemeInput
+                labelName="No of Box"
+                name="noOfBox"
+                type="number"
+                value={formData.noOfBox}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+              <ThemeInput
+                labelName="Ply"
+                name="ply"
+                type="number"
+                value={formData.ply}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+              <ThemeInput
+                labelName="deckal"
+                name="deckal"
+                type="number"
+                value={formData.deckal}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+            </Stack>
+          </>
+        )}
         <Stack direction="row" spacing={2} mb={2}>
           <ThemeSelect
             label="DELIVER TO"
