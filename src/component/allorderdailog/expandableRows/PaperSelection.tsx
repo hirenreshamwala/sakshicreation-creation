@@ -742,9 +742,9 @@ function PaperSelection({
             <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
               Rework Designer Files
             </Typography>
-            {data?.reworkDesignFiles?.length > 0 ? (
+            {data?.reworkDesignerFiles?.length > 0 ? (
               <List dense>
-                {data.reworkDesignFiles.map((fileUrl: string, index: number) => (
+                {data.reworkDesignerFiles.map((fileUrl: string, index: number) => (
                   <ListItem key={index} disablePadding>
                     <ListItemIcon>
                       <Checkbox
