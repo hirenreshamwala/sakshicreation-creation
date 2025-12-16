@@ -262,5 +262,11 @@ const Endpoint = {
   GET_DATA_BY_PARTY_AND_ACCOUNTMASTER: `${BaseURL}/api/lead/get-data-by-party-and-accountmaster`,
   GET_TASK_BY_PARTY_AND_ACCOUNTMASTER: `${BaseURL}/api/assign-task/get-task-by-party-and-accountmaster`,
   GET_PARTY_TASK: `${BaseURL}/api/assign-task/get-party-task`,
+
+  //reports
+GET_SC_DESIGNERS: `${BaseURL}/api/report/getscdesigners`,
+GET_SC_PRINTERS: `${BaseURL}/api/report/getscprinters`,
+GET_SC_BINDER: `${BaseURL}/api/report/getscbinder`,
+GET_SC_BOOKLET_BINDER: `${BaseURL}/api/report/getscbookletbinder`,
 };
 export default Endpoint;

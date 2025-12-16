@@ -256,7 +256,7 @@ const BookletBinderTaskView = () => {
 
     // Validate booklet papers
     for (const paper of bookletPapers) {
-      if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm || !paper.ratePerUnit) {
+      if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm ) {
         toast.error("All paper fields must be filled")
         return
       }

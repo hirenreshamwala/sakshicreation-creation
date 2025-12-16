@@ -24,8 +24,6 @@ import { accountMasterService } from "@/services/accountMaster.service";
 import { companyNameService } from "@/services/companyName.service";
 import _ from "lodash";
 import { StaticCompanyOptions } from "@/constants";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 
 interface Company {
   _id: string;
@@ -83,9 +81,7 @@ interface RowData {
 
 const AccountMasterPage: React.FC = memo(() => {
   const router = useRouter();
-  const dispatch = useAppDispatch();
-  const { companies } = useAppSelector((state) => state.company)
-  console.log("DEBUG : companies:", companies);
+
   // State management
     const [downloadLoading, setDownloadLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -97,6 +93,7 @@ const AccountMasterPage: React.FC = memo(() => {
   const [error, setError] = useState<string | null>(null);
   const [isBulkUpload, setIsBulkUpload] = useState(false);
   const [isRequestMode, setIsRequestMode] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [editId, setEditId] = useState<string | null>(null);
   const [responseState, setResponseState] = useState<any>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -155,8 +152,8 @@ const AccountMasterPage: React.FC = memo(() => {
   // Company tabs configuration
   const companyTabs = useMemo(() => {
     const tabs = [];
-    if (hasSakshi) tabs.push({ id: "sakshi", name: "Sakshi",value:StaticCompanyOptions[0], companyId: getCompanyWisePermission(5) });
-    if (hasQP) tabs.push({ id: "qp", name: "QP",value:StaticCompanyOptions[1], companyId: getCompanyWisePermission(6) });
+    if (hasSakshi) tabs.push({ id: "sakshi", name: "Sakshi", companyId: getCompanyWisePermission(5) });
+    if (hasQP) tabs.push({ id: "qp", name: "QP", companyId: getCompanyWisePermission(6) });
     return tabs;
   }, [user, hasSakshi, hasQP]);
 
@@ -183,7 +180,19 @@ const AccountMasterPage: React.FC = memo(() => {
 
   // Load companies
   useEffect(() => {
-    dispatch(getAllCompaniesThunk())
+    const loadCompanies = async () => {
+      if (companies.length === 0) {
+        try {
+          const companiesData = await companyNameService.getAllCompanyNames();
+          setCompanies(companiesData.data);
+        } catch (err: any) {
+          console.error("Failed to load companies:", err);
+          setError(err.message || "Failed to load companies");
+        }
+      }
+    };
+
+    loadCompanies();
   }, []);
 
   // Load account masters
@@ -624,11 +633,10 @@ const AccountMasterPage: React.FC = memo(() => {
           refreshData={loadAccountMasters}
           isRequestMode={isRequestMode}
           isBulkUpload={isBulkUpload}
-          company={companies?.find((item) => item?.companyName === StaticCompanyOptions[companyTab])}
+          company={companies?.find((item) => item?.name === (hasBothCompanies ? companyTabs[companyTab]?.name : hasSakshi ? "Sakshi" : "QP"))}
         />
       )}
 
-{console.log(companies?.find((item) => item?.name === (hasBothCompanies ? companyTabs[companyTab]?.value : hasSakshi ? "Sakshi" : "QP")),'ksdjksjdoikdjikj',(hasBothCompanies ? companyTabs[companyTab]?.value : hasSakshi ? "Sakshi" : "QP"))}
       {openAssignLeadDialog ? 
         <AssignLeadDialog
           open={openAssignLeadDialog}
