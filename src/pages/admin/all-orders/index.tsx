@@ -242,10 +242,10 @@ const AllOrdersPage = () => {
 
   // Reset initial load flag when user changes
   useEffect(() => {
-    if (userData) {
+    // if (userData) {
       hasLoadedInitialDataRef.current = false
-    }
-  }, [userData])
+    // }
+  }, [userData?.id])
 
   // Initial companies load
   useEffect(() => {
