@@ -149,7 +149,6 @@ const QpInventoryPage = () => {
                 isPagination: false, // Fetch all for grouping, but filters applied server-side
                 includeCounts: true
             };
-            console.log("📡 Loading inventory with params:", params);
             await dispatch(getAllInventoryForQualitThunk(params));
         } catch (err: any) {
             console.error("❌ Error loading inventory:", err);
@@ -164,13 +163,12 @@ const QpInventoryPage = () => {
             loadInventory();
             setAppliedFilterState(currentFilterState);
         }
-    }, [loadInventory]);    
+    }, [loadInventory]);
 
     // Load filter options - Now dispatches thunk
     const loadFilterOptions = async (field: string) => {
         setLoadingFilterOptions(true);
         try {
-            console.log(`🔍 Loading inventory filter options for ${field}:`, currentFilterState.filters);
             await dispatch(getInventoryFilterOptionsThunk({ field, filters: currentFilterState.filters })).unwrap();
             // Options will be set in redux state via slice
         } catch (error: any) {
@@ -183,7 +181,6 @@ const QpInventoryPage = () => {
 
     // Handle filter field selection
     const handleFilterFieldSelect = useCallback(async (field: string | null) => {
-        console.log("Inventory handleFilterFieldSelect called with:", field);
         setSelectedFilterField(field);
         if (field && !filterOptionsData[field]) { // Check if options not loaded
             try {
@@ -198,7 +195,6 @@ const QpInventoryPage = () => {
 
     // Handle filter changes
     const handleFiltersChange = useCallback((newFilters: { [key: string]: string[] }) => {
-        console.log("Inventory Filters changed to:", newFilters);
         setCurrentFilterState((prev: any) => ({
             ...prev,
             filters: newFilters,
@@ -210,7 +206,6 @@ const QpInventoryPage = () => {
     useEffect(() => {
         const isSame = JSON.stringify(appliedFilterState) === JSON.stringify(currentFilterState);
         if (!isSame) {
-            console.log("🔄 Inventory Filter state changed, loading inventory...");
             const timer = setTimeout(() => {
                 loadInventory();
                 setAppliedFilterState(currentFilterState);
@@ -251,7 +246,7 @@ const QpInventoryPage = () => {
         filteredInventory.forEach((item: any) => {
             const qty = Number(item?.quantity) || 0;
             const used = Number(item?.usedBox) || 0;
-            
+
             if (item?.type === "inward") {
                 totalInward += qty;
                 totalUsed += used;
@@ -288,14 +283,13 @@ const QpInventoryPage = () => {
         },
         box: {
             header: [
-                { id: "boxType", label: "TYPE", value: null },
-                { id: "lwh", label: "SIZE", value: 'boxSize' }, 
+                { id: "lwh", label: "SIZE", value: 'boxSize' },
                 { id: "gsm", label: "GSM", value: 'boxGSM' },
+                { id: "ply", label: "PLY", value: 'ply' },
                 { id: "deckal", label: "DECKAL", value: 'deckal' },
                 { id: "balance", label: "BALANCE", value: null },
-                { id: "pending", label: "PENDING ORDERS", value: null },
+                { id: "pending", label: "DELIVERY ORDERS", value: null },
                 { id: "available", label: "AVAILABLE", value: null },
-                { id: "ply", label: "PLY", value: 'ply' },
                 { id: "kantan", label: "KANTAN", value: 'isKantan' },
                 detailOpen !== null && { id: "pcs", label: "PCS" },
                 detailOpen !== null && { id: "used", label: "USED" },
@@ -330,49 +324,47 @@ const QpInventoryPage = () => {
                 return (
                     <>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
-                            {row?.boxType || "Box"}
-                        </TableCell>
-                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
                             {row?.boxSize || 'N/A'}
                         </TableCell>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
                             {row?.boxGSM || 'N/A'}
                         </TableCell>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
+                            {row?.ply || 'N/A'}
+                        </TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
                             {normalizeDeckal(row?.deckal)}
                         </TableCell>
-                        
+
                         {/* Balance Column */}
-                        <TableCell sx={{ 
-                            fontWeight: 600, 
-                            color: balance > 0 ? "green" : "red" 
+                        <TableCell sx={{
+                            fontWeight: 600,
+                            color: balance > 0 ? "green" : "red"
                         }}>
                             {detailOpen ? row.quantity : balance}
                         </TableCell>
-                        
+
                         {/* Pending Orders Column */}
-                        <TableCell sx={{ 
-                            fontWeight: 600, 
-                            color: pendingOrders > 0 ? "orange" : "gray" 
+                        <TableCell sx={{
+                            fontWeight: 600,
+                            color: pendingOrders > 0 ? "orange" : "gray"
                         }}>
                             {detailOpen ? row.usedBox || 0 : pendingOrders}
                         </TableCell>
-                        
+
                         {/* Available Column */}
-                        <TableCell sx={{ 
-                            fontWeight: 600, 
-                            color: availableForNewOrders > 0 ? "blue" : "red" 
+                        <TableCell sx={{
+                            fontWeight: 600,
+                            color: availableForNewOrders > 0 ? "blue" : "red"
                         }}>
                             {detailOpen ? (row.quantity - (row.usedBox || 0)) : availableForNewOrders}
                         </TableCell>
 
-                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
-                            {row?.ply || 'N/A'}
-                        </TableCell>
+
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: "pointer" }}>
                             {row?.isKantan ? "yes" : "no"}
                         </TableCell>
-                        
+
                         {detailOpen !== null && (
                             <>
                                 <TableCell sx={{ cursor: "pointer" }}>{row?.quantity || 0}</TableCell>
@@ -452,7 +444,7 @@ const QpInventoryPage = () => {
             (item: any) =>
                 item?.inventoryType?.toLowerCase().trim() === type &&
                 item?.category === category
-        );  
+        );
 
         const seen = new Set();
         const uniqueItems: any[] = [];
@@ -466,7 +458,7 @@ const QpInventoryPage = () => {
                 const val = item?.[k] ?? '';
                 return String(val).trim();
             }).join('|');
-            
+
             if (!seen.has(keyValue)) {
                 seen.add(keyValue);
                 // ✅ Create a representative row for the group (use first item or aggregate if needed)
@@ -538,7 +530,7 @@ const QpInventoryPage = () => {
 
     // Loading check
     if (loading || isLoadingData) {
-        return <div><Loader/></div>;
+        return <div><Loader /></div>;
     }
 
     return (
@@ -580,18 +572,18 @@ const QpInventoryPage = () => {
             {detailOpen !== null ? (
                 <Stack sx={{ m: 1 }} spacing={1}>
                     <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                        <Chip 
-                            label={`Balance: ${detailStats.balance}`} 
+                        <Chip
+                            label={`Balance: ${detailStats.balance}`}
                             color={detailStats.balance > 0 ? "success" : "error"}
                             variant="outlined"
                         />
-                        <Chip 
-                            label={`Pending Orders: ${detailStats.pendingOrders}`} 
+                        <Chip
+                            label={`Pending Orders: ${detailStats.pendingOrders}`}
                             color={detailStats.pendingOrders > 0 ? "warning" : "default"}
                             variant="outlined"
                         />
-                        <Chip 
-                            label={`Available: ${detailStats.availableForNewOrders}`} 
+                        <Chip
+                            label={`Available: ${detailStats.availableForNewOrders}`}
                             color={detailStats.availableForNewOrders > 0 ? "primary" : "error"}
                             variant="outlined"
                         />

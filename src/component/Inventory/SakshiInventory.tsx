@@ -149,7 +149,6 @@ const SakshiInventoryPage = () => {
         };
       }
 
-      console.log("📡 Loading inventory with params:", params);
       await dispatch(getInventoryByCategoryThunk(params));
       setIsInitialLoad(true);
     } catch (err: any) {
@@ -164,7 +163,6 @@ const SakshiInventoryPage = () => {
   useEffect(() => {
     const isSame = JSON.stringify(appliedFilterState) === JSON.stringify(currentFilterState);
     if (activeMainTab === InventoryCategory.FACTORY && !isSame) {
-      console.log("🔄 Inventory pagination state changed, loading...");
       const timer = setTimeout(() => {
         loadInventory();
         setAppliedFilterState(currentFilterState);

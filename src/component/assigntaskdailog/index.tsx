@@ -183,8 +183,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
           //   confirmButtonColor: "#7F56D9",
           // });
 
-          console.log(values.reasonForVisit, 'values.reasonForVisit', StaticCompanyOptions, companyTab, "companyTab", values.status)
-          if (values.reasonForVisit === "Order" && companyTab === 0 && values.status === "Completed") toggleScDialog()
+         if (values.reasonForVisit === "Order" && companyTab === 0 && values.status === "Completed") toggleScDialog()
           if (values.reasonForVisit === "Order" && companyTab === 1 && values.status === "Completed") toggleQpDialog()
           if (refreshData) refreshData();
         } else if (isBulkMode) {

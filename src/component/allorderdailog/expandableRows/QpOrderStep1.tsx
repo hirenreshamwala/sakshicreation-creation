@@ -15,7 +15,9 @@ import { ORDER_STATUSES } from "@/constants";
 function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessChange }: any) {
     return (
         <>
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} sx={{
+                overflow: "visible",   // ⭐ THIS FIXES CUTTING
+            }}>
                 <TextField
                     select
                     label="Unit No"
@@ -74,49 +76,6 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                     disabled={isCompleted}
                 /> */}
                 <TextField
-                    label="Dye Number"
-                    value={formData.dyeNumber}
-                    onChange={(e) => handleFormChange("dyeNumber", e.target.value)}
-                    variant="outlined"
-                    size="small"
-                    sx={{ minWidth: 100 }}
-                    InputLabelProps={{ shrink: true }}
-                    disabled={isCompleted}
-                    required={formData.isPunching}
-                    error={formData.isPunching && !formData.dyeNumber}
-                    helperText={formData.isPunching && !formData.dyeNumber ? "Required for punching" : ""}
-                />
-                <TextField
-                    label="Sheet Size"
-                    value={formData.dyeSize}
-                    onChange={(e) => handleFormChange("dyeSize", e.target.value)}
-                    variant="outlined"
-                    size="small"
-                    sx={{ minWidth: 100 }}
-                    disabled={isCompleted}
-                    required={formData.isPunching}
-                    error={formData.isPunching && !formData.dyeSize}
-                    helperText={formData.isPunching && !formData.dyeSize ? "Required for punching" : ""}
-                />
-                {/* <TextField
-                        label="Glue KG"
-                        value={formData.glue}
-                        onChange={(e) => handleFormChange("glue", e.target.value)}
-                        variant="outlined"
-                        size="small"
-                        sx={{ minWidth: 100 }}
-                        disabled={isCompleted}
-                    />
-                    <TextField
-                        label="Wire KG"
-                        value={formData.wire}
-                        onChange={(e) => handleFormChange("wire", e.target.value)}
-                        variant="outlined"
-                        size="small"
-                        sx={{ minWidth: 100 }}
-                        disabled={isCompleted}
-                    /> */}
-                <TextField
                     label="Actual No. of Pieces"
                     value={formData.actualNoOfPieces}
                     onChange={(e) => handleFormChange("actualNoOfPieces", e.target.value)}
@@ -142,8 +101,9 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                     ))}
                 </TextField>
             </Stack>
-
-            <Stack direction="row" spacing={2} mb={2}>
+            <Stack direction="row" spacing={2} mb={2} sx={{
+                overflow: "visible",   // ⭐ THIS FIXES CUTTING
+            }}>
                 {/* NEW FIELDS: No required validation, string type, null if empty */}
                 <TextField
                     label="No. of Sheet Cut"
@@ -182,7 +142,9 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                     disabled={isCompleted}
                 />
             </Stack>
-            <Stack direction="row" spacing={2} mb={2}>
+            <Stack direction="row" spacing={2} mb={2} sx={{
+                overflow: "visible",   // ⭐ THIS FIXES CUTTING
+            }}>
                 {/* Process Selection - Multiple Checkboxes */}
                 <FormControl component="fieldset">
                     <FormGroup row>
@@ -235,7 +197,7 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                     </FormGroup>
                 </FormControl>
 
-                
+
                 <FormControl sx={{ width: 200 }}>
                     <InputLabel>Lamination</InputLabel>
                     <Select
@@ -248,7 +210,7 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                         <MenuItem value="yes">Yes</MenuItem>
                     </Select>
                 </FormControl>
-                            
+
                 {formData.lamination && (
                     <FormControl sx={{ width: 200 }}>
                         <InputLabel>Lamination Type</InputLabel>
@@ -303,10 +265,10 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                                 </Select>
                             </FormControl>
                         )}
-                       
+
                     </>
                 )}
-                 <FormControl sx={{ width: 200 }}>
+                <FormControl sx={{ width: 200 }}>
                     <InputLabel>Varnish</InputLabel>
                     <Select
                         value={formData.varnish ? "yes" : "no"}
@@ -317,6 +279,49 @@ function QpOrderStep1({ formData, handleFormChange, isCompleted, handleProcessCh
                         <MenuItem value="yes">Yes</MenuItem>
                     </Select>
                 </FormControl>
+            </Stack>
+            <Stack direction="row" spacing={2} mb={2} sx={{
+                overflow: "visible",   // ⭐ THIS FIXES CUTTING
+            }}>
+                <TextField
+                    label="Dye Number"
+                    value={formData.dyeNumber}
+                    onChange={(e) => handleFormChange("dyeNumber", e.target.value)}
+                    variant="outlined"
+                    size="small"
+                    sx={{ minWidth: 100 }}
+                    // InputLabelProps={{ shrink: true }}
+                    disabled={isCompleted}
+                    required={formData.isPunching}
+                    error={formData.isPunching && !formData.dyeNumber}
+                    helperText={formData.isPunching && !formData.dyeNumber ? "Required for punching" : ""}
+                />
+                <TextField
+                    label="Sheet Size"
+                    value={formData.dyeSize}
+                    onChange={(e) => handleFormChange("dyeSize", e.target.value)}
+                    variant="outlined"
+                    size="small"
+                    sx={{ minWidth: 100 }}
+                    disabled={isCompleted}
+                    required={formData.isPunching}
+                    error={formData.isPunching && !formData.dyeSize}
+                    helperText={formData.isPunching && !formData.dyeSize ? "Required for punching" : ""}
+                />
+                <TextField
+                    label="Sheet Quantity"
+                    value={formData.dyeQuantity || ""}
+                    onChange={(e) => handleFormChange("dyeQuantity", e.target.value)}
+                    variant="outlined"
+                    size="small"
+                    sx={{ minWidth: 120 }}
+                    disabled={isCompleted}
+                    required={formData.isPunching}
+                    error={formData.isPunching && !formData.dyeQuantity}
+                    helperText={formData.isPunching && !formData.dyeQuantity ? "Required for punching" : ""}
+                    type="number"
+                    InputProps={{ inputProps: { min: 1 } }}
+                />
             </Stack>
         </>
     )

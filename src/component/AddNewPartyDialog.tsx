@@ -82,7 +82,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   isBulkUpload = false,
   company
 }) => {
-  console.log("DEBUG : AddNewPartyDialog : company:", company);
 
   const dispatch = useAppDispatch();
   const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
@@ -94,7 +93,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   } = useAppSelector((state) => state.accountMasters);
   const { markets } = useAppSelector((state) => state.markets);
   const { companies } = useAppSelector((state) => state.company)
-  console.log("DEBUG : AddNewPartyDialog : companies:", companies);
 
   const [referenceOptions, setReferenceOptions] = useState<PartySuggestion[]>([]);
   const [recordSkipped, setRecordSkipped] = useState(false)
@@ -230,7 +228,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         // Remove partyType if not Sakshi Creation
         ...(!isSakshiCreation && { partyType: undefined })
       };
-      console.log("DEBUG : AddNewPartyDialog : submissionValues:", submissionValues);
+
 
       setIsLoading(true);
       try {
@@ -480,8 +478,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     dispatch(clearSuggestions());
     onClose();
   };
-
-  console.log("DEBUG : AddNewPartyDialog : formik:", formik);
 
   return (
     <CustomDialog

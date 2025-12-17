@@ -85,7 +85,6 @@ const AccountMasterPage: React.FC = memo(() => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { companies } = useAppSelector((state) => state.company)
-  console.log("DEBUG : companies:", companies);
   // State management
     const [downloadLoading, setDownloadLoading] = useState(false);
   const [open, setOpen] = useState(false);

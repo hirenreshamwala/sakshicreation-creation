@@ -2,119 +2,25 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { getAllQPOrdersThunk } from "@/store/slices/qpOrderSlice";
-import BasicTable from "@/component/common_component/Table/themetable"; // Adjust path as needed
-import { TableCell } from "@mui/material";
-import Loader from "@/component/common_component/loader";
-import { StatusCell } from "@/component/allorderdailog/StatusCell";
-import DesignerTaskExpandable from "@/component/QpTask/DesignerTaskExpandable";
-import PrinterTaskExpandable from "@/component/QpTask/PrinterTaskExpandable";
-
-interface Order {
-  _id: string;
-  orderNo: number;
-  companyName: { _id: string; companyName: string };
-  party: { _id: string; partyName: string };
-  status: string;
-  printer: { _id: string; firstName: string; lastName: string };
-  binder: { _id: string; firstName: string; lastName: string };
-  designer: { _id: string; firstName: string; lastName: string };
-  createdAt: string;
-  varnish: boolean;
-  lamination: boolean;
-  laminationType: string;
-  uv: boolean;
-  uvType: string;
-}
+import DesignerOrdersList from "@/component/allorderdailog/DesignerOrdersList";
+import PrinterOrdersList from "@/component/allorderdailog/PrinterOrdersList";
+import BinderOrdersList from "@/component/allorderdailog/BinderOrdersList";
 
 const OrdersList: React.FC = () => {
-  const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { orders, loading, error, totalCount, pagination } = useSelector(
-    (state: RootState) => state.qpOrders
-  );
+  
+  const role = user?.role?.roleName?.toLowerCase();
 
-  const [page, setPage] = useState(1);
+  if (role === "designer") {
+    return <DesignerOrdersList />;
+  } else if (role === "printer") {
+    return <PrinterOrdersList />;
+  } else if (role === "lamination") {
+    return <BinderOrdersList />;
+  }
 
-  const designer = user?.role?.roleName.toLowerCase() === "designer"
-  const printer = user?.role?.roleName.toLowerCase() === "printer"
-  const binder = user?.role?.roleName.toLowerCase() === "lamination"
-  // Filter orders where printer._id matches user?.id
-  const filteredOrders = orders.filter((order: Order) => {
-    if (designer) {
-      return order.designer?._id === user?.id;
-    } else if (printer) {
-      return order.printer?._id === user?.id;
-    } else if (binder) {
-      return order.binder?._id === user?.id;
-    }
-    return false; // If neither printer nor binder, show all orders (or change this logic if needed)
-  });
-
-  useEffect(() => {
-    if (user?.id) {
-      // Dispatch with printerId for server-side filtering
-      dispatch(getAllQPOrdersThunk());
-    }
-  }, [dispatch, user?.id, page]);
-
-  // Define columns for BasicTable
-  const columns = [
-    { id: "orderNo", label: "Order Number" },
-    { id: "companyName", label: "Company" },
-    { id: "partyName", label: "Party" },
-    { id: "size", label: "Size" },
-    printer && { id: "paperQty", label: "Printer Quantity" },
-    printer && { id: "paperGsm", label: "Paper GSM" },
-    printer && { id: "paperSize", label: "Paper Sze" },
-    printer && { id: "paperQuality", label: "Paper Quality" },
-    { id: "ply", label: "Ply" },
-    { id: "deckal", label: "Deckal" },
-    { id: "varnish", label: "Varnish" },
-    { id: "lamination", label: "Lamination" },
-    { id: "uv", label: "UV" },
-    { id: "status", label: "Status" },
-  ].filter(Boolean);
-
-  if (loading) return <Loader />
-
-  return (
-    <div>
-      <BasicTable
-        tableHeader={columns}
-        rowData={filteredOrders}
-        renderExpandedRow={(row: Order) =>
-          designer ? <DesignerTaskExpandable row={row} /> :
-            printer ? <PrinterTaskExpandable row={row} /> :
-              binder ? <PrinterTaskExpandable row={row} /> :
-                null
-        }
-        renderRow={(row: any) => {
-          return <>
-            <TableCell>QP-{row.orderNo}</TableCell>
-            <TableCell>{row.companyName.companyName}</TableCell>
-            <TableCell>{row.party?.partyName}</TableCell>
-            <TableCell>{`${row.orderdata?.length} x ${row.orderdata?.width} x ${row.orderdata?.height}`}</TableCell>
-            {printer ? <TableCell>{row.printerPaperQty}</TableCell> : null}
-            {printer ? <TableCell>{row.paperGsm}</TableCell> : null}
-            {printer ? <TableCell>{row.printerPaperSize}</TableCell> : null}
-            {printer ? <TableCell>{row.paperQuality}</TableCell> : null}
-            <TableCell>{row.orderdata?.ply}</TableCell>
-            <TableCell>{row.orderdata?.deckal}</TableCell>
-            <TableCell>{row.varnish ? "YES" : "NO"}</TableCell>
-            <TableCell>{row.lamination ? row.laminationType : "NO"}</TableCell>
-            <TableCell>{row.uv ? row.uvType : "NO"}</TableCell>
-            <TableCell><StatusCell row={row} /></TableCell>
-          </>;
-        }}
-        showDatePicker={false}
-        showSearch={false}
-        showFillter={false}
-        showExcelDownload={false}
-        totalCount={totalCount}
-        onPageChange={(newPage: number) => setPage(newPage)}
-      />
-    </div>
-  );
+  // Default fallback or access denied message
+  return <div>Access Denied</div>;
 };
 
 export default OrdersList;

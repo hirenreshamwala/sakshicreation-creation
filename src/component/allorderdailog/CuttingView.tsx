@@ -138,15 +138,11 @@ const OperatorView = () => {
         { id: "unitNo", label: "Unit No" },
         { id: "date", label: "Date" },
         { id: "boxSize", label: "Box Size" },
-        { id: "top", label: "Top" },
-        { id: "corogation", label: "Corogation" },
-        { id: "bottom", label: "Bottom" },
         { id: "ply", label: "Ply" },
+        { id: "top", label: "Top" },
         { id: "deckal", label: "Deckal" },
-        { id: "liner", label: "Liner" },
-        { id: "noofliner", label: "No of Liner" },
-        { id: "noOfBox", label: "Piece" },
         { id: "cuttingLength", label: "Cutting length" },
+        { id: "noOfBox", label: "Piece" },
         { id: "cutsheet", label: "No Cut sheet" },
         { id: "totalKG", label: "Total KG" },
         { id: "party", label: "Party Name" },
@@ -632,24 +628,14 @@ const OperatorView = () => {
                                 <Typography>{`${row.orderdata?.length || "N/A"} x ${row.orderdata?.width || "N/A"} x ${row.orderdata?.height || "N/A"}`}</Typography>
                             </TableCell>
 
-                            {/* Top */}
-                            <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                                <Typography>{`${row.orderdata?.paper1GSM || "N/A"}`}</Typography>
-                            </TableCell>
-
-                            {/* Corogation */}
-                            <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                                <Typography>{`${row.orderdata?.paper2GSM || "N/A"}`}</Typography>
-                            </TableCell>
-
-                            {/* Bottom */}
-                            <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                                <Typography>{row.orderdata?.paper3GSM || "N/A"}</Typography>
-                            </TableCell>
-
                             {/* Ply */}
                             <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                                 <Typography>{row.orderdata?.ply || "N/A"}</Typography>
+                            </TableCell>
+
+                            {/* Top */}
+                            <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                                <Typography>{`${row.orderdata?.paper1GSM || "N/A"}`}</Typography>
                             </TableCell>
 
                             {/* Deckal */}
@@ -657,36 +643,22 @@ const OperatorView = () => {
                                 <Typography>{row.orderdata?.deckal || "N/A"}</Typography>
                             </TableCell>
 
-                            {/* Liner */}
-                            <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                                <Typography>
-                                    {row.orderdata?.linear || Number(row.orderdata.ply) - 1}
-                                </Typography>
-                            </TableCell>
-
-                            {/* No of Liner */}
-                            <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                                <Typography>
-                                    {row.orderdata?.noOfLinear || Number(row.noOfPieces) * 2 * (Number(row.orderdata.ply) - 1)}
-                                </Typography>
-                            </TableCell>
-
-                            {/* Piece */}
-                            <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                                <Typography>{row.noOfPieces || "N/A"}</Typography>
-                            </TableCell>
-
                             {/* Cutting length */}
                             <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                                 <Typography>
-                                    {row.orderdata?.cuttingLength || (Number(row.orderdata.length) + Number(row.orderdata.width) + 2).toString()}
+                                    {row.cuttingLength || (Number(row.orderdata.length) + Number(row.orderdata.width) + 2).toString()}
                                 </Typography>
+                            </TableCell>
+                            
+                            {/* Piece */}
+                            <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                                <Typography>{row.noOfPieces || "N/A"}</Typography>
                             </TableCell>
                             
                             {/* no of sheet to cut */}
                             <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                                 <Typography>
-                                    {row.orderdata?.noOfSheetCut || (Number(row.orderdata.noOfPieces)) * 2}
+                                    {row.noOfSheetCut || (Number(row.orderdata.noOfPieces)) * 2}
                                 </Typography>
                             </TableCell>
 

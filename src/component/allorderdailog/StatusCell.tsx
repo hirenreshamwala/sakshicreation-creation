@@ -679,12 +679,6 @@ export const StatusCell = ({ row }: { row: any }) => {
         const newStatus = calculateNextStatus(row, updateData);
         updateData.status = newStatus;
 
-        console.log("DEBUG: Updating with data:", {
-          currentProcess,
-          updateData,
-          isKantanRequired,
-          newStatus
-        });
 
         await dispatch(updateQPOrderThunk({
           id: row._id,
@@ -693,7 +687,6 @@ export const StatusCell = ({ row }: { row: any }) => {
 
         toast.success(`${processLabel} marked as done. Status updated to: ${newStatus}`);
       } catch (error: any) {
-        console.error("DEBUG: Update failed:", error);
         toast.error(error?.message || "Failed to update process");
       }
     }

@@ -83,8 +83,6 @@ const BinderTaskView = () => {
       // Safely convert binding to boolean: handles boolean false/true, string "false"/"true", undefined/null/empty as false
       const bindingValue = !!singleOrder.binding && singleOrder.binding !== "false";
       setBinding(bindingValue);
-      console.log("DEBUG: Order binding value:", singleOrder.binding, typeof singleOrder.binding);
-      console.log("DEBUG: Formik binding value after set:", bindingValue);
       setBindingType(singleOrder.bindingType?._id || "")
       
       // Initialize binder papers

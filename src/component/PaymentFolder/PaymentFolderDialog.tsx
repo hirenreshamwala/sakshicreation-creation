@@ -147,7 +147,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
 
         if (isEditMode) {
           const res = await dispatch(updatePaymentFolderThunk({ id: rowData._id, data: submitData })).unwrap();
-          console.log(res);
           dispatch(updatePaymentFolderInState(res));
           toast.success("Payment folder updated successfully");
         } else {

@@ -64,16 +64,13 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   };
 
   const handleFieldSelect = async (field: string) => {
-    console.log("Field selected:", field);
     onFieldSelect(field);
     setSearchQuery("");
 
     // Call API when field is selected
     if (onFieldOpen) {
-      console.log("Calling onFieldOpen for:", field);
       await onFieldOpen(field);
     } else {
-      console.log("onFieldOpen prop is missing!");
     }
   };
 
