@@ -153,8 +153,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 ratePerPiece: editData.orderdata?.ratePerPiece || editData.ratePerPiece?.toString() || "",
             };
 
-            console.log("DEBUG : Setting form data with kantan:", formData.kantan);
-            setQpFormData(formData);
+           setQpFormData(formData);
         } else if (open && !editData) {
             setQpFormData(prev => ({
                 ...prev,
@@ -167,11 +166,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         }
     }, [open, editData, company]);
 
-    // Debug effect
-    useEffect(() => {
-        console.log("DEBUG: Current qpFormData.kantan:", qpFormData.kantan);
-        console.log("DEBUG: Current qpFormData.isKantan:", qpFormData.isKantan);
-    }, [qpFormData.kantan, qpFormData.isKantan]);
 
     // Clear messages when dialog opens
     useEffect(() => {
@@ -297,8 +291,6 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 };
                 orderData.kantanDeckal = qpFormData.kantanDeckal || undefined;
             }
-
-            console.log("DEBUG: Submitting order data with kantan:", orderData.kantan);
 
             if (editData?._id) {
                 await dispatch(type === 'sell' ? updateSaleQpOrderThunk({ id: editData._id, data: orderData }) : updateQPOrderThunk({ id: editData._id, data: orderData })).unwrap();

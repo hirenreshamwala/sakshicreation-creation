@@ -157,8 +157,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
   const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
     (state) => state.staff
   );
-  console.log("DEBUG : AddNewPerformanceInvoiceDialog : staffList:", staffList);
-
 
 
   useEffect(() => {
@@ -304,8 +302,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
                 historyEntry
               ];
 
-              console.log("✅ Added to history:", historyEntry);
-              console.log("✅ Total history entries:", invoiceData.proformaHistory.length);
             }
           } catch (err) {
             console.error("Could not fetch existing invoice:", err);
@@ -338,7 +334,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           gstPercentage: values.gstPercentage?.toString() || "0",
           finalAmount: values.finalAmount || 0,
           createdAt: new Date(),
-          invoiceId: currentInvoiceId || "new"
+          invoiceId: currentInvoiceId || "new",
         };
 
         // Order में भी history add करें
@@ -408,7 +404,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       try {
         const result = await dispatch(getPerformanceInvoiceByIdThunk(invoiceId)).unwrap();
         if (result) {
-          console.log(result, 'result')
           setInvoiceData(result)
           const fullAddress = [
             result.partyAddress?.unitNo || "",
@@ -483,10 +478,6 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
       return;
     }
 
-    console.log("DEBUG : AddNewPerformanceInvoiceDialog : selectedOrder:", selectedOrder);
-    console.log("DEBUG : selectedOrder.rate:", selectedOrder.rate); // ✅ Debug log
-    console.log("DEBUG : selectedOrder.unitPrice:", selectedOrder.unitPrice); // ✅ Debug log
-
     const fullAddress = [
       selectedOrder.party.address?.unitNo || "",
       selectedOrder.party.address?.marketName?.marketName,
@@ -553,11 +544,9 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           // Check if order already has unitPrice (from previous invoice)
           if (selectedOrder.unitPrice && selectedOrder.unitPrice > 0) {
             finalUnitPrice = selectedOrder.unitPrice;
-            console.log("DEBUG : Using existing unitPrice from order:", finalUnitPrice);
-          } else {
+         } else {
             // First time - use rate from order
             finalUnitPrice = selectedOrder.rate || 0;
-            console.log("DEBUG : First time, using rate from order:", finalUnitPrice);
           }
 
           const initialTotal = finalUnitPrice * (selectedOrder.qty || 0);

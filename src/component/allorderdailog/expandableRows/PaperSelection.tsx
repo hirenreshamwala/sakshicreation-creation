@@ -189,7 +189,6 @@ function PaperSelection({
       })).unwrap();
 
       setApproveDesignDialogOpen(false);
-      console.log("Design approved successfully with printer files");
     } catch (error) {
       console.error("Failed to approve design:", error);
     }
@@ -221,7 +220,6 @@ function PaperSelection({
 
       setReworkFiles([]);
       setRejectDialogOpen(false);
-      console.log("Design rejected with rework files");
     } catch (error) {
       console.error("Failed to reject design:", error);
     }
@@ -363,7 +361,15 @@ function PaperSelection({
                     ))
                   )}
                 </TextField>
-
+                <TextField
+                  label="Designer Size"
+                  value={formData.designerSize || ""}
+                  onChange={(e) => handlePrinterDetailChange("designerSize", e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  placeholder=""
+                  disabled={isCompleted}
+                />
               </Box>
 
               {/* Designer File Upload */}
@@ -614,6 +620,25 @@ function PaperSelection({
                 }
                 label="Add Lamination"
               />
+              <TextField
+                  label="Lamination Size"
+                  value={formData.laminationSize || ""}
+                  onChange={(e) => handlePrinterDetailChange("laminationSize", e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  placeholder=""
+                  disabled={isCompleted}
+                  sx={{mr:2}}
+                />
+              <TextField
+                  label="Lamination qty"
+                  value={formData.laminationQty || ""}
+                  onChange={(e) => handlePrinterDetailChange("laminationQty", e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  placeholder=""
+                  disabled={isCompleted}
+                />
             </Box>
           )}
 

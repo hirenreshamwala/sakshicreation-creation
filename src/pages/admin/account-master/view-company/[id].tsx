@@ -486,7 +486,6 @@ const ViewCompanyPage: React.FC = () => {
         partyId: id,
         accountMasterId: id,
       });
-      console.log(response, 'response======');
       setLeads(response.data);
     } catch (error) {
       console.error('Error fetching leads:', error);
@@ -499,7 +498,6 @@ const ViewCompanyPage: React.FC = () => {
         partyId: id,
         accountMasterId: id,
       });
-      console.log(response, 'response');
       setAssignTasks(response.data);
     } catch (error) {
       console.error('Error fetching leads:', error);

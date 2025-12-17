@@ -27,7 +27,6 @@ interface AssignLeadDialogProps {
 
 const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accountMasters, lead, type, partyIds, onSuccess, company }) => {
     const dispatch = useAppDispatch();
-    console.log("accountMasters=------=-=-=-=-====",accountMasters)
     const { 
         // accountMasters, 
         loading: accountLoading, error: accountError } = useAppSelector(
@@ -184,8 +183,6 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accou
             }
         },
     });
-
-    console.log(formik.errors, 'bhgjghhuighui')
 
     const staffOptions = useMemo(() => {
         const currentAssignedTo = lead?._id && formik.values.assignedTo
