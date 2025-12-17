@@ -152,6 +152,7 @@ const AssignTaskPage: React.FC = () => {
   const [qpDialog, setQpDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusTab, setStatusTab] = useState(0);
+  const [rowData,setRowData] = useState<RowData | null>(null);
   const [tempEditId, setTempEditId] = useState<string | null>(null);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
@@ -504,12 +505,10 @@ const AssignTaskPage: React.FC = () => {
         getDatesOnly: true,
       };
 
-      // Use applied search query instead of current searchQuery
       if (appliedSearchQuery) {
         queryParams.search = appliedSearchQuery;
       }
 
-      // Add other filters if available
       if (Object.keys(filters).length > 0) {
         Object.keys(filters).forEach(key => {
           if (filters[key] && filters[key].length > 0) {
@@ -538,13 +537,11 @@ const AssignTaskPage: React.FC = () => {
         });
       }
 
-      // Add applied date range if available
       if (appliedStartDate && appliedEndDate) {
         queryParams.startDate = appliedStartDate.toISOString();
         queryParams.endDate = appliedEndDate.toISOString();
       }
 
-      // Add assignedTo filter for canViewOwn permission
       if (canViewOwn && !canViewGlobal && currentUserName) {
         queryParams.assignToFilter = currentUserName;
       }
@@ -552,10 +549,15 @@ const AssignTaskPage: React.FC = () => {
       const response = await assignTaskService.getAllAssignTasks(queryParams);
 
       if (response?.data) {
-        setAvailableDates(response.data || []);
+        // Sort dates descending (latest first)
+        const sortedDates = [...response.data].sort((a, b) => {
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        });
+
+        setAvailableDates(sortedDates || []);
 
         const newPagination: DatePaginationState = {};
-        response.data.forEach((dateInfo: { date: string, count: number }) => {
+        sortedDates.forEach((dateInfo: { date: string, count: number }) => {
           newPagination[dateInfo.date] = {
             currentPage: 1,
             itemsPerPage: ITEMS_PER_PAGE,
@@ -567,7 +569,7 @@ const AssignTaskPage: React.FC = () => {
         setDatePagination(newPagination);
 
         // Fetch tasks for each date (only first page)
-        response.data.forEach((dateInfo: { date: string }) => {
+        sortedDates.forEach((dateInfo: { date: string }) => {
           fetchTasksForDate(dateInfo.date, 1, ITEMS_PER_PAGE);
         });
       }
@@ -638,6 +640,8 @@ const AssignTaskPage: React.FC = () => {
           ? task.originalTaskId.createdAt
           : task.createdAt
       ).toLocaleDateString("en-GB"),
+      // Date:task.date,
+      taskDate:task.date,
       reason: task.reasonForVisit || "N/A",
       party: task.partyName?.partyName || "Unknown",
       partyId: task.partyName?._id || "Unknown",
@@ -650,6 +654,7 @@ const AssignTaskPage: React.FC = () => {
         ? `${task.partyName.createdBy.firstName} ${task.partyName.createdBy.lastName}`
         : "Unknown",
       feedback: task.feedback || "N/A",
+      AssignTo:task.assignTo,
       assignTo: task.assignTo
         ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
         : "Unassigned",
@@ -785,7 +790,9 @@ const AssignTaskPage: React.FC = () => {
         </TableCell>
         <TableCell sx={getCellSx({ display: "flex" })}>
           {canedit && (
-            <IconButton color="primary" onClick={() => handleEdit(row.id)}>
+            <IconButton color="primary" onClick={() =>{
+              setRowData(row)
+               handleEdit(row.id)}}>
               <EditIcon />
             </IconButton>
           )}
@@ -1095,55 +1102,56 @@ const AssignTaskPage: React.FC = () => {
           })
         )}
       </Box>
-  <AssignTaskDialog
-    open={open}
-    onClose={() => {
-      setOpen(false);
-      setEditId(null);
-    }}
-    // accountMasters={accountMasters}
-    toggleScDialog={toggleScDialog}
-    toggleQpDialog={toggleQpDialog}
-    taskId={editId}
-    refreshData={() => {
-      setDatePagination({});
-      fetchDates();
-    }}
-    companyTab={companyTab}
-    company={companies?.find((item) => item.companyName === StaticCompanyOptions[companyTab])}
-  />
-
-  {
-    qpDialog && (
-      <AddQPOrderDialog
-        company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
-        open={qpDialog}
+      <AssignTaskDialog
+        open={open}
         onClose={() => {
-          toggleQpDialog();
-          setTempEditId(null);
+          setOpen(false);
+          setEditId(null);
         }}
+        // accountMasters={accountMasters}
+        toggleScDialog={toggleScDialog}
+        toggleQpDialog={toggleQpDialog}
+        taskId={editId}
         refreshData={() => {
           setDatePagination({});
           fetchDates();
         }}
-        party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
+        rowData={rowData}
+        companyTab={companyTab}
+        company={companies?.find((item) => item.companyName === StaticCompanyOptions[companyTab])}
       />
-    )
-  }
 
-  {
-    scDialog && (
-      <AddSakhiOrderDialog
-        company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id}
-        open={scDialog}
-        onClose={() => {
-          toggleScDialog();
-          setTempEditId(null);
-        }}
-        party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
-      />
-    )
-  }
+      {
+        qpDialog && (
+          <AddQPOrderDialog
+            company={companies.find((item) => item.companyName === StaticCompanyOptions[1])?._id}
+            open={qpDialog}
+            onClose={() => {
+              toggleQpDialog();
+              setTempEditId(null);
+            }}
+            refreshData={() => {
+              setDatePagination({});
+              fetchDates();
+            }}
+            party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
+          />
+        )
+      }
+
+      {
+        scDialog && (
+          <AddSakhiOrderDialog
+            company={companies.find((item) => item.companyName === StaticCompanyOptions[0])?._id}
+            open={scDialog}
+            onClose={() => {
+              toggleScDialog();
+              setTempEditId(null);
+            }}
+            party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
+          />
+        )
+      }
     </>
   );
 };

@@ -82,7 +82,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   isBulkUpload = false,
   company
 }) => {
-  console.log("DEBUG : AddNewPartyDialog : company:", company);
 
   const dispatch = useAppDispatch();
   const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
@@ -94,7 +93,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   } = useAppSelector((state) => state.accountMasters);
   const { markets } = useAppSelector((state) => state.markets);
   const { companies } = useAppSelector((state) => state.company)
-  console.log("DEBUG : AddNewPartyDialog : companies:", companies);
 
   const [referenceOptions, setReferenceOptions] = useState<PartySuggestion[]>([]);
   const [recordSkipped, setRecordSkipped] = useState(false)
@@ -230,7 +228,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         // Remove partyType if not Sakshi Creation
         ...(!isSakshiCreation && { partyType: undefined })
       };
-      console.log("DEBUG : AddNewPartyDialog : submissionValues:", submissionValues);
 
       setIsLoading(true);
       try {
@@ -285,6 +282,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         await dispatch(getAllStaffThunk());
         if (isEditMode && accountId) {
           const result:any = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
+          console.log(result,'result')
 
           const resultCompany = companies.find(comp => comp._id === result.companyName);
           const isResultSakshiCreation = resultCompany?.companyName === "Sakshi Creation";
@@ -292,7 +290,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
           formik.setValues({
             ...result,
             companyName: result.companyName || "",
-            partyName: result.partyName || "",
+            partyName: result.party?._id || "",
             ownerName: validateString(result.ownerName),
             ownerMobileNo: result.ownerMobileNo || "",
             ownerWhatsAppNo: result.ownerWhatsAppNo || "",
@@ -481,7 +479,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
     onClose();
   };
 
-  console.log("DEBUG : AddNewPartyDialog : formik:", formik);
+  console.log(formik,'ghggggggggggggggggggggggggggggg')
 
   return (
     <CustomDialog

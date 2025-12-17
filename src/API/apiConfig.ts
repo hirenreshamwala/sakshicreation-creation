@@ -89,6 +89,7 @@ const Endpoint = {
   //party
   GET_PARTIES_BY_COMPANY: `${BaseURL}/api/company/get-party-with-company-id`,
   GET_QP_PARTIES: `${BaseURL}/api/account-master/getqp`,
+  GET_PARTY_BY_Id: `${BaseURL}/api/party/get-party-by-id`,
 
   //productitem
   CREATE_PRODUCT_ITEM: `${BaseURL}/api/productItem/create`,
