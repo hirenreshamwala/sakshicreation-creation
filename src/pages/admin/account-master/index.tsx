@@ -86,7 +86,7 @@ const AccountMasterPage: React.FC = memo(() => {
   const dispatch = useAppDispatch();
   const { companies } = useAppSelector((state) => state.company)
   // State management
-    const [downloadLoading, setDownloadLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -154,8 +154,8 @@ const AccountMasterPage: React.FC = memo(() => {
   // Company tabs configuration
   const companyTabs = useMemo(() => {
     const tabs = [];
-    if (hasSakshi) tabs.push({ id: "sakshi", name: "Sakshi",value:StaticCompanyOptions[0], companyId: getCompanyWisePermission(5) });
-    if (hasQP) tabs.push({ id: "qp", name: "QP",value:StaticCompanyOptions[1], companyId: getCompanyWisePermission(6) });
+    if (hasSakshi) tabs.push({ id: "sakshi", name: "Sakshi", value: StaticCompanyOptions[0], companyId: getCompanyWisePermission(5) });
+    if (hasQP) tabs.push({ id: "qp", name: "QP", value: StaticCompanyOptions[1], companyId: getCompanyWisePermission(6) });
     return tabs;
   }, [user, hasSakshi, hasQP]);
 
@@ -233,7 +233,7 @@ const AccountMasterPage: React.FC = memo(() => {
   useEffect(() => {
     if (c) {
       setCompanyTab(c === "Quality Packaging" || c === "QP" ? 1 : 0);
-      setCurrentFilterState((prev: any) => ({ ...prev, filters: { company: [c] } }));
+      setCurrentFilterState((prev: any) => ({ ...prev, filters: { ...prev.filters, company: [c] } }));
     }
   }, [c]);
 
@@ -270,7 +270,7 @@ const AccountMasterPage: React.FC = memo(() => {
     `APPROVED (${responseState?.counts?.approved})`,
     `PENDING (${responseState?.counts?.pending})`,
   ];
-  
+
   const mapStatusToType = (status: string): RowData["statusType"] => {
     switch (status) {
       case "Completed":
@@ -440,35 +440,35 @@ const AccountMasterPage: React.FC = memo(() => {
     .filter((p) => p.partyId && p.companyId);
 
 
-    const handleDownloadExcel = async () => {
-        try {
-          setDownloadLoading(true);
-          
-          // Use the same filters that are currently applied
-          const blob = await accountMasterService.exportAccountMastersToExcel(appliedFilterState);
-          
-          // Create a download link
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', `AccountMasters_${moment().format('DD-MM-YYYY')}.xlsx`);
-          document.body.appendChild(link);
-          
-          // Trigger download
-          link.click();
-          
-          // Clean up
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-          
-          toast.success('Excel file downloaded successfully');
-        } catch (error: any) {
-          console.error('Export failed:', error);
-          toast.error(error.message || 'Failed to download Excel file');
-        } finally {
-          setDownloadLoading(false);
-        }
-      };
+  const handleDownloadExcel = async () => {
+    try {
+      setDownloadLoading(true);
+
+      // Use the same filters that are currently applied
+      const blob = await accountMasterService.exportAccountMastersToExcel(appliedFilterState);
+
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `AccountMasters_${moment().format('DD-MM-YYYY')}.xlsx`);
+      document.body.appendChild(link);
+
+      // Trigger download
+      link.click();
+
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Excel file downloaded successfully');
+    } catch (error: any) {
+      console.error('Export failed:', error);
+      toast.error(error.message || 'Failed to download Excel file');
+    } finally {
+      setDownloadLoading(false);
+    }
+  };
 
   return (
     <>
@@ -627,8 +627,8 @@ const AccountMasterPage: React.FC = memo(() => {
         />
       )}
 
-{console.log(companies?.find((item) => item?.name === (hasBothCompanies ? companyTabs[companyTab]?.value : hasSakshi ? "Sakshi" : "QP")),'ksdjksjdoikdjikj',(hasBothCompanies ? companyTabs[companyTab]?.value : hasSakshi ? "Sakshi" : "QP"))}
-      {openAssignLeadDialog ? 
+      {console.log(companies?.find((item) => item?.name === (hasBothCompanies ? companyTabs[companyTab]?.value : hasSakshi ? "Sakshi" : "QP")), 'ksdjksjdoikdjikj', (hasBothCompanies ? companyTabs[companyTab]?.value : hasSakshi ? "Sakshi" : "QP"))}
+      {openAssignLeadDialog ?
         <AssignLeadDialog
           open={openAssignLeadDialog}
           onClose={() => {
@@ -643,9 +643,9 @@ const AccountMasterPage: React.FC = memo(() => {
             loadAccountMasters();
           }}
         />
-      :null}
+        : null}
 
-      {openBulkAssignTask ? 
+      {openBulkAssignTask ?
         <AssignTaskDialog
           open={openBulkAssignTask}
           onClose={() => {
@@ -660,7 +660,7 @@ const AccountMasterPage: React.FC = memo(() => {
             loadAccountMasters();
           }}
         />
-      :null}
+        : null}
     </>
   );
 });

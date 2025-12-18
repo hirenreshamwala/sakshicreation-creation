@@ -96,8 +96,6 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   showSearch = true,
   showFillter = true,
   showExcelDownload = false,
-  excelHeaders,
-  excelData,
   onSelectAll,
   onSelectRow,
   showHeaderCheckbox = true,
@@ -106,25 +104,10 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   renderExpandedRow,
   getRowColor,
   setCurrentFilterState,
-  pageName,
-  getFilterOptions,
   defaultAccountMasterFilter,
   downloadLoading,
   handleDownloadExcel,
-  currentFilterState = {
-    page: 1,
-    pageSize: 10,
-    searchQuery: "",
-    filters: {},
-    includeCounts: true,
-    isPagination: true,
-    dateRange: { start: null, end: null },
-    statusTab: 0,
-    companyTab: 0,
-    startDate: null,
-    endDate: null,
-    search: ""
-  }
+  currentFilterState
 }: BasicTableProps<T>) => {
   const dispatch = useDispatch();
 
@@ -216,7 +199,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
     if (setCurrentFilterState) {
       setCurrentFilterState((prev: any) => ({
         ...prev,
-        filters: newFilters,
+        filters: newFilters?.filters,
         page: 1,
       }));
     }
@@ -338,7 +321,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
 
   // Handle field open - this will trigger API call when field is selected
   const handleFieldOpen = useCallback(async (field: string) => {
-   await getUniqueValues(field);
+    await getUniqueValues(field);
   }, [getUniqueValues]);
 
   // Get current unique values for selected field

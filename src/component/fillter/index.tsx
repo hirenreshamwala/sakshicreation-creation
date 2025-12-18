@@ -99,7 +99,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   const handleClearFilter = () => {
     // onFiltersChange({});
     // onFiltersChange(defaultAccountMasterFilter?.filters || {});
-    onFiltersChange({}); // FIXED: Reset to empty filters object
+    onFiltersChange(defaultAccountMasterFilter); // FIXED: Reset to empty filters object
     onFieldSelect(null);
     setTempSelectedValues([]);
     handleClose();
