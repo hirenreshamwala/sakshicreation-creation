@@ -74,6 +74,9 @@ const permissionMapping: { [key: string]: string } = {
   Printers: "reports.printers",
   Binder: "reports.binder",
   "Booklet & Folder Intention": "reports.booklet-and-binder",
+  "Products Items Report": "reports.products-items-report",
+  "Sakshi Creation Sales Credits Report": "reports.sales-credit-report",
+  "QP Sales Credits Report": "reports.qpSales-credit-report-page",
   Staff: "reports.staff",
   // Sub-menu items for Setup
   "Add Role": "setup.role",
@@ -171,6 +174,21 @@ const menuItems = [
         path: "/admin/reports/staff",
         icon: <MdGroup size={18} />,
       },
+      {
+        label: "Products Items Report",
+        path: "/admin/reports/products-items-report",
+        icon: <MdBackpack size={18} />,
+      },
+      {
+        label: "Sakshi Creation Sales Credits Report",
+        path: "/admin/reports/sales-credit-report",
+        icon: <MdBackpack size={18} />,
+      },
+      {
+        label: "QP Sales Credits Report",
+        path: "/admin/reports/qpSales-credit-report-page",
+        icon: <MdBackpack size={18} />,
+      }
     ],
   },
   {

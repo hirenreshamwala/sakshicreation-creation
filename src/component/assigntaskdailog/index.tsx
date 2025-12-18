@@ -15,6 +15,7 @@ import {
   updateAssignTaskThunk,
   clearSuccessMessage,
   clearError,
+  bulkCreateAssignTasksThunk,
 } from "@/store/slices/assignTaskSlice";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
 import type { CreateAssignTask, UpdateAssignTask } from "@/services/assignTask.service";
@@ -183,26 +184,55 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
           //   confirmButtonColor: "#7F56D9",
           // });
 
-          console.log(values.reasonForVisit, 'values.reasonForVisit', StaticCompanyOptions, companyTab, "companyTab", values.status)
-          if (values.reasonForVisit === "Order" && companyTab === 0 && values.status === "Completed") toggleScDialog()
+         if (values.reasonForVisit === "Order" && companyTab === 0 && values.status === "Completed") toggleScDialog()
           if (values.reasonForVisit === "Order" && companyTab === 1 && values.status === "Completed") toggleQpDialog()
           if (refreshData) refreshData();
+        // } else if (isBulkMode) {
+        //   const tasks = selectedParties.map((party) => ({
+        //     ...values,
+        //     companyName: party.companyId,
+        //     partyName: party.partyId,
+        //   }));
+        //   await Promise.all(
+        //     tasks.map((task) => dispatch(createAssignTaskThunk(task)).unwrap())
+        //   );
+        //   Swal.fire({
+        //     title: "Success!",
+        //     text: `Assigned ${tasks.length} tasks successfully`,
+        //     icon: "success",
+        //     confirmButtonColor: "#7F56D9",
+        //   });
+        //   if (refreshData) refreshData();
         } else if (isBulkMode) {
-          const tasks = selectedParties.map((party) => ({
-            ...values,
+          const tasks: CreateAssignTask[] = selectedParties.map((party) => ({
             companyName: party.companyId,
             partyName: party.partyId,
+            date: values.date, // YYYY-MM-DD format ma already che
+            time: values.time || "",
+            reasonForVisit: values.reasonForVisit,
+            remarks: values.remarks || "",
+            assignTo: values.assignTo,
+            status: "Pending",
           }));
-          await Promise.all(
-            tasks.map((task) => dispatch(createAssignTaskThunk(task)).unwrap())
-          );
+          try {
+            await dispatch(bulkCreateAssignTasksThunk(tasks)).unwrap();
+            
           Swal.fire({
             title: "Success!",
-            text: `Assigned ${tasks.length} tasks successfully`,
+            text: `Successfully assigned tasks to ${tasks.length} parties`,
             icon: "success",
             confirmButtonColor: "#7F56D9",
           });
-          if (refreshData) refreshData();
+            
+            if (refreshData) refreshData();
+          } catch (err: any) {
+            Swal.fire({
+              title: "Error!",
+              text: err.message || "Failed to assign some tasks",
+              icon: "error",
+              confirmButtonColor: "#7F56D9",
+            });
+          }
         } else {
           await dispatch(createAssignTaskThunk(values)).unwrap();
           Swal.fire({

@@ -95,7 +95,6 @@ function StackSelection({ formData, row, isCompleted }: any) {
         payload.inventory = selectedBoxId;
         payload.qty = row.noOfPieces
       }
-      console.log(payload, 'payloadpayloadpayload')
 
       await dispatch(sendBoxFromGodownOrFactoryThunk({ id: formData._id, data: payload })).unwrap();
 

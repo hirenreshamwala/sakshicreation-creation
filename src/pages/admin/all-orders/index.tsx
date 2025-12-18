@@ -23,7 +23,7 @@ import { FaChevronRight } from "react-icons/fa6"
 const columns = [
   { id: "orderNumber", label: "Order No.", value: "orderNumber" },
   { id: "company", label: "Company", value: "company" },
-  { id: "date", label: "Date", value: "createdAt" },
+  { id: "date", label: "Date" },
   { id: "party", label: "Party", value: "party" },
   { id: "item", label: "Item Name", value: "item" },
   { id: "size", label: "Size", value: "size" },
@@ -242,10 +242,8 @@ const AllOrdersPage = () => {
 
   // Reset initial load flag when user changes
   useEffect(() => {
-    // if (userData) {
       hasLoadedInitialDataRef.current = false
-    // }
-  }, [userData?.id])
+}, [userData?.id]);
 
   // Initial companies load
   useEffect(() => {

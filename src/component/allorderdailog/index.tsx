@@ -184,8 +184,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         const uploadedFiles = await fileUploadRef.current.uploadSelectedFiles()
         filePaths = uploadedFiles.map((file) => file.path || file.url)
       }
-      console.log("DEBUG : handleSakshiSubmit : sakshiFormData:", sakshiFormData);
-      const orderData = {
+     const orderData = {
         companyName: sakshiFormData.companyName,
 
         party: sakshiFormData.partyName,
@@ -212,7 +211,6 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         color1: sakshiFormData.color1 || "",
         color2: sakshiFormData.color2 || "",
       }
-      console.log("DEBUG : handleSakshiSubmit : orderData:", orderData);
 
       await dispatch(createOrderThunk(orderData)).unwrap()
       if (refreshData) refreshData()

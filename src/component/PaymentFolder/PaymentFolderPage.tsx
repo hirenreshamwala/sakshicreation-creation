@@ -169,8 +169,7 @@ const PaymentFolderPage: React.FC = () => {
         isPagination: true,
         includeCounts: true
       };
-      console.log("📡 Loading payment folders with params:", params);
-      await dispatch(getAllPaymentFoldersThunk(params));
+     await dispatch(getAllPaymentFoldersThunk(params));
       setIsInitialLoad(true);
     } catch (err: any) {
       console.error("❌ Error loading payment folders:", err);
@@ -194,7 +193,6 @@ const PaymentFolderPage: React.FC = () => {
         endDate: currentFilterState.endDate,
         company: [selectedCompanyName],
       };
-      console.log(`🔍 Loading payment folder filter options for ${field}:`, filterPayload);
       const response = await paymentFolderService.searchFilterOptions(field, "", filterPayload);
       if (response.success && response.data) {
         setFilterOptionsData(prev => ({
@@ -212,7 +210,6 @@ const PaymentFolderPage: React.FC = () => {
 
   // Handle filter field selection
   const handleFilterFieldSelect = useCallback(async (field: string | null) => {
-    console.log("PaymentFolder handleFilterFieldSelect called with:", field);
     setSelectedFilterField(field);
     if (field && !filterOptionsData[field]) {
       try {
@@ -227,7 +224,6 @@ const PaymentFolderPage: React.FC = () => {
 
   // Handle filter changes
   const handleFiltersChange = useCallback((newFilters: { [key: string]: string[] }) => {
-    console.log("PaymentFolder Filters changed to:", newFilters);
     setCurrentFilterState((prev: any) => ({
       ...prev,
       filters: newFilters,
@@ -240,7 +236,6 @@ const PaymentFolderPage: React.FC = () => {
     if (!selectedCompanyName) return;
     const isSame = JSON.stringify(appliedFilterState) === JSON.stringify(currentFilterState);
     if (!isSame) {
-      console.log("🔄 PaymentFolder Filter state changed, loading payment folders...");
       const timer = setTimeout(() => {
         loadPaymentFolders();
         setAppliedFilterState(currentFilterState);

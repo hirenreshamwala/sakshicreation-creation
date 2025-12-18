@@ -139,12 +139,11 @@ const OperatorView = () => {
     { id: "date", label: "Date" },
     { id: "party", label: "Party Name" },
     { id: "boxSize", label: "Box Size" },
+    { id: "ply", label: "Ply" },
     { id: "top", label: "Top" },
     { id: "corogation", label: "Corogation" },
     { id: "bottom", label: "Bottom" },
-    { id: "ply", label: "Ply" },
     { id: "deckal", label: "Deckal" },
-    { id: "liner", label: "Liner" },
     { id: "noofliner", label: "No of Liner" },
     { id: "noOfBox", label: "Piece" },
     { id: "cuttingLength", label: "Cutting length" },
@@ -637,6 +636,11 @@ const OperatorView = () => {
               <TableCell sx={{ whiteSpace: "nowrap", backgroundColor: rowBackgroundColor }}>
                 <Typography>{`${row.orderdata?.length || "N/A"} x ${row.orderdata?.width || "N/A"} x ${row.orderdata?.height || "N/A"}`}</Typography>
               </TableCell>
+              
+              {/* Ply */}
+              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                <Typography>{row.orderdata?.ply || "N/A"}</Typography>
+              </TableCell>
 
               {/* Top */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
@@ -653,27 +657,15 @@ const OperatorView = () => {
                 <Typography>{row.orderdata?.paper3GSM || "N/A"}</Typography>
               </TableCell>
 
-              {/* Ply */}
-              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>{row.orderdata?.ply || "N/A"}</Typography>
-              </TableCell>
-
               {/* Deckal */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>{row.orderdata?.deckal || "N/A"}</Typography>
               </TableCell>
 
-              {/* Liner */}
-              <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                <Typography>
-                  {row.orderdata?.linear || Number(row.orderdata.ply) - 1}
-                </Typography>
-              </TableCell>
-
               {/* No of Liner */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>
-                  {row.orderdata?.noOfLinear || Number(row.noOfPieces) * 2 * (Number(row.orderdata.ply) - 1)}
+                  {row?.noOfLinear || Number(row.noOfPieces) * (Number(row.orderdata.ply) - 1)}
                 </Typography>
               </TableCell>
 
@@ -685,7 +677,7 @@ const OperatorView = () => {
               {/* Cutting length */}
               <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                 <Typography>
-                  {row.orderdata?.cuttingLength || (Number(row.orderdata.length) + Number(row.orderdata.width) + 2).toString()}
+                  {row?.cuttingLength || (Number(row.orderdata.length) + Number(row.orderdata.width) + 2).toString()}
                 </Typography>
               </TableCell>
 

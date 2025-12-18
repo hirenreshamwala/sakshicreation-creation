@@ -589,9 +589,19 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
 
         try {
             // ✅ 1. Basic validations
-            if (formData.isPunching && (!formData.dyeNumber || !formData.dyeSize)) {
-                toast.error("Dye Number and Dye Sheet Size are required when Punching process is selected");
-                return;
+            if (formData.isPunching) {
+                if (!formData.dyeNumber) {
+                    toast.error("Dye Number is required when Punching process is selected");
+                    return;
+                }
+                if (!formData.dyeSize) {
+                    toast.error("Sheet Size is required when Punching process is selected");
+                    return;
+                }
+                if (!formData.dyeQuantity || parseInt(formData.dyeQuantity) <= 0) {
+                    toast.error("Sheet Quantity is required and must be greater than 0 when Punching process is selected");
+                    return;
+                }
             }
 
             const currentDate = moment().startOf("day");
@@ -623,8 +633,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
             // ✅ 2. Designer file validation and upload
             let uploadedDesignFiles = [];
 
-            console.log("DEBUG : handleSubmit : formData:", formData);
-
             if (formData.designer) {
                 if (!formData.designFiles || formData.designFiles.length === 0) {
                     toast.error("Please upload at least one design file since a designer is selected.");
@@ -638,7 +646,6 @@ export const ExpandedRowForm = ({ row, setEditData, setOpen }: ExpandedRowFormPr
                 if (newFiles.length > 0) {
                     toast.info("Uploading designer files...");
                     const uploadRes = await fileUploadService.uploadMultipleFiles(newFiles, "designer");
-                    console.log("DEBUG : handleSubmit : uploadRes:", uploadRes);
 
                     if (!uploadRes.success) {
                         toast.error(uploadRes.message || "Failed to upload designer files");

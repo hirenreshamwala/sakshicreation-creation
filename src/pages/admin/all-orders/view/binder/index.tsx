@@ -224,8 +224,6 @@ const BinderForm = () => {
     if (singleOrder) {
       // Safely convert binding to boolean: handles boolean false/true, string "false"/"true", undefined/null/empty as false
       const bindingValue = !!singleOrder.binding && singleOrder.binding !== "false";
-      console.log("DEBUG: Order binding value:", singleOrder.binding, typeof singleOrder.binding);
-      console.log("DEBUG: Formik binding value after set:", bindingValue);
       formik.setValues({
         issuedDate: singleOrder.issuedDate
           ? new Date(singleOrder.issuedDate).toISOString()?.split("T")[0]

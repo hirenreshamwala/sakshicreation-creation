@@ -338,8 +338,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
 
   // Handle field open - this will trigger API call when field is selected
   const handleFieldOpen = useCallback(async (field: string) => {
-    console.log("API call triggered for field:", field);
-    await getUniqueValues(field);
+   await getUniqueValues(field);
   }, [getUniqueValues]);
 
   // Get current unique values for selected field

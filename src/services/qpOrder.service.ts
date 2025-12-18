@@ -178,7 +178,7 @@ export const orderService = {
   async getOrdersByStaffId(id: string, filters: any): Promise<ApiResponse<Order[]>> {
     try {
 
-      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
+      const response: AxiosResponse<ApiResponse<Order[]>> = await Request.get(
         `${Endpoint.GET_QP_ORDER_BY_STAFF_ID}/${id}`,
         filters
       );
