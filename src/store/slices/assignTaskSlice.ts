@@ -66,6 +66,26 @@ export const createAssignTaskThunk = createAsyncThunk(
   }
 );
 
+export const bulkCreateAssignTasksThunk = createAsyncThunk(
+  'assignTasks/bulkCreate',
+  async (tasksData: CreateAssignTask[], { rejectWithValue }) => {
+    try {
+      const response = await assignTaskService.bulkCreateAssignTasks(tasksData);
+      if (response.success) {
+        return {
+          createdTasks: response.data,  // direct array
+          count: response.count,
+          errors: response.errors || []
+        };
+      } else {
+        return rejectWithValue(response.message || 'Bulk creation failed');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to bulk create tasks');
+    }
+  }
+);
+
 export const updateAssignTaskThunk = createAsyncThunk(
   'assignTasks/update',
   async ({ id, data }: { id: string; data: Partial<UpdateAssignTask> }, { rejectWithValue }) => {
@@ -227,6 +247,24 @@ const assignTaskSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
         state.assignTasks = state.assignTasks.filter((task) => task._id !== action.meta.arg._id);
+      })
+      .addCase(bulkCreateAssignTasksThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(bulkCreateAssignTasksThunk.fulfilled, (state, action) => {
+          state.loading = false;
+          const newTasks = Array.isArray(action.payload.createdTasks) ? action.payload.createdTasks : [];
+          state.assignTasks = [...state.assignTasks, ...newTasks];
+          state.successMessage = `Successfully assigned tasks to ${action.payload.count} parties`;
+          
+          if (action.payload.errors && action.payload.errors.length > 0) {
+            state.error = `Partial success: ${action.payload.errors.length} tasks failed`;
+          }
+        })
+      .addCase(bulkCreateAssignTasksThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       })
       .addCase(updateAssignTaskThunk.pending, (state) => {
         state.loading = true;

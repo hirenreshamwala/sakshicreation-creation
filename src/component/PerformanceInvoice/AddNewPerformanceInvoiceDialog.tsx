@@ -322,6 +322,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           daysAfterConfirmation: values.daysAfterConfirmation,
           paymentDate: values.paymentDate,
           description: values.description || "",
+          salecredit: values.assignedTo, 
         };
 
         let response;
@@ -333,6 +334,7 @@ const AddNewPerformanceInvoiceDialog: React.FC<AddNewPerformanceInvoiceDialogPro
           applyGST: values.applyGST,
           gstPercentage: values.gstPercentage?.toString() || "0",
           finalAmount: values.finalAmount || 0,
+          salecredit: values.assignedTo,
           createdAt: new Date(),
           invoiceId: currentInvoiceId || "new",
         };

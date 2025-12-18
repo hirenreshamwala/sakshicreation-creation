@@ -108,6 +108,65 @@ export interface DateRange {
   endDate: string;
 }
 
+export interface ProductItemReport {
+  staffName: string;
+  products: {
+    productName: string;
+    orderCount: number;
+  }[];
+}
+
+export interface ProductItemsApiResponse {
+  success: boolean;
+  data: ProductItemReport[];
+  message?: string;
+}
+
+interface StaffSCSalesData {
+  _id: string;
+  staffName: string;
+  totalFinalAmount: number;
+  totalOrders: number;
+}
+
+interface SalesCreditApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    report: StaffSCSalesData[];
+    dateRange: {
+      startDate: string;
+      endDate: string;
+    };
+  };
+}
+
+interface OrderDetailQP {
+  orderNumber: number;
+  totalKg: string;
+  createdAt: string;
+}
+
+interface StaffQPSalesData {
+  _id: string;
+  staffName: string;
+  totalKgSum: number;
+  totalOrders: number;
+  createdBy: string;
+  orders: OrderDetailQP[];
+}
+
+interface QPSalesCreditApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    report: StaffQPSalesData[];
+    dateRange: {
+      startDate: string;
+      endDate: string;
+    };
+  };
+}
 export const reportService = {
   async getDesignerPerformance(data: DateRange): Promise<ApiResponse<DesignerPerformance>> {
     try {
@@ -156,4 +215,40 @@ export const reportService = {
       throw new Error(error.response?.data?.message || "Failed to fetch booklet binder performance data");
     }
   },
+
+  async getProductItemsReport(data: DateRange): Promise<ProductItemsApiResponse> {
+    try {
+      const response: AxiosResponse<ProductItemsApiResponse> = await Request.post(
+        Endpoint.GET_SC_PRODUCT_ITEM,  // niche endpoint add karvani che
+        data
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to fetch product items report");
+    }
+  },
+
+  async getSalesCreditReport(data: DateRange): Promise<SalesCreditApiResponse> {
+  try {
+    const response: AxiosResponse<SalesCreditApiResponse> = await Request.post(
+      Endpoint.GET_SALES_CREDIT_REPORT, // tame endpoint define karvani
+      data
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to fetch sales credit report");
+  }
+},
+async getQPSalesCreditReport(data: DateRange): Promise<QPSalesCreditApiResponse> {
+  try {
+    const response: AxiosResponse<QPSalesCreditApiResponse> = await Request.post(
+      Endpoint.GET_QP_SALES_CREDIT_REPORT,
+      data
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to fetch QP sales credit report");
+  }
+}
+
 };

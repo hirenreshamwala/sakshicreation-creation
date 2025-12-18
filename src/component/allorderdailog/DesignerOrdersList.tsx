@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { getAllQPOrdersThunk } from "@/store/slices/qpOrderSlice";
 import BasicTable from "@/component/common_component/Table/themetable";
-import { Box, TableCell } from "@mui/material";
+import { Box, TableCell, Typography } from "@mui/material";
 import Loader from "@/component/common_component/loader";
 import { StatusCell } from "@/component/allorderdailog/StatusCell";
 import DesignerTaskExpandable from "@/component/QpTask/DesignerTaskExpandable";
@@ -76,22 +76,100 @@ const DesignerOrdersList: React.FC = () => {
         renderRow={(row: Order) => {
           return (
             <>
-              <TableCell>QP-{row.orderNo}{row.isUrgent && (
-                                        <Box
-                                            sx={{
-                                                backgroundColor: "#DC2626",
-                                                color: "#FFFFFF",
-                                                fontSize: "10px",
-                                                fontWeight: 600,
-                                                borderRadius: "4px",
-                                                px: 1,
-                                                py: 0.25,
-                                                textTransform: "uppercase",
-                                            }}
-                                        >
-                                            URGENT
-                                        </Box>
-                                    )}</TableCell>
+              <TableCell>
+              <Box display="flex" alignItems="center" gap={1}>
+                QP-{row.orderNo}
+                
+                {row.isUrgent && (
+                  <Box
+                    sx={{
+                      backgroundColor: "#DC2626",
+                      color: "#FFFFFF",
+                      fontSize: "10px",
+                      fontWeight: 600,
+                      borderRadius: "4px",
+                      px: 1,
+                      py: 0.25,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    URGENT
+                  </Box>
+                )}
+                
+                {/* Designer Panel Status Badges - ONLY SHOW ONE AT A TIME */}
+                <Box display="flex" flexDirection="column" gap={0.5} ml={1}>
+                  {/* Priority 1: Rework requested (admin ne rework request કરેલ છે) */}
+                  {row.reworkDesignFiles?.length > 0 && !row.approveDesign && !row.reworkDesignerFiles?.length && (
+                    <Typography 
+                      fontSize="10px" 
+                      color="#dc2626" 
+                      sx={{ 
+                        backgroundColor: '#fee2e2', 
+                        px: 1, 
+                        py: 0.25, 
+                        borderRadius: '4px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Rework Design
+                    </Typography>
+                  )}
+                  
+                  {/* Priority 2: Rework files submitted (designer ne rework files submit કરેલ છે) */}
+                  {/* {row.reworkDesignerFiles?.length > 0 && !row.approveDesign && (
+                    <Typography 
+                      fontSize="10px" 
+                      color="#2563eb" 
+                      sx={{ 
+                        backgroundColor: '#dbeafe', 
+                        px: 1, 
+                        py: 0.25, 
+                        borderRadius: '4px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Rework Submitted
+                    </Typography>
+                  )}
+                   */}
+                  {/* Priority 3: Designer files uploaded but not approved */}
+                  {/* {row.designerFiles?.length > 0 && !row.approveDesign && 
+                  !row.reworkDesignFiles?.length && !row.reworkDesignerFiles?.length && (
+                    <Typography 
+                      fontSize="10px" 
+                      color="#f59e0b" 
+                      sx={{ 
+                        backgroundColor: '#fef3c7', 
+                        px: 1, 
+                        py: 0.25, 
+                        borderRadius: '4px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Pending Approval
+                    </Typography>
+                  )} */}
+                  
+                  {/* Priority 4: Design approved */}
+                  {row.approveDesign && (
+                    <Typography 
+                      fontSize="10px" 
+                      color="#059669" 
+                      sx={{ 
+                        backgroundColor: '#d1fae5', 
+                        px: 1, 
+                        py: 0.25, 
+                        borderRadius: '4px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Approved
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            </TableCell>
               <TableCell>{row.companyName.companyName}</TableCell>
               <TableCell>{row.party?.partyName}</TableCell>
               <TableCell>

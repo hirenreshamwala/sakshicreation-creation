@@ -23,6 +23,7 @@ const Endpoint = {
   GET_ASSIGN_TASK_BY_ID: `${BaseURL}/api/assign-task/getbyid`,
   GET_ASSIGN_TASK_BY_STAFF_ID: `${BaseURL}/api/assign-task/getbystaffid`,
   CREATE_ASSIGN_TASK: `${BaseURL}/api/assign-task/create`,
+  CREATE_ASSIGN_TASK_BULK: `${BaseURL}/api/assign-task/create/bulk`,
   UPDATE_ASSIGN_TASK: `${BaseURL}/api/assign-task/update`,
   DELETE_ASSIGN_TASK: `${BaseURL}/api/assign-task/delete`,
   BULK_DELETE_ASSIGN_TASKS: `${BaseURL}/api/assign-task/bulkdelete`,
@@ -268,5 +269,8 @@ GET_SC_DESIGNERS: `${BaseURL}/api/report/getscdesigners`,
 GET_SC_PRINTERS: `${BaseURL}/api/report/getscprinters`,
 GET_SC_BINDER: `${BaseURL}/api/report/getscbinder`,
 GET_SC_BOOKLET_BINDER: `${BaseURL}/api/report/getscbookletbinder`,
+GET_SC_PRODUCT_ITEM: `${BaseURL}/api/report/getscproductitem`,
+GET_SALES_CREDIT_REPORT: `${BaseURL}/api/report/getscsalescredit`,
+GET_QP_SALES_CREDIT_REPORT: `${BaseURL}/api/report/getqpsalescredit`,
 };
 export default Endpoint;

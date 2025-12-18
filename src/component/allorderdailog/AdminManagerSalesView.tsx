@@ -180,7 +180,8 @@ const AdminManagerSalesView = () => {
     if (canViewGlobal) 
       dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party }))
      else if (canViewOwn && user?.id) 
-      dispatch(getQPOrdersByStaffIdThunk(user?.id))
+      dispatch(getQPOrdersByStaffIdThunk({id: user.id,
+    filters: {},}))
   };
 
   useEffect(() => {
@@ -749,8 +750,80 @@ const AdminManagerSalesView = () => {
                   <Typography fontSize="14px" color="#6B7280">
                     QP-{row.orderNo || "N/A"}
                   </Typography>
+                  
+                  {/* Designer Status Badges - ONLY SHOW ONE AT A TIME */}
+                  <Box display="flex" flexDirection="column" gap={0.5} ml={1}>
+                    {/* Priority 1: Rework requested (admin ne rework request કરેલ છે) */}
+                    {/* {row.reworkDesignFiles?.length > 0 && !row.approveDesign && !row.reworkDesignerFiles?.length && (
+                      <Typography 
+                        fontSize="10px" 
+                        color="#dc2626" 
+                        sx={{ 
+                          backgroundColor: '#fee2e2', 
+                          px: 1, 
+                          py: 0.25, 
+                          borderRadius: '4px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Rework Design
+                      </Typography>
+                    )} */}
+                    
+                    {/* Priority 2: Rework files submitted (designer ne rework files submit કરેલ છે) */}
+                    {row.reworkDesignerFiles?.length > 0 && !row.approveDesign && (
+                      <Typography 
+                        fontSize="10px" 
+                        color="#2563eb" 
+                        sx={{ 
+                          backgroundColor: '#dbeafe', 
+                          px: 1, 
+                          py: 0.25, 
+                          borderRadius: '4px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Rework Submitted
+                      </Typography>
+                    )}
+                    
+                    {/* Priority 3: Designer files uploaded but not approved */}
+                    {row.designerFiles?.length > 0 && !row.approveDesign && 
+                    !row.reworkDesignFiles?.length && !row.reworkDesignerFiles?.length && (
+                      <Typography 
+                        fontSize="10px" 
+                        color="#f59e0b" 
+                        sx={{ 
+                          backgroundColor: '#fef3c7', 
+                          px: 1, 
+                          py: 0.25, 
+                          borderRadius: '4px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Files to Review
+                      </Typography>
+                    )}
+                    
+                    {/* Priority 4: Design approved */}
+                    {/* {row.approveDesign && (
+                      <Typography 
+                        fontSize="10px" 
+                        color="#059669" 
+                        sx={{ 
+                          backgroundColor: '#d1fae5', 
+                          px: 1, 
+                          py: 0.25, 
+                          borderRadius: '4px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Design Approved
+                      </Typography>
+                    )} */}
+                  </Box>
                 </Box>
-              </TableCell >
+              </TableCell>
               <TableCell>
                 <Box display="flex" alignItems="center" gap={2}>
                   <Avatar src={row.companyName?.avatar} sx={{ width: 32, height: 32 }} alt={row.companyName?.companyName || "Company"} />
