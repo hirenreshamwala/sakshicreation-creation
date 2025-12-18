@@ -105,330 +105,357 @@ type OrderRow = {
     operatorTotalKg?: string;
 }
 const OperatorView = () => {
-    const [open, setOpen] = React.useState(false)
-    const [jobSheetOpen, setJobSheetOpen] = React.useState(false)
-    const [selectedRow, setSelectedRow] = React.useState<OrderRow | null>(null)
-    const [pieceInputs, setPieceInputs] = useState<{ [key: string]: string }>({});
-    const [cuttingLengthInputs, setCuttingLengthInputs] = useState<{ [key: string]: string }>({});
-    const [remarksOpen, setRemarksOpen] = useState(false);
-    const [remarksRow, setRemarksRow] = useState<OrderRow | null>(null);
-    const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
-    const router = useRouter()
-    const dispatch = useAppDispatch()
-    const [editData, setEditData] = useState<OrderRow | null>(null)
-    const { user } = useAppSelector((state) => state.auth)
+  const [open, setOpen] = React.useState(false)
+  const [jobSheetOpen, setJobSheetOpen] = React.useState(false)
+  const [selectedRow, setSelectedRow] = React.useState<OrderRow | null>(null)
+  const [pieceInputs, setPieceInputs] = useState<{ [key: string]: string }>({});
+  const [cuttingLengthInputs, setCuttingLengthInputs] = useState<{ [key: string]: string }>({});
+  const [completedBoxInputs, setCompletedBoxInputs] = useState<{ [key: string]: string }>({});
+  const [remarksOpen, setRemarksOpen] = useState(false);
+  const [remarksRow, setRemarksRow] = useState<OrderRow | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
+  const router = useRouter()
+  const dispatch = useAppDispatch()
+  const [editData, setEditData] = useState<OrderRow | null>(null)
+  const { user } = useAppSelector((state) => state.auth)
 
-    const { companies } = useAppSelector((state) => state.company)
-    const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.qpOrders)
-    const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
-    const [searchQuery, setSearchQuery] = useState<string>("")
-    const [startDate, setStartDate] = useState<Date | null>(null)
-    const [endDate, setEndDate] = useState<Date | null>(null)
-    const [filters, setFilters] = useState<{ [key: string]: string[] }>({})
+  const { companies } = useAppSelector((state) => state.company)
+  const { orders, loading, error, totalCount, pagination } = useAppSelector((state) => state.qpOrders)
+  const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [startDate, setStartDate] = useState<Date | null>(null)
+  const [endDate, setEndDate] = useState<Date | null>(null)
+  const [filters, setFilters] = useState<{ [key: string]: string[] }>({})
 
-    const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
-    const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
-    const canCreate = user?.role?.permissions?.all_orders?.create;
-    const canStatus = user?.role?.permissions?.all_orders?.status;
+  const canViewGlobal = user?.role?.permissions?.all_orders?.view_global;
+  const canViewOwn = user?.role?.permissions?.all_orders?.view_own;
+  const canCreate = user?.role?.permissions?.all_orders?.create;
+  const canStatus = user?.role?.permissions?.all_orders?.status;
 
 
-    // Define columns based on user role - UPDATED: Operator columns come before Status
-    const columns = useMemo(() => [
-        { id: "orderNo", label: "Order No" },
-        { id: "unitNo", label: "Unit No" },
-        { id: "date", label: "Date" },
-        { id: "party", label: "Party Name" },
-        { id: "boxSize", label: "Box Size" },
-        { id: "ply", label: "Ply" },
-        { id: "noOfBox", label: "Piece" },
-        { id: "dyenumber", label: "Dye Number" },
-        { id: "dyesize", label: "Dye Size" },
-        { id: "status", label: "Status" },
-        { id: "action", label: "Actions" },
-    ], []);
+  const columns = useMemo(() => [
+    { id: "orderNo", label: "Order No" },
+    { id: "unitNo", label: "Unit No" },
+    { id: "date", label: "Date" },
+    { id: "party", label: "Party Name" },
+    { id: "boxSize", label: "Box Size" },
+    { id: "ply", label: "Ply" },
+    { id: "deckal", label: "Deckal" },
+    { id: "noOfBox", label: "Piece" },
+    { id: "kantan", label: "Kantan" },
+    { id: "pendingBox", label: "Pending Box" },
+    { id: "completedBox", label: "Completed Box" },
+    { id: "status", label: "Status" },
+    { id: "action", label: "Actions" },
+  ], []);
 
-    const { companyName, staffId, startDate: st, endDate: ed } = router.query
-    const refreshData = () => {
-        if (canViewGlobal) {
-            dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate: st, endDate: ed }))
-        } else if (canViewOwn && user?.id) {
-            dispatch(getQPOrdersByStaffIdThunk(user?.id))
-        }
-    };
+  const { companyName, staffId, startDate: st, endDate: ed } = router.query
+  const refreshData = () => {
+    if (canViewGlobal) {
+      dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate: st, endDate: ed }))
+    } else if (canViewOwn && user?.id) {
+      dispatch(getQPOrdersByStaffIdThunk(user?.id))
+    }
+  };
 
-    const formatDate = (dateString: string) => {
-        try {
-            const date = new Date(dateString)
-            return moment(date).format('DD/MM/YY')
-        } catch {
-            return dateString
-        }
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString)
+      return moment(date).format('DD/MM/YY')
+    } catch {
+      return dateString
+    }
+  }
+
+  // Helper function to get field value based on column ID
+  const getFieldValue = (order: OrderRow, columnId: string): string => {
+    switch (columnId) {
+      case "orderNo":
+        return order.orderNo || "N/A";
+      case "party":
+        return order.party?.partyName || "N/A";
+      case "boxSize":
+        return `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`;
+      case "noOfBox":
+        return order.noOfPieces?.toString() || "N/A";
+      case "ply":
+        return order.orderdata?.ply || "N/A";
+      case "top":
+        return order.orderdata?.paper1GSM || "N/A";
+      case "corogation":
+        return order.orderdata?.paper2GSM || "N/A";
+      case "bottom":
+        return order.orderdata?.paper3GSM || "N/A";
+      case "deckal":
+        return order.orderdata?.deckal || "N/A";
+      case "cuttingLength":
+        return order.cuttingLength
+          ? order.cuttingLength
+          : order.orderdata?.length && order.orderdata?.width
+            ? (Number(order.orderdata.length) + Number(order.orderdata.width) + 2).toString()
+            : "N/A";
+      case "noOfSheetut":
+        return order.noOfPieces
+          ? (Number(order.noOfPieces) * 2).toString()
+          : "N/A";
+      case "liner":
+        return order.orderdata?.ply
+          ? (Number(order.orderdata.ply) - 1).toString()
+          : "N/A";
+      case "noofliner":
+        return order.orderdata?.ply && order.noOfPieces
+          ? (Number(order.noOfPieces) * 2 * (Number(order.orderdata.ply) - 1)).toString()
+          : "N/A";
+      case "totalKG":
+        return order.totalKg || "N/A";
+      case "kgOfPaper":
+        return `${order?.paperKG?.paper1?.totalKg || "N/A"} - ${order?.paperKG?.paper2?.totalKg || "N/A"} - ${order?.paperKG?.paper3?.totalKg || "N/A"}`;
+      case "status":
+        return order.status || "N/A";
+      case "noOfPeice":
+        return order.noOfPieces?.toString() || "N/A";
+      case "unitNo":
+        return order.unitNo || "N/A";
+      case "dyenumber":
+        return order.dyeNumber || "NO";
+      case "dyesize":
+        return order.dyeSize || "NO";
+      case "kantan":
+        return order.kantan?.kantanName || "N/A";
+      case "completedBox":
+        return order.completedPunchingBoxCount?.toString() || "N/A";
+      case "pendingBox":
+        // Calculate pending boxes = Total pieces - Completed boxes
+        const totalPieces = order.noOfPieces || 0;
+        const completedBoxes = order.completedPunchingBoxCount || 0;
+        const pendingBoxes = Math.max(0, totalPieces - completedBoxes);
+        return pendingBoxes.toString();
+      default:
+        return "N/A";
+    }
+  };
+
+
+  // Safe string conversion for search
+  const safeToString = (value: any): string => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return value.toString();
+    if (typeof value === 'boolean') return value.toString();
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  };
+
+  // Filter orders based on selected unit
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order: OrderRow) => {
+      // Date range filter
+      const matchesDateRange =
+        (!startDate || new Date(order.createdAt) >= new Date(startDate).setHours(0, 0, 0, 0)) &&
+        (!endDate || new Date(order.createdAt) <= new Date(endDate).setHours(23, 59, 59, 999))
+
+      // Unit filter
+      const matchesUnit =
+        !selectedUnit ||
+        order.unitNo === selectedUnit;
+
+      // Search filter - search across all visible fields
+      const matchesSearch = searchQuery
+        ? columns.some(column => {
+          const value = getFieldValue(order, column.id);
+          return safeToString(value).toLowerCase().includes(searchQuery.toLowerCase());
+        }) ||
+        safeToString(order.companyName?.companyName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.party?.partyName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.ply).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.paper1GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.paper2GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.orderdata?.paper3GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.noOfPieces).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.totalKg).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.kantan?.kantanName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.status).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.unitNo).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeToString(order.cuttingLength).toLowerCase().includes(searchQuery.toLowerCase())
+        : true
+
+      // Column filters
+      const matchesFilters = Object.keys(filters).every((columnId) => {
+        if (filters[columnId].length === 0) return true
+
+        const value = getFieldValue(order, columnId);
+        return value && value !== "N/A" && filters[columnId].includes(value.toString())
+      })
+
+      return matchesDateRange && matchesUnit && matchesSearch && matchesFilters;
+    })
+  }, [orders, startDate, endDate, selectedUnit, searchQuery, filters, columns])
+
+
+  const getUniqueValues = useMemo(() => {
+    if (!selectedFilterField) return []
+
+    const columnId = columns.find(col => col.label === selectedFilterField)?.id
+    if (!columnId) return []
+
+    const values = orders.map((order: OrderRow) => {
+      return getFieldValue(order, columnId)
+    })
+
+    return Array.from(new Set(values)).filter((v) => v !== "N/A").sort()
+  }, [selectedFilterField, orders, columns])
+
+  useEffect(() => {
+    if (!companies.length) dispatch(getAllCompaniesThunk(true))
+  }, [])
+
+  useEffect(() => {
+    const token = authService.getToken()
+    if (!token) {
+      router.push("/login")
+      return
+    }
+    if (!orders.length) {
+      refreshData()
+    }
+  }, [dispatch, router, canViewGlobal, canViewOwn, user?.id])
+
+  const renderExpandedRow = (row: OrderRow) => {
+    if (!canViewGlobal) return null;
+    return <ExpandedRowForm row={row} setEditData={setEditData} setOpen={setOpen} />;
+  };
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error, dispatch]);
+
+  const handleSaveRowData = async (row: OrderRow) => {
+    const pieceValue = pieceInputs[row._id];
+    const completedBoxValue = completedBoxInputs[row._id];
+
+    // Check if at least one value has changed
+    const currentPieceValue = row.operatorNoOfPieces?.toString() || "";
+    const currentCompletedBoxValue = row.completedPunchingBoxCount?.toString() || "0";
+
+    const isPieceChanged = pieceValue !== undefined && pieceValue !== currentPieceValue;
+    const isCompletedBoxChanged = completedBoxValue !== undefined && completedBoxValue !== currentCompletedBoxValue;
+
+    // If no changes, show message
+    if (!isPieceChanged && !isCompletedBoxChanged) {
+      toast.info("No changes to save");
+      return;
     }
 
-    // Helper function to get field value based on column ID
-    const getFieldValue = (order: OrderRow, columnId: string): string => {
-        switch (columnId) {
-            case "orderNo":
-                return order.orderNo || "N/A";
-            case "party":
-                return order.party?.partyName || "N/A";
-            case "boxSize":
-                return `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`;
-            case "noOfBox":
-                return order.noOfPieces?.toString() || "N/A";
-            case "ply":
-                return order.orderdata?.ply || "N/A";
-            case "top":
-                return order.orderdata?.paper1GSM || "N/A";
-            case "corogation":
-                return order.orderdata?.paper2GSM || "N/A";
-            case "bottom":
-                return order.orderdata?.paper3GSM || "N/A";
-            case "deckal":
-                return order.orderdata?.deckal || "N/A";
-            case "cuttingLength":
-                return order.cuttingLength
-                    ? order.cuttingLength
-                    : order.orderdata?.length && order.orderdata?.width
-                        ? (Number(order.orderdata.length) + Number(order.orderdata.width) + 2).toString()
-                        : "N/A";
-            case "noOfSheetut":
-                return order.noOfPieces
-                    ? (Number(order.noOfPieces) * 2).toString()
-                    : "N/A";
-            case "liner":
-                return order.orderdata?.ply
-                    ? (Number(order.orderdata.ply) - 1).toString()
-                    : "N/A";
-            case "noofliner":
-                return order.orderdata?.ply && order.noOfPieces
-                    ? (Number(order.noOfPieces) * 2 * (Number(order.orderdata.ply) - 1)).toString()
-                    : "N/A";
-            case "totalKG":
-                return order.totalKg || "N/A";
-            case "kgOfPaper":
-                return `${order?.paperKG?.paper1?.totalKg || "N/A"} - ${order?.paperKG?.paper2?.totalKg || "N/A"} - ${order?.paperKG?.paper3?.totalKg || "N/A"}`;
-            case "status":
-                return order.status || "N/A";
-            case "noOfPeice":
-                return order.noOfPieces?.toString() || "N/A";
-            case "unitNo":
-                return order.unitNo || "N/A";
-            case "dyenumber":
-                return order.dyeNumber || "NO";
-            case "dyesize":
-                return order.dyeSize || "NO";
-            case "kantan":
-                return order.kantan?.kantanName || "N/A";
-            default:
-                return "N/A";
-        }
-    };
+    // Validate at least one value is entered
+    if (!pieceValue && !completedBoxValue) {
+      toast.error("Please enter at least one value before saving");
+      return;
+    }
 
+    // Prepare update data object
+    const updateData: any = {};
 
-    // Safe string conversion for search
-    const safeToString = (value: any): string => {
-        if (value === null || value === undefined) return "";
-        if (typeof value === 'string') return value;
-        if (typeof value === 'number') return value.toString();
-        if (typeof value === 'boolean') return value.toString();
-        if (typeof value === 'object') return JSON.stringify(value);
-        return String(value);
-    };
+    // Add operatorNoOfPieces if entered and changed
+    if (pieceValue && isPieceChanged) {
+      const pieceNum = parseInt(pieceValue);
+      if (isNaN(pieceNum) || pieceNum < 0) {
+        toast.error("Please enter a valid number for pieces");
+        return;
+      }
 
-    // Filter orders based on selected unit
-    const filteredOrders = useMemo(() => {
-        return orders.filter((order: OrderRow) => {
-            // Date range filter
-            const matchesDateRange =
-                (!startDate || new Date(order.createdAt) >= new Date(startDate).setHours(0, 0, 0, 0)) &&
-                (!endDate || new Date(order.createdAt) <= new Date(endDate).setHours(23, 59, 59, 999))
+      // Calculate paper KG if piece value is entered
+      const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
+        parseFloat(row?.orderdata?.length || "0"),
+        parseFloat(row.orderdata?.width || "0"),
+        parseFloat(row.orderdata?.height || "0"),
+        parseFloat(row.orderdata?.deckal || "0"),
+        parseInt(row.orderdata?.ply || "0"),
+        parseFloat(row.orderdata?.paper3GSM || "0"),
+        parseFloat(row.orderdata?.paper2GSM || "0"),
+        parseFloat(row.orderdata?.paper1GSM || "0"),
+        pieceNum
+      );
 
-            // Unit filter
-            const matchesUnit =
-                !selectedUnit ||
-                order.unitNo === selectedUnit;
+      // Build operatorPaperKG
+      const operatorPaperKG = {
+        paper1: {
+          deckal: row.orderdata?.deckal,
+          gsm: row.orderdata?.paper1GSM,
+          totalKg: paper3Kg?.toFixed(2).toString(),
+        },
+        paper2: {
+          deckal: row.orderdata?.deckal,
+          gsm: row.orderdata?.paper2GSM,
+          totalKg: paper2Kg?.toFixed(2).toString(),
+        },
+        paper3: {
+          deckal: row.orderdata?.deckal,
+          gsm: row.orderdata?.paper3GSM,
+          totalKg: paper1Kg?.toFixed(2).toString(),
+        },
+      };
 
-            // Search filter - search across all visible fields
-            const matchesSearch = searchQuery
-                ? columns.some(column => {
-                    const value = getFieldValue(order, column.id);
-                    return safeToString(value).toLowerCase().includes(searchQuery.toLowerCase());
-                }) ||
-                safeToString(order.companyName?.companyName).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.party?.partyName).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.orderdata?.ply).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.orderdata?.paper1GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.orderdata?.paper2GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.orderdata?.paper3GSM).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.noOfPieces).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.totalKg).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.kantan?.kantanName).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.status).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.unitNo).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                safeToString(order.cuttingLength).toLowerCase().includes(searchQuery.toLowerCase())
-                : true
+      updateData.operatorNoOfPieces = pieceNum;
+      updateData.operatorPaperKG = operatorPaperKG;
+      updateData.operatorTotalKg = totalKgss?.toFixed(2).toString();
+    }
 
-            // Column filters
-            const matchesFilters = Object.keys(filters).every((columnId) => {
-                if (filters[columnId].length === 0) return true
+    // Add completedBoxCount if entered and changed
+    if (completedBoxValue && isCompletedBoxChanged) {
+      const completedBoxNum = parseInt(completedBoxValue);
+      if (isNaN(completedBoxNum) || completedBoxNum < 0) {
+        toast.error("Please enter a valid number for completed boxes");
+        return;
+      }
 
-                const value = getFieldValue(order, columnId);
-                return value && value !== "N/A" && filters[columnId].includes(value.toString())
-            })
+      // Validate completed boxes don't exceed total pieces
+      if (completedBoxNum > (row.noOfPieces || 0)) {
+        toast.error("Completed boxes cannot exceed total pieces");
+        return;
+      }
 
-            return matchesDateRange && matchesUnit && matchesSearch && matchesFilters;
+      updateData.completedPunchingBoxCount = completedBoxNum;
+    }
+
+    try {
+      await dispatch(
+        updateQPOrderThunk({
+          id: row._id,
+          data: updateData,
         })
-    }, [orders, startDate, endDate, selectedUnit, searchQuery, filters, columns])
+      ).unwrap();
 
-    const getUniqueValues = useMemo(() => {
-        if (!selectedFilterField) return []
+      // Update local states
+      if (pieceValue && isPieceChanged) {
+        setPieceInputs(prev => ({ ...prev, [row._id]: pieceValue }));
+      }
+      if (completedBoxValue && isCompletedBoxChanged) {
+        setCompletedBoxInputs(prev => ({ ...prev, [row._id]: completedBoxValue }));
+      }
 
-        const columnId = columns.find(col => col.label === selectedFilterField)?.id
-        if (!columnId) return []
+      // Refresh data
+      refreshData();
+      toast.success("Data saved successfully");
 
-        const values = orders.map((order: OrderRow) => {
-            return getFieldValue(order, columnId)
-        })
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save data");
+    }
+  };
 
-        return Array.from(new Set(values)).filter((v) => v !== "N/A").sort()
-    }, [selectedFilterField, orders, columns])
 
-    useEffect(() => {
-        if (!companies.length) dispatch(getAllCompaniesThunk(true))
-    }, [])
+  // Function to get row background color based on unit
+  const getRowBackgroundColor = (row: OrderRow) => {
+    if (row?.unitNo === 'Unit1') {
+      return 'rgba(59, 130, 246, 0.1)'; // Light blue for unit 1
+    } else if (row?.unitNo === 'Unit2') {
+      return 'rgba(34, 197, 94, 0.1)'; // Light green for unit 2
+    }
+    return 'transparent'; // Default background
+  };
 
-    useEffect(() => {
-        const token = authService.getToken()
-        if (!token) {
-            router.push("/login")
-            return
-        }
-        if (!orders.length) {
-            refreshData()
-        }
-    }, [dispatch, router, canViewGlobal, canViewOwn, user?.id])
-
-    const renderExpandedRow = (row: OrderRow) => {
-        if (!canViewGlobal) return null;
-        return <ExpandedRowForm row={row} setEditData={setEditData} setOpen={setOpen} />;
-    };
-
-    useEffect(() => {
-        if (error) {
-            toast.error(error);
-        }
-    }, [error, dispatch]);
-
-    const handleSavePieces = async (row: OrderRow) => {
-
-        const value = pieceInputs[row._id];
-        if (!value) {
-            toast.error("Please enter a number before saving");
-            return;
-        }
-
-        const { paper1Kg, paper2Kg, paper3Kg, totalKgss } = calculatePaperKg(
-            parseFloat(row?.orderdata?.length),
-            parseFloat(row.orderdata.width),
-            parseFloat(row.orderdata.height),
-            parseFloat(row.orderdata.deckal),
-            parseInt(row.orderdata.ply),
-            parseFloat(row.orderdata.paper3GSM),
-            parseFloat(row.orderdata.paper2GSM),
-            parseFloat(row.orderdata.paper1GSM),
-            Number(value)
-        );
-
-        // 📝 build payload for operatorPaperKG
-        const operatorPaperKG = {
-            paper1: {
-                deckal: row.orderdata.deckal,
-                gsm: row.orderdata.paper1GSM,
-                totalKg: paper3Kg?.toFixed(2).toString(),
-            },
-            paper2: {
-                deckal: row.orderdata.deckal,
-                gsm: row.orderdata.paper2GSM,
-                totalKg: paper2Kg?.toFixed(2).toString(),
-            },
-            paper3: {
-                deckal: row.orderdata.deckal,
-                gsm: row.orderdata.paper3GSM,
-                totalKg: paper1Kg?.toFixed(2).toString(),
-            },
-        };
-        const operatorTotalKg = totalKgss?.toFixed(2).toString()
-
-        try {
-            await dispatch(
-                updateQPOrderThunk({
-                    id: row._id,
-                    data: {
-                        operatorNoOfPieces: Number(value),
-                        operatorPaperKG,
-                        operatorTotalKg,
-                    },
-                })
-            ).unwrap();
-            // Set local input to the saved value for immediate UI feedback
-            setPieceInputs(prev => ({ ...prev, [row._id]: value }));
-            // Refresh data to update the table with new values from backend
-            refreshData();
-            toast.success("Data saved successfully");
-        } catch (err: any) {
-            toast.error(err?.message || "Failed to save pieces");
-        }
-    };
-    // Handle saving cutting length
-    const handleSaveCuttingLength = async (row: OrderRow) => {
-        const cuttingLength = cuttingLengthInputs[row._id];
-
-        if (!cuttingLength) {
-            toast.error("Please enter a cutting length before saving");
-            return;
-        }
-        // Validate that it's a positive number
-        const cuttingLengthNum = parseFloat(cuttingLength);
-        if (isNaN(cuttingLengthNum) || cuttingLengthNum <= 0) {
-            toast.error("Please enter a valid positive number for cutting length");
-            return;
-        }
-        try {
-            await dispatch(
-                updateQPOrderThunk({
-                    id: row._id,
-                    data: {
-                        cuttingLength: cuttingLength,
-                    },
-                })
-            ).unwrap();
-
-            // Set local input to the saved value for immediate UI feedback
-            setCuttingLengthInputs(prev => ({
-                ...prev,
-                [row._id]: cuttingLength
-            }));
-
-            // Refresh data to update the table with new values from backend
-            refreshData();
-            toast.success("Cutting length updated successfully");
-
-        } catch (err: any) {
-            toast.error(err?.message || "Failed to update cutting length");
-        }
-    };
-    // Function to get row background color based on unit
-    const getRowBackgroundColor = (row: OrderRow) => {
-        if (row?.unitNo === 'Unit1') {
-            return 'rgba(59, 130, 246, 0.1)'; // Light blue for unit 1
-        } else if (row?.unitNo === 'Unit2') {
-            return 'rgba(34, 197, 94, 0.1)'; // Light green for unit 2
-        }
-        return 'transparent'; // Default background
-    };
-
-    if (loading) return <Loader />
+  if (loading) return <Loader />
 
     return (
         <>
@@ -655,6 +682,40 @@ const OperatorView = () => {
                                 </Typography>
                             </TableCell>
 
+                            <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                                            <Typography
+                                              sx={{
+                                                fontWeight: 600,
+                                                color: (row.noOfPieces || 0) - (row.completedPunchingBoxCount || 0) > 0
+                                                  ? "#DC2626" // Red for pending boxes
+                                                  : "#22C55E", // Green when all completed
+                                                fontSize: "14px"
+                                              }}
+                                            >
+                                              {Math.max(0, (row.noOfPieces || 0) - (row.completedPunchingBoxCount || 0))}
+                                            </Typography>
+                                          </TableCell>
+
+                                          <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
+                                                          <ThemeInput
+                                                            placeholder="Completed"
+                                                            type="number"
+                                                            sx={{ width: 70, padding: "0" }}
+                                                            value={
+                                                              completedBoxInputs[row._id] !== undefined
+                                                                ? completedBoxInputs[row._id]
+                                                                : row.completedPunchingBoxCount || ""
+                                                            }
+                                                            onChange={(e) =>
+                                                              setCompletedBoxInputs((prev) => ({ ...prev, [row._id]: e.target.value }))
+                                                            }
+                                                            inputProps={{
+                                                              max: row.noOfPieces || 0,
+                                                              min: 0
+                                                            }}
+                                                          />
+                                                        </TableCell>
+
                             {/* Status */}
                             <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
                                 <StatusCell row={row} />
@@ -662,25 +723,25 @@ const OperatorView = () => {
 
                             {/* Actions */}
                             <TableCell sx={{ backgroundColor: rowBackgroundColor }}>
-                                <Box display="flex" gap={1}>
-                                    <ThemeButton
-                                        size="small"
-                                        onClick={() => handleSavePieces(row)}
-                                    >
-                                        Save
-                                    </ThemeButton>
-                                    <ThemeButton
-                                        size="small"
-                                        variant="outlined"
-                                        onClick={() => {
-                                            setRemarksRow(row);
-                                            setRemarksOpen(true);
-                                        }}
-                                    >
-                                        Show Remarks
-                                    </ThemeButton>
-                                </Box>
-                            </TableCell>
+                <Box display="flex" gap={1}>
+                  <ThemeButton
+                    size="small"
+                    onClick={() => handleSaveRowData(row)}
+                  >
+                    Save
+                  </ThemeButton>
+                  <ThemeButton
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      setRemarksRow(row);
+                      setRemarksOpen(true);
+                    }}
+                  >
+                    Show Remarks
+                  </ThemeButton>
+                </Box>
+              </TableCell>
                         </>);
                     }}
                 />
