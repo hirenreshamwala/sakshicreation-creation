@@ -229,7 +229,6 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         ...(!isSakshiCreation && { partyType: undefined })
       };
 
-
       setIsLoading(true);
       try {
         if (isEditMode && accountId) {
@@ -283,6 +282,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         await dispatch(getAllStaffThunk());
         if (isEditMode && accountId) {
           const result:any = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
+          console.log(result,'result')
 
           const resultCompany = companies.find(comp => comp._id === result.companyName);
           const isResultSakshiCreation = resultCompany?.companyName === "Sakshi Creation";
@@ -290,7 +290,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
           formik.setValues({
             ...result,
             companyName: result.companyName || "",
-            partyName: result.partyName || "",
+            partyName: result.party?._id || "",
             ownerName: validateString(result.ownerName),
             ownerMobileNo: result.ownerMobileNo || "",
             ownerWhatsAppNo: result.ownerWhatsAppNo || "",

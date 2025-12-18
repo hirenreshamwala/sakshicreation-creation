@@ -49,4 +49,20 @@ export const partyService = {
       throw new Error(error.response?.data?.message || "Failed to fetch Quality Packaging parties");
     }
   },
+  async getPartyById(id: string): Promise<ApiResponse<Party>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Party>> = await Request.get(
+        `${Endpoint.GET_PARTY_BY_Id}/${id}`
+      );
+
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Party by ID service error:", error);
+      throw new Error(error.response?.data?.message || "Failed to fetch party by ID");
+    }
+  },
 }

@@ -24,6 +24,10 @@ import CompanySelect from "../reusablecomponents/CompanyWithPartyName";
 import { useRouter } from "next/router";
 import { toast } from "react-toastify";
 import { StaticCompanyOptions } from "@/constants";
+import moment from "moment";
+
+// API service import - आपके project के structure के according adjust करें
+import { partyService } from "@/services/party.service"; // या जहाँ भी आपकी party API service हो
 
 interface OptionType {
   label: string;
@@ -44,9 +48,11 @@ interface AssignTaskDialogProps {
   toggleScDialog?: any;
   toggleQpDialog?: any;
   companyTab?: any;
+  partyOptions?: OptionType[];
+  companyOptions?: OptionType[];
+  accountMasters?: any[];
+  rowData?: any;
 }
-
-
 
 const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   open,
@@ -58,23 +64,24 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   companyOptions,
   toggleScDialog,
   toggleQpDialog,
-  accountMasters,
+  accountMasters = [],
   rowData,
   companyTab
 }) => {
   const router = useRouter()
   const dispatch = useAppDispatch();
-  const singleAssignTask = rowData
+  const singleAssignTask = rowData;
+
   const {
-    // accountMasters = [],
     loading: accountLoading,
     error: accountError,
   } = useAppSelector((state) => state.accountMasters || {});
+
   const { staffList = [], loading: staffLoading, error: staffError } = useAppSelector(
     (state) => state.staff || {}
   );
+
   const {
-    // singleAssignTask,
     loading: taskLoading,
     error: taskError,
     successMessage,
@@ -83,14 +90,11 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   const [isLoading, setIsLoading] = useState(false);
   const [inputReasonOpen, setInputReasonOpen] = useState(false);
   const [customReason, setCustomReason] = useState("");
-  const [partyDetails, setPartyDetails] = useState({
-    unitNo: "",
-    marketName: "",
-    area: "",
-    ownerWhatsAppNo: "",
-  });
+  const [isFetchingParty, setIsFetchingParty] = useState(false);
+
   const isEditMode = !!taskId;
   const isBulkMode = selectedParties.length > 0;
+
   const getValidationSchema = (isBulkMode: boolean) =>
     Yup.object({
       companyName: isBulkMode
@@ -148,6 +152,10 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
       feedback: "",
       status: "Pending",
       rescheduleDate: "",
+      unitNo: "",
+      marketName: "",
+      area: "",
+      ownerWhatsAppNo: "",
     },
     validationSchema: getValidationSchema(isBulkMode),
     validateOnBlur: false,
@@ -176,15 +184,9 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
               } as UpdateAssignTask,
             })
           ).unwrap();
-          toast.success("Task updated successfully")
-          // Swal.fire({
-          //   title: "Success!",
-          //   text: "Task updated successfully",
-          //   icon: "success",
-          //   confirmButtonColor: "#7F56D9",
-          // });
+          toast.success("Task updated successfully");
 
-         if (values.reasonForVisit === "Order" && companyTab === 0 && values.status === "Completed") toggleScDialog()
+          if (values.reasonForVisit === "Order" && companyTab === 0 && values.status === "Completed") toggleScDialog()
           if (values.reasonForVisit === "Order" && companyTab === 1 && values.status === "Completed") toggleQpDialog()
           if (refreshData) refreshData();
         // } else if (isBulkMode) {
@@ -245,7 +247,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
         }
         handleClose();
       } catch (err: any) {
-        console.error("Update error:", err); // Debug log
+        console.error("Update error:", err);
         Swal.fire({
           title: "Error!",
           text: err.message || "Operation failed",
@@ -267,7 +269,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
     ],
     []
   );
-
 
   useEffect(() => {
     if (open && router.pathname === "/admin/account-master/view-company/[id]") {
@@ -308,12 +309,11 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
       }));
   }, [staffList, formik.values.reasonForVisit]);
 
-
   const reasonOptions = useMemo(
     () => [
       { label: "Delivery", value: "Delivery" },
       { label: "Get Payment", value: "Get Payment" },
-      { label: "Visit", value: "Get Visit" },
+      { label: "Visit", value: "Visit" },
       { label: "Order", value: "Order" },
       { label: "Complain", value: "Complain" },
       { label: "Sample Approval", value: "Sample Approval" },
@@ -322,46 +322,107 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
     []
   );
 
+  // Function to fetch party details by ID
+  const fetchPartyDetails = async (partyId: string) => {
+    if (!partyId) return;
+
+    setIsFetchingParty(true);
+    try {
+      // API call to get party details
+      const partyData = await partyService.getPartyById(partyId);
+
+      if (partyData && partyData.success) {
+        const party = partyData.data;
+
+        // Set party details in form
+        formik.setFieldValue("unitNo", party.address?.unitNo || "", false);
+        formik.setFieldValue("marketName", party.address?.marketName?.marketName || "", false);
+        formik.setFieldValue("area", party.address?.area?.area || "", false);
+        formik.setFieldValue("ownerWhatsAppNo", party.ownerWhatsAppNo || "", false);
+
+        // Auto-assign to staff if available
+        const createdById = party.createdBy?._id || "";
+        if (createdById) {
+          const isSalesStaff = staffList.find(
+            (staff) => staff._id === createdById && staff.role?.roleName === "Sales Staff"
+          );
+          if (isSalesStaff) {
+            formik.setFieldValue("assignTo", createdById, false);
+          }
+        }
+
+      } else {
+        console.error("Failed to fetch party details");
+        // Clear party details if fetch fails
+        formik.setFieldValue("unitNo", "", false);
+        formik.setFieldValue("marketName", "", false);
+        formik.setFieldValue("area", "", false);
+        formik.setFieldValue("ownerWhatsAppNo", "", false);
+      }
+    } catch (error) {
+      console.error("Error fetching party details:", error);
+      toast.error("Failed to fetch party details");
+
+      // Clear party details on error
+      formik.setFieldValue("unitNo", "", false);
+      formik.setFieldValue("marketName", "", false);
+      formik.setFieldValue("area", "", false);
+      formik.setFieldValue("ownerWhatsAppNo", "", false);
+    } finally {
+      setIsFetchingParty(false);
+    }
+  };
+
   const handleCompanyChange = (event: any, newValue: any) => {
     if (isBulkMode) return;
     const companyId = newValue ? newValue.value : "";
     formik.setFieldValue("companyName", companyId, false);
     formik.setFieldValue("partyName", "", false);
     formik.setFieldValue("assignTo", "", false);
-    setPartyDetails({
-      unitNo: "",
-      marketName: "",
-      area: "",
-      ownerWhatsAppNo: "",
-    });
+    formik.setFieldValue("unitNo", "", false);
+    formik.setFieldValue("marketName", "", false);
+    formik.setFieldValue("area", "", false);
+    formik.setFieldValue("ownerWhatsAppNo", "", false);
   };
 
   const handlePartyChange = (event: any, newValue: any) => {
     if (isBulkMode) return;
+
     const partyId = newValue ? newValue.value : "";
     formik.setFieldValue("partyName", partyId, false);
 
-    const selectedParty = accountMasters?.find((account) => account.party?._id === partyId);
-    const createdById = selectedParty?.createdBy?._id || "";
-    if (createdById) {
-      const isSalesStaff = staffList.find(
-        (staff) => staff._id === createdById && staff.role?.roleName === "Sales Staff"
-      );
-      if (isSalesStaff) {
-        formik.setFieldValue("assignTo", createdById, false);
-      } else {
-        formik.setFieldValue("assignTo", "", false);
-      }
-    } else {
-      formik.setFieldValue("assignTo", "", false);
-    }
+    // Clear previous party details immediately
+    formik.setFieldValue("unitNo", "", false);
+    formik.setFieldValue("marketName", "", false);
+    formik.setFieldValue("area", "", false);
+    formik.setFieldValue("ownerWhatsAppNo", "", false);
+    formik.setFieldValue("assignTo", "", false);
 
-    setPartyDetails({
-      unitNo: selectedParty?.party?.address?.unitNo || "",
-      marketName: selectedParty?.party?.address?.marketName || "",
-      area: selectedParty?.party?.address?.area || "",
-      ownerWhatsAppNo: selectedParty?.party?.ownerWhatsAppNo || "",
-    });
+    // If party is selected, fetch details
+    if (partyId) {
+      fetchPartyDetails(partyId);
+    }
+  };
+
+  // Function to fetch party details for edit mode
+  const fetchPartyDetailsForEdit = async (partyId: string) => {
+    if (!partyId) return;
+
+    try {
+      const partyData = await partyService.getPartyById(partyId);
+
+      if (partyData && partyData.success) {
+        const party = partyData.data;
+
+        formik.setFieldValue("unitNo", party.address?.unitNo || "", false);
+        formik.setFieldValue("marketName", party.address?.marketName?.marketName || "", false);
+        formik.setFieldValue("area", party.address?.area?.area || "", false);
+        formik.setFieldValue("ownerWhatsAppNo", party.ownerWhatsAppNo || "", false);
+
+      }
+    } catch (error) {
+      console.error("Error fetching party details in edit mode:", error);
+    }
   };
 
   useEffect(() => {
@@ -372,12 +433,10 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
       if (!isEditMode && !isBulkMode) {
         formik.resetForm();
         setCustomReason("");
-        setPartyDetails({
-          unitNo: "",
-          marketName: "",
-          area: "",
-          ownerWhatsAppNo: "",
-        });
+        formik.setFieldValue("unitNo", "", false);
+        formik.setFieldValue("marketName", "", false);
+        formik.setFieldValue("area", "", false);
+        formik.setFieldValue("ownerWhatsAppNo", "", false);
       }
       dispatch(clearSuccessMessage());
       dispatch(clearError());
@@ -385,23 +444,11 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   }, [open, isEditMode, taskId, isBulkMode, dispatch]);
 
   useEffect(() => {
-    if (open && formik.values.partyName) {
-      const selectedParty = accountMasters?.find((account) => account.party?._id === formik.values.partyName);
-      setPartyDetails({
-        unitNo: selectedParty?.party?.address?.unitNo || "",
-        marketName: selectedParty?.party?.address?.marketName || "",
-        area: selectedParty?.party?.address?.area || "",
-        ownerWhatsAppNo: selectedParty?.party?.ownerWhatsAppNo || "",
-      });
-    }
-  }, [open, formik.values.partyName, accountMasters]);
-
-  useEffect(() => {
     if (isEditMode && singleAssignTask && taskId === singleAssignTask._id) {
       const assignToId =
-        typeof singleAssignTask.assignTo === "string"
-          ? singleAssignTask.assignTo
-          : singleAssignTask.assignTo?._id || "";
+        typeof singleAssignTask.AssignTo === "string"
+          ? singleAssignTask.AssignTo
+          : singleAssignTask.AssignTo?._id || "";
       const partyNameId =
         typeof singleAssignTask.partyName === "string"
           ? singleAssignTask.partyName
@@ -420,42 +467,41 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
       const newValues = {
         companyName: companyNameId,
         partyName: partyNameId,
-        date: singleAssignTask.date ? new Date(singleAssignTask.date).toISOString()?.split("T")[0] : "",
-        time: singleAssignTask.time || "",
+        date: singleAssignTask.date ? moment(singleAssignTask.taskDate).format("YYYY-MM-DD") : "",
+        time: singleAssignTask.time === "" ? "" : singleAssignTask.time,
         reasonForVisit: singleAssignTask.reasonForVisit || "",
         remarks: singleAssignTask.remarks || "",
-        assignTo: assignToId,
+        assignTo: singleAssignTask.AssignTo?._id,
         visitDate,
         visitTime: singleAssignTask.visitTime || "",
         feedback: singleAssignTask.feedback || "",
         status: singleAssignTask.status || "Pending",
         rescheduleDate,
+        unitNo: "", // Initially empty, will be fetched
+        marketName: "", // Initially empty, will be fetched
+        area: "", // Initially empty, will be fetched
+        ownerWhatsAppNo: "", // Initially empty, will be fetched
       };
 
       if (JSON.stringify(formik.values) !== JSON.stringify(newValues)) {
         formik.setValues(newValues, false);
       }
 
-      const selectedParty = accountMasters?.find((account) => account.party?._id === partyNameId);
-      setPartyDetails({
-        unitNo: selectedParty?.party?.address?.unitNo || "",
-        marketName: selectedParty?.party?.address?.marketName || "",
-        area: selectedParty?.party?.address?.area || "",
-        ownerWhatsAppNo: selectedParty?.party?.ownerWhatsAppNo || "",
-      });
+      // Fetch party details for edit mode
+      if (partyNameId) {
+        fetchPartyDetailsForEdit(partyNameId);
+      }
 
       if (!reasonOptions.some((opt) => opt.value === singleAssignTask.reasonForVisit)) {
         setCustomReason(singleAssignTask.reasonForVisit || "");
       }
     } else if (isBulkMode && selectedParties.length > 0) {
-      setPartyDetails({
-        unitNo: "",
-        marketName: "",
-        area: "",
-        ownerWhatsAppNo: "",
-      });
+      formik.setFieldValue("unitNo", "", false);
+      formik.setFieldValue("marketName", "", false);
+      formik.setFieldValue("area", "", false);
+      formik.setFieldValue("ownerWhatsAppNo", "", false);
     }
-  }, [isEditMode, taskId, singleAssignTask?._id, isBulkMode, selectedParties.length, accountMasters]);
+  }, [isEditMode, taskId, singleAssignTask?._id, isBulkMode, selectedParties.length]);
 
   useEffect(() => {
     if (open && taskError) {
@@ -510,12 +556,10 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
     formik.resetForm();
     setCustomReason("");
     setInputReasonOpen(false);
-    setPartyDetails({
-      unitNo: "",
-      marketName: "",
-      area: "",
-      ownerWhatsAppNo: "",
-    });
+    formik.setFieldValue("unitNo", "", false);
+    formik.setFieldValue("marketName", "", false);
+    formik.setFieldValue("area", "", false);
+    formik.setFieldValue("ownerWhatsAppNo", "", false);
     onClose();
   };
 
@@ -577,6 +621,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
                 onPartyChange={handlePartyChange}
                 partyError={formik.touched.partyName && Boolean(formik.errors.partyName)}
                 partyHelperText={formik.touched.partyName && formik.errors.partyName}
+                disabled={isFetchingParty}
               />
             </Box>
           )}
@@ -586,30 +631,58 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
               <ThemeInput
                 labelName="Unit No"
                 type="text"
-                value={partyDetails.unitNo}
+                value={formik.values.unitNo}
                 disabled
                 fullWidth
+                InputProps={{
+                  endAdornment: isFetchingParty ? (
+                    <Typography variant="caption" color="textSecondary">
+                      Loading...
+                    </Typography>
+                  ) : null
+                }}
               />
               <ThemeInput
                 labelName="Market Name"
                 type="text"
-                value={partyDetails.marketName?.marketName}
+                value={formik.values.marketName}
                 disabled
                 fullWidth
+                InputProps={{
+                  endAdornment: isFetchingParty ? (
+                    <Typography variant="caption" color="textSecondary">
+                      Loading...
+                    </Typography>
+                  ) : null
+                }}
               />
               <ThemeInput
                 labelName="Area"
                 type="text"
-                value={partyDetails?.area?.area}
+                value={formik.values.area}
                 disabled
                 fullWidth
+                InputProps={{
+                  endAdornment: isFetchingParty ? (
+                    <Typography variant="caption" color="textSecondary">
+                      Loading...
+                    </Typography>
+                  ) : null
+                }}
               />
               <ThemeInput
                 labelName="Owner WhatsApp No"
                 type="text"
-                value={partyDetails.ownerWhatsAppNo}
+                value={formik.values.ownerWhatsAppNo}
                 disabled
                 fullWidth
+                InputProps={{
+                  endAdornment: isFetchingParty ? (
+                    <Typography variant="caption" color="textSecondary">
+                      Loading...
+                    </Typography>
+                  ) : null
+                }}
               />
             </Stack>
           )}
@@ -625,7 +698,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
               error={formik.touched.date && Boolean(formik.errors.date)}
               helperText={formik.touched.date && formik.errors.date}
               fullWidth
-              disabled={isEditMode}
               required
             />
             <ThemeInput
@@ -653,6 +725,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
               helperText={formik.touched.assignTo && formik.errors.assignTo}
               required
               sx={{ mb: 3 }}
+              disabled={isFetchingParty}
             />
           </Stack>
 
@@ -731,30 +804,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
           {isEditMode && (
             <>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
-                {/* <ThemeInput
-                  labelName="Visit Date"
-                  type="date"
-                  value={formik.values.visitDate}
-                  onChange={(e) => formik.setFieldValue("visitDate", e.target.value, false)} // Avoid triggering validation
-                  onBlur={() => formik.setFieldTouched("visitDate", true)}
-                  name="visitDate"
-                  error={formik.touched.visitDate && Boolean(formik.errors.visitDate)}
-                  helperText={formik.touched.visitDate && formik.errors.visitDate}
-                  fullWidth
-                />
-                <ThemeInput
-                  labelName="Visit Time"
-                  type="time"
-                  value={formik.values.visitTime}
-                  onChange={(e) => formik.setFieldValue("visitTime", e.target.value, false)} // Avoid triggering validation
-                  onBlur={() => formik.setFieldTouched("visitTime", true)}
-                  name="visitTime"
-                  error={formik.touched.visitTime && Boolean(formik.errors.visitTime)}
-                  helperText={formik.touched.visitTime && formik.errors.visitTime}
-                  fullWidth
-                /> */}
-              </Stack>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
                 <ThemeSelect
                   label="Status"
                   options={statusOptions}
@@ -803,7 +852,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
                   required
                   rows={3}
                 />
-
               </Box>
             </>
           )}
@@ -821,7 +869,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
               mt: 1,
               "&:hover": { background: "#7B06C2" },
             }}
-            disabled={isLoading || formik.isSubmitting}
+            disabled={isLoading || formik.isSubmitting || isFetchingParty}
           >
             {isLoading || formik.isSubmitting
               ? isEditMode
