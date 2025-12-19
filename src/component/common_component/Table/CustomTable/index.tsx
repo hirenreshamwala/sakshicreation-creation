@@ -199,7 +199,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
     if (setCurrentFilterState) {
       setCurrentFilterState((prev: any) => ({
         ...prev,
-        filters: newFilters?.filters,
+        filters: newFilters,
         page: 1,
       }));
     }

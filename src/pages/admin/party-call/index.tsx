@@ -159,7 +159,7 @@ const LeadManagementPage: React.FC = () => {
   const hasSakshi = !!getCompanyWisePermission(5);
   const hasQP = !!getCompanyWisePermission(6);
   const hasBothCompanies = getCompanyWisePermission(0);
-  const { staffId: si, status: s, reason: r, c, companyName: routerCompanyName,startDate: st, endDate: e } = router.query;
+  const { staffId: si, status: s, reason: r, c, companyName: routerCompanyName, startDate: st, endDate: e } = router.query;
 
   // Company tab से company name निकालें
   const selectedCompany = useMemo(() => {
@@ -310,6 +310,18 @@ const LeadManagementPage: React.FC = () => {
     }
   }, [searchQuery, filters, si, r, selectedCompanyId, selectedStatus, canViewOwn, canViewGlobal, currentUserName, startDate, endDate]);
 
+  const sortDatesDesc = (dates: { date: string; count: number }[]) => {
+    return dates.sort((a, b) => {
+      const [da, ma, ya] = a.date.split('/').map(Number);
+      const [db, mb, yb] = b.date.split('/').map(Number);
+
+      const dateA = new Date(ya, ma - 1, da);
+      const dateB = new Date(yb, mb - 1, db);
+
+      return dateB.getTime() - dateA.getTime(); // Latest first
+    });
+  };
+
   const fetchDates = useCallback(async () => {
     setLoadingDates(true);
     try {
@@ -366,10 +378,14 @@ const LeadManagementPage: React.FC = () => {
       const response = res.res.data;
 
       if (response.success) {
-        setAvailableDates(response.dates || []);
+
+        // 🔥 SORT HERE (latest → oldest)
+        const sortedDates = sortDatesDesc(response.dates || []);
+
+        setAvailableDates(sortedDates);
 
         const newPagination: DatePaginationState = {};
-        response.dates.forEach((dateInfo: { date: string, count: number }) => {
+        sortedDates.forEach((dateInfo: { date: string, count: number }) => {
           newPagination[dateInfo.date] = {
             currentPage: 1,
             itemsPerPage: ITEMS_PER_PAGE,
@@ -380,10 +396,11 @@ const LeadManagementPage: React.FC = () => {
         });
         setDatePagination(newPagination);
 
-        response.dates.forEach((dateInfo: { date: string }) => {
+        sortedDates.forEach((dateInfo: { date: string }) => {
           fetchLeadsForDate(dateInfo.date, 1, ITEMS_PER_PAGE);
         });
       }
+
     } catch (error) {
       console.error('Error fetching dates:', error);
       toast.error('Failed to fetch lead dates');
