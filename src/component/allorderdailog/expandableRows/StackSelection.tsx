@@ -40,10 +40,10 @@ function StackSelection({ formData, row, isCompleted }: any) {
       const res: any = await inventoryService.getInventoryBoxSummery(data);
       if (res?.success) {
         const godownOptions = res?.data?.godown?.inArray?.filter(
-          (item: any) => item?.usedBox !== undefined && item?.quantity > item?.usedBox
+          (item: any) => (item?.quantity ?? 0) > (item?.usedBox ?? 0)
         );
         const factoryOptions = res?.data?.factory?.inArray?.filter(
-          (item: any) => item?.usedBox !== undefined && item?.quantity > item?.usedBox
+          (item: any) => (item?.quantity ?? 0) > (item?.usedBox ?? 0)
         );
         setGodownInventory(godownOptions);
         setFactoryInventory(factoryOptions);
