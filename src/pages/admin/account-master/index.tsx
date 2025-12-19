@@ -21,7 +21,6 @@ import { getCompanyWisePermission } from "@/utills/utills";
 import moment from "moment";
 import CustomTable from "@/component/common_component/Table/CustomTable";
 import { accountMasterService } from "@/services/accountMaster.service";
-import { companyNameService } from "@/services/companyName.service";
 import _ from "lodash";
 import { StaticCompanyOptions } from "@/constants";
 import { useAppDispatch, useAppSelector } from "@/store";
@@ -107,7 +106,7 @@ const AccountMasterPage: React.FC = memo(() => {
     page: 1,
     pageSize: 10,
     searchQuery: "",
-    filters: { company: [StaticCompanyOptions[companyTab]], status: ["APPROVED"] },
+    filters: {},
     includeCounts: true,
     isPagination: true,
     dateRange: { start: null, end: null },
@@ -191,6 +190,13 @@ const AccountMasterPage: React.FC = memo(() => {
     setError(null);
 
     try {
+      const payload = {
+        ...currentFilterState, filters: {
+          ...currentFilterState.filters,
+          company: [StaticCompanyOptions[companyTab]],
+          status: statusTab === 0 ? ["APPROVED"] : ["PENDING"]
+        }
+      }
       if (canViewGlobal && router.isReady) {
         const params: any = {};
         if (companyName) params.companyName = companyName;
@@ -199,12 +205,13 @@ const AccountMasterPage: React.FC = memo(() => {
         if (e) params.endDate = e;
         if (p) params.partyTag = p.toString().split(",").map((x: string) => x.toLowerCase());
 
-        const data = await accountMasterService.getAccountMasters({ ...params, ...currentFilterState, isPagination: true, includeCounts: true });
+
+        const data = await accountMasterService.getAccountMasters({ ...params, ...payload, isPagination: true, includeCounts: true });
         setAccountMasters(data.data);
         setResponseState(data.pagination)
         setAppliedFilterState(currentFilterState)
       } else if (canViewOwn && user?.id) {
-        const data = await accountMasterService.getAccountMasterByStaffId(user.id, { ...currentFilterState, filters: { ...currentFilterState.filters, createdBy: [`${user.firstName} ${user.lastName}`] }, isPagination: true, includeCounts: true });
+        const data = await accountMasterService.getAccountMasterByStaffId(user.id, { ...payload, filters: { ...payload.filters, createdBy: [`${user.firstName} ${user.lastName}`] }, isPagination: true, includeCounts: true });
         setAccountMasters(data.data);
         setResponseState({ ...data.pagination, counts: data.counts })
         setAppliedFilterState(currentFilterState)
@@ -236,30 +243,6 @@ const AccountMasterPage: React.FC = memo(() => {
       setCurrentFilterState((prev: any) => ({ ...prev, filters: { ...prev.filters, company: [c] } }));
     }
   }, [c]);
-
-  useEffect(() => {
-    const updates: any = {};
-
-    if (companyTab !== null && companyTab !== undefined) {
-      updates.company = [StaticCompanyOptions[companyTab]];
-    }
-
-    if (statusTab !== null && statusTab !== undefined) {
-      updates.status =
-        statusTab === 0 ? ["APPROVED"] :
-          statusTab === 1 ? ["PENDING"] : [];
-    }
-
-    if (Object.keys(updates).length > 0) {
-      setCurrentFilterState(prev => ({
-        ...prev,
-        filters: {
-          ...prev.filters,
-          ...updates,
-        },
-      }));
-    }
-  }, [companyTab, statusTab]);
 
   useEffect(() => {
     if (error) toast.error(error);

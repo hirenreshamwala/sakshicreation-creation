@@ -38,7 +38,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   selectedField,
   defaultAccountMasterFilter,
   onFieldSelect,
-  onFieldOpen, // This prop should be here
+  onFieldOpen,
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,10 +67,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     onFieldSelect(field);
     setSearchQuery("");
 
-    // Call API when field is selected
     if (onFieldOpen) {
       await onFieldOpen(field);
-    } else {
     }
   };
 
@@ -84,22 +82,23 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
   const handleApplyFilter = () => {
     if (selectedField) {
-      const newFilters = {
-        ...filters,
-        [selectedField]: tempSelectedValues.length > 0 ? tempSelectedValues : [],
-      };
-      if (newFilters[selectedField].length === 0) {
+      const newFilters = { ...filters };
+      
+      if (tempSelectedValues.length > 0) {
+        newFilters[selectedField] = tempSelectedValues;
+      } else {
+        // Remove the key if no values selected
         delete newFilters[selectedField];
       }
+      
       onFiltersChange(newFilters);
     }
     handleClose();
   };
 
   const handleClearFilter = () => {
-    // onFiltersChange({});
-    // onFiltersChange(defaultAccountMasterFilter?.filters || {});
-    onFiltersChange(defaultAccountMasterFilter); // FIXED: Reset to empty filters object
+    // Reset to default filters or empty object
+    onFiltersChange(defaultAccountMasterFilter?.filters || {});
     onFieldSelect(null);
     setTempSelectedValues([]);
     handleClose();
@@ -118,10 +117,14 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     )
     : [];
 
+  // Check if there are any active filters
+  const hasActiveFilters = Object.keys(filters).length > 0 && 
+    Object.values(filters).some(arr => arr.length > 0);
+
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
       {/* Filter chips and Clear All button */}
-      {Object.keys(filters).length > 0 && (
+      {hasActiveFilters && (
         <Stack direction="row" alignItems="center" spacing={1} useFlexGap flexWrap="wrap">
           <Button
             variant="text"
@@ -158,7 +161,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
           borderColor: "#D0D5DD",
           fontWeight: 700,
           minWidth: 110,
-          ml: Object.keys(filters).length > 0 ? 1 : 0,
+          ml: hasActiveFilters ? 1 : 0,
         }}
       >
         Filters
