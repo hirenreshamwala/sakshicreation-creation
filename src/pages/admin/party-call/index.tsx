@@ -571,14 +571,14 @@ const LeadManagementPage: React.FC = () => {
             src={row.companyName?.avatar}
             alt={row.companyName?.companyName || "Company"}
           />
-          <Typography fontWeight={500} sx={{ fontSize: 14 }}>
+          {/* <Typography fontWeight={500} sx={{ fontSize: 14 }}>
             {row.companyName?.companyName || "N/A"}
             {row.isRescheduledCall && (
               <Tooltip title={`Rescheduled from ${new Date(row.originalLeadId?.date).toLocaleDateString('en-GB')}`}>
                 <ThemeChip label="Rescheduled" color="warning" size="small" sx={{ ml: 1, background: "#FFFAEB", color: "#B54708" }} />
               </Tooltip>
             )}
-          </Typography>
+          </Typography> */}
         </Box>
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>
@@ -710,7 +710,7 @@ const LeadManagementPage: React.FC = () => {
               setEndDate(null);
             }}
           >
-            Clear Date Range
+            Clear Range
           </ThemeButton>
         </Box>
 

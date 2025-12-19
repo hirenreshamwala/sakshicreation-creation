@@ -406,8 +406,8 @@ const AccountMasterPage: React.FC = memo(() => {
     mobile: account.party?.ownerMobileNo || "N/A",
     reason: account.reasonToVisit || "N/A",
     unitno: account.party?.address?.unitNo || "N/A",
-    market: account.party?.address?.marketName || account.party?.address?.marketName?.marketName,
-    area: account.party?.address?.area || account.party?.address?.area?.area,
+    market:account.party?.address?.marketName?.marketName|| account.party?.address?.marketName || "N/A",
+    area: account.party?.address?.area?.area || account.party?.address?.area || "N/A",
     remarks: account.latestTask?.remarks || "N/A",
     status: account.latestTask?.status || "Not Started",
     statusType: mapStatusToType(account.latestTask?.status || "Not Started"),
@@ -531,7 +531,7 @@ const AccountMasterPage: React.FC = memo(() => {
               <TableCell>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Avatar src={row.company.avatar} alt={row.company.name} sx={{ width: 28, height: 28 }} />
-                  <Typography fontWeight={100} fontSize={14}>{row.company.name}</Typography>
+                  {/* <Typography fontWeight={100} fontSize={14}>{row.company.name}</Typography> */}
                 </Box>
               </TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.createdDate}</TableCell>

@@ -695,10 +695,10 @@ const AssignTaskPage: React.FC = () => {
               alt={row.company.name}
             />
             <Box>
-              <Typography fontWeight={500} sx={{ fontSize: 14 }}>
+              {/* <Typography fontWeight={500} sx={{ fontSize: 14 }}>
                 {row.company.name}
-              </Typography>
-              {row.isRescheduledTask && (
+              </Typography> */}
+              {/* {row.isRescheduledTask && (
                 <Tooltip title={`Rescheduled from ${row.originalTaskDate}`}>
                   <ThemeChip
                     label="Rescheduled"
@@ -713,7 +713,7 @@ const AssignTaskPage: React.FC = () => {
                     }}
                   />
                 </Tooltip>
-              )}
+              )} */}
             </Box>
           </Box>
         </TableCell>
@@ -931,7 +931,7 @@ const AssignTaskPage: React.FC = () => {
               setEndDate(null);
             }}
           >
-            Clear Date Range
+            Clear Range
           </ThemeButton>
         </Box>
 

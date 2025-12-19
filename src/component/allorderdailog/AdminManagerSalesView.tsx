@@ -665,7 +665,7 @@ const AdminManagerSalesView = () => {
               setEndDate(null)
             }}
           >
-            Clear Date Range
+            Clear Range
           </ThemeButton>
         </Box>
 

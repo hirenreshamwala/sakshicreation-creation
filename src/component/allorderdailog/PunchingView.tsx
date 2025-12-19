@@ -480,7 +480,7 @@ const OperatorView = () => {
                             setEndDate(null)
                         }}
                     >
-                        Clear Date Range
+                        Clear Range
                     </ThemeButton>
 
                     {/* Unit Filter Buttons */}

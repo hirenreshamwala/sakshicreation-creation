@@ -413,7 +413,7 @@ const DriverView = () => {
             <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
                 <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                     <DateRangePicker startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
-                    <ThemeButton onClick={() => { setStartDate(null); setEndDate(null); }}>Clear Date Range</ThemeButton>
+                    <ThemeButton onClick={() => { setStartDate(null); setEndDate(null); }}>Clear Range</ThemeButton>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <Box sx={{ display: "flex", alignItems: "center", border: "1px solid #D0D5DD", borderRadius: 2, px: 1.5, width: 200, height: 35 }}>

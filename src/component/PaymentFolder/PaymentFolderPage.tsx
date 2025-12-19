@@ -368,9 +368,9 @@ const PaymentFolderPage: React.FC = () => {
             src={row.company?.avatar}
             alt={row.company?.companyName}
           />
-          <Typography fontWeight={500} sx={{ fontSize: 14 }}>
+          {/* <Typography fontWeight={500} sx={{ fontSize: 14 }}>
             {row.company?.companyName}
-          </Typography>
+          </Typography> */}
         </Box>
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.party}</TableCell>

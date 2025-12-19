@@ -515,7 +515,7 @@ const AllOrdersPage = () => {
                     sx={{ width: 32, height: 32 }}
                     alt={row.companyName?.companyName || "Company"}
                   />
-                  <Typography
+                  {/* <Typography
                     fontWeight={600}
                     fontSize="14px"
                     color="#111827"
@@ -523,7 +523,7 @@ const AllOrdersPage = () => {
                     onClick={canViewGlobal ? () => handleRowClick(row) : undefined}
                   >
                     {row.companyName?.companyName || "N/A"}
-                  </Typography>
+                  </Typography> */}
                 </Box>
               </TableCell>
               <TableCell>

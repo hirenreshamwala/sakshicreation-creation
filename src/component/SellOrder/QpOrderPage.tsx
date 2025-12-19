@@ -510,7 +510,7 @@ const SellOrderQpOrderPage = () => {
                             setEndDate(null)
                         }}
                     >
-                        Clear Date Range
+                        Clear Range
                     </ThemeButton>
                 </Box>
 
