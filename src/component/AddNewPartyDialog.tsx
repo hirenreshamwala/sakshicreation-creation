@@ -290,7 +290,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
           formik.setValues({
             ...result,
             companyName: result.companyName || "",
-            partyName: result.party || "",
+            partyName: result.party?.partyName || "",
+            partyId: result.party?._id || "",
             ownerName: validateString(result.ownerName),
             ownerMobileNo: result.ownerMobileNo || "",
             ownerWhatsAppNo: result.ownerWhatsAppNo || "",

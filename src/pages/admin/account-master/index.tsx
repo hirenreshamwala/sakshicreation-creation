@@ -457,7 +457,11 @@ const AccountMasterPage: React.FC = memo(() => {
   const handleCompanyTabChange = (tab: number) => {
     setCompanyTab(tab);
     setCurrentFilterState({ ...defaultAccountMasterFilter, companyTab: tab });
-    // setAppliedFilterState({ ...defaultAccountMasterFilter, companyTab: tab });
+  };
+
+  const handleStatusTabChange = (tab: number) => {
+    setStatusTab(tab);
+    setCurrentFilterState({ ...defaultAccountMasterFilter, statusTab: tab });
   };
 
   return (
@@ -485,7 +489,7 @@ const AccountMasterPage: React.FC = memo(() => {
         }}
       >
         <Box sx={{ flex: "0 1 auto", minWidth: 200 }}>
-          <TabComponent activeTab={statusTab} setActiveTab={setStatusTab} tabList={tabLabelsWithCount} align="left" />
+          <TabComponent activeTab={statusTab} setActiveTab={handleStatusTabChange} tabList={tabLabelsWithCount} align="left" />
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           {canViewGlobal && <ThemeButton onClick={handleAddNew}>+ Add New Party</ThemeButton>}
