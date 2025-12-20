@@ -152,7 +152,7 @@ const AssignTaskPage: React.FC = () => {
   const [qpDialog, setQpDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusTab, setStatusTab] = useState(0);
-  const [rowData,setRowData] = useState<RowData | null>(null);
+  const [rowData, setRowData] = useState<RowData | null>(null);
   const [tempEditId, setTempEditId] = useState<string | null>(null);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
@@ -412,7 +412,7 @@ const AssignTaskPage: React.FC = () => {
 
     try {
       const queryParams: any = {
-        companyName: selectedCompanyId,
+        companyName: StaticCompanyOptions[companyTab],
         status: selectedStatus,
         staffId: si,
         reason: r,
@@ -641,7 +641,7 @@ const AssignTaskPage: React.FC = () => {
           : task.createdAt
       ).toLocaleDateString("en-GB"),
       // Date:task.date,
-      taskDate:task.date,
+      taskDate: task.date,
       reason: task.reasonForVisit || "N/A",
       party: task.partyName?.partyName || "Unknown",
       partyId: task.partyName?._id || "Unknown",
@@ -654,7 +654,7 @@ const AssignTaskPage: React.FC = () => {
         ? `${task.partyName.createdBy.firstName} ${task.partyName.createdBy.lastName}`
         : "Unknown",
       feedback: task.feedback || "N/A",
-      AssignTo:task.assignTo,
+      AssignTo: task.assignTo,
       assignTo: task.assignTo
         ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
         : "Unassigned",
@@ -790,9 +790,10 @@ const AssignTaskPage: React.FC = () => {
         </TableCell>
         <TableCell sx={getCellSx({ display: "flex" })}>
           {canedit && (
-            <IconButton color="primary" onClick={() =>{
+            <IconButton color="primary" onClick={() => {
               setRowData(row)
-               handleEdit(row.id)}}>
+              handleEdit(row.id)
+            }}>
               <EditIcon />
             </IconButton>
           )}
@@ -1091,7 +1092,7 @@ const AssignTaskPage: React.FC = () => {
                     page={currentPage}
                     handlePageChange={(dates, page) => handlePageChange(dates, page)}
                     date={date}
-                    showHeaderCheckbox={true}
+                    showHeaderCheckbox={false}
                     onSelectAll={(event: React.ChangeEvent<HTMLInputElement>) => handleSelectAllTasks(event)}
                     onSelectRow={(id: string) => handleSelectTask(id)}
                     selectedRows={selectedTaskIds}

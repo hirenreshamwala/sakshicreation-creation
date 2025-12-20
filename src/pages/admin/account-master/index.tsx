@@ -114,7 +114,8 @@ const AccountMasterPage: React.FC = memo(() => {
     companyTab: 0,
     startDate: null,
     endDate: null,
-    search: ""
+    search: "",
+    companyTab: companyTab
   }
   const [currentFilterState, setCurrentFilterState] = useState<any>(defaultAccountMasterFilter);
   const [appliedFilterState, setAppliedFilterState] = useState<any>(defaultAccountMasterFilter);
@@ -389,7 +390,7 @@ const AccountMasterPage: React.FC = memo(() => {
     mobile: account.party?.ownerMobileNo || "N/A",
     reason: account.reasonToVisit || "N/A",
     unitno: account.party?.address?.unitNo || "N/A",
-    market:account.party?.address?.marketName?.marketName|| account.party?.address?.marketName || "N/A",
+    market: account.party?.address?.marketName?.marketName || account.party?.address?.marketName || "N/A",
     area: account.party?.address?.area?.area || account.party?.address?.area || "N/A",
     remarks: account.latestTask?.remarks || "N/A",
     status: account.latestTask?.status || "Not Started",
@@ -453,11 +454,17 @@ const AccountMasterPage: React.FC = memo(() => {
     }
   };
 
+  const handleCompanyTabChange = (tab: number) => {
+    setCompanyTab(tab);
+    setCurrentFilterState({ ...defaultAccountMasterFilter, companyTab: tab });
+    // setAppliedFilterState({ ...defaultAccountMasterFilter, companyTab: tab });
+  };
+
   return (
     <>
       {hasBothCompanies && (
         <Box sx={{ mb: 2 }}>
-          <TabComponent activeTab={companyTab} setActiveTab={setCompanyTab} />
+          <TabComponent activeTab={companyTab} setActiveTab={handleCompanyTabChange} />
         </Box>
       )}
 

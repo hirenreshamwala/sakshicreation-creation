@@ -883,6 +883,7 @@ const LeadManagementPage: React.FC = () => {
                       showFillter={false}
                       renderRow={renderRow}
                       count={count}
+                      showHeaderCheckbox={false}
                       page={currentPage}
                       handlePageChange={handlePageChange}
                       date={date}
