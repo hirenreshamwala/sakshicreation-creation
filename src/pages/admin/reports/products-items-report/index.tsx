@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, TableCell } from '@mui/material';
+import { Box, Typography, Button, TableCell, Alert } from '@mui/material';
 import BasicTable from '@/component/common_component/Table/themetable';
 import DateRangePicker from '@/component/daterangepicker';
 import moment from 'moment';
@@ -22,38 +22,43 @@ interface FlatRow {
   orderCount: number;
 }
 
+interface ProductItemsApiResponse {
+  success: boolean;
+  message: string;
+  data?: StaffProductData[];
+}
+
 const ProductsItemsReportPage = () => {
-  const [startDate, setStartDate] = useState<Date | null>(moment().subtract(30, 'days').toDate());
-  const [endDate, setEndDate] = useState<Date | null>(moment().toDate());
+  const defaultStartDate = moment().subtract(30, 'days').toDate();
+  const defaultEndDate = moment().toDate();
+
+  const [startDate, setStartDate] = useState<Date | null>(defaultStartDate);
+  const [endDate, setEndDate] = useState<Date | null>(defaultEndDate);
 
   const [dateRange, setDateRange] = useState({
-    startDate: moment().subtract(30, 'days').format('YYYY-MM-DD'),
-    endDate: moment().format('YYYY-MM-DD'),
+    startDate: moment(defaultStartDate).format('YYYY-MM-DD'),
+    endDate: moment(defaultEndDate).format('YYYY-MM-DD'),
   });
 
-  const [reportData, setReportData] = useState<StaffProductData[]>([]);
-  const [flatData, setFlatData] = useState<FlatRow[]>([]); // Flat list for table
+  const [flatData, setFlatData] = useState<FlatRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [apiMessage, setApiMessage] = useState<string | null>(null);
+  const [hasData, setHasData] = useState(false);
 
-  // Fixed columns - simple 3 columns
   const columns = [
     { id: 'staffName', label: 'Staff Name' },
     { id: 'productName', label: 'Product Name' },
     { id: 'orderCount', label: 'Order Count' },
   ];
 
-  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setError(null);
+      setApiMessage(null);
+      setHasData(false);
       try {
-        const response = await reportService.getProductItemsReport(dateRange);
-        if (response.success && response.data) {
-          setReportData(response.data);
-
-          // Convert to flat rows (ek staff na multiple products -> multiple rows)
+        const response: ProductItemsApiResponse = await reportService.getProductItemsReport(dateRange);
+        if (response.success && response.data && response.data.length > 0) {
           const flattened: FlatRow[] = [];
           response.data.forEach(staff => {
             staff.products.forEach(product => {
@@ -67,21 +72,22 @@ const ProductsItemsReportPage = () => {
 
           // Optional: Sort by staff name then product name
           flattened.sort((a, b) => {
-            if (a.staffName !== b.staffName) {
-              return a.staffName.localeCompare(b.staffName);
-            }
+            if (a.staffName !== b.staffName) return a.staffName.localeCompare(b.staffName);
             return a.productName.localeCompare(b.productName);
           });
 
           setFlatData(flattened);
+          setHasData(true);
         } else {
-          setReportData([]);
           setFlatData([]);
+          setHasData(false);
+          setApiMessage(response.message || 'No product items data found for the selected date range.');
         }
       } catch (err: any) {
-        console.error('API Error:', err);
-        setError(err.message || 'Failed to fetch data');
+        console.error('Error fetching product items report:', err);
         setFlatData([]);
+        setHasData(false);
+        setApiMessage(err.message || 'Failed to load data. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -99,37 +105,26 @@ const ProductsItemsReportPage = () => {
     }
   };
 
+  const handleClearDateRange = () => {
+    setStartDate(defaultStartDate);
+    setEndDate(defaultEndDate);
+    setDateRange({
+      startDate: moment(defaultStartDate).format('YYYY-MM-DD'),
+      endDate: moment(defaultEndDate).format('YYYY-MM-DD'),
+    });
+  };
+
   const displayedDateRange = startDate && endDate
     ? `${moment(startDate).format('DD/MM/YYYY')} - ${moment(endDate).format('DD/MM/YYYY')}`
     : 'Select date range';
 
-  // Loading / Error / Empty
+  const isDateRangeChanged = !(
+    moment(startDate).isSame(defaultStartDate, 'day') &&
+    moment(endDate).isSame(defaultEndDate, 'day')
+  );
+
   if (loading) {
     return <Typography>Loading product items report...</Typography>;
-  }
-
-  if (error) {
-    return <Typography color="error">Error: {error}</Typography>;
-  }
-
-  if (flatData.length === 0) {
-    return (
-      <div>
-        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-            sx={{ flexGrow: 1, maxWidth: 400 }}
-          />
-          <Button variant="contained" color="primary" onClick={handleApplyDateRange}>
-            Apply
-          </Button>
-        </Box>
-        <Typography>No data available for selected date range.</Typography>
-      </div>
-    );
   }
 
   return (
@@ -146,13 +141,24 @@ const ProductsItemsReportPage = () => {
         <Button variant="contained" color="primary" onClick={handleApplyDateRange}>
           Apply
         </Button>
+        {isDateRangeChanged && (
+          <Button variant="outlined" color="error" onClick={handleClearDateRange}>
+            Clear
+          </Button>
+        )}
       </Box>
 
       <Typography variant="subtitle1" sx={{ mb: 2, color: '#555' }}>
         Showing data for: <strong>{displayedDateRange}</strong>
       </Typography>
 
-      {/* Simple Table with Flat Data */}
+      {apiMessage && !hasData && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          {apiMessage}
+        </Alert>
+      )}
+
+      {hasData && flatData.length > 0 && (
       <BasicTable
         tableHeader={columns}
         rowData={flatData}
@@ -161,12 +167,13 @@ const ProductsItemsReportPage = () => {
           <>
             <TableCell sx={{ fontWeight: 'medium' }}>{row.staffName}</TableCell>
             <TableCell>{row.productName}</TableCell>
-            <TableCell  sx={{ fontWeight: 'bold' }}>
+            <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>
               {row.orderCount}
             </TableCell>
           </>
         )}
       />
+      )}
     </div>
   );
 };

@@ -17,20 +17,20 @@ const columns = [
 const PrintersPage = () => {
   const router = useRouter();
 
-  // Date picker states (Date objects)
-  const [startDate, setStartDate] = useState<Date | null>(moment().subtract(30, 'days').toDate());
-  const [endDate, setEndDate] = useState<Date | null>(moment().toDate());
+  const defaultStartDate = moment().subtract(30, 'days').toDate();
+  const defaultEndDate = moment().toDate();
 
-  // Formatted date range for API (YYYY-MM-DD)
+  const [startDate, setStartDate] = useState<Date | null>(defaultStartDate);
+  const [endDate, setEndDate] = useState<Date | null>(defaultEndDate);
+
   const [dateRange, setDateRange] = useState({
-    startDate: moment().subtract(30, 'days').format('YYYY-MM-DD'),
-    endDate: moment().format('YYYY-MM-DD'),
+    startDate: moment(defaultStartDate).format('YYYY-MM-DD'),
+    endDate: moment(defaultEndDate).format('YYYY-MM-DD'),
   });
 
   const [printers, setPrinters] = useState<PrinterPerformance[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch data on mount and when dateRange changes
   useEffect(() => {
     fetchPrinterData();
   }, [dateRange]);
@@ -60,19 +60,30 @@ const PrintersPage = () => {
   // Apply button handler
   const handleApplyDateRange = () => {
     if (startDate && endDate) {
-      const newDateRange = {
+      setDateRange({
         startDate: moment(startDate).format('YYYY-MM-DD'),
         endDate: moment(endDate).format('YYYY-MM-DD'),
-      };
-      setDateRange(newDateRange);
-      // fetchPrinterData will be triggered automatically by useEffect
+      });
     }
   };
 
-  // Display formatted selected range
+  const handleClearDateRange = () => {
+    setStartDate(defaultStartDate);
+    setEndDate(defaultEndDate);
+    setDateRange({
+      startDate: moment(defaultStartDate).format('YYYY-MM-DD'),
+      endDate: moment(defaultEndDate).format('YYYY-MM-DD'),
+    });
+  };
+
   const displayedDateRange = startDate && endDate
     ? `${moment(startDate).format('DD/MM/YYYY')} - ${moment(endDate).format('DD/MM/YYYY')}`
     : 'Select date range';
+
+  const isDateRangeChanged = !(
+    moment(startDate).isSame(defaultStartDate, 'day') &&
+    moment(endDate).isSame(defaultEndDate, 'day')
+  );
 
   if (loading && printers.length === 0) {
     return <Typography>Loading printer data...</Typography>;
@@ -80,7 +91,6 @@ const PrintersPage = () => {
 
   return (
     <>
-      {/* Date Range Picker + Apply Button */}
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <DateRangePicker
           startDate={startDate}
@@ -92,27 +102,24 @@ const PrintersPage = () => {
         <Button variant="contained" color="primary" onClick={handleApplyDateRange}>
           Apply
         </Button>
+        {isDateRangeChanged && (
+          <Button variant="outlined" color="error" onClick={handleClearDateRange}>
+            Clear
+          </Button>
+        )}
       </Box>
 
-      {/* Show selected date range */}
       <Typography variant="subtitle1" sx={{ mb: 2, color: '#555' }}>
         Showing data for: <strong>{displayedDateRange}</strong>
       </Typography>
 
-      {/* Table */}
       <BasicTable
         tableHeader={columns}
         rowData={printers}
-        showDatePicker={false} 
-        renderRow={(row: any) => (
+        showDatePicker={false}
+        renderRow={(row: PrinterPerformance) => (
           <>
-            <TableCell>
-              <Box sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1 }}>
-                {row.name}
-                {/* Optional chevron if row is clickable */}
-                {/* <FaChevronRight size={14} /> */}
-              </Box>
-            </TableCell>
+            <TableCell>{row.name}</TableCell>
             <TableCell>{row.totalAssignedOrders}</TableCell>
             <TableCell>{row.printingCompletedCount}</TableCell>
             <TableCell>{row.pendingOrdersCount}</TableCell>

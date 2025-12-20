@@ -14,20 +14,20 @@ const columns = [
 ];
 
 const BinderPage = () => {
-  // Date picker states (Date objects)
-  const [startDate, setStartDate] = useState<Date | null>(moment().subtract(30, 'days').toDate());
-  const [endDate, setEndDate] = useState<Date | null>(moment().toDate());
+  const defaultStartDate = moment().subtract(30, 'days').toDate();
+  const defaultEndDate = moment().toDate();
 
-  // Formatted date range for API
+  const [startDate, setStartDate] = useState<Date | null>(defaultStartDate);
+  const [endDate, setEndDate] = useState<Date | null>(defaultEndDate);
+
   const [dateRange, setDateRange] = useState({
-    startDate: moment().subtract(30, 'days').format('YYYY-MM-DD'),
-    endDate: moment().format('YYYY-MM-DD'),
+    startDate: moment(defaultStartDate).format('YYYY-MM-DD'),
+    endDate: moment(defaultEndDate).format('YYYY-MM-DD'),
   });
 
   const [binders, setBinders] = useState<BinderPerformance[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch data whenever dateRange changes
   useEffect(() => {
     fetchBinderData();
   }, [dateRange]);
@@ -46,21 +46,32 @@ const BinderPage = () => {
     }
   };
 
-  // Apply button handler
   const handleApplyDateRange = () => {
     if (startDate && endDate) {
-      const newDateRange = {
+      setDateRange({
         startDate: moment(startDate).format('YYYY-MM-DD'),
         endDate: moment(endDate).format('YYYY-MM-DD'),
-      };
-      setDateRange(newDateRange);
+      });
     }
   };
 
-  // Display formatted selected range
+  const handleClearDateRange = () => {
+    setStartDate(defaultStartDate);
+    setEndDate(defaultEndDate);
+    setDateRange({
+      startDate: moment(defaultStartDate).format('YYYY-MM-DD'),
+      endDate: moment(defaultEndDate).format('YYYY-MM-DD'),
+    });
+  };
+
   const displayedDateRange = startDate && endDate
     ? `${moment(startDate).format('DD/MM/YYYY')} - ${moment(endDate).format('DD/MM/YYYY')}`
     : 'Select date range';
+
+  const isDateRangeChanged = !(
+    moment(startDate).isSame(defaultStartDate, 'day') &&
+    moment(endDate).isSame(defaultEndDate, 'day')
+  );
 
   if (loading && binders.length === 0) {
     return <Typography>Loading binder data...</Typography>;
@@ -68,7 +79,6 @@ const BinderPage = () => {
 
   return (
     <>
-      {/* Date Range Picker + Apply Button */}
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <DateRangePicker
           startDate={startDate}
@@ -80,25 +90,24 @@ const BinderPage = () => {
         <Button variant="contained" color="primary" onClick={handleApplyDateRange}>
           Apply
         </Button>
+        {isDateRangeChanged && (
+          <Button variant="outlined" color="error" onClick={handleClearDateRange}>
+            Clear
+          </Button>
+        )}
       </Box>
 
-      {/* Show selected date range */}
       <Typography variant="subtitle1" sx={{ mb: 2, color: '#555' }}>
         Showing data for: <strong>{displayedDateRange}</strong>
       </Typography>
 
-      {/* Table */}
       <BasicTable
         tableHeader={columns}
         rowData={binders}
-        showDatePicker={false} 
+        showDatePicker={false}
         renderRow={(row: BinderPerformance) => (
           <>
-            <TableCell>
-              <Box sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1 }}>
-                {row.name}
-              </Box>
-            </TableCell>
+            <TableCell>{row.name}</TableCell>
             <TableCell>{row.totalAssignedOrders}</TableCell>
             <TableCell>{row.bindingCompletedCount}</TableCell>
             <TableCell>{row.pendingOrdersCount}</TableCell>

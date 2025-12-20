@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import BasicTable from '@/component/common_component/Table/themetable';
 import { TableCell, Box, Typography, Button } from '@mui/material';
-import DateRangePicker from '@/component/daterangepicker';  // Your custom component
+import DateRangePicker from '@/component/daterangepicker';
 import moment from 'moment';
 import { reportService, DesignerPerformance } from '@/services/reportService';
 
@@ -19,23 +19,23 @@ const columns = [
 const DesignerPage = () => {
   const router = useRouter();
 
-  // State for Date objects (used by DateRangePicker)
-  const [startDate, setStartDate] = useState<Date | null>(moment().subtract(30, 'days').toDate());
-  const [endDate, setEndDate] = useState<Date | null>(moment().toDate());
+  const defaultStartDate = moment().subtract(30, 'days').toDate();
+  const defaultEndDate = moment().toDate();
 
-  // State for formatted strings to send to API
+  const [startDate, setStartDate] = useState<Date | null>(defaultStartDate);
+  const [endDate, setEndDate] = useState<Date | null>(defaultEndDate);
+
   const [dateRange, setDateRange] = useState({
-    startDate: moment().subtract(30, 'days').format('YYYY-MM-DD'),
-    endDate: moment().format('YYYY-MM-DD'),
+    startDate: moment(defaultStartDate).format('YYYY-MM-DD'),
+    endDate: moment(defaultEndDate).format('YYYY-MM-DD'),
   });
 
   const [designers, setDesigners] = useState<DesignerPerformance[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch data on mount and whenever dateRange changes
   useEffect(() => {
     fetchDesignerData();
-  }, [dateRange]); // Re-fetch when dateRange changes
+  }, [dateRange]);
 
   const fetchDesignerData = async () => {
     setLoading(true);
@@ -51,34 +51,39 @@ const DesignerPage = () => {
     }
   };
 
-  // Handle Apply button click (or you can auto-fetch on change)
   const handleApplyDateRange = () => {
     if (startDate && endDate) {
-      const newDateRange = {
+      setDateRange({
         startDate: moment(startDate).format('YYYY-MM-DD'),
         endDate: moment(endDate).format('YYYY-MM-DD'),
-      };
-      setDateRange(newDateRange);
-      // fetch will trigger automatically due to useEffect
+      });
     }
   };
 
-  // Optional: Auto-fetch on date change (remove Apply button if you use this)
-  // useEffect(() => {
-  //   handleApplyDateRange();
-  // }, [startDate, endDate]);
+  const handleClearDateRange = () => {
+    setStartDate(defaultStartDate);
+    setEndDate(defaultEndDate);
+    setDateRange({
+      startDate: moment(defaultStartDate).format('YYYY-MM-DD'),
+      endDate: moment(defaultEndDate).format('YYYY-MM-DD'),
+    });
+  };
 
   const displayedDateRange = startDate && endDate
     ? `${moment(startDate).format('DD/MM/YYYY')} - ${moment(endDate).format('DD/MM/YYYY')}`
     : 'Select date range';
 
-  if (loading) {
+  const isDateRangeChanged = !(
+    moment(startDate).isSame(defaultStartDate, 'day') &&
+    moment(endDate).isSame(defaultEndDate, 'day')
+  );
+
+  if (loading && designers.length === 0) {
     return <Typography>Loading designer data...</Typography>;
   }
 
   return (
     <div>
-      {/* Date Range Picker Section */}
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <DateRangePicker
           startDate={startDate}
@@ -87,32 +92,27 @@ const DesignerPage = () => {
           onEndDateChange={setEndDate}
           sx={{ flexGrow: 1, maxWidth: 400 }}
         />
-
-        {/* Optional Apply Button - remove if you auto-fetch on change */}
         <Button variant="contained" color="primary" onClick={handleApplyDateRange}>
           Apply
         </Button>
+        {isDateRangeChanged && (
+          <Button variant="outlined" color="error" onClick={handleClearDateRange}>
+            Clear
+          </Button>
+        )}
       </Box>
 
-      {/* Display selected range */}
       <Typography variant="subtitle1" sx={{ mb: 2, color: '#555' }}>
         Showing data for: <strong>{displayedDateRange}</strong>
       </Typography>
 
-      {/* Table */}
       <BasicTable
         tableHeader={columns}
         rowData={designers}
-        showDatePicker={false} // Already handled above
-        renderRow={(row: any) => (
+        showDatePicker={false}
+        renderRow={(row: DesignerPerformance) => (
           <>
-            <TableCell>
-              <Box sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1 }}>
-                {row.name}
-                {/* Optional: Add chevron if clickable */}
-                {/* <FaChevronRight size={14} /> */}
-              </Box>
-            </TableCell>
+            <TableCell>{row.name}</TableCell>
             <TableCell>{row.totalOrders}</TableCell>
             <TableCell>{row.approved}</TableCell>
             <TableCell>{row.newDesigns}</TableCell>
