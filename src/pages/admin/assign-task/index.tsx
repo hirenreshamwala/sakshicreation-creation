@@ -664,9 +664,7 @@ const AssignTaskPage: React.FC = () => {
       originalTaskDate: task.originalTaskId?.date
         ? new Date(task.originalTaskId.date).toLocaleDateString("en-GB")
         : null,
-      rescheduleDate: task.rescheduleDate
-        ? new Date(task.rescheduleDate).toLocaleDateString("en-GB")
-        : undefined,
+      rescheduleDate: task.rescheduleDate,
       highlightYellow:
         !defaultReasons.includes(task.reasonForVisit) &&
         task.assignTo?.role?.roleName?.toLowerCase() === "driver",

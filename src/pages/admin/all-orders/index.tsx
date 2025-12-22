@@ -669,6 +669,7 @@ const AllOrdersPage = () => {
           excelData={excelData}
           rowData={formattedRows}
           setCurrentFilterState={setCurrentFilterState}
+          defaultAccountMasterFilter={defaultOrderFilter}
           currentFilterState={currentFilterState}
           currentPage={currentFilterState.page} // NEW: Pass explicit current page
           onPageChange={(newPage: number) => { // NEW: Callback for page changes

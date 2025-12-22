@@ -458,10 +458,11 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
           ? singleAssignTask.companyName
           : singleAssignTask.companyName?._id || "";
       const visitDate = singleAssignTask.visitDate
-        ? new Date(singleAssignTask.visitDate).toISOString()?.split("T")[0]
+        ? moment(singleAssignTask.visitDate).format("YYYY-MM-DD")
         : "";
+
       const rescheduleDate = singleAssignTask.rescheduleDate
-        ? new Date(singleAssignTask.rescheduleDate).toISOString()?.split("T")[0]
+        ? moment(singleAssignTask.rescheduleDate).format("YYYY-MM-DD")
         : "";
 
       const newValues = {
