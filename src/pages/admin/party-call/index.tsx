@@ -235,7 +235,7 @@ const LeadManagementPage: React.FC = () => {
     try {
       // Prepare query parameters with all current filters
       const queryParams: any = {
-        companyName: selectedCompanyId,
+        companyName: StaticCompanyOptions[comapanyTab],
         status: selectedStatus,
         staffId: si,
         startDate: formatDateForAPI(startDate),
