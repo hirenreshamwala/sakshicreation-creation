@@ -578,7 +578,7 @@ const AccountMasterPage: React.FC = memo(() => {
                 />
               </TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.createdBy}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.assignedTo}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.assignedTo.toLowerCase() === "undefined undefined" ? row.createdBy : row.assignedTo}</TableCell>
               <TableCell sx={{ display: "flex", gap: 1 }}>
                 {canedit && (
                   <IconButton color="primary" onClick={() => handleEdit(row.id)}>
