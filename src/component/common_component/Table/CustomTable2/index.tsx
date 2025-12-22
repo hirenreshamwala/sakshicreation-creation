@@ -89,7 +89,7 @@ const CustomTable2 = <T extends { id: string; _id?: string; lastStatusChangeDate
   selectedFilterField,
   filterOptionsData = {},
   loadingFilterOptions = false,
-  defaultAccountMasterFilter,
+  defaultFilter,
   onFiltersChange,
   currentFilterState = {
     page: 1,
@@ -519,7 +519,7 @@ const CustomTable2 = <T extends { id: string; _id?: string; lastStatusChangeDate
                   selectedField={selectedFilterField}
                   onFieldSelect={handleFieldSelect}
                   onFieldOpen={onFieldOpen}
-                  defaultAccountMasterFilter={defaultAccountMasterFilter || currentFilterState}
+                  defaultFilter={defaultFilter || currentFilterState}
                 />
               </Box>
             )}

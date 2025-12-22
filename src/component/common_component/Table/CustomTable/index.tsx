@@ -104,7 +104,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   renderExpandedRow,
   getRowColor,
   setCurrentFilterState,
-  defaultAccountMasterFilter,
+  defaultFilter,
   downloadLoading,
   handleDownloadExcel,
   currentFilterState
@@ -579,7 +579,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
                   filters={filters}
                   selectedField={selectedFilterField}
                   onFieldSelect={handleFilterFieldSelect}
-                  defaultAccountMasterFilter={defaultAccountMasterFilter}
+                  defaultFilter={defaultFilter}
                   onFieldOpen={handleFieldOpen} // Make sure this is passed
                 />
               </Box>

@@ -519,7 +519,7 @@ const AccountMasterPage: React.FC = memo(() => {
           rowData={formattedRows}
           setCurrentFilterState={setCurrentFilterState}
           currentFilterState={currentFilterState}
-          defaultAccountMasterFilter={defaultAccountMasterFilter}
+          defaultFilter={defaultAccountMasterFilter}
           renderRow={(row: RowData, index: number) => (
             <>
               <TableCell>
