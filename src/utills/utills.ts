@@ -856,3 +856,7 @@ export function formatDateToDDMMYYYY(date) {
 
   return `${day}/${month}/${year}`;
 }
+export const getFirstFourChars = (label = "") => {
+  if (!label) return "";
+  return label.substring(0, 4);  // ya label.slice(0,4)
+};
