@@ -30,6 +30,8 @@ import { complainService } from "@/services/complain.service";
 // import { addToState } from "@/store/slices/accountMasterFilterSlice";
 import { accountMasterService } from "@/services/accountMaster.service";
 import { StaticCompanyOptions } from "@/constants";
+import { useAppSelector } from "@/store";
+import { useDispatch } from "react-redux";
 
 interface Column {
   id: string;
@@ -111,15 +113,14 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   defaultFilter,
   downloadLoading,
   handleDownloadExcel,
-  currentFilterState
+  currentFilterState,
+  companyName
 }: BasicTableProps<T>) => {
-  // Redux se remove karein
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch();
+  const { companies } = useAppSelector((state) => state.company)
+  // Get filter options from Redux store
   // const filterOptionsFromRedux = useSelector((state: any) => state.dynamic || {});
-
-  // Local state for filter options
   const [filterOptionsLocal, setFilterOptionsLocal] = useState<{ [key: string]: string[] }>({});
-
   // Use currentFilterState.page as the source of truth for current page (convert to 0-based)
   const page = (currentFilterState?.page || 1) - 1;
   const rowsPerPage = currentFilterState?.pageSize || 10;
@@ -297,7 +298,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
         startDate: currentFilterState?.startDate,
         endDate: currentFilterState?.endDate,
         companyName: currentFilterState?.companyName,
-        company: [StaticCompanyOptions[companyTab]],
+         companyName: companies.find((item) => item.companyName === companyName)?._id,
         // Add other relevant filters
       };
 
@@ -332,7 +333,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
     } finally {
       setLoadingOptions(prev => ({ ...prev, [field]: false }));
     }
-  }, [filterOptionsLocal, currentFilterState, companyTab]);
+  }, [filterOptionsLocal, currentFilterState, companyName]);
 
   // Handle filter field selection - this will trigger API call
   const handleFilterFieldSelect = useCallback((field: string | null) => {
@@ -345,7 +346,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   }, [getUniqueValues]);
 
   // Get current unique values for selected field
-  const uniqueValues = useMemo(() => {
+   const uniqueValues = useMemo(() => {
     if (!selectedFilterField) return { values: [], isLoading: false };
 
     const data = filterOptionsLocal[selectedFilterField] || [];

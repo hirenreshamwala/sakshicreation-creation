@@ -29,6 +29,20 @@ interface FilterDropdownProps {
   defaultFilter?: any;
 }
 
+const labelMap: Record<string, string> = {
+  contactPerson: "Contact Person",
+  contactNumber: "Contact Number",
+  createdAt: "Created At",
+  partyTag: "Party Tag",
+  createdBy: "Created By",
+  assignTo: "Assign To",
+  assignedTo: "Assigned To",
+  orderNumber: "Order Number",
+  orderedBy: "Ordered By",
+  orderStatus: "Order Status",
+};
+
+
 const FilterDropdown: React.FC<FilterDropdownProps> = ({
   filterOptions = [],
   uniqueValues = [],
@@ -83,14 +97,14 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   const handleApplyFilter = () => {
     if (selectedField) {
       const newFilters = { ...filters };
-      
+
       if (tempSelectedValues.length > 0) {
         newFilters[selectedField] = tempSelectedValues;
       } else {
         // Remove the key if no values selected
         delete newFilters[selectedField];
       }
-      
+
       onFiltersChange(newFilters);
     }
     handleClose();
@@ -118,7 +132,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     : [];
 
   // Check if there are any active filters
-  const hasActiveFilters = Object.keys(filters).length > 0 && 
+  const hasActiveFilters = Object.keys(filters).length > 0 &&
     Object.values(filters).some(arr => arr.length > 0);
 
   return (
@@ -200,7 +214,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                     onClick={() => handleFieldSelect(label)}
                   >
                     <ListItemText
-                      primary={label}
+                      primary={labelMap[label] || label}
                       primaryTypographyProps={{
                         fontSize: 14,
                         fontWeight: 500,

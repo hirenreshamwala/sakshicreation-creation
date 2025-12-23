@@ -527,6 +527,7 @@ const AccountMasterPage: React.FC = memo(() => {
           showSearch={true}
           title="Account-master"
           showExcelDownload={true}
+          companyName={StaticCompanyOptions[companyTab]}
           rowData={formattedRows}
           setCurrentFilterState={setCurrentFilterState}
           currentFilterState={currentFilterState}
