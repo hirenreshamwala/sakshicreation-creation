@@ -326,4 +326,18 @@ export const orderService = {
       );
     }
   },
+  async exportOrdersToExcel(filters): Promise<Blob> {
+    try {
+      const response: AxiosResponse<Blob> = await Request.post(
+        Endpoint.EXPORT_ORDERS_EXCEL,
+        filters,
+        {
+          responseType: 'blob' // Important for file downloads
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to export account masters");
+    }
+  },
 };

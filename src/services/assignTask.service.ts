@@ -144,26 +144,26 @@ export const assignTaskService = {
   },
 
   async bulkCreateAssignTasks(tasksData: CreateAssignTask[]): Promise<ApiResponse<{
-  data: AssignTask[];
-  errors?: any[];
-  count: number;
-}>> {
-  try {
-    const response: AxiosResponse<any> = await Request.post(
-      Endpoint.CREATE_ASSIGN_TASK_BULK,  // new endpoint
-      tasksData
-    );
-    return {
-      success: response.data.success,
-      data: response.data.data,
-      message: response.data.message,
-      errors: response.data.errors,
-      count: response.data.count
-    };
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to bulk create assigned tasks');
-  }
-},
+    data: AssignTask[];
+    errors?: any[];
+    count: number;
+  }>> {
+    try {
+      const response: AxiosResponse<any> = await Request.post(
+        Endpoint.CREATE_ASSIGN_TASK_BULK,  // new endpoint
+        tasksData
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+        errors: response.data.errors,
+        count: response.data.count
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to bulk create assigned tasks');
+    }
+  },
 
   async updateAssignTask(id: string, data: Partial<UpdateAssignTask>): Promise<AssignTask> {
     try {
@@ -255,4 +255,18 @@ export const assignTaskService = {
       throw new Error(error.response?.data?.message || 'Failed to fetch leads by staff ID');
     }
   },
-};
+  async exportAssignTasksToExcel(filters): Promise<Blob> {
+    try {
+      const response: AxiosResponse<Blob> = await Request.post(
+        Endpoint.EXPORT_ASSIGN_TASKS_EXCEL,
+        filters,
+        {
+          responseType: 'blob' // Important for file downloads
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to export assign tasks");
+    }
+  },
+}

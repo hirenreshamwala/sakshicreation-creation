@@ -255,6 +255,10 @@ const Endpoint = {
   ASSIGN_TASK_FILTER: `${BaseURL}/api/assign-task/get-filter`,
 
   EXPORT_ACCOUNT_MASTERS_EXCEL: `${BaseURL}/api/account-master/download-excel`,
+  EXPORT_ASSIGN_TASKS_EXCEL: `${BaseURL}/api/assign-task/download-excel`,
+  EXPORT_LEAD_EXCEL: `${BaseURL}/api/lead/download-excel`,
+  EXPORT_ORDERS_EXCEL: `${BaseURL}/api/orders/download-excel`,
+  EXPORT_DRIVERS_EXCEL: `${BaseURL}/api/qporder/driver-download-excel`,
 
   GET_QP_ORDER_FILTER_OPTIONS: `${BaseURL}/api/qporder/filter-options`,
   GET_COMPLAIN_FILTER_OPTIONS: `${BaseURL}/api/complain/filter-options`,

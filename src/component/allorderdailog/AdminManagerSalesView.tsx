@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react"
-import { Avatar, Box, IconButton, TableCell, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material"
+import {
+  Avatar, Box, IconButton, TableCell, Typography, Dialog,
+  DialogTitle, DialogContent, DialogActions, Button, Tooltip
+} from "@mui/material"
 import BasicTable from "@/component/common_component/Table/themetable"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
@@ -7,7 +10,7 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { authService } from "@/services/auth.service"
 import FilterDropdown from "@/component/fillter"
 import DateRangePicker from "@/component/daterangepicker"
-import { FiSearch } from "react-icons/fi"
+import { FiSearch, FiDownload } from "react-icons/fi"
 import { InputBase } from "@mui/material"
 import { getDisplayStatus } from "@/utills/utills"
 import { getAllQPOrdersThunk, getQPOrdersByStaffIdThunk, markOrderAsUrgentThunk } from "@/store/slices/qpOrderSlice"
@@ -22,6 +25,7 @@ import { Label } from "@mui/icons-material"
 import ComplainDialogue from "@/pages/admin/all-complains/ComplainDialogue"
 import AddQPOrderDialog from "./QpOrderDialog"
 import Swal from 'sweetalert2';
+import * as XLSX from "xlsx";
 
 type OrderRow = {
   _id: string;
@@ -177,17 +181,18 @@ const AdminManagerSalesView = () => {
   ]
 
   const refreshData = () => {
-    if (canViewGlobal) 
+    if (canViewGlobal)
       dispatch(getAllQPOrdersThunk({ companyName, staffId, startDate: st, endDate: ed, party }))
-     else if (canViewOwn && user?.id) 
-      dispatch(getQPOrdersByStaffIdThunk({id: user.id,
-    filters: {},}))
+    else if (canViewOwn && user?.id)
+      dispatch(getQPOrdersByStaffIdThunk({
+        id: user.id,
+        filters: {},
+      }))
   };
 
   useEffect(() => {
     dispatch(getAllInventoryThunk());
   }, []);
-
 
   const handleRepeatOrder = (rowData: OrderRow) => {
     const repeatOrderData = {
@@ -216,7 +221,6 @@ const AdminManagerSalesView = () => {
     setOpen(true);
   };
 
-
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString)
@@ -226,45 +230,27 @@ const AdminManagerSalesView = () => {
     }
   }
 
-  // Prepare Excel headers (full set to match excelData)
+  // Prepare Excel headers (table में जैसे कॉलम दिख रहे हैं वैसे ही)
   const excelHeaders = useMemo(() => [
     "Order No",
     "Company Name",
-    "Party Name",
     "Order Date",
-    "Ply",
-    "Unit of Measurement",
     "Size",
-    "Paper GSM",
-    "GSM",
-    "Cal Deckal",
+    "Ply",
+    "Party Name",
     "Deckal",
-    "Piece No",
-    "Cutting length",
-    "sheet to cut",
-    "Rate/Piece",
+    "GSM",
+    "PCS",
+    "",
+    "KGS",
+    "RATE",
     "Amount",
-    "KG Per Unit",
-    "Total KG",
-    "Kantan",
-    "Kantan/Piece",
-    "Total Kantan",
-    "Kantan Dec",
-    "Sales Remarks",
     "Status",
-    "Unit No",
-    "Start Date",
-    "Delivery Date",
-    "Dye Number",
-    "Dye Sheet Size",
-    "Glue KG",
-    "Wire KG",
-    "Dye Remark",
-    "Godown Remark",
-    "Factory Remark",
-    "Actual no of piece",
+    "Kantan",
+    "Urgent"
   ], []);
 
+  // Filtered orders जो टेबल में दिख रहे हैं
   const filteredOrders = useMemo(() => {
     return orders.filter((order: any) => {
       const matchesDateRange =
@@ -411,6 +397,56 @@ const AdminManagerSalesView = () => {
     })
   }, [orders, startDate, endDate, searchQuery, filters])
 
+  // Excel डेटा तैयार करें (filteredOrders का उपयोग करें जो टेबल में दिख रहे हैं)
+  const prepareExcelData = useMemo(() => {
+    return filteredOrders.map((order: OrderRow) => {
+      const urgentStatus = order.isUrgent ? "Yes" : "No";
+
+      return {
+        "Order No": `QP-${order.orderNo || "N/A"}`,
+        "Company Name": order.companyName?.companyName || "N/A",
+        "Order Date": formatDate(order.createdAt) || "N/A",
+        "Size": `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`,
+        "Ply": order.orderdata?.ply || "N/A",
+        "Party Name": order.party?.partyName || "N/A",
+        "Deckal": order.orderdata?.deckal || "N/A",
+        "GSM": `${order.orderdata?.paper1GSM || "N/A"} x ${order.orderdata?.paper2GSM || "N/A"} x ${order.orderdata?.paper3GSM || "N/A"}`,
+        "PCS": order.noOfPieces?.toString() || "N/A",
+        "": order.createdBy?.firstName?.[0] || "N/A", // Empty column header but with data
+        "KGS": order.totalKg || "N/A",
+        "RATE": order.ratePerPiece?.toString() || "N/A",
+        "Amount": order.amount || "N/A",
+        "Status": order.status || "N/A",
+        "Kantan": order.kantan?.kantanName || "N/A",
+        "Urgent": urgentStatus,
+      };
+    });
+  }, [filteredOrders]); // केवल filteredOrders पर निर्भर
+
+  // Excel डाउनलोड फंक्शन
+  const handleExcelDownload = () => {
+    if (filteredOrders.length === 0) {
+      toast.warning("No data to export");
+      return;
+    }
+
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(prepareExcelData);
+
+    // Add headers to the worksheet
+    XLSX.utils.sheet_add_aoa(worksheet, [excelHeaders], { origin: "A1" });
+
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "QP Orders");
+
+    // Download file
+    const fileName = `QP_Orders_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+
+    toast.success(`Exported ${filteredOrders.length} records to Excel`);
+  };
+
   const handleToggleUrgent = async (rowData: OrderRow) => {
     const newUrgentStatus = !rowData.isUrgent;
     const actionText = newUrgentStatus ? 'mark as urgent' : 'unmark as urgent';
@@ -448,46 +484,6 @@ const AdminManagerSalesView = () => {
       }
     }
   };
-
-
-  // Prepare Excel data
-  const excelData = useMemo(() => {
-    return filteredOrders.map((order: OrderRow) => ({
-      "Order No": `QP-${order.orderNo || "N/A"}`,
-      "Company Name": order.companyName?.companyName || "N/A",
-      "Party Name": order.party?.partyName || "N/A",
-      "Order Date": formatDate(order.createdAt) || "N/A",
-      Ply: order.orderdata?.ply || "N/A",
-      "Unit of Measurement": order.orderdata?.uom || "N/A",
-      Size: order.size?.size || `${order.orderdata?.length || "N/A"} x ${order.orderdata?.width || "N/A"} x ${order.orderdata?.height || "N/A"}`,
-      "Paper GSM": `${order.orderdata?.paper1GSM || "N/A"} x ${order.orderdata?.paper2GSM || "N/A"} x ${order.orderdata?.paper3GSM || "N/A"}`,
-      GSM: order.gsm || "N/A",
-      "Cal Deckal": order.deckalCalculation || "N/A",
-      Deckal: order.orderdata?.deckal || "N/A",
-      "Piece No": order.noOfPieces?.toString() || "N/A",
-      "Rate/Piece": order.ratePerPiece?.toString() || "N/A",
-      Amount: order.amount || "N/A",
-      "KG Per Unit": order.kgPerUnit || "N/A",
-      "Total KG": order.totalKg || "N/A",
-      Kantan: order.kantan?.kantanName || "N/A",
-      "Kantan/Piece": order.kantanPerUnit || "N/A",
-      "Total Kantan": order.totalKantan ? `${order.totalKantan.reel} reel ${order.totalKantan.inch} inch` : "N/A",
-      "Kantan Dec": order.kantanDeckal || "N/A",
-      "Sales Remarks": order.salesRemark || "N/A",
-      Status: getDisplayStatus(order).text || "N/A",
-      "Unit No": order.unitNo || "N/A",
-      "Start Date": order.startDate ? formatDate(order.startDate) : "N/A",
-      "Delivery Date": order.deliveryDate ? formatDate(order.deliveryDate) : "N/A",
-      "Dye Number": order.dyeNumber || "N/A",
-      "Dye Sheet Size": order.dyeSize || "N/A",
-      "Glue KG": order.glue || "N/A",
-      "Wire KG": order.wire || "N/A",
-      "Dye Remark": order.dyeRemark || "N/A",
-      "Godown Remark": order.godownRemark || "N/A",
-      "Factory Remark": order.factoryRemark || "N/A",
-      "Actual no of piece": "N/A",
-    }));
-  }, [filteredOrders]);
 
   const getUniqueValues = useMemo(() => {
     if (!selectedFilterField) return []
@@ -602,7 +598,6 @@ const AdminManagerSalesView = () => {
     return Array.from(new Set(values)).filter((v) => v !== "N/A").sort()
   }, [selectedFilterField, orders])
 
-
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk(true))
   }, [])
@@ -691,6 +686,7 @@ const AdminManagerSalesView = () => {
               sx={{ ml: 1, fontSize: 14 }}
             />
           </Box>
+
           <FilterDropdown
             filterOptions={allFilterableColumns
               .filter((col) => col.id !== "actions")
@@ -716,6 +712,52 @@ const AdminManagerSalesView = () => {
             selectedField={selectedFilterField}
             onFieldSelect={setSelectedFilterField}
           />
+
+          {/* Excel Download Button - शो करें अगर filteredOrders में डेटा है */}
+          {filteredOrders.length > 0 && (
+            <Tooltip title={`Download ${filteredOrders.length} filtered records as Excel`}>
+              <IconButton
+                onClick={handleExcelDownload}
+                sx={{
+                  border: "1px solid #D0D5DD",
+                  borderRadius: 2,
+                  p: 1,
+                  color: "#667085",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                title="Download as Excel"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="16"
+                  width="16"
+                  viewBox="0 0 384 512"
+                // style={{ marginRight: "8px" }}
+                >
+                  <path
+                    fill="#667085"
+                    d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
+                                                                 10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
+                                                                 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
+                                                                 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
+                                                                 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 
+                                                                 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 
+                                                                 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 
+                                                                 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 
+                                                                 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 
+                                                                 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 
+                                                                 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 
+                                                                 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
+                                                                 12.5 2.5 17 7l97.9 98c4.5 4.5 7 
+                                                                 10.6 7 16.9z"
+                  />
+                </svg>
+                {/* <Typography fontSize={12}>Download excel</Typography>  */}
+              </IconButton>
+            </Tooltip>
+          )}
+
           {canCreate && (
             <ThemeButton
               onClick={() => {
@@ -728,6 +770,7 @@ const AdminManagerSalesView = () => {
           )}
         </Box>
       </Box>
+
       <Box py={2}>
         <BasicTable
           id={true}
@@ -735,10 +778,8 @@ const AdminManagerSalesView = () => {
           tableHeader={columns}
           showFillter={false}
           showSearch={false}
+          showExcelDownload={false} // BasicTable का एक्सेल डाउनलोड बंद करें
           title="QP-ORDERS"
-          showExcelDownload={true}
-          excelHeaders={excelHeaders}
-          excelData={excelData}
           rowData={filteredOrders as any}
           totalCount={totalCount}
           pagination={pagination}
@@ -750,35 +791,16 @@ const AdminManagerSalesView = () => {
                   <Typography fontSize="14px" color="#6B7280">
                     QP-{row.orderNo || "N/A"}
                   </Typography>
-                  
-                  {/* Designer Status Badges - ONLY SHOW ONE AT A TIME */}
+
                   <Box display="flex" flexDirection="column" gap={0.5} ml={1}>
-                    {/* Priority 1: Rework requested (admin ne rework request કરેલ છે) */}
-                    {/* {row.reworkDesignFiles?.length > 0 && !row.approveDesign && !row.reworkDesignerFiles?.length && (
-                      <Typography 
-                        fontSize="10px" 
-                        color="#dc2626" 
-                        sx={{ 
-                          backgroundColor: '#fee2e2', 
-                          px: 1, 
-                          py: 0.25, 
-                          borderRadius: '4px',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        Rework Design
-                      </Typography>
-                    )} */}
-                    
-                    {/* Priority 2: Rework files submitted (designer ne rework files submit કરેલ છે) */}
                     {row.reworkDesignerFiles?.length > 0 && !row.approveDesign && (
-                      <Typography 
-                        fontSize="10px" 
-                        color="#2563eb" 
-                        sx={{ 
-                          backgroundColor: '#dbeafe', 
-                          px: 1, 
-                          py: 0.25, 
+                      <Typography
+                        fontSize="10px"
+                        color="#2563eb"
+                        sx={{
+                          backgroundColor: '#dbeafe',
+                          px: 1,
+                          py: 0.25,
                           borderRadius: '4px',
                           fontWeight: 'bold'
                         }}
@@ -786,41 +808,23 @@ const AdminManagerSalesView = () => {
                         Rework Submitted
                       </Typography>
                     )}
-                    
-                    {/* Priority 3: Designer files uploaded but not approved */}
-                    {row.designerFiles?.length > 0 && !row.approveDesign && 
-                    !row.reworkDesignFiles?.length && !row.reworkDesignerFiles?.length && (
-                      <Typography 
-                        fontSize="10px" 
-                        color="#f59e0b" 
-                        sx={{ 
-                          backgroundColor: '#fef3c7', 
-                          px: 1, 
-                          py: 0.25, 
-                          borderRadius: '4px',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        Files to Review
-                      </Typography>
-                    )}
-                    
-                    {/* Priority 4: Design approved */}
-                    {/* {row.approveDesign && (
-                      <Typography 
-                        fontSize="10px" 
-                        color="#059669" 
-                        sx={{ 
-                          backgroundColor: '#d1fae5', 
-                          px: 1, 
-                          py: 0.25, 
-                          borderRadius: '4px',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        Design Approved
-                      </Typography>
-                    )} */}
+
+                    {row.designerFiles?.length > 0 && !row.approveDesign &&
+                      !row.reworkDesignFiles?.length && !row.reworkDesignerFiles?.length && (
+                        <Typography
+                          fontSize="10px"
+                          color="#f59e0b"
+                          sx={{
+                            backgroundColor: '#fef3c7',
+                            px: 1,
+                            py: 0.25,
+                            borderRadius: '4px',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          Files to Review
+                        </Typography>
+                      )}
                   </Box>
                 </Box>
               </TableCell>
@@ -895,18 +899,18 @@ const AdminManagerSalesView = () => {
                 </Typography>
               </TableCell>
               <TableCell>
-                  <ThemeButton
-                    size="small"
-                    onClick={() => handleToggleUrgent(row)}
-                    sx={{
-                      backgroundColor: row.isUrgent ? '#6B7280' : '#ff6b6b',
-                      '&:hover': {
-                        backgroundColor: row.isUrgent ? '#4B5563' : '#dc2626',
-                      }
-                    }}
-                  >
-                    {row.isUrgent ? 'Unmark Urgent' : 'Mark as Urgent'}
-                  </ThemeButton>
+                <ThemeButton
+                  size="small"
+                  onClick={() => handleToggleUrgent(row)}
+                  sx={{
+                    backgroundColor: row.isUrgent ? '#6B7280' : '#ff6b6b',
+                    '&:hover': {
+                      backgroundColor: row.isUrgent ? '#4B5563' : '#dc2626',
+                    }
+                  }}
+                >
+                  {row.isUrgent ? 'Unmark Urgent' : 'Mark as Urgent'}
+                </ThemeButton>
               </TableCell>
               <TableCell>
                 <Box display="flex" gap={1} flexWrap="no-wrap">
@@ -918,13 +922,12 @@ const AdminManagerSalesView = () => {
                       Repeat Order
                     </ThemeButton>
                   )}
-
                 </Box>
               </TableCell>
             </>);
           }}
         />
-      </Box >
+      </Box>
 
       {
         open && (
@@ -955,7 +958,6 @@ const AdminManagerSalesView = () => {
           </>
         )
       }
-
     </>
   );
 };

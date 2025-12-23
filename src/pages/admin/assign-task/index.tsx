@@ -228,7 +228,60 @@ const AssignTaskPage: React.FC = () => {
       setSelectedTaskIds(currentTaskIds);
     }
   };
+  const handleExcelDownload = async () => {
+    try {
+      // Create payload with all current filters
+      const payload = {
+        staffId: si,
+        startDate: appliedStartDate ? appliedStartDate.toISOString() : null,
+        endDate: appliedEndDate ? appliedEndDate.toISOString() : null,
+        status: selectedStatus, // This is already an array
+        companyName: StaticCompanyOptions[companyTab],
+        partyName: filters['Party']?.[0],
+        reason: filters['Reason to Visit']?.[0] || r,
+        priority: null,
+        date: null, // Since we're using date range
+        unitNo: filters['Unit No']?.[0],
+        marketName: filters['Market Name']?.[0],
+        mobile: filters['Mobile No.']?.[0],
+        createdBy: filters['Assign By']?.[0],
+        assignToFilter: filters['Assign To']?.[0],
+        party: filters['Party']?.[0],
+        area: filters['Area']?.[0],
+        search: appliedSearchQuery,
+      };
 
+      // Remove undefined/null values
+      const cleanPayload = Object.fromEntries(
+        Object.entries(payload).filter(([_, value]) =>
+          value !== null && value !== undefined && value !== ''
+        )
+      );
+
+      // Call the export service
+      const blob = await assignTaskService.exportAssignTasksToExcel(cleanPayload);
+
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `AssignTasks_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+
+      // Trigger download
+      link.click();
+
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Excel file downloaded successfully');
+    } catch (error: any) {
+      console.error('Export failed:', error);
+      toast.error(error.message || 'Failed to download Excel file');
+    }
+  };
+  
   const handleBulkDelete = async () => {
     if (selectedTaskIds.length === 0) return;
 
@@ -890,7 +943,7 @@ const AssignTaskPage: React.FC = () => {
             activeTab={companyTab}
             setActiveTab={(newTab) => {
               setCompanyTab(newTab);
-              const companyName = newTab === 0 ? "Sakshi Prints" : "Quality Packaging";
+              const companyName = newTab === 0 ? "Sakshi Creation" : "Quality Packaging";
               router.push({
                 pathname: router.pathname,
                 query: { ...router.query, c: companyName }
@@ -978,6 +1031,45 @@ const AssignTaskPage: React.FC = () => {
             selectedField={selectedFilterField}
             onFieldSelect={setSelectedFilterField}
           />
+          <IconButton
+            onClick={handleExcelDownload}
+            sx={{
+              border: "1px solid #D0D5DD",
+              borderRadius: 2,
+              p: 1,
+              color: "#667085",
+              display: "flex",
+              alignItems: "center",
+            }}
+            title="Download as Excel"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="16"
+              width="16"
+              viewBox="0 0 384 512"
+            // style={{ marginRight: "8px" }}
+            >
+              <path
+                fill="#667085"
+                d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
+                                 10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
+                                 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
+                                 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
+                                 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 
+                                 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 
+                                 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 
+                                 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 
+                                 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 
+                                 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 
+                                 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 
+                                 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
+                                 12.5 2.5 17 7l97.9 98c4.5 4.5 7 
+                                 10.6 7 16.9z"
+              />
+            </svg>
+            {/* <Typography fontSize={12}>Download excel</Typography>  */}
+          </IconButton>
           {cancreate && (
             <ThemeButton
               onClick={() => {

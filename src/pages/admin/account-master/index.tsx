@@ -428,8 +428,17 @@ const AccountMasterPage: React.FC = memo(() => {
     try {
       setDownloadLoading(true);
 
+      const payload = {
+        ...currentFilterState, filters: {
+          ...currentFilterState.filters,
+          company: [StaticCompanyOptions[companyTab]],
+          status: statusTab === 0 ? ["APPROVED"] : ["PENDING"]
+        }
+      }
+
+
       // Use the same filters that are currently applied
-      const blob = await accountMasterService.exportAccountMastersToExcel(appliedFilterState);
+      const blob = await accountMasterService.exportAccountMastersToExcel(payload);
 
       // Create a download link
       const url = window.URL.createObjectURL(blob);
@@ -506,6 +515,7 @@ const AccountMasterPage: React.FC = memo(() => {
         <Loader />
       ) : (
         <CustomTable
+          companyTab={companyTab}
           showDatePicker={true}
           tableHeader={columns}
           showFillter={true}

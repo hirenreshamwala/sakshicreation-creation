@@ -119,14 +119,14 @@ export const orderService = {
   async getAllOrdersForDriver(filters: any): Promise<ApiResponse<Order[]>> {
     try {
       console.log("📊 Service: Fetching QP orders with filters:", filters);
-      
+
       const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
         Endpoint.GET_ALL_QP_ORDER_FOR_DRIVER,
         filters
       );
-      
+
       console.log("📊 Service: QP orders response:", response.data);
-      
+
       if (response.data.success) {
         return {
           success: true,
@@ -161,12 +161,12 @@ export const orderService = {
   async searchFilterOptions(field: string, search: string = "", filters: any = {}): Promise<ApiResponse<string[]>> {
     try {
       console.log(`🔍 Fetching QP filter options for ${field}:`, { search, filters });
-      
+
       const response: AxiosResponse<ApiResponse<string[]>> = await Request.post(
         `${Endpoint.GET_QP_ORDER_FILTER_OPTIONS}/${field}`,
         { search, ...filters }
       );
-      
+
       return response.data;
     } catch (error: any) {
       console.error(`Error fetching QP ${field} filter options:`, error);
@@ -182,9 +182,9 @@ export const orderService = {
         `${Endpoint.GET_QP_ORDER_BY_STAFF_ID}/${id}`,
         filters
       );
-      
+
       console.log("Orders by Staff API Response:", response.data);
-      
+
       return {
         success: response.data.success,
         data: response.data.data || [],
@@ -394,11 +394,25 @@ export const orderService = {
       );
     }
   },
+  async exportDriverToExcel(filters): Promise<Blob> {
+    try {
+      const response: AxiosResponse<Blob> = await Request.post(
+        Endpoint.EXPORT_DRIVERS_EXCEL,
+        filters,
+        {
+          responseType: 'blob' // Important for file downloads
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to export account masters");
+    }
+  },
 
   async markOrderAsUrgent(orderId: string, isUrgent: boolean): Promise<ApiResponse<Order>> {
     try {
       const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
-        `${Endpoint.MARK_ORDER_AS_URGENT}/${orderId}`,{ isUrgent }
+        `${Endpoint.MARK_ORDER_AS_URGENT}/${orderId}`, { isUrgent }
       );
 
       return {
@@ -415,36 +429,38 @@ export const orderService = {
   }
 
 
-    //GET DESIGNER ORDER
-    //   async getGodownOrders(): Promise<ApiResponse<Order[]>> {
-    //     try {
-    //       const token = authService.getToken();
-    //       if (!token) {
-    //         throw new Error("No authentication token found");
-    //       }
 
-    //       const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
-    //         `${Endpoint.GET_DESIGNER_ORDERS}`,
-    //         {
-    //           headers: {
-    //             Authorization: `Bearer ${token}`,
-    //             "Content-Type": "application/json",
-    //           },
-    //           withCredentials: true,
-    //         }
-    //       );
 
-    //       return {
-    //         success: response.data.success,
-    //         data: response.data.data || [],
-    //         message: response.data.message,
-    //       };
-    //     } catch (error: any) {
-    //       console.error("Service: Get designer orders error:", error);
-    //       throw new Error(
-    //         error.response?.data?.message || "Failed to fetch designer orders"
-    //       );
-    //     }
-    //   },
+  //GET DESIGNER ORDER
+  //   async getGodownOrders(): Promise<ApiResponse<Order[]>> {
+  //     try {
+  //       const token = authService.getToken();
+  //       if (!token) {
+  //         throw new Error("No authentication token found");
+  //       }
 
-  };
+  //       const response: AxiosResponse<ApiResponse<Order[]>> = await axios.get(
+  //         `${Endpoint.GET_DESIGNER_ORDERS}`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //             "Content-Type": "application/json",
+  //           },
+  //           withCredentials: true,
+  //         }
+  //       );
+
+  //       return {
+  //         success: response.data.success,
+  //         data: response.data.data || [],
+  //         message: response.data.message,
+  //       };
+  //     } catch (error: any) {
+  //       console.error("Service: Get designer orders error:", error);
+  //       throw new Error(
+  //         error.response?.data?.message || "Failed to fetch designer orders"
+  //       );
+  //     }
+  //   },
+
+};

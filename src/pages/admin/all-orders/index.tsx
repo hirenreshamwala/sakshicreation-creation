@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
-import { Avatar, Box, TableCell, Typography, Button } from "@mui/material"
+import { Avatar, Box, TableCell, Typography, Button, IconButton, CircularProgress } from "@mui/material"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
 import { useAppDispatch, useAppSelector } from "@/store"
@@ -59,7 +59,7 @@ type OrderRow = {
   productItem: {
     itemName: string
   }
-  size?: string | { size: string }; 
+  size?: string | { size: string };
   createdAt: string
   remarks: string
   createdBy: {
@@ -97,10 +97,10 @@ const AllOrdersPage = () => {
   const [activeTab, setActiveTab] = useState(c === "Quality Packaging" ? 1 : 0)
   const [complainOpen, setComplainOpen] = useState(false)
   const [selectedOrderForComplain, setSelectedOrderForComplain] = useState<OrderRow | null>(null)
-  
+
   // Remove isInitialLoad state and use loading state from Redux instead
   const [isLoadingData, setIsLoadingData] = useState(false)
-  
+
   // Prevent multiple API calls
   const isLoadingRef = React.useRef(false)
   const hasLoadedInitialDataRef = React.useRef(false)
@@ -122,6 +122,7 @@ const AllOrdersPage = () => {
   const [filterOptionsData, setFilterOptionsData] = useState<{ [key: string]: string[] }>({});
   const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
   const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null);
+  const [downloadLoading, setDownloadLoading] = useState(false);
   const canViewGlobal = userData?.role?.permissions?.all_orders?.view_global
   const canViewOwn = userData?.role?.permissions?.all_orders?.view_own
   // Determine user permissions
@@ -129,7 +130,7 @@ const AllOrdersPage = () => {
   const hasQpPermission = getCompanyWisePermission(2)
   const hasBothPermissions = getCompanyWisePermission(0)
   const debounceRef = useRef(0);
-  
+
   // Updated: Use thunk for loading orders
   const loadOrders = useCallback(async () => {
     // Prevent multiple simultaneous calls
@@ -137,10 +138,10 @@ const AllOrdersPage = () => {
       console.log("⚠️ API call already in progress, skipping...")
       return
     }
-    
+
     setIsLoadingData(true)
     isLoadingRef.current = true
-    
+
     // Simple debounce: Ignore if called within 300ms of last call (for rapid page clicks)
     const now = Date.now()
     if (debounceRef.current && (now - debounceRef.current) < 300) {
@@ -149,20 +150,20 @@ const AllOrdersPage = () => {
       return
     }
     debounceRef.current = now  // Update debounce timestamp
-    
+
     try {
-    const params = {
-      ...currentFilterState, 
-      isPagination: true, 
-      includeCounts: true 
-    };
+      const params = {
+        ...currentFilterState,
+        isPagination: true,
+        includeCounts: true
+      };
 
       if (canViewGlobal) {
         await dispatch(getAllPaginationOrdersThunk(params));
       } else if (canViewOwn && userData?.id) {
         await dispatch(getOrdersByStaffIdThunk({ id: userData.id, filters: params }))
       }
-      
+
       // Mark that initial data has been loaded
       hasLoadedInitialDataRef.current = true
     } catch (err: any) {
@@ -179,14 +180,14 @@ const AllOrdersPage = () => {
     setLoadingFilterOptions(true);
     try {
       const extraFilters = canViewOwn && !canViewGlobal ? { staffId: userData.id } : {};
-      const filterPayload = { 
-        ...currentFilterState.filters, 
+      const filterPayload = {
+        ...currentFilterState.filters,
         ...extraFilters,
         startDate: currentFilterState.startDate,
         endDate: currentFilterState.endDate,
       };
       const response = await orderService.searchFilterOptions(field, "", filterPayload);
-    
+
       if (response.success && response.data) {
         setFilterOptionsData(prev => ({
           ...prev,
@@ -242,8 +243,8 @@ const AllOrdersPage = () => {
 
   // Reset initial load flag when user changes
   useEffect(() => {
-      hasLoadedInitialDataRef.current = false
-}, [userData?.id]);
+    hasLoadedInitialDataRef.current = false
+  }, [userData?.id]);
 
   // Initial companies load
   useEffect(() => {
@@ -267,6 +268,71 @@ const AllOrdersPage = () => {
   const handleComplainClick = (rowData: OrderRow) => {
     setSelectedOrderForComplain(rowData);
     setComplainOpen(true);
+  };
+
+  const handleExcelDownload = async () => {
+    // डाउनलोड प्रक्रिया शुरू करने से पहले कुछ चेक
+    if (downloadLoading) {
+      console.log("Download already in progress...");
+      return;
+    }
+
+    // Optional: अगर कोई ऑर्डर नहीं है तो यूजर को इन्फॉर्म करें
+    if (!orders || orders.length === 0) {
+      toast.info("No orders available to export.");
+      return;
+    }
+
+    setDownloadLoading(true);
+    try {
+      console.log("Exporting with filters:", currentFilterState);
+
+      // ✅ Account Master की तरह ही पेलोड तैयार करें, लेकिन इसमें Order के सभी फ़िल्टर्स शामिल हैं
+      const payload = {
+        ...currentFilterState,
+        isPagination: false, // एक्सेल के लिए सभी रिकॉर्ड चाहिए
+        includeCounts: false,
+        // सुनिश्चित करें कि filters ऑब्जेक्ट मौजूद है
+        filters: {
+          ...currentFilterState.filters,
+          // आप चाहें तो activeTab के आधार पर कंपनी फ़िल्टर भी लगा सकते हैं (अगर आपके पास कंपनी टैब है)
+          // company: activeTab === 0 ? ["Sakshi Packaging"] : ["Quality Packaging"]
+        },
+        // सुनिश्चित करें कि डेट रेंज प्रॉपर्टी नाम सही हैं (startDate, endDate)
+        startDate: currentFilterState.startDate,
+        endDate: currentFilterState.endDate,
+        search: currentFilterState.search || currentFilterState.searchQuery || "",
+      };
+
+      // ✅ Service का उपयोग करके API कॉल करें
+      const blob = await orderService.exportOrdersToExcel(payload);
+
+      // ✅ फ़ाइल डाउनलोड के लिए लिंक बनाएँ
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // डाउनलोड फ़ाइल का नाम तय करें (current date के साथ)
+      const fileName = `Orders_Export_${moment().format('DD-MM-YYYY_HH-mm')}.xlsx`;
+      link.setAttribute('download', fileName);
+
+      // पेज में लिंक ऐड करें और क्लिक ट्रिगर करें
+      document.body.appendChild(link);
+      link.click();
+
+      // ✅ क्लीनअप
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url); // मेमोरी फ्री करें
+
+      toast.success('Excel file downloaded successfully!');
+
+    } catch (error) {
+      console.error('Order export failed:', error);
+      // सर्विस में throw किए गए error को यहाँ हैंडल करें
+      toast.error(error.message || 'Failed to download Excel file');
+    } finally {
+      setDownloadLoading(false);
+    }
   };
 
   const getRouteByStatus = (row: OrderRow): string => {
@@ -366,8 +432,8 @@ const AllOrdersPage = () => {
         ownerMobileNo: row?.party?.ownerMobileNo || "",
         partyName: row?.party?.partyName || "N/A",
         addressName: `${row?.party?.address?.unitNo || ""}, ${typeof row?.party?.address?.marketName === 'object'
-            ? row?.party?.address?.marketName?.marketName
-            : row?.party?.address?.marketName || ""
+          ? row?.party?.address?.marketName?.marketName
+          : row?.party?.address?.marketName || ""
           }, ${typeof row?.party?.address?.area === 'object'
             ? row?.party?.address?.area?.area
             : row?.party?.address?.area || ""
@@ -436,7 +502,7 @@ const AllOrdersPage = () => {
   // Format rows for table
   const formattedRows = useMemo(() => {
     if (!orders || !Array.isArray(orders)) return [];
-  
+
     return orders.map((order: any) => ({
       _id: order._id,
       id: order._id,
@@ -461,7 +527,7 @@ const AllOrdersPage = () => {
       qty: order.qty,
       daysAfterConfirmation: order.daysAfterConfirmation,
       lastStatusChangeDate: order.lastStatusChangeDate,
-    
+
       // Add these fields for proper filtering
       company: order.companyName?.companyName || "N/A",
       partyName: order.party?.partyName || "N/A",
@@ -472,50 +538,24 @@ const AllOrdersPage = () => {
     }));
   }, [orders]);
 
-  // Excel data
-  const excelHeaders = useMemo(() => [
-    "Order Number",
-    "Company",
-    "Party",
-    "Date",
-    "Item Name",
-    "Size",
-    "Remarks",
-    "Ordered By",
-    "Status",
-  ], []);
-
-  const excelData = useMemo(() => {
-    return formattedRows.map((order) => ({
-      "Order Number": order.orderNumber || "N/A",
-      "Company": order.companyName?.companyName || "N/A",
-      "Party": order.party?.partyName || "N/A",
-      "Date": moment(order.createdAt).format("DD-MM-YYYY"),
-      "Item Name": order.productItem?.itemName || "N/A",
-      "Size": order.size?.size || "N/A",
-      "Remarks": order.remarks || "N/A",
-      "Ordered By": order.createdBy ? `${order.createdBy.firstName} ${order.createdBy.lastName}` : "Unknown",
-      "Status": order.status || "Received",
-    }));
-  }, [formattedRows]);
 
   // Render row function
   const renderRow = (row: OrderRow, index: number) => {
     return (
-            <>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.orderNumber || "N/A"}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar
-                    src={getAvatarUrl(row)}
-                    sx={{ width: 32, height: 32 }}
-                    alt={row.companyName?.companyName || "Company"}
-                  />
-                  {/* <Typography
+      <>
+        <TableCell>
+          <Typography fontSize="14px" color="#6B7280">
+            {row.orderNumber || "N/A"}
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Avatar
+              src={getAvatarUrl(row)}
+              sx={{ width: 32, height: 32 }}
+              alt={row.companyName?.companyName || "Company"}
+            />
+            {/* <Typography
                     fontWeight={600}
                     fontSize="14px"
                     color="#111827"
@@ -524,68 +564,68 @@ const AllOrdersPage = () => {
                   >
                     {row.companyName?.companyName || "N/A"}
                   </Typography> */}
-                </Box>
-              </TableCell>
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {formatDateToDDMMYYYY(row.createdAt)}
-                </Typography>
-              </TableCell>
+          </Box>
+        </TableCell>
+        <TableCell>
+          <Typography fontSize="14px" color="#6B7280">
+            {formatDateToDDMMYYYY(row.createdAt)}
+          </Typography>
+        </TableCell>
 
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.party?.partyName || "N/A"}
-                </Typography>
-              </TableCell>
+        <TableCell>
+          <Typography fontSize="14px" color="#6B7280">
+            {row.party?.partyName || "N/A"}
+          </Typography>
+        </TableCell>
 
 
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.productItem?.itemName || "N/A"}
-                </Typography>
-              </TableCell>
+        <TableCell>
+          <Typography fontSize="14px" color="#6B7280">
+            {row.productItem?.itemName || "N/A"}
+          </Typography>
+        </TableCell>
 
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                      {typeof row?.size === "object" ? row.size?.size : row?.size || "N/A"}
-                </Typography>
-              </TableCell>
+        <TableCell>
+          <Typography fontSize="14px" color="#6B7280">
+            {typeof row?.size === "object" ? row.size?.size : row?.size || "N/A"}
+          </Typography>
+        </TableCell>
 
-              <TableCell>
-                <Typography sx={{ fontSize: 14, color: "text.secondary" }} title={row.remarks} noWrap>
-                  {row.remarks && row.remarks.length > 10
-                    ? `${row.remarks.substring(0, 13)}...`
-                    : row.remarks}
-                </Typography>
-              </TableCell>
+        <TableCell>
+          <Typography sx={{ fontSize: 14, color: "text.secondary" }} title={row.remarks} noWrap>
+            {row.remarks && row.remarks.length > 10
+              ? `${row.remarks.substring(0, 13)}...`
+              : row.remarks}
+          </Typography>
+        </TableCell>
 
-              <TableCell>
-                <Typography fontSize="14px" color="#6B7280">
-                  {row.createdBy?.firstName || "N/A"} {row.createdBy?.lastName || "N/A"}
-                </Typography>
-              </TableCell>
+        <TableCell>
+          <Typography fontSize="14px" color="#6B7280">
+            {row.createdBy?.firstName || "N/A"} {row.createdBy?.lastName || "N/A"}
+          </Typography>
+        </TableCell>
 
-              <TableCell>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  sx={{ cursor: canViewGlobal ? "pointer" : "default" }}
-                  onClick={canViewGlobal ? () => handleRowClick(row) : undefined}
-                >
-                  <StatusBadge row={row} />
-                  <FaChevronRight
-                    style={{
-                      fontSize: 14,
-                      color: "#9CA3AF",
-                      marginLeft: 8,
-                    }}
-                  />
-                </Box>
-              </TableCell>
-              <TableCell>
-                <Box display="flex" gap={1}>
-                  {/* <Button
+        <TableCell>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            sx={{ cursor: canViewGlobal ? "pointer" : "default" }}
+            onClick={canViewGlobal ? () => handleRowClick(row) : undefined}
+          >
+            <StatusBadge row={row} />
+            <FaChevronRight
+              style={{
+                fontSize: 14,
+                color: "#9CA3AF",
+                marginLeft: 8,
+              }}
+            />
+          </Box>
+        </TableCell>
+        <TableCell>
+          <Box display="flex" gap={1}>
+            {/* <Button
                     variant="outlined"
                     size="small"
                     onClick={() => handleDownloadInvoice(row)}
@@ -594,24 +634,24 @@ const AllOrdersPage = () => {
                   >
                     Quotation
                   </Button> */}
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handleProformaDownload(row)}
-                    sx={{ fontSize: "12px", textTransform: "none" }}
-                  >
-                    Proforma
-                  </Button>
-                </Box>
-              </TableCell>
-              {/* <TableCell>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => handleProformaDownload(row)}
+              sx={{ fontSize: "12px", textTransform: "none" }}
+            >
+              Proforma
+            </Button>
+          </Box>
+        </TableCell>
+        {/* <TableCell>
                 <ThemeButton
                   onClick={() => handleComplainClick(row)}
                 >
                   Complain
                 </ThemeButton>
               </TableCell> */}
-            </>
+      </>
     );
   };
 
@@ -651,7 +691,53 @@ const AllOrdersPage = () => {
           mb: 2,
         }}
       >
+
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <IconButton
+            onClick={handleExcelDownload}
+            disabled={downloadLoading || loading || isLoadingData} // लोडिंग हो तो डिसेबल
+            sx={{
+              border: "1px solid #D0D5DD",
+              borderRadius: 2,
+              p: 1,
+              color: downloadLoading ? "#9CA3AF" : "#667085", // लोडिंग हो तो रंग बदलें
+              display: "flex",
+              alignItems: "center",
+              cursor: downloadLoading ? 'not-allowed' : 'pointer',
+            }}
+            title={downloadLoading ? "Downloading..." : "Download as Excel"}
+          >
+            {/* आप लोडिंग के दौरान एक स्पिनर भी दिखा सकते हैं */}
+            {downloadLoading ? (
+              <CircularProgress size={16} color="inherit" /> 
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="16"
+                width="16"
+                viewBox="0 0 384 512"
+              >
+                <path
+                  fill="#667085"
+                  d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
+                                           10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
+                                           0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
+                                           8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
+                                           405.5 192 373 192 373c-6.4 14.8-10 20-36.6 
+                                           68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 
+                                           0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 
+                                           .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 
+                                           6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 
+                                           6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 
+                                           10.6-6.3H274c9.5-.1 15.2 10.4 10.1 
+                                           18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
+                                           12.5 2.5 17 7l97.9 98c4.5 4.5 7 
+                                           10.6 7 16.9z"
+                />
+              </svg>
+            )}
+            {/* <Typography fontSize={12}>Download excel</Typography>  */}
+          </IconButton>
           <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
         </Box>
       </Box>
@@ -664,9 +750,9 @@ const AllOrdersPage = () => {
           showFillter={true}
           showSearch={true}
           title="All Orders"
-          showExcelDownload={true}
-          excelHeaders={excelHeaders}
-          excelData={excelData}
+          // showExcelDownload={true}
+          // excelHeaders={excelHeaders}
+          // excelData={excelData}
           rowData={formattedRows}
           setCurrentFilterState={setCurrentFilterState}
           currentFilterState={currentFilterState}

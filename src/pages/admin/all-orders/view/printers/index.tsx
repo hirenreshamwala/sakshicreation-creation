@@ -184,7 +184,7 @@ const PrinterForm = () => {
       // }),
       // subPaper: Yup.string().required("Sub Paper is required"),
       // usedPaper: Yup.string().required("Used Paper is required"),
-      pType: Yup.string().required("Product Type is required"),
+      // pType: Yup.string().required("Product Type is required"),
       // printingrate: Yup.string().required("Printing Rate is required"),
       // printingratePerUnit: Yup.string().required("Printing Rate Per Unit is required"),
       // gsm: Yup.string().required("GSM is required"),
