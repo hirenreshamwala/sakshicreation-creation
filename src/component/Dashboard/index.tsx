@@ -134,11 +134,11 @@ const menuItems = [
     icon: <MdAssignment size={18} />,
     path: "/admin/payment-folder",
   },
-  {
-    label: "Quality Packaging",
-    icon: <MdSettings size={18} />,
-    path: "/admin/quality-packageing",
-  },
+  // {
+  //   label: "Quality Packaging",
+  //   icon: <MdSettings size={18} />,
+  //   path: "/admin/quality-packageing",
+  // },
   {
     label: "Performance invoice",
     icon: <MdSettings size={18} />,

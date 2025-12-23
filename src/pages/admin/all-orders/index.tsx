@@ -771,10 +771,10 @@ const AllOrdersPage = () => {
                 />
               </svg>
             )}
-            {/* <Typography fontSize={12}>Download excel</Typography>  */}
+            <Typography fontSize={12} sx={{ml:1}}>Download orders</Typography> 
           </IconButton>
           <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
-          <Button
+          {/* <Button
             variant="contained"
             color="secondary"
             startIcon={exportingPendingApproval ? <CircularProgress size={20} /> : <DownloadIcon />}
@@ -783,40 +783,46 @@ const AllOrdersPage = () => {
             sx={{ minWidth: '220px' }}
           >
             {exportingPendingApproval ? 'Exporting...' : 'Pending Approval Design Orders'}
-          </Button>
-          {/* <IconButton
-        onClick={handleExportPendingClientApproval}
-        disabled={loading || exportingPendingApproval}
-        sx={{
-          border: "1px solid #D0D5DD",
-          borderRadius: 2,
-          p: 1.5,
-          color: "#667085",
-          bgcolor: exportingPendingApproval ? '#f0f0f0' : 'transparent',
-          '&:hover': {
-            bgcolor: '#f5f5f5',
-            borderColor: '#b0b0b0',
-          },
-          '&.Mui-disabled': {
-            borderColor: '#e0e0e0',
-            color: '#aaa',
-          },
-        }}
-      >
-        {exportingPendingApproval ? (
-          <CircularProgress size={20} color="inherit" />
-        ) : (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="20"
-            width="20"
-            viewBox="0 0 384 512"
-            fill="#667085"
-          >
-            <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c0-13.3 10.7-24 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373s-16.9 32.5-36.6 68.8c-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 33.6 62.3 36.6 68.5 3-6.2 9.7-19.9 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"/>
-          </svg>
-        )}
-      </IconButton> */}
+          </Button> */}
+          <IconButton
+                          onClick={handleExportPendingClientApproval}
+                          sx={{
+                            border: "1px solid #D0D5DD",
+                            borderRadius: 2,
+                            p: 1,
+                            color: "#667085",
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                          title="Download as Excel"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            height="16"
+                            width="16"
+                            viewBox="0 0 384 512"
+                          // style={{ marginRight: "8px" }}
+                          >
+                            <path
+                              fill="#667085"
+                              d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
+                                 10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
+                                 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
+                                 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
+                                 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 
+                                 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 
+                                 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 
+                                 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 
+                                 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 
+                                 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 
+                                 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 
+                                 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
+                                 12.5 2.5 17 7l97.9 98c4.5 4.5 7 
+                                 10.6 7 16.9z"
+                            />
+                          </svg>
+                          <Typography fontSize={12} sx={{ml:1}}>Pending approval designs</Typography> 
+                        </IconButton>
         </Box>
       </Box>
       {(loading || isLoadingData) && orders.length === 0 ? (

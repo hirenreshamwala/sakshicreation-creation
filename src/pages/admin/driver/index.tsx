@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { IconButton, TableCell } from "@mui/material";
+import { Box, IconButton, TableCell } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getAllQPOrdersForDriverThunk, getQPOrdersByStaffIdThunk } from "@/store/slices/qpOrderSlice";
 import CustomTable2 from "@/component/common_component/Table/CustomTable2";
@@ -384,6 +384,7 @@ const QPOrdersPage = () => {
 
   return (
     <>
+    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
       <IconButton
         onClick={handleExcelDownload}
         sx={{
@@ -393,6 +394,7 @@ const QPOrdersPage = () => {
           color: "#667085",
           display: "flex",
           alignItems: "center",
+          justifyContent: "space-between",
         }}
         title="Download as Excel"
       >
@@ -423,6 +425,8 @@ const QPOrdersPage = () => {
         </svg>
         {/* <Typography fontSize={12}>Download excel</Typography>  */}
       </IconButton>
+      </Box>
+      
       <CustomTable2
       showDatePicker={false}
       tableHeader={columns}
