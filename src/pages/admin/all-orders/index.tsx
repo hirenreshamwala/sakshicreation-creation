@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
-import { Avatar, Box, TableCell, Typography, Button, IconButton, CircularProgress } from "@mui/material"
+import { Avatar, Box, TableCell, Typography, Button, CircularProgress, IconButton } from "@mui/material"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
 import { useAppDispatch, useAppSelector } from "@/store"
@@ -19,6 +19,8 @@ import { getAllPaginationOrdersThunk, getOrdersByStaffIdThunk } from "@/store/sl
 import _ from "lodash";
 import moment from "moment";
 import { FaChevronRight } from "react-icons/fa6"
+import { reportService } from "@/services/reportService";
+import { Download as DownloadIcon } from '@mui/icons-material';
 
 const columns = [
   { id: "orderNumber", label: "Order No.", value: "orderNumber" },
@@ -118,6 +120,7 @@ const AllOrdersPage = () => {
     search: ""
   };
   const [currentFilterState, setCurrentFilterState] = useState<any>(defaultOrderFilter);
+  const [exportingPendingApproval, setExportingPendingApproval] = useState(false);
   // State for filter options
   const [filterOptionsData, setFilterOptionsData] = useState<{ [key: string]: string[] }>({});
   const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
@@ -269,6 +272,38 @@ const AllOrdersPage = () => {
     setSelectedOrderForComplain(rowData);
     setComplainOpen(true);
   };
+  const handleExportPendingClientApproval = async () => {
+  setExportingPendingApproval(true);
+  try {
+    const payload = {
+      startDate: currentFilterState.startDate || undefined,
+      endDate: currentFilterState.endDate || undefined,
+    };
+
+    const blob = await reportService.exportPendingClientApprovalOrders(payload);
+
+    const dateStr = payload.startDate && payload.endDate
+      ? `${moment(payload.startDate).format('DDMMYYYY')}_to_${moment(payload.endDate).format('DDMMYYYY')}`
+      : 'All_Time';
+
+    const fileName = `Pending_Client_Approval_Orders_${dateStr}.xlsx`;
+
+    const url = window.URL.createObjectURL(new Blob([blob]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    toast.success('Pending client approval orders exported successfully');
+  } catch (error: any) {
+    toast.error(error.message || 'Failed to export pending approval orders');
+  } finally {
+    setExportingPendingApproval(false);
+  }
+};
 
   const handleExcelDownload = async () => {
     // डाउनलोड प्रक्रिया शुरू करने से पहले कुछ चेक
@@ -739,6 +774,49 @@ const AllOrdersPage = () => {
             {/* <Typography fontSize={12}>Download excel</Typography>  */}
           </IconButton>
           <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={exportingPendingApproval ? <CircularProgress size={20} /> : <DownloadIcon />}
+            onClick={handleExportPendingClientApproval}
+            disabled={exportingPendingApproval || loading || isLoadingData}
+            sx={{ minWidth: '220px' }}
+          >
+            {exportingPendingApproval ? 'Exporting...' : 'Pending Approval Design Orders'}
+          </Button>
+          {/* <IconButton
+        onClick={handleExportPendingClientApproval}
+        disabled={loading || exportingPendingApproval}
+        sx={{
+          border: "1px solid #D0D5DD",
+          borderRadius: 2,
+          p: 1.5,
+          color: "#667085",
+          bgcolor: exportingPendingApproval ? '#f0f0f0' : 'transparent',
+          '&:hover': {
+            bgcolor: '#f5f5f5',
+            borderColor: '#b0b0b0',
+          },
+          '&.Mui-disabled': {
+            borderColor: '#e0e0e0',
+            color: '#aaa',
+          },
+        }}
+      >
+        {exportingPendingApproval ? (
+          <CircularProgress size={20} color="inherit" />
+        ) : (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            height="20"
+            width="20"
+            viewBox="0 0 384 512"
+            fill="#667085"
+          >
+            <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c0-13.3 10.7-24 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373s-16.9 32.5-36.6 68.8c-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 33.6 62.3 36.6 68.5 3-6.2 9.7-19.9 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"/>
+          </svg>
+        )}
+      </IconButton> */}
         </Box>
       </Box>
       {(loading || isLoadingData) && orders.length === 0 ? (

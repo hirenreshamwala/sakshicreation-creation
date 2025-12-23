@@ -30,21 +30,20 @@ const QPOrdersPage = () => {
   const dispatch = useAppDispatch();
   const { orders, loading, totalCount } = useAppSelector((state) => state.qpOrders);
   const userData = getUserData();
-
+   const defaultOrderFilter = {
+  page: 1,
+  pageSize: 10,
+  search: "",
+  filters: {},
+  includeCounts: true,
+  isPagination: true,
+  dateRange: { start: null, end: null },
+  startDate: null,
+  endDate: null,
+  status: ["Completed"],
+  };
   // Filter states
-  const [currentFilterState, setCurrentFilterState] = useState<any>({
-    page: 1,
-    pageSize: 10,
-    search: "",
-    filters: {},
-    includeCounts: true,
-    isPagination: true,
-    dateRange: { start: null, end: null },
-    startDate: null,
-    endDate: null,
-    status: ["Completed"], // This is now sent as top-level parameter
-  });
-
+  const [currentFilterState, setCurrentFilterState] = useState<any>(defaultOrderFilter);
 
   const [appliedFilterState, setAppliedFilterState] = useState<any>({});
   const [isInitialLoad, setIsInitialLoad] = useState(false);
@@ -425,21 +424,23 @@ const QPOrdersPage = () => {
         {/* <Typography fontSize={12}>Download excel</Typography>  */}
       </IconButton>
       <CustomTable2
-        showDatePicker={false}
-        tableHeader={columns}
-        showFillter={true}
-        showSearch={true}
-        rowData={formattedRows}
-        setCurrentFilterState={setCurrentFilterState}
-        currentFilterState={currentFilterState}
-        renderRow={renderRow}
-        totalRows={totalCount || formattedRows.length}
-        onFilterFieldSelect={handleFilterFieldSelect}
-        selectedFilterField={selectedFilterField}
-        filterOptionsData={filterOptionsData}
-        loadingFilterOptions={loadingFilterOptions}
-        onFiltersChange={handleFiltersChange}
-      />
+      showDatePicker={false}
+      tableHeader={columns}
+      showFillter={true}
+      showSearch={true}
+      title="Completed Orders"
+      rowData={formattedRows}
+      setCurrentFilterState={setCurrentFilterState}
+      defaultFilter={defaultOrderFilter}
+      currentFilterState={currentFilterState}
+      renderRow={renderRow}
+      totalRows={totalCount || formattedRows.length}
+      onFilterFieldSelect={handleFilterFieldSelect}
+      selectedFilterField={selectedFilterField}
+      filterOptionsData={filterOptionsData}
+      loadingFilterOptions={loadingFilterOptions}
+      onFiltersChange={handleFiltersChange}
+    />
     </>
   );
 };

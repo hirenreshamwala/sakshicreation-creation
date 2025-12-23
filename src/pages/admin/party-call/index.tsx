@@ -103,20 +103,23 @@ const columns = [
   { id: "company", label: "Company" },
   { id: "createdAt", label: "Created Date" },
   { id: "party", label: "Party" },
-  { id: "reason", label: "Reason to Call" },
-  { id: "mobile", label: "Mobile No." },
   { id: "address", label: "Unit No" },
   { id: "market", label: "Market Name" },
   { id: "area", label: "Area" },
+  { id: "contactPerson", label: "Contact Person" },
+  { id: "mobile", label: "Mobile No." },
+  { id: "partyTag", label: "Tag" },
+  // { id: "remarks", lable: "Remarks" },
+  { id: "reason", label: "Reason to Call" },
   { id: "feedback", label: "feedback" },
-  { id: "statusofparty", label: "Status of Party" },
+  // { id: "statusofparty", label: "Status of Party" },
   { id: "status", label: "Status" },
   { id: "createdBy", label: "Created By" },
   { id: "assignedTo", label: "Assigned To" },
   { id: "actions", label: "Actions" },
 ];
 
-const tabLabels = ["Pending", "History"];
+const tabLabels = ["Pending", "Completed"];
 
 const LeadManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -716,10 +719,6 @@ const LeadManagementPage: React.FC = () => {
         {row.partyName?.partyName || "N/A"}
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>
-        {row.reason === "Other" ? row.customReason || "Other" : row.reason}
-      </TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.partyName?.ownerWhatsAppNo || "N/A"}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>
         {row.partyName?.address
           ? truncateText(
             `${row.partyName.address.unitNo}`,
@@ -729,6 +728,21 @@ const LeadManagementPage: React.FC = () => {
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.partyName?.address?.marketName?.marketName || "N/A"}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.partyName?.address?.area?.area || "N/A"}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.partyName?.contactPerson || "N/A"}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.partyName?.ownerWhatsAppNo || "N/A"}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.partyName?.partyTag}</TableCell>
+      {/* <TableCell sx={{ fontSize: 14 }}>
+          <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>
+            {row.remarks && row.remarks.length > 10
+              ? `${row.remarks.substring(0, 10)}...`
+              : row.remarks}
+          </Typography>
+        </TableCell> */}
+      <TableCell sx={{ fontSize: 14 }}>
+        {row.reason === "Other" ? row.customReason || "Other" : row.reason}
+      </TableCell>
+      
+      
       <TableCell sx={{ fontSize: 14 }}>
         <Tooltip title={row.feedback || row.callFeedback || "No feedback"}>
           <Typography
@@ -743,7 +757,7 @@ const LeadManagementPage: React.FC = () => {
           </Typography>
         </Tooltip>
       </TableCell>
-      <TableCell sx={{ fontSize: 14 }}>
+      {/* <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip
           label={row.partyName?.partyTag || "N/A"}
           color={row.partyName?.partyTag === "New" ? "primary" : "default"}
@@ -758,7 +772,7 @@ const LeadManagementPage: React.FC = () => {
             height: 28,
           }}
         />
-      </TableCell>
+      </TableCell> */}
       <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip
           label={row.status.charAt(0).toUpperCase() + row.status.slice(1) || "N/A"}

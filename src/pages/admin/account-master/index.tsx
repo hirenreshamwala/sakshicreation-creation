@@ -138,15 +138,16 @@ const AccountMasterPage: React.FC = memo(() => {
     { id: "company", label: "company" },
     { id: "createdDate", label: "Created Date", value: "createdAt" },
     { id: "party", label: "party", value: "party" },
-    { id: "contactPerson", label: "Contact Person", value: "contactPerson" },
-    { id: "partyTag", label: "Party Tag", value: "partyTag" },
-    { id: "mobile", label: "Mobile No.", value: "mobile" },
-    { id: "reason", label: "Reason to Visit", value: "reason" },
     { id: "unitno", label: "Unit No", value: "unitNo" },
     { id: "market", label: "Market", value: "market" },
     { id: "area", label: "Area", value: "area" },
-    { id: "remarks", label: "Remarks" },
-    { id: "status", label: "Status" },
+    { id: "contactPerson", label: "Contact Person", value: "contactPerson" },
+    { id: "mobile", label: "Mobile No.", value: "mobile" },
+    { id: "partyTag", label: "Party Tag", value: "partyTag" },
+    // { id: "reason", label: "Reason to Visit", value: "reason" },
+    
+    // { id: "remarks", label: "Remarks" },
+    // { id: "status", label: "Status" },
     canViewOwn ? { id: "createdBy", label: "Created By" } : { id: "createdBy", label: "Created By", value: "createdBy" },
     { id: "assignedTo", label: "Assigned to", value: "assignedTo" },
     { id: "action", label: "Action" },
@@ -545,7 +546,11 @@ const AccountMasterPage: React.FC = memo(() => {
               >
                 {row.party}
               </TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.unitno}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.market}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.contactPerson}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
               <TableCell>
                 <ThemeChip
                   label={row.partyTag}
@@ -562,11 +567,9 @@ const AccountMasterPage: React.FC = memo(() => {
                   }}
                 />
               </TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.unitno}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.market}</TableCell>
-              <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
+              
+              {/* <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
+              
               <TableCell sx={{ fontSize: 14 }}>
                 <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>
                   {row.remarks && row.remarks.length > 10 ? `${row.remarks.substring(0, 10)}...` : row.remarks}
@@ -586,7 +589,7 @@ const AccountMasterPage: React.FC = memo(() => {
                     border: "none",
                   }}
                 />
-              </TableCell>
+              </TableCell> */}
               <TableCell sx={{ fontSize: 14 }}>{row.createdBy}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.assignedTo.toLowerCase() === "undefined undefined" ? row.createdBy : row.assignedTo}</TableCell>
               <TableCell sx={{ display: "flex", gap: 1 }}>

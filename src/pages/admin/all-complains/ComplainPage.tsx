@@ -1,6 +1,15 @@
+"use client";
+
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import { Box, TableCell, IconButton, Typography, Button } from "@mui/material";
-import { Delete, Edit, Visibility, AttachFile } from '@mui/icons-material';
+import {
+  Box,
+  TableCell,
+  IconButton,
+  Typography,
+  Button,
+  CircularProgress,
+} from "@mui/material";
+import { Delete, Edit, Visibility, AttachFile, Download as DownloadIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import CustomTable2 from "@/component/common_component/Table/CustomTable2";
@@ -11,7 +20,10 @@ import { StaticCompanyOptions } from '@/constants';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { getAllCompaniesThunk } from '@/store/slices/compnaySlice';
 import { deleteComplainThunk, getAllComplainsThunk, getComplainsByStaffThunk } from '@/store/slices/complainSlice';
+import { reportService } from "@/services/reportService"; 
 import { complainService } from "@/services/complain.service";
+
+import moment from 'moment';
 
 const columns = [
     { id: 'sr', label: 'Sr no' },
@@ -41,6 +53,7 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
     const [selectedComplaintSubject, setSelectedComplaintSubject] = useState<string>('');
     const [editData, setEditData] = useState<any>(null);
     const [viewData, setViewData] = useState<any>(null);
+    const [exporting, setExporting] = useState(false);
 
     // Redux selectors
     const { companies } = useAppSelector((state) => state.company);
@@ -55,16 +68,11 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
         
         const companyName = company?.companyName || StaticCompanyOptions[0];
         const foundCompany = companies.find((item) => item.companyName === companyName);
-        
-        return foundCompany || { 
-            _id: "default-company-id", 
-            companyName: companyName 
-        };
+        return foundCompany || { _id: "default", companyName };
     }, [company, companies]);
 
-    // Filter states - use selectedCompany
-    const [currentFilterState, setCurrentFilterState] = useState<any>({
-        page: 1,
+    const defaultFilter = {
+         page: 1,
         pageSize: 10,
         search: "",
         filters: {},
@@ -72,8 +80,8 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
         isPagination: true,
         startDate: null,
         endDate: null,
-        company: selectedCompany.companyName, // Add company filter at top level
-    });
+    }
+    const [currentFilterState, setCurrentFilterState] = useState<any>(defaultFilter);
 
     const [appliedFilterState, setAppliedFilterState] = useState<any>({});
     const [isInitialLoad, setIsInitialLoad] = useState(false);
@@ -94,43 +102,33 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
     const canEdit = user?.role?.permissions?.all_complains?.edit;
     const canDelete = user?.role?.permissions?.all_complains?.delete;
 
-    // Load complains with filters
-    const loadComplains = useCallback(async () => {
-        if (isLoadingRef.current) {
-            console.log("⚠️ Complain API call already in progress, skipping...");
-            return;
-        }
+  const companyNames = useMemo(() => {
+    return [...new Set(companies.map(c => c.companyName))].sort();
+  }, [companies]);
 
-        if (!selectedCompany?._id) {
-            console.error("Cannot load complains: Company ID is undefined");
-            return;
-        }
+  const loadComplains = useCallback(async () => {
+    if (isLoadingRef.current) return;
+    if (!selectedCompany?._id) return;
 
         setIsLoadingData(true);
         isLoadingRef.current = true;
-        
+
         try {
-            const params = {
-                ...currentFilterState,
-                filters: {
-                    ...currentFilterState.filters,
-                    // Add company to filters if not already present
-                    ...(currentFilterState.filters.company ? {} : { company: [selectedCompany.companyName] }),
-                },
-                isPagination: true,
-                includeCounts: true
-            };
+        const params = {
+            ...currentFilterState,
+            filters: {
+            ...currentFilterState.filters,
+            company: [selectedCompany.companyName],
+            },
+            isPagination: true,
+            includeCounts: true
+        };
 
-            console.log("📡 Loading complains with params:", params);
-
-            if (canViewGlobal) {
-                await dispatch(getAllComplainsThunk(params));
-            } else if (canViewOwn && user?.id) {
-                await dispatch(getComplainsByStaffThunk({ 
-                    staffId: user.id, 
-                    filters: params 
-                }));
-            }
+        if (canViewGlobal) {
+            await dispatch(getAllComplainsThunk(params));
+        } else if (canViewOwn && user?.id) {
+            await dispatch(getComplainsByStaffThunk({ staffId: user.id, filters: params }));
+        }
 
             setIsInitialLoad(true);
         } catch (err: any) {
@@ -157,13 +155,8 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
             const filterPayload = {
                 ...currentFilterState.filters,
                 ...extraFilters,
-                startDate: currentFilterState.startDate,
-                endDate: currentFilterState.endDate,
-                // Always include company filter for filter options
                 company: [selectedCompany.companyName],
             };
-
-            console.log(`🔍 Loading complain filter options for ${field}:`, filterPayload);
 
             const response = await complainService.searchFilterOptions(field, "", filterPayload);
 
@@ -174,33 +167,21 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
                 }));
             }
         } catch (error: any) {
-            console.error(`Error loading complain filter options for ${field}:`, error);
             toast.error(`Failed to load filter options for ${field}`);
         } finally {
             setLoadingFilterOptions(false);
         }
     };
 
-    // Handle filter field selection
     const handleFilterFieldSelect = useCallback(async (field: string | null) => {
-        console.log("Complain handleFilterFieldSelect called with:", field);
         setSelectedFilterField(field);
-
         if (field && !filterOptionsData[field]) {
-            try {
-                await loadFilterOptions(field);
-            } catch (error) {
-                console.error("Error loading complain filter options:", error);
-                toast.error(`Failed to load options for ${field}`);
-            }
+        await loadFilterOptions(field);
         }
-
         return Promise.resolve();
-    }, [filterOptionsData, currentFilterState, loadFilterOptions]);
+    }, [filterOptionsData, loadFilterOptions]);
 
-    // Handle filter changes
     const handleFiltersChange = useCallback((newFilters: { [key: string]: string[] }) => {
-        console.log("Complain Filters changed to:", newFilters);
         setCurrentFilterState((prev: any) => ({
             ...prev,
             filters: newFilters,
@@ -228,10 +209,9 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
     // Effect for initial load
     useEffect(() => {
         if (user && !isInitialLoad && selectedCompany?._id) {
-            console.log("🚀 Initial load started for complains");
-            loadComplains();
+        loadComplains();
         }
-    }, []); // Empty deps: Run only once on mount (user/selectedCompany assumed stable after mount)
+    }, [selectedCompany]); // company change થાય તો reload
 
     // Handle add new complain
     const handleAddNewOrder = () => {
@@ -251,7 +231,7 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
     const handleDelete = async (id: string) => {
         const result = await Swal.fire({
             title: 'Are you sure?',
-            text: 'Do you want to delete this complaint? This action cannot be undone.',
+            text: 'Do you want to delete this complaint?',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -313,16 +293,10 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
         setSelectedComplaintSubject('');
     };
 
-    // Format rows for table
-    const formattedRows = useMemo(() => {
-        if (!complains || !Array.isArray(complains) || !selectedCompany?._id) return [];
+  const formattedRows = useMemo(() => {
+    if (!complains || !Array.isArray(complains)) return [];
 
-        return complains
-            .filter(complaint => {
-                const companyId = complaint?.company?._id;
-                return companyId === selectedCompany._id;
-            })
-            .map((complaint, index) => ({
+    return complains.map((complaint, index) => ({
                 _id: complaint?._id || `temp-${index}`,
                 id: complaint?._id || `temp-${index}`,
                 orderNo: complaint?.qporder?.orderNo 
@@ -334,12 +308,10 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
                 createdBy: `${complaint?.createdBy?.firstName || ''} ${complaint?.createdBy?.lastName || ''}`.trim() || 'N/A',
                 filePaths: complaint?.filePaths || [],
                 createdAt: complaint?.createdAt || new Date().toISOString(),
-                companyName: complaint?.company?.companyName || 'N/A',
-                // Add raw values for filtering
                 party: complaint?.party?.partyName || 'N/A',
                 srNo: index + 1,
-            }));
-    }, [complains, selectedCompany]);
+                }));
+            }, [complains]);
 
     // Render row function
                 const renderRow = useCallback((row: any, index: number) => (
@@ -390,72 +362,71 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
                     </>
     ), [canEdit, canDelete, handleViewFiles, handleView, handleEdit, handleDelete]);
 
-    // Excel headers for export
-    const excelHeaders = useMemo(() => [
-        "Sr No",
-        "Order No",
-        "Party Name",
-        "Subject",
-        "Status",
-        "Created By",
-        "Files Count",
-        "Created Date",
-    ], []);
+  // Export to Excel with all current filters
+  const handleExportToExcel = async () => {
+    setExporting(true);
+    try {
+      // Prepare payload with ALL current filters
+      const payload: any = {
+        filters: currentFilterState.filters || {},
+        search: currentFilterState.search || "",
+        pageSize: -1, // Export all records
+      };
 
-    // Excel data for export
-    const excelData = useMemo(() => {
-        return formattedRows.map((row, index) => ({
-            "Sr No": index + 1,
-            "Order No": row.orderNo,
-            "Party Name": row.partyName,
-            "Subject": row.subject,
-            "Status": row.status,
-            "Created By": row.createdBy,
-            "Files Count": row.filePaths?.length || 0,
-            "Created Date": row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-            }) : 'N/A',
-        }));
-    }, [formattedRows]);
+      // Add date filters if available
+      if (currentFilterState.startDate) payload.startDate = currentFilterState.startDate;
+      if (currentFilterState.endDate) payload.endDate = currentFilterState.endDate;
 
-    // Show loading while initial data is being loaded
-    if ((loading || isLoadingData) && !isInitialLoad && complains.length === 0) {
-        return <div>Loading Complains...</div>;
+      // Always export current company only
+      payload.companyNames = [selectedCompany.companyName];
+
+      // For staff view, add staffId
+      if (canViewOwn && !canViewGlobal && user?.id) {
+        payload.staffId = user.id;
+      }
+
+      console.log('Export payload:', payload); // Debug
+
+      const blob = await reportService.exportComplainToExcel(payload);
+
+      const fileName = `Complains_${selectedCompany.companyName.replace(/ /g, '_')}_${payload.startDate ? moment(payload.startDate).format('DDMMYYYY') + '_to_' + moment(payload.endDate).format('DDMMYYYY') : 'All_Time'}_${moment().format('DDMMYYYY_HHmm')}.xlsx`;
+
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Excel file downloaded successfully');
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast.error(error.message || 'Failed to export Excel file');
+    } finally {
+      setExporting(false);
     }
+  };
 
-    // Show error if company is not available
+  if ((loading || isLoadingData) && !isInitialLoad && complains.length === 0) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>;
+  }
+
     if (!selectedCompany?._id) {
         return (
-            <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                height: '200px'
-            }}>
-                <Typography color="error">
-                    Company information is not available. Please try again.
-                </Typography>
-            </div>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+        <Typography color="error">Company information is not available.</Typography>
+        </Box>
         );
     }
 
     return (
         <>
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'right',
-                    justifyContent: 'right',
-                    gap: 2,
-                    mb: 2,
-                }}
-            >
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2, flexWrap: 'wrap' }}>
                 {canCreate && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Button 
-                            variant="contained" 
+                        <Button
+                            variant="contained"
                             onClick={handleAddNewOrder}
                             sx={{
                                 backgroundColor: '#7F56D9',
@@ -466,9 +437,42 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
                         >
                             + Add New Complain
                         </Button>
-                    </Box>
-                )}
-            </Box>
+                        )}
+
+            <IconButton
+                    onClick={handleExportToExcel}
+                    disabled={loading || exporting}
+                    // sx={{
+                    //     border: "1px solid #D0D5DD",
+                    //     borderRadius: 2,
+                    //     p: 1.5,
+                    //     color: "#667085",
+                    //     bgcolor: exporting ? '#f0f0f0' : 'transparent',
+                    //     '&:hover': {
+                    //     bgcolor: '#f5f5f5',
+                    //     borderColor: '#b0b0b0',
+                    //     },
+                    //     '&.Mui-disabled': {
+                    //     borderColor: '#e0e0e0',
+                    //     color: '#aaa',
+                    //     },
+                    // }}
+                    >
+                    {exporting ? (
+                        <CircularProgress size={20} color="inherit" />
+                    ) : (
+                        <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        height="20"
+                        width="20"
+                        viewBox="0 0 384 512"
+                        fill="#667085"
+                        >
+                        <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c0-13.3 10.7-24 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373s-16.9 32.5-36.6 68.8c-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 33.6 62.3 36.6 68.5 3-6.2 9.7-19.9 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"/>
+                        </svg>
+                    )}
+                    </IconButton>
+        </Box>
 
             <CustomTable2
                 showDatePicker={true}
@@ -477,11 +481,10 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
                 showSearch={true}
                 title={`Complains - ${selectedCompany.companyName}`}
                 showExcelDownload={false}
-                excelHeaders={excelHeaders}
-                excelData={excelData}
                 rowData={formattedRows}
                 setCurrentFilterState={setCurrentFilterState}
                 currentFilterState={currentFilterState}
+                defaultFilter ={defaultFilter}
                 renderRow={renderRow}
                 totalRows={totalCount || formattedRows.length}
                 onFilterFieldSelect={handleFilterFieldSelect}

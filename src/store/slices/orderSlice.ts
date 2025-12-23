@@ -34,6 +34,7 @@ interface Order {
   };
   createdAt: string;
   updatedAt: string;
+  clientApprovalSentAt?: string;
 }
 interface PaperField {
   paperName: string;
