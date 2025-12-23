@@ -25,7 +25,7 @@ import Loader from "@/component/common_component/loader";
 import { FiSearch } from "react-icons/fi";
 import { toast } from "react-toastify";
 import TabComponent from "@/component/Dialog/TabComponent";
-import { formatDateToDDMMYYYY, getCompanyWisePermission } from "@/utills/utills";
+import { formatDateToDDMMYYYY, getCompanyWisePermission, getFirstFourChars } from "@/utills/utills";
 import { useRouter } from "next/router";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { StaticCompanyOptions } from "@/constants";
@@ -813,7 +813,7 @@ const AssignTaskPage: React.FC = () => {
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.status}</TableCell>
         {/* <TableCell sx={getCellSx({ fontSize: 14 })}>
           <ThemeChip
-            label={row.status}
+            label={getFirstFourChars(row.status)}
             icon={
               row.statusType === "success" ? (
                 <AiOutlineCheck style={{ fontSize: 18 }} />

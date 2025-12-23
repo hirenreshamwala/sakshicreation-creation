@@ -21,6 +21,7 @@ import Loader from '@/component/common_component/loader';
 import AssignLeadDialog from '@/component/AssignLeadDialog';
 import { leadService } from '@/services/lead.service';
 import { assignTaskService } from '@/services/assignTask.service';
+import { getFirstFourChars } from '@/utills/utills';
 
 interface Task {
   _id: string;
@@ -195,7 +196,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true 
           <Typography component="div">Status</Typography>
           {task.status ? (
             <ThemeChip
-              label={task.status}
+              label={getFirstFourChars(task.status)}
               color={
                 task.status === 'Completed'
                   ? 'success'
@@ -304,7 +305,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, title = 'Lead' }) => {
             <strong>Status:</strong>
           </Typography>
           <ThemeChip
-            label={lead.status}
+            label={getFirstFourChars(lead.status)}
             color={
               lead.status === 'completed'
                 ? 'success'

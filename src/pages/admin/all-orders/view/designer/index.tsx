@@ -41,7 +41,7 @@ import { performanceInvoiceService } from "@/services/performanceInvoice.service
 import Request from "@/services/axios"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
-import { formatDateToDDMMYYYY } from "@/utills/utills"
+import { formatDateToDDMMYYYY, getFirstFourChars } from "@/utills/utills"
 
 const uploadFilesToServer = async (files: File[], folder: string): Promise<any[]> => {
   const BaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
@@ -1794,7 +1794,7 @@ const handleSendClientApproval = async () => {
                 Status:
               </Typography>
               <ThemeChip
-                label={singleOrder?.designerStatus || "Pending"}
+                label={getFirstFourChars(singleOrder?.designerStatus || "Pending")}
                 variant="outlined"
                 sx={{
                   backgroundColor:

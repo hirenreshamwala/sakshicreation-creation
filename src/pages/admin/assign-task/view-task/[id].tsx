@@ -12,6 +12,7 @@ import { MdTurnLeft } from 'react-icons/md';
 import Loader from '@/component/common_component/loader';
 import AssignTaskDialog from '@/component/assigntaskdailog';
 import { assignTaskService } from '@/services/assignTask.service';
+import { getFirstFourChars } from '@/utills/utills';
 
 // Interface for Address
 interface Address {
@@ -180,7 +181,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true,
           {task.isRescheduledTask && (
             <Tooltip title={`Rescheduled from ${originalTaskDate}`}>
               <ThemeChip
-                label="Rescheduled"
+                label={getFirstFourChars("Rescheduled")}
                 color="warning"
                 size="small"
                 sx={{
@@ -232,7 +233,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true,
           <Typography component="div">Status</Typography>
           {task.status && showStatusChip ? (
             <ThemeChip
-              label={task.status}
+              label={getFirstFourChars(task.status)}
               color={task.status === 'Completed' ? 'success' : task.status === 'Pending' ? 'warning' : 'error'}
               variant="outlined"
               sx={{
