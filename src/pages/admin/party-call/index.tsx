@@ -25,7 +25,7 @@ import Swal from "sweetalert2";
 import Loader from "@/component/common_component/loader";
 import { toast } from "react-toastify";
 import TabComponent from "@/component/Dialog/TabComponent";
-import { getCompanyWisePermission } from "@/utills/utills";
+import { getCompanyWisePermission, getFirstFourChars } from "@/utills/utills";
 import { StaticCompanyOptions } from "@/constants";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { leadService } from "@/services/lead.service";
@@ -775,7 +775,7 @@ const LeadManagementPage: React.FC = () => {
       </TableCell> */}
       <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip
-          label={row.status.charAt(0).toUpperCase() + row.status.slice(1) || "N/A"}
+          label={getFirstFourChars(row.status) || "N/A"}
           color={
             row.status === "pending" ? "primary" :
               row.status === "rescheduled" ? "warning" :

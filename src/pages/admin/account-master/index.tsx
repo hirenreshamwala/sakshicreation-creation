@@ -17,7 +17,7 @@ import AssignTaskDialog from "@/component/assigntaskdailog";
 import { toast } from "react-toastify";
 import { useMemo } from "react";
 import TabComponent from "@/component/Dialog/TabComponent";
-import { getCompanyWisePermission } from "@/utills/utills";
+import { getCompanyWisePermission, getFirstFourChars } from "@/utills/utills";
 import moment from "moment";
 import CustomTable from "@/component/common_component/Table/CustomTable";
 import { accountMasterService } from "@/services/accountMaster.service";
@@ -554,7 +554,7 @@ const AccountMasterPage: React.FC = memo(() => {
               <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
               <TableCell>
                 <ThemeChip
-                  label={row.partyTag}
+                  label={getFirstFourChars(row.partyTag)}
                   color={row.partyTag === "New" ? "primary" : "secondary"}
                   variant="outlined"
                   sx={{

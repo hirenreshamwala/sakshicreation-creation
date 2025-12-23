@@ -13,6 +13,7 @@ import AssignLeadDialog from '@/component/AssignLeadDialog';
 import Swal from 'sweetalert2';
 import CallHistoryDialog from '@/component/Dialog/CallHistoryDialog';
 import { leadService } from '@/services/lead.service';
+import { getFirstFourChars } from '@/utills/utills';
 
 interface Lead {
   _id: string;
@@ -151,7 +152,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onRescheduleClick, setOpenHis
           {lead.isRescheduledCall && (
             <Tooltip title={`Rescheduled from ${originalLeadDate}`}>
               <ThemeChip
-                label="Rescheduled"
+                label={getFirstFourChars("Rescheduled")}
                 color="warning"
                 size="small"
                 sx={{
@@ -207,7 +208,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onRescheduleClick, setOpenHis
             <strong>Status:</strong>
           </Typography>
           <ThemeChip
-            label={lead.status.charAt(0).toUpperCase() + lead.status.slice(1) || 'N/A'}
+            label={getFirstFourChars(lead.status) || 'N/A'}
             color={
               lead.status === 'pending'
                 ? 'primary'
