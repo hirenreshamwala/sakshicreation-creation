@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { Box, TableCell, Button, Popover, List, ListItem, ListItemText } from "@mui/material";
+import React, { useEffect, useMemo, useState } from "react";
+import { Box, TableCell, Button, Popover, List, ListItem, ListItemText, IconButton, Tooltip } from "@mui/material";
 import { useAppSelector } from "@/store";
 import Request from "@/services/axios";
 import BasicTable from "../common_component/Table/themetable";
 import Loader from "../common_component/loader";
+import * as XLSX from "xlsx";
+import { FiDownload } from "react-icons/fi";
 
 interface InactivePartiesDataProps {
     activeTab: number;
@@ -50,10 +52,85 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
     // Filtered data based on partyTypeFilter
     const filteredData = inactiveData.filter((row) => {
         if (partyTypeFilter === 'All') return true;
-        if (partyTypeFilter === 'New Party') return !row.lastOrderDate;
-        if (partyTypeFilter === 'Customer') return !!row.lastOrderDate;
+        if (partyTypeFilter === 'New Party') return row.partyTag === 'NEW';
+        if (partyTypeFilter === 'Customer') return row.partyTag === 'CUSTOMER';
         return true;
     });
+
+    const formatLastOrderDate = (date: string | null) => {
+        if (!date) {
+            return "NEW PARTY";
+        }
+
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, "0");
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const year = d.getFullYear();
+
+        return `${day}-${month}-${year}`;
+    };
+
+    // Excel डाउनलोड के लिए डेटा तैयार करें
+    const prepareExcelData = useMemo(() => {
+        return filteredData.map((row) => {
+            if (companyName === 'Sakshi') {
+                return {
+                    'Party': row.partyName || 'N/A',
+                    'Address': `${row.address?.unitNo || ''} - ${row.address?.marketName || ''} - ${row.address?.area || ''} - ${row.address?.pincode || ''}`,
+                    'Created By': `${row.createdBy?.firstName || ''} ${row.createdBy?.lastName || ''}`,
+                    'Last Order Date': formatLastOrderDate(row.actualLastOrderDate),
+                    'Last Order Number': row?.lastOrderId?.orderNumber || "-",
+                    'Item Name': row?.lastOrderId?.productItem?.itemName || "-",
+                    'Quantity': row?.lastOrderId?.qty || "-",
+                    'Amount': row?.lastOrderId?.finalAmount?.toFixed(2) || "-",
+                };
+            } else if (companyName === 'QP') {
+                return {
+                    'Party': row.partyName || 'N/A',
+                    'Address': `${row.address?.unitNo || ''} - ${row.address?.marketName || ''} - ${row.address?.area || ''} - ${row.address?.pincode || ''}`,
+                    'Created By': `${row.createdBy?.firstName || ''} ${row.createdBy?.lastName || ''}`,
+                    'Last Order Date': formatLastOrderDate(row.actualLastOrderDate),
+                    'Last Order Number': `QP-${row?.lastOrderId?.orderNo || 'N/A'}`,
+                    'Ply': row?.lastOrderId?.orderdata?.ply || 'N/A',
+                    'Size': `${row?.lastOrderId?.orderdata?.length || 'N/A'} x ${row?.lastOrderId?.orderdata?.width || 'N/A'} x ${row?.lastOrderId?.orderdata?.height || 'N/A'}`,
+                    'Deckal': row?.lastOrderId?.orderdata?.deckal || 'N/A',
+                    'GSM': `${row?.lastOrderId?.orderdata?.paper1GSM || 'N/A'} - ${row?.lastOrderId?.orderdata?.paper2GSM || 'N/A'} - ${row?.lastOrderId?.orderdata?.paper3GSM || 'N/A'}`,
+                    'Piece No': row?.lastOrderId?.noOfPieces || 'N/A',
+                    'Amount': row?.lastOrderId?.amount || 'N/A',
+                };
+            }
+            return {};
+        });
+    }, [filteredData, companyName]);
+
+    // Excel हेडर्स तैयार करें
+    const excelHeaders = useMemo(() => {
+        if (companyName === 'Sakshi') {
+            return ['Party', 'Address', 'Created By', 'Last Order Date', 'Last Order Number', 'Item Name', 'Quantity', 'Amount'];
+        } else if (companyName === 'QP') {
+            return ['Party', 'Address', 'Created By', 'Last Order Date', 'Last Order Number', 'Ply', 'Size', 'Deckal', 'GSM', 'Piece No', 'Amount'];
+        }
+        return [];
+    }, [companyName]);
+
+    // Excel डाउनलोड फंक्शन
+    const handleExcelDownload = () => {
+        if (prepareExcelData.length === 0) return;
+
+        // Create worksheet
+        const worksheet = XLSX.utils.json_to_sheet(prepareExcelData);
+
+        // Add headers to the worksheet
+        XLSX.utils.sheet_add_aoa(worksheet, [excelHeaders], { origin: "A1" });
+
+        // Create workbook
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Inactive Parties");
+
+        // Download file
+        const fileName = `Inactive_Parties_${companyName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+    };
 
     // Conditional columns based on companyName
     const getColumns = () => {
@@ -126,19 +203,6 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
         }
     }, [activeTab, companyName, selectedDays]);
 
-    const formatLastOrderDate = (date: string | null) => {
-        if (!date) {
-            return "NEW PARTY";
-        }
-
-        const d = new Date(date);
-        const day = String(d.getDate()).padStart(2, "0");
-        const month = String(d.getMonth() + 1).padStart(2, "0");
-        const year = d.getFullYear();
-
-        return `${day}-${month}-${year}`;
-    };
-
     const handleNewcClick = (partyName) => {
         const url = `/admin/all-orders?&party=${partyName}&c=${companyName}`;
         window.open(url, '_blank');
@@ -151,26 +215,14 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
                 <TableCell onClick={() => handleNewcClick(row._id)} sx={{ cursor: 'pointer' }}>{row.partyName || 'N/A'}</TableCell>
                 <TableCell>{`${row.address.unitNo} - ${row.address.marketName} - ${row.address.area} - ${row.address.pincode}`}</TableCell>
                 <TableCell>{`${row.createdBy.firstName} ${row.createdBy.lastName}`}</TableCell>
-                <TableCell>{formatLastOrderDate(row.lastOrderDate)}</TableCell>
-                <TableCell>{`${row?.lastOrderId?.orderNumber || "New party"}`}</TableCell>
-                <TableCell>{`${row?.lastOrderId?.productItem?.itemName || "New party"}`}</TableCell>
-                <TableCell>{`${row?.lastOrderId?.qty || "New party"}`}</TableCell>
+                <TableCell>{formatLastOrderDate(row.actualLastOrderDate)}</TableCell>
+                <TableCell>{`${row?.lastOrderId?.orderNumber || "-"}`}</TableCell>
+                <TableCell>{`${row?.lastOrderId?.productItem?.itemName || "-"}`}</TableCell>
+                <TableCell>{`${row?.lastOrderId?.qty || "-"}`}</TableCell>
                 <TableCell>
-                    {row?.lastOrderId?.quotation?.length > 0 ?
-                        (() => {
-                            const lastQuotation = row.lastOrderId.quotation[row.lastOrderId.quotation.length - 1];
-                            const unitPrice = parseFloat(lastQuotation.unitPrice) || 0;
-                            const qty = parseFloat(lastQuotation.qty) || 0;
-                            const gst = parseFloat(lastQuotation.gst) || 0;
-
-                            const baseAmount = unitPrice * qty;
-                            const gstAmount = (baseAmount * gst) / 100;
-                            const totalAmount = baseAmount + gstAmount;
-
-                            return `${totalAmount.toFixed(2)}`;
-                        })()
-                        : "NA"
-                    }
+                    {row?.lastOrderId?.finalAmount
+                        ? `${row?.lastOrderId?.finalAmount?.toFixed(2)}`
+                        : "-"}
                 </TableCell>
             </>);
         } else if (companyName === 'QP') {
@@ -178,7 +230,7 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
                 <TableCell onClick={() => handleNewcClick(row._id)} sx={{ cursor: 'pointer' }}>{row.partyName || 'N/A'}</TableCell>
                 <TableCell>{`${row.address.unitNo} - ${row.address.marketName} - ${row.address.area} - ${row.address.pincode}`}</TableCell>
                 <TableCell>{`${row.createdBy.firstName} ${row.createdBy.lastName}`}</TableCell>
-                <TableCell>{formatLastOrderDate(row.lastOrderDate)}</TableCell>
+                <TableCell>{formatLastOrderDate(row.actualLastOrderDate)}</TableCell>
                 <TableCell>{`QP-${row?.lastOrderId?.orderNo || 'N/A'}`}</TableCell>
                 <TableCell>{`${row?.lastOrderId?.orderdata?.ply || 'N/A'}`}</TableCell>
                 <TableCell>{`${row?.lastOrderId?.orderdata?.length || 'N/A'} x ${row?.lastOrderId?.orderdata?.width || 'N/A'} x ${row?.lastOrderId?.orderdata?.height || 'N/A'}`}</TableCell>
@@ -239,31 +291,76 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
                     </Popover>
                 </Box>
 
-                {/* Party Type Filter (Right) */}
-                <Box>
-                    <Button
-                        variant={partyTypeFilter === 'Customer' ? "contained" : "outlined"}
-                        onClick={() => handlePartyTypeChange('Customer')}
-                        sx={{ mr: 1 }}
-                    >
-                        Customer
-                    </Button>
-                    <Button
-                        variant={partyTypeFilter === 'New Party' ? "contained" : "outlined"}
-                        onClick={() => handlePartyTypeChange('New Party')}
-                        sx={{ mr: 1 }}
-                    >
-                        New Party
-                    </Button>
-                    <Button
-                        variant={partyTypeFilter === 'All' ? "contained" : "outlined"}
-                        onClick={() => handlePartyTypeChange('All')}
+                {/* Right side: Party Type Filter + Excel Download */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    {/* Party Type Filter */}
+                    <Box>
+                        <Button
+                            variant={partyTypeFilter === 'Customer' ? "contained" : "outlined"}
+                            onClick={() => handlePartyTypeChange('Customer')}
+                            sx={{ mr: 1 }}
+                        >
+                            Customer
+                        </Button>
+                        <Button
+                            variant={partyTypeFilter === 'New Party' ? "contained" : "outlined"}
+                            onClick={() => handlePartyTypeChange('New Party')}
+                            sx={{ mr: 1 }}
+                        >
+                            New Party
+                        </Button>
+                        <Button
+                            variant={partyTypeFilter === 'All' ? "contained" : "outlined"}
+                            onClick={() => handlePartyTypeChange('All')}
+                        >
+                            All
+                        </Button>
+                    </Box>
 
-                    >
-                        All
-                    </Button>
-
-
+                    {/* Excel Download Button */}
+                    {filteredData.length > 0 && (
+                        <Tooltip title="Download as Excel">
+                            <IconButton
+                                onClick={handleExcelDownload}
+                                sx={{
+                                    border: "1px solid #D0D5DD",
+                                    borderRadius: 2,
+                                    p: 1,
+                                    color: "#667085",
+                                    display: "flex",
+                                    alignItems: "center",
+                                }}
+                                title="Download as Excel"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    height="16"
+                                    width="16"
+                                    viewBox="0 0 384 512"
+                                // style={{ marginRight: "8px" }}
+                                >
+                                    <path
+                                        fill="#667085"
+                                        d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
+                                                   10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
+                                                   0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
+                                                   8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
+                                                   405.5 192 373 192 373c-6.4 14.8-10 20-36.6 
+                                                   68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 
+                                                   0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 
+                                                   .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 
+                                                   6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 
+                                                   6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 
+                                                   10.6-6.3H274c9.5-.1 15.2 10.4 10.1 
+                                                   18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
+                                                   12.5 2.5 17 7l97.9 98c4.5 4.5 7 
+                                                   10.6 7 16.9z"
+                                    />
+                                </svg>
+                                {/* <Typography fontSize={12}>Download excel</Typography>  */}
+                            </IconButton>
+                        </Tooltip>
+                    )}
                 </Box>
             </Box>
 
@@ -274,7 +371,8 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
                     showDatePicker={false}
                     showFillter={false}
                     showSearch={false}
-                    title='Inactive Parties'
+                    showExcelDownload={false} // BasicTable का एक्सेल डाउनलोड बंद करें
+                    title={`Inactive Parties - ${companyName}`}
                     tableHeader={columns}
                     rowData={filteredData}
                     renderRow={renderRow}

@@ -136,5 +136,19 @@ export const leadService = {
       console.error(`Search ${field} options error:`, error);
       throw new Error(error.response?.data?.message || `Failed to search ${field} options`);
     }
-  }
+  },
+  async exportLeadsToExcel(filters): Promise<Blob> {
+      try {
+        const response: AxiosResponse<Blob> = await Request.post(
+          Endpoint.EXPORT_LEAD_EXCEL,
+          filters,
+          {
+            responseType: 'blob' // Important for file downloads
+          }
+        );
+        return response.data;
+      } catch (error: any) {
+        throw new Error(error.response?.data?.message || "Failed to export party calls");
+      }
+    },
 };

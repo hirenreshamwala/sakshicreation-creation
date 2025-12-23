@@ -23,10 +23,13 @@ import DateRangePicker from "@/component/daterangepicker";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa6";
 import * as XLSX from "xlsx";
 import moment from "moment";
-import { useDispatch, useSelector } from "react-redux";
+// Redux imports remove karein
 import { complainService } from "@/services/complain.service";
-import { addToState } from "@/store/slices/accountMasterFilterSlice";
+// Remove Redux imports
+// import { useDispatch, useSelector } from "react-redux";
+// import { addToState } from "@/store/slices/accountMasterFilterSlice";
 import { accountMasterService } from "@/services/accountMaster.service";
+import { StaticCompanyOptions } from "@/constants";
 
 interface Column {
   id: string;
@@ -88,6 +91,7 @@ const isStatusChangeOlderThanThreeDays = (lastStatusChangeDate: string | Date | 
 
 const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Date }>({
   id,
+  companyTab,
   tableHeader,
   rowData,
   renderRow,
@@ -109,10 +113,12 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   handleDownloadExcel,
   currentFilterState
 }: BasicTableProps<T>) => {
-  const dispatch = useDispatch();
+  // Redux se remove karein
+  // const dispatch = useDispatch();
+  // const filterOptionsFromRedux = useSelector((state: any) => state.dynamic || {});
 
-  // Get filter options from Redux store
-  const filterOptionsFromRedux = useSelector((state: any) => state.dynamic || {});
+  // Local state for filter options
+  const [filterOptionsLocal, setFilterOptionsLocal] = useState<{ [key: string]: string[] }>({});
 
   // Use currentFilterState.page as the source of truth for current page (convert to 0-based)
   const page = (currentFilterState?.page || 1) - 1;
@@ -249,7 +255,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
     }
   }, [setCurrentFilterState]);
 
-  // Sync local state with currentFilterState
+  // Sync local state with currentFilterState - sirf filters ke liye
   useEffect(() => {
     if (currentFilterState?.filters) {
       setFilters(currentFilterState.filters);
@@ -277,8 +283,8 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
 
   // Get unique values for filter dropdown - with lazy loading
   const getUniqueValues = useCallback(async (field: string) => {
-    // Check if data already exists in Redux
-    const existingData = filterOptionsFromRedux[field];
+    // Check if data already exists in local state
+    const existingData = filterOptionsLocal[field];
     if (existingData && existingData.length > 0) {
       return existingData;
     }
@@ -291,6 +297,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
         startDate: currentFilterState?.startDate,
         endDate: currentFilterState?.endDate,
         companyName: currentFilterState?.companyName,
+        company: [StaticCompanyOptions[companyTab]],
         // Add other relevant filters
       };
 
@@ -298,9 +305,25 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
       const response = await accountMasterService.searchFilterOptions(field, "", apiFilters);
 
       if (response.success && response.data) {
-        // Store in Redux for future use
-        dispatch(addToState({ key: field, data: response.data }));
-        return response.data;
+        // Store in local state for future use
+        let values: string[] = [];
+        
+        if (Array.isArray(response.data)) {
+          if (response.data.length > 0 && typeof response.data[0] === 'object' && response.data[0].name) {
+            // If data is array of objects with name property
+            values = [...new Set(response.data.map(item => item.name))];
+          } else {
+            // If data is array of strings
+            values = [...new Set(response.data)];
+          }
+        }
+        
+        setFilterOptionsLocal(prev => ({
+          ...prev,
+          [field]: values
+        }));
+        
+        return values;
       }
       return [];
     } catch (error) {
@@ -309,10 +332,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
     } finally {
       setLoadingOptions(prev => ({ ...prev, [field]: false }));
     }
-
-
-    return [];
-  }, [filterOptionsFromRedux, currentFilterState]);
+  }, [filterOptionsLocal, currentFilterState, companyTab]);
 
   // Handle filter field selection - this will trigger API call
   const handleFilterFieldSelect = useCallback((field: string | null) => {
@@ -328,27 +348,14 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   const uniqueValues = useMemo(() => {
     if (!selectedFilterField) return { values: [], isLoading: false };
 
-    const data = filterOptionsFromRedux[selectedFilterField] || [];
+    const data = filterOptionsLocal[selectedFilterField] || [];
     const isLoading = loadingOptions[selectedFilterField];
 
-    // Ensure we always return an array of strings
-    let values: string[] = [];
-
-    if (Array.isArray(data)) {
-      if (data.length > 0 && typeof data[0] === 'object' && data[0].name) {
-        // If data is array of objects with name property
-        values = [...new Set(data.map(item => item.name))];
-      } else {
-        // If data is array of strings
-        values = [...new Set(data)];
-      }
-    }
-
     return {
-      values,
+      values: data,
       isLoading,
     };
-  }, [selectedFilterField, filterOptionsFromRedux, loadingOptions]);
+  }, [selectedFilterField, filterOptionsLocal, loadingOptions]);
 
   const filterOptions = useMemo(() => {
     return tableHeader
@@ -616,10 +623,10 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
                   alignItems: "center",
                 }}
                 title="Download as Excel"
-                disabled={downloadLoading} // disable button while loading
+                disabled={downloadLoading}
               >
                 {downloadLoading ? (
-                  <CircularProgress size={16} /> // small loader inside button
+                  <CircularProgress size={16} />
                 ) : (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

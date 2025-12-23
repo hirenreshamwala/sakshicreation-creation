@@ -163,7 +163,7 @@ const LeadManagementPage: React.FC = () => {
 
   // Company tab से company name निकालें
   const selectedCompany = useMemo(() => {
-    if (comapanyTab === 0) return "Sakshi Prints";
+    if (comapanyTab === 0) return "Sakshi Creation";
     if (comapanyTab === 1) return "Quality Packaging";
     return null;
   }, [comapanyTab]);
@@ -222,6 +222,114 @@ const LeadManagementPage: React.FC = () => {
       );
     }
   }, [s, c]);
+
+  const handleExcelDownload = async () => {
+    try {
+      console.log("Starting Excel download...");
+
+      // Prepare payload with all current filters
+      const payload: any = {
+        status: selectedStatus, // Array of statuses from tab
+        companyName: selectedCompany, // From company tab
+        startDate: startDate ? startDate.toISOString() : null,
+        endDate: endDate ? endDate.toISOString() : null,
+        staffId: si,
+        date: null, // We're using date range instead of single date
+        search: searchQuery || null,
+        mobile: filters['Mobile No']?.[0] || null,
+        unitNo: filters['Unit No']?.[0] || null,
+        marketName: filters['market']?.[0] || null,
+        area: filters['area']?.[0] || null,
+        partyTag: filters['party status']?.[0] || null,
+        createdBy: filters['Created By']?.[0] || null,
+        assignedToFilter: filters['assign to']?.[0] || null,
+        reason: filters['Reason to Call']?.[0] || r || null,
+      };
+
+      // Handle multiple filter values
+      Object.keys(filters).forEach(key => {
+        if (filters[key] && filters[key].length > 1) {
+          // Handle comma-separated values for fields that support it
+          const multiValueFields = [
+            'Mobile No', 'unitNo', 'market', 'area', 'party status',
+            'Reason to Call', 'assign to', 'Created By'
+          ];
+
+          if (multiValueFields.includes(key)) {
+            const fieldMap: Record<string, string> = {
+              'Mobile No': 'mobile',
+              'Unit No': 'unitNo',
+              'market': 'marketName',
+              'area': 'area',
+              'party status': 'partyTag',
+              'Reason to Call': 'reason',
+              'assign to': 'assignedToFilter',
+              'Created By': 'createdBy'
+            };
+
+            const backendField = fieldMap[key] || key;
+            payload[backendField] = filters[key].join(',');
+          }
+        }
+      });
+
+      // Handle partyName separately (can be ID or name)
+      if (filters['party'] && filters['party'].length > 0) {
+        payload.partyName = filters['party'][0];
+      }
+
+      // Apply assignedTo filter for canViewOwn permission
+      if (canViewOwn && !canViewGlobal && currentUserName) {
+        payload.assignedToFilter = currentUserName;
+      }
+
+      // Clean payload - remove null/undefined/empty values
+      const cleanPayload = Object.fromEntries(
+        Object.entries(payload).filter(([_, value]) =>
+          value !== null && value !== undefined && value !== '' &&
+          !(Array.isArray(value) && value.length === 0)
+        )
+      );
+
+      console.log("Download payload:", cleanPayload);
+
+      // Call the export service
+      const response = await leadService.exportLeadsToExcel(cleanPayload);
+
+      // Check if response is a blob (Excel file)
+      if (response instanceof Blob) {
+        // Create a download link
+        const url = window.URL.createObjectURL(response);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Leads_${new Date().toISOString().split('T')[0]}.xlsx`);
+        document.body.appendChild(link);
+
+        // Trigger download
+        link.click();
+
+        // Clean up
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        toast.success('Excel file downloaded successfully');
+      } else if (response && response.success === false) {
+        // Handle API error response
+        toast.error(response.message || 'Failed to download Excel file');
+      } else {
+        // Handle unexpected response
+        console.error('Unexpected response:', response);
+        toast.error('Unexpected response from server');
+      }
+    } catch (error: any) {
+      console.error('Export failed:', error);
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error(error.message || 'Failed to download Excel file');
+      }
+    }
+  };
 
   const fetchLeadsForDate = useCallback(async (date: string, page: number, itemsPerPage: number) => {
     setDatePagination(prev => ({
@@ -426,7 +534,7 @@ const LeadManagementPage: React.FC = () => {
   // Tab change handlers
   const handleCompanyTabChange = (newTab: number) => {
     setCompanyTab(newTab);
-    const companyName = newTab === 0 ? "Sakshi Prints" : "Quality Packaging";
+    const companyName = newTab === 0 ? "Sakshi Creation" : "Quality Packaging";
     router.push({
       pathname: router.pathname,
       query: { ...router.query, c: companyName }
@@ -791,6 +899,45 @@ const LeadManagementPage: React.FC = () => {
             selectedField={selectedFilterField}
             onFieldSelect={setSelectedFilterField}
           />
+          <IconButton
+            onClick={handleExcelDownload}
+            sx={{
+              border: "1px solid #D0D5DD",
+              borderRadius: 2,
+              p: 1,
+              color: "#667085",
+              display: "flex",
+              alignItems: "center",
+            }}
+            title="Download as Excel"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="16"
+              width="16"
+              viewBox="0 0 384 512"
+            // style={{ marginRight: "8px" }}
+            >
+              <path
+                fill="#667085"
+                d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
+                                           10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
+                                           0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
+                                           8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
+                                           405.5 192 373 192 373c-6.4 14.8-10 20-36.6 
+                                           68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 
+                                           0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 
+                                           .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 
+                                           6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 
+                                           6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 
+                                           10.6-6.3H274c9.5-.1 15.2 10.4 10.1 
+                                           18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
+                                           12.5 2.5 17 7l97.9 98c4.5 4.5 7 
+                                           10.6 7 16.9z"
+              />
+            </svg>
+            {/* <Typography fontSize={12}>Download excel</Typography>  */}
+          </IconButton>
           {cancreate && (
             <ThemeButton
               onClick={() => {
