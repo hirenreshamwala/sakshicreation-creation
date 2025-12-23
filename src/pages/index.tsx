@@ -25,7 +25,7 @@ import LeadData from "@/component/dashboardPages/LeadData";
 import VisitData from "@/component/dashboardPages/VisitData";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
-import { getCompanyWisePermission } from "@/utills/utills";
+import { formatDateToDDMMYYYY, getCompanyWisePermission } from "@/utills/utills";
 import LeadManagementPage from "./admin/party-call";
 import CustomerData from "@/component/dashboardPages/CustomerData";
 import Request from "@/services/axios";
@@ -235,8 +235,8 @@ const IndexPage: React.FC = () => {
       icon: <AssignmentIcon color="primary" />,
       component: <TaskData
         activeTab={companyTab}
-        startDate={startDate}
-        endDate={endDate}
+        startDate={formatDateToDDMMYYYY(startDate)}
+        endDate={formatDateToDDMMYYYY(endDate)}
         staffFilter={staffFilter}
         data={filteredData}
         loading={loading}
@@ -248,8 +248,8 @@ const IndexPage: React.FC = () => {
       icon: <PeopleIcon color="primary" />,
       component: <LeadData
         activeTab={companyTab}
-        startDate={startDate}
-        endDate={endDate}
+        startDate={formatDateToDDMMYYYY(startDate)}
+        endDate={formatDateToDDMMYYYY(endDate)}
         staffFilter={staffFilter}
         data={filteredData}
         loading={loading}
@@ -261,8 +261,8 @@ const IndexPage: React.FC = () => {
       icon: <CalendarTodayIcon color="primary" />,
       component: <VisitData
         activeTab={companyTab}
-        startDate={startDate}
-        endDate={endDate}
+        startDate={formatDateToDDMMYYYY(startDate)}
+        endDate={formatDateToDDMMYYYY(endDate)}
         staffFilter={staffFilter}
         data={filteredData}
         loading={loading}
@@ -274,8 +274,8 @@ const IndexPage: React.FC = () => {
       icon: <StoreIcon color="primary" />,
       component: <CustomerData
         activeTab={companyTab}
-        startDate={startDate}
-        endDate={endDate}
+        startDate={formatDateToDDMMYYYY(startDate)}
+        endDate={formatDateToDDMMYYYY(endDate)}
         staffFilter={staffFilter}
         data={filteredData}
         loading={loading}
