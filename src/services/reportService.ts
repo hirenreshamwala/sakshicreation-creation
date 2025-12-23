@@ -249,6 +249,101 @@ async getQPSalesCreditReport(data: DateRange): Promise<QPSalesCreditApiResponse>
   } catch (error: any) {
     throw new Error(error.response?.data?.message || "Failed to fetch QP sales credit report");
   }
-}
+},
+async exportDesignerToExcel(data: DateRange) {
+    try {
+      const response = await Request.post(
+        Endpoint.GET_SC_DESIGNERS_EXPORT,
+        data,
+        {
+          responseType: 'blob',
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data instanceof Blob
+          ? await error.response.data.text()
+          : error.response?.data?.message || 'Failed to export Excel';
 
+      console.error('Excel export error:', errorMessage);
+      throw new Error(errorMessage || 'Failed to export designer report to Excel');
+    }
+  },
+  async exportPrinterToExcel(data: any) {
+  try {
+    const response = await Request.post(
+      Endpoint.EXPORT_PRINTER_EXCEL,
+      data,
+      { responseType: 'blob' }
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error('Failed to export printer report');
+  }
+},
+async exportBinderToExcel(data: any) {
+  try {
+    const response = await Request.post(
+      Endpoint.EXPORT_BINDER_EXCEL, // config માં ઉમેરો
+      data,
+      { responseType: 'blob' }
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error('Failed to export binder report');
+  }
+},
+
+async exportBookletBinderToExcel(data: any) {
+  try {
+    const response = await Request.post(
+      Endpoint.EXPORT_BOOKLETBINDER_EXCEL,
+      data,
+      { responseType: 'blob' }
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error('Failed to export booklet binder report');
+  }
+},
+
+async exportComplainToExcel(data: any) {
+  try {
+    const response = await Request.post(
+      Endpoint.EXPORT_COMPLAIN_EXCEL,
+      data,
+      { responseType: 'blob' }
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error('Failed to export complain report');
+  }
+},
+
+async exportPaymentFolderToExcel(data: any): Promise<Blob> {
+  try {
+    const response = await Request.post(
+      Endpoint.EXPORT_PAYMENT_FOLDER_EXCEL,
+      data,
+      { responseType: 'blob', timeout: 300000 }
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to export payment folders');
+  }
+},
+
+async exportPendingClientApprovalOrders(data: any): Promise<Blob> {
+  try {
+    const response = await Request.post(
+      Endpoint.EXPORT_PENDING_CLIENT_APPROVAL_ORDERS,
+      data,
+      { responseType: 'blob', timeout: 300000 }
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to export pending client approval orders');
+  }
+}
 };

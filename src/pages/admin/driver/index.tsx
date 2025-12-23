@@ -30,9 +30,7 @@ const QPOrdersPage = () => {
   const dispatch = useAppDispatch();
   const { orders, loading, totalCount } = useAppSelector((state) => state.qpOrders);
   const userData = getUserData();
-  
-  // Filter states
-  const [currentFilterState, setCurrentFilterState] = useState<any>({
+   const defaultOrderFilter = {
   page: 1,
   pageSize: 10,
   search: "",
@@ -42,8 +40,10 @@ const QPOrdersPage = () => {
   dateRange: { start: null, end: null },
   startDate: null,
   endDate: null,
-  status: ["Completed"], // This is now sent as top-level parameter
-});
+  status: ["Completed"],
+  };
+  // Filter states
+  const [currentFilterState, setCurrentFilterState] = useState<any>(defaultOrderFilter);
 
   
   const [appliedFilterState, setAppliedFilterState] = useState<any>({});
@@ -363,6 +363,7 @@ const QPOrdersPage = () => {
       excelData={excelData}
       rowData={formattedRows}
       setCurrentFilterState={setCurrentFilterState}
+      defaultFilter={defaultOrderFilter}
       currentFilterState={currentFilterState}
       renderRow={renderRow}
       totalRows={totalCount || formattedRows.length}

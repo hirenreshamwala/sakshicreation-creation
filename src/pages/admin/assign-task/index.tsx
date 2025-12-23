@@ -130,7 +130,7 @@ interface RowData {
   highlightYellow?: boolean;
 }
 
-const tabLabels = ["Pending", "History"];
+const tabLabels = ["Pending", "Completed"];
 
 const AssignTaskPage: React.FC = () => {
   const router = useRouter();
@@ -189,18 +189,20 @@ const AssignTaskPage: React.FC = () => {
     const baseColumns = [
       { id: "checkbox", label: "checkbox" },
       { id: "company", label: "Company" },
-      { id: "date", label: "Created Date" },
+      { id: "date", label: "Date" },
       { id: "party", label: "Party" },
       { id: "address", label: "Unit No" },
       { id: "market", label: "Market Name" },
       { id: "area", label: "Area" },
+      { id: "contactPerson", label: "Contact Person" },
       { id: "mobile", label: "Mobile No." },
-      { id: "reason", label: "Reason to Visit" },
-      { id: "assignBy", label: "Assign By" },
-      { id: "assignTo", label: "Assign To" },
+      { id: "partyTag", label: "Tag" },
+      // { id: "reason", label: "Reason to Visit" },
       { id: "remarks", label: "Remarks" },
       { id: "feedback", label: "Feedback" },
       { id: "status", label: "Status" },
+      { id: "assignBy", label: "Created By" },
+      { id: "assignTo", label: "Assign To" },
     ];
 
     if (canedit || candelete) {
@@ -647,8 +649,10 @@ const AssignTaskPage: React.FC = () => {
       partyId: task.partyName?._id || "Unknown",
       address: task.partyName?.address?.unitNo || "N/A",
       market: task.partyName?.address?.marketName?.marketName || "N/A",
+      contactPerson: task.partyName?.contactPerson || task.partyName?.ownerName || "N/A",
       area: task.partyName?.address?.area?.area || "N/A",
-      mobile: task.partyName?.ownerWhatsAppNo || "N/A",
+      mobile: task.partyName?.personMobileNo ||  task.partyName?.ownerMobile ||  "N/A",
+      partyTag: task.partyName?.partyTag || "N/A",
       remarks: task.remarks || "N/A",
       assignBy: task.partyName.createdBy
         ? `${task.partyName.createdBy.firstName} ${task.partyName.createdBy.lastName}`
@@ -736,10 +740,11 @@ const AssignTaskPage: React.FC = () => {
         </TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.market}</TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.area}</TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.contactPerson}</TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.mobile}</TableCell>
-        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.reason}</TableCell>
-        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignBy}</TableCell>
-        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignTo}</TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.partyTag}</TableCell>
+        {/* <TableCell sx={getCellSx({ fontSize: 14 })}>{row.reason}</TableCell> */}
+        
         <TableCell sx={getCellSx()}>
           <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>
             {row.remarks && row.remarks.length > 10
@@ -786,6 +791,8 @@ const AssignTaskPage: React.FC = () => {
             }}
           />
         </TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignBy}</TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignTo}</TableCell>
         <TableCell sx={getCellSx({ display: "flex" })}>
           {canedit && (
             <IconButton color="primary" onClick={() => {

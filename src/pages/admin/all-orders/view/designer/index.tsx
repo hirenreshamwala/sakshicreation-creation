@@ -914,7 +914,7 @@ const ViewOrderDesigner = () => {
   const [newSelectedDesigner, setNewSelectedDesigner] = useState<any>(null)
   const [proformaHistoryOpen, setProformaHistoryOpen] = useState(false);
   const [proformaHistory, setProformaHistory] = useState<any[]>([]);
-
+  const [sendApprovalLoading, setSendApprovalLoading] = useState(false);
   // const [quotationProofLoading, setQuotationProofLoading] = useState(false)
   // const [uploadedQuotationProofs, setUploadedQuotationProofs] = useState<any[]>([])
   // const [quotationHistoryDialog, setQuotationHistoryDialog] = useState(false)
@@ -1080,7 +1080,30 @@ const ViewOrderDesigner = () => {
       }))
     }
   }
+const handleSendClientApproval = async () => {
+  if (!orderId || typeof orderId !== "string") {
+    toast.error("Order ID not found");
+    return;
+  }
 
+  setSendApprovalLoading(true);
+
+  try {
+    await dispatch(updateOrderThunk({
+      id: orderId,
+      data: {
+        clientApprovalSentAt: new Date()  // આવી રીતે મોકલો – backend માં Date માં સ્ટોર થશે
+      }
+    })).unwrap();
+
+    toast.success("Client approval sent successfully!");
+    await dispatch(getOrderByIdThunk(orderId)).unwrap(); // રિફ્રેશ કરવા
+  } catch (err) {
+    toast.error("Failed to send for client approval");
+  } finally {
+    setSendApprovalLoading(false);
+  }
+};
   // Handle design file remark changes
   const handleDesignRemarkChange = (index: number, remark: string) => {
     setDesignFileRemarks((prev) => ({
@@ -2312,6 +2335,28 @@ const ViewOrderDesigner = () => {
                         </Box> */}
                       </Stack>
                       <Stack direction="row" spacing={2}>
+                        <ThemeButton
+                          onClick={handleSendClientApproval}
+                          disabled={sendApprovalLoading || singleOrder?.clientApprovalSentAt}
+                          sx={{
+                            background: singleOrder?.clientApprovalSentAt ? "#6B7280" : "#10B981", // ગ્રે જો પહેલાં મોકલાયેલું હોય
+                            color: "#fff",
+                            fontWeight: 600,
+                            fontSize: 16,
+                            borderRadius: 2,
+                            py: 1.2,
+                            width: "100%",
+                            "&:hover": {
+                              background: singleOrder?.clientApprovalSentAt ? "#6B7280" : "#059669",
+                            },
+                          }}
+                        >
+                          {sendApprovalLoading
+                            ? "Sending..."
+                            : singleOrder?.clientApprovalSentAt
+                              ? `Sent on ${formatDateToDDMMYYYY(singleOrder.clientApprovalSentAt)}`
+                              : "Send Client Approval"}
+                        </ThemeButton>
                         <ThemeButton
                           sx={{
                             background: "#6366F1",
