@@ -27,6 +27,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { complainService } from "@/services/complain.service";
 import { addToState } from "@/store/slices/accountMasterFilterSlice";
 import { accountMasterService } from "@/services/accountMaster.service";
+import { useAppSelector } from "@/store";
 
 interface Column {
   id: string;
@@ -107,13 +108,14 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   defaultFilter,
   downloadLoading,
   handleDownloadExcel,
-  currentFilterState
+  currentFilterState,
+  companyName
 }: BasicTableProps<T>) => {
   const dispatch = useDispatch();
-
+  const { companies } = useAppSelector((state) => state.company)
   // Get filter options from Redux store
-  const filterOptionsFromRedux = useSelector((state: any) => state.dynamic || {});
-
+  // const filterOptionsFromRedux = useSelector((state: any) => state.dynamic || {});
+  const [filterOptionsLocal, setFilterOptionsLocal] = useState<{ [key: string]: string[] }>({});
   // Use currentFilterState.page as the source of truth for current page (convert to 0-based)
   const page = (currentFilterState?.page || 1) - 1;
   const rowsPerPage = currentFilterState?.pageSize || 10;
@@ -276,9 +278,9 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   }, [currentFilterState?.search]);
 
   // Get unique values for filter dropdown - with lazy loading
-  const getUniqueValues = useCallback(async (field: string) => {
-    // Check if data already exists in Redux
-    const existingData = filterOptionsFromRedux[field];
+   const getUniqueValues = useCallback(async (field: string) => {
+    // Check if data already exists in local state
+    const existingData = filterOptionsLocal[field];
     if (existingData && existingData.length > 0) {
       return existingData;
     }
@@ -291,6 +293,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
         startDate: currentFilterState?.startDate,
         endDate: currentFilterState?.endDate,
         companyName: currentFilterState?.companyName,
+         companyName: companies.find((item) => item.companyName === companyName)?._id,
         // Add other relevant filters
       };
 
@@ -298,9 +301,25 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
       const response = await accountMasterService.searchFilterOptions(field, "", apiFilters);
 
       if (response.success && response.data) {
-        // Store in Redux for future use
-        dispatch(addToState({ key: field, data: response.data }));
-        return response.data;
+        // Store in local state for future use
+        let values: string[] = [];
+        
+        if (Array.isArray(response.data)) {
+          if (response.data.length > 0 && typeof response.data[0] === 'object' && response.data[0].name) {
+            // If data is array of objects with name property
+            values = [...new Set(response.data.map(item => item.name))];
+          } else {
+            // If data is array of strings
+            values = [...new Set(response.data)];
+          }
+        }
+        
+        setFilterOptionsLocal(prev => ({
+          ...prev,
+          [field]: values
+        }));
+        
+        return values;
       }
       return [];
     } catch (error) {
@@ -309,10 +328,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
     } finally {
       setLoadingOptions(prev => ({ ...prev, [field]: false }));
     }
-
-
-    return [];
-  }, [filterOptionsFromRedux, currentFilterState]);
+  }, [filterOptionsLocal, currentFilterState, companyName]);
 
   // Handle filter field selection - this will trigger API call
   const handleFilterFieldSelect = useCallback((field: string | null) => {
@@ -325,30 +341,17 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   }, [getUniqueValues]);
 
   // Get current unique values for selected field
-  const uniqueValues = useMemo(() => {
+   const uniqueValues = useMemo(() => {
     if (!selectedFilterField) return { values: [], isLoading: false };
 
-    const data = filterOptionsFromRedux[selectedFilterField] || [];
+    const data = filterOptionsLocal[selectedFilterField] || [];
     const isLoading = loadingOptions[selectedFilterField];
 
-    // Ensure we always return an array of strings
-    let values: string[] = [];
-
-    if (Array.isArray(data)) {
-      if (data.length > 0 && typeof data[0] === 'object' && data[0].name) {
-        // If data is array of objects with name property
-        values = [...new Set(data.map(item => item.name))];
-      } else {
-        // If data is array of strings
-        values = [...new Set(data)];
-      }
-    }
-
     return {
-      values,
+      values: data,
       isLoading,
     };
-  }, [selectedFilterField, filterOptionsFromRedux, loadingOptions]);
+  }, [selectedFilterField, filterOptionsLocal, loadingOptions]);
 
   const filterOptions = useMemo(() => {
     return tableHeader

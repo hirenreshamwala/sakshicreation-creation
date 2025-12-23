@@ -253,7 +253,7 @@ const AssignTaskPage: React.FC = () => {
         });
         // Refresh data after deletion
         setDatePagination({});
-        fetchDates();
+        fetchDates(null, null);
         setSelectedTaskIds([]);
       } catch (err: any) {
         Swal.fire({
@@ -384,7 +384,7 @@ const AssignTaskPage: React.FC = () => {
         });
         // Refresh data after deletion
         setDatePagination({});
-        fetchDates();
+        fetchDates(null, null);
       } catch (err: any) {
         Swal.fire({
           title: "Error!",
@@ -494,7 +494,7 @@ const AssignTaskPage: React.FC = () => {
   }, [dispatch, appliedSearchQuery, appliedStartDate, appliedEndDate, filters, si, r, selectedCompanyId, selectedStatus, canViewOwn, canViewGlobal, currentUserName]);
 
   // Fetch dates with task counts
-  const fetchDates = useCallback(async () => {
+  const fetchDates = useCallback(async (startDate: Date, endDate: Date) => {
     setLoadingDates(true);
     try {
       const queryParams: any = {
@@ -537,9 +537,9 @@ const AssignTaskPage: React.FC = () => {
         });
       }
 
-      if (appliedStartDate && appliedEndDate) {
-        queryParams.startDate = appliedStartDate.toISOString();
-        queryParams.endDate = appliedEndDate.toISOString();
+      if (startDate && endDate) {
+        queryParams.startDate = startDate.toISOString();
+        queryParams.endDate = endDate.toISOString();
       }
 
       if (canViewOwn && !canViewGlobal && currentUserName) {
@@ -585,7 +585,7 @@ const AssignTaskPage: React.FC = () => {
   useEffect(() => {
     if ((canViewGlobal || canViewOwn) && router.isReady && selectedCompanyId) {
       setDatePagination({});
-      fetchDates();
+      fetchDates(appliedStartDate, appliedEndDate);
     }
   }, [companyTab, statusTab, fetchDates, canViewGlobal, canViewOwn, router.isReady, selectedCompanyId]);
 
@@ -858,12 +858,12 @@ const AssignTaskPage: React.FC = () => {
   }, [dispatch, selectedFilterField, filters, selectedCompanyId, selectedStatus]);
 
   // Handle search button click
-  const handleSearch = () => {
+  const handleSearch = (start, end) => {
     setAppliedSearchQuery(searchQuery);
-    setAppliedStartDate(startDate);
-    setAppliedEndDate(endDate);
+    setAppliedStartDate(start);
+    setAppliedEndDate(end);
     setDatePagination({});
-    fetchDates();
+    fetchDates(start, end);
   };
 
   // Handle clear button click
@@ -875,7 +875,7 @@ const AssignTaskPage: React.FC = () => {
     setAppliedStartDate(null);
     setAppliedEndDate(null);
     setDatePagination({});
-    fetchDates();
+    fetchDates(null, null);
   };
 
 
@@ -921,8 +921,8 @@ const AssignTaskPage: React.FC = () => {
           <DateRangePicker
             startDate={startDate}
             endDate={endDate}
-            onStartDateChange={(date) => setStartDate(date)}
-            onEndDateChange={(date) => setEndDate(date)}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
           />
           <ThemeButton
             onClick={() => {
@@ -958,7 +958,7 @@ const AssignTaskPage: React.FC = () => {
           </Box>
 
           {/* Search and Clear buttons */}
-          <ThemeButton onClick={handleSearch}>
+          <ThemeButton onClick={() => handleSearch(startDate, endDate)}>
             Search
           </ThemeButton>
           <ThemeButton onClick={handleClear} color="secondary">
@@ -1113,7 +1113,7 @@ const AssignTaskPage: React.FC = () => {
         taskId={editId}
         refreshData={() => {
           setDatePagination({});
-          fetchDates();
+          fetchDates(null, null);
         }}
         rowData={rowData}
         companyTab={companyTab}
@@ -1131,7 +1131,7 @@ const AssignTaskPage: React.FC = () => {
             }}
             refreshData={() => {
               setDatePagination({});
-              fetchDates();
+              fetchDates(null, null);
             }}
             party={assignTasks.find((item) => item._id === tempEditId)?.partyName?._id}
           />

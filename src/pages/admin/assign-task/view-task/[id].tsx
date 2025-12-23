@@ -161,12 +161,6 @@ interface TaskCardProps {
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true, onReschedule }) => {
-  const party = typeof task.partyName === 'object' ? task.partyName : task.accountMaster?.party;
-  const personName = party?.contactPerson || party?.ownerName || 'Unknown';
-  // const address = party?.address
-  //   ? `${party.address.unitNo}, ${party.address?.marketName}, ${party.address.streetAddress}, ${party.address.area}`
-  //   : 'Address not available';
-  // Determine which createdAt to display
   const createdAtToShow = task.isRescheduledTask && task.originalTaskId?.createdAt
     ? task.originalTaskId.createdAt
     : task.createdAt;
@@ -322,6 +316,18 @@ const ViewTaskPage: React.FC = () => {
 
   const isDriverRole = user?.role?.roleName?.toLowerCase() === 'driver';
 
+  const getTaskById = async () => {
+    try {
+      const response = await assignTaskService.getAssignTaskById(taskId);
+      if (response.success && response.data) {
+        setSingleAssignTask(response.data)
+        setPartyDetails(response.data.partyName)
+        return response.data;
+      }
+    } catch (error) {
+      console.log(error, 'error')
+    }
+  }
   const getTaskByPartyAndAccountMaster = async () => {
     try {
       const response = await assignTaskService.getPartyTask({
@@ -341,66 +347,16 @@ const ViewTaskPage: React.FC = () => {
         return;
       }
 
-      const party = fullTask.party || {};
-      const address = party.address || {};
-
-      // Handle company name (string or object)
-      const company =
-        typeof fullTask.companyName === "object" ? fullTask.companyName : null;
-
-      const formattedAddress = party.address
-        ? [
-          address.unitNo,
-          address.marketName?.marketName,
-          address.landMark?.landmark,
-          address.area?.area,
-          address.pincode?.pincode && `- ${address.pincode.pincode}`,
-        ]
-          .filter(Boolean)
-          .join(", ")
-        : "Address not available";
-
-      setPartyDetails({
-        partyName: party.partyName || "Unknown",
-        companyName:
-          typeof fullTask.companyName === "string"
-            ? fullTask.companyName
-            : undefined,
-        companyNameObj: company
-          ? { companyName: company.companyName }
-          : undefined,
-
-        address: formattedAddress,
-
-        createdByObj: fullTask.createdBy || null,
-
-        ownerMobileNo: party.ownerMobileNo || "Not available",
-        ownerName: party.ownerName || "Unknown",
-        ownerEmail: party.ownerEmail || "Unknown",
-
-        contactPersonEmail: party.contactPersonEmail || "Unknown",
-        contactForPaymentEmail: party.contactForPaymentEmail || "Unknown",
-
-        personMobileNo: party.personMobileNo || "Not available",
-        contactPerson: party.contactPerson || "Not available",
-        contactMobileNo: party.contactMobileNo || "Not available",
-        contactForPayment: party.contactForPayment || "Not available",
-
-        marketName: address.marketName?.marketName || "Not available",
-        area: address.area?.area || "Not available",
-      });
     } catch (error) {
       console.error("Error fetching tasks:", error);
     }
   };
 
-
-  console.log(partyDetails, 'partyDetails')
-
   useEffect(() => {
-    if (id && taskId)
+    if (id && taskId) {
       getTaskByPartyAndAccountMaster()
-
+      getTaskById()
+    }
   }, [dispatch, id]);
 
   // Filter tasks to only show those for this party
@@ -526,7 +482,7 @@ const ViewTaskPage: React.FC = () => {
             <Typography component="div" fontWeight={600}>
               Address
             </Typography>
-            <Typography component="div">{partyDetails.address}</Typography>
+            <Typography component="div">{`${partyDetails?.address?.unitNo}, ${partyDetails?.address?.marketName?.marketName}, ${partyDetails?.address?.landMark?.landmark}, ${partyDetails?.address?.area?.area}, ${partyDetails?.address?.pincode?.pincode}`}</Typography>
           </Box>
           <Box>
             <Typography component="div" fontWeight={600}>
@@ -574,13 +530,13 @@ const ViewTaskPage: React.FC = () => {
             <Typography component="div" fontWeight={600}>
               Market Name
             </Typography>
-            <Typography component="div">{partyDetails.marketName}</Typography>
+            <Typography component="div">{partyDetails?.address?.marketName?.marketName}</Typography>
           </Box>
           <Box>
             <Typography component="div" fontWeight={600}>
               Area
             </Typography>
-            <Typography component="div">{partyDetails.area}</Typography>
+            <Typography component="div">{partyDetails?.address?.area?.area}</Typography>
           </Box>
         </Box>
       </Box>
