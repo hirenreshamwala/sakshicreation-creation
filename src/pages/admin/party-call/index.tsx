@@ -730,19 +730,19 @@ const LeadManagementPage: React.FC = () => {
       <TableCell sx={{ fontSize: 14 }}>{row.partyName?.address?.area?.area || "N/A"}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.partyName?.contactPerson || "N/A"}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.partyName?.ownerWhatsAppNo || "N/A"}</TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.partyName?.partyTag}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.partyName?.partyTag?.substring(0, 4)}</TableCell>
       {/* <TableCell sx={{ fontSize: 14 }}>
           <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>
-            {row.remarks && row.remarks.length > 10
-              ? `${row.remarks.substring(0, 10)}...`
+          {row.remarks && row.remarks.length > 10
+          ? `${row.remarks.substring(0, 10)}...`
               : row.remarks}
-          </Typography>
-        </TableCell> */}
+              </Typography>
+              </TableCell> */}
       <TableCell sx={{ fontSize: 14 }}>
         {row.reason === "Other" ? row.customReason || "Other" : row.reason}
       </TableCell>
-      
-      
+
+
       <TableCell sx={{ fontSize: 14 }}>
         <Tooltip title={row.feedback || row.callFeedback || "No feedback"}>
           <Typography
@@ -765,15 +765,16 @@ const LeadManagementPage: React.FC = () => {
           sx={{
             background:
               row.partyName?.partyTag === "New" ? "#F4EBFF" : "#F4F3FF",
-            color: "#7F56D9",
+              color: "#7F56D9",
             fontWeight: 600,
             fontSize: 13,
             px: 1.5,
             height: 28,
-          }}
+            }}
         />
       </TableCell> */}
-      <TableCell sx={{ fontSize: 14 }}>
+      <TableCell sx={{ fontSize: 14 }}>{row.status?.substring(0, 4)}</TableCell>
+      {/* <TableCell sx={{ fontSize: 14 }}>
         <ThemeChip
           label={row.status.charAt(0).toUpperCase() + row.status.slice(1) || "N/A"}
           color={
@@ -790,7 +791,7 @@ const LeadManagementPage: React.FC = () => {
             height: 28,
           }}
         />
-      </TableCell>
+      </TableCell> */}
 
       <TableCell sx={{ fontSize: 14 }}>
         {row.partyName?.createdBy

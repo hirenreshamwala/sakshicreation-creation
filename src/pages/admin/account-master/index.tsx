@@ -387,7 +387,7 @@ const AccountMasterPage: React.FC = memo(() => {
     createdDate: moment(account.createdAt).format("DD-MM-YYYY"),
     party: account.party?.partyName || "N/A",
     contactPerson: account.party?.contactPerson || "N/A",
-    partyTag: account.party?.partyTag || "New",
+    partyTag: account.party?.partyTag?.substring(0, 4) || "New",
     mobile: account.party?.ownerMobileNo || "N/A",
     reason: account.reasonToVisit || "N/A",
     unitno: account.party?.address?.unitNo || "N/A",
@@ -552,7 +552,8 @@ const AccountMasterPage: React.FC = memo(() => {
               <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.contactPerson}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
-              <TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.partyTag}</TableCell>
+              {/* <TableCell>
                 <ThemeChip
                   label={row.partyTag}
                   color={row.partyTag === "New" ? "primary" : "secondary"}
@@ -567,7 +568,7 @@ const AccountMasterPage: React.FC = memo(() => {
                     border: 'none',
                   }}
                 />
-              </TableCell>
+              </TableCell> */}
               
               {/* <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
               

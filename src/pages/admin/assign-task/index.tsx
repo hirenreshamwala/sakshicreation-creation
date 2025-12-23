@@ -705,7 +705,7 @@ const AssignTaskPage: React.FC = () => {
       contactPerson: task.partyName?.contactPerson || task.partyName?.ownerName || "N/A",
       area: task.partyName?.address?.area?.area || "N/A",
       mobile: task.partyName?.personMobileNo ||  task.partyName?.ownerMobile ||  "N/A",
-      partyTag: task.partyName?.partyTag || "N/A",
+      partyTag: task.partyName?.partyTag?.substring(0, 4) || "N/A",
       remarks: task.remarks || "N/A",
       assignBy: task.partyName.createdBy
         ? `${task.partyName.createdBy.firstName} ${task.partyName.createdBy.lastName}`
@@ -715,7 +715,7 @@ const AssignTaskPage: React.FC = () => {
       assignTo: task.assignTo
         ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
         : "Unassigned",
-      status: task.status || "Pending",
+      status: task.status?.substring(0, 4) || "Pending",
       statusType: mapStatusToType(task.status),
       isRescheduledTask: task.isRescheduledTask || false,
       originalTaskDate: task.originalTaskId?.date
@@ -810,7 +810,8 @@ const AssignTaskPage: React.FC = () => {
             ? `${row?.feedback.substring(0, 10)}...`
             : row?.feedback}</Typography>
         </TableCell>
-        <TableCell sx={getCellSx({ fontSize: 14 })}>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.status}</TableCell>
+        {/* <TableCell sx={getCellSx({ fontSize: 14 })}>
           <ThemeChip
             label={row.status}
             icon={
@@ -843,7 +844,7 @@ const AssignTaskPage: React.FC = () => {
               height: 28,
             }}
           />
-        </TableCell>
+        </TableCell> */}
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignBy}</TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignTo}</TableCell>
         <TableCell sx={getCellSx({ display: "flex" })}>
