@@ -197,7 +197,7 @@ const AssignTaskPage: React.FC = () => {
       { id: "contactPerson", label: "Contact Person" },
       { id: "mobile", label: "Mobile No." },
       { id: "partyTag", label: "Tag" },
-      // { id: "reason", label: "Reason to Visit" },
+      { id: "reason", label: "Reason to Visit" },
       { id: "remarks", label: "Remarks" },
       { id: "feedback", label: "Feedback" },
       { id: "status", label: "Status" },
@@ -796,7 +796,7 @@ const AssignTaskPage: React.FC = () => {
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.contactPerson}</TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.mobile}</TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.partyTag}</TableCell>
-        {/* <TableCell sx={getCellSx({ fontSize: 14 })}>{row.reason}</TableCell> */}
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.reason}</TableCell>
         
         <TableCell sx={getCellSx()}>
           <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>

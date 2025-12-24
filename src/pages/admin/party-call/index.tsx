@@ -109,10 +109,8 @@ const columns = [
   { id: "contactPerson", label: "Contact Person" },
   { id: "mobile", label: "Mobile No." },
   { id: "partyTag", label: "Tag" },
-  // { id: "remarks", lable: "Remarks" },
   { id: "reason", label: "Reason to Call" },
   { id: "feedback", label: "feedback" },
-  // { id: "statusofparty", label: "Status of Party" },
   { id: "status", label: "Status" },
   { id: "createdBy", label: "Created By" },
   { id: "assignedTo", label: "Assigned To" },
@@ -139,6 +137,7 @@ const LeadManagementPage: React.FC = () => {
   const todayRef = useRef<HTMLDivElement>(null);
   const [filterOptions, setFilterOptions] = useState<string[]>([]);
   const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
+
   // Pagination state
   const [availableDates, setAvailableDates] = useState<{ date: string, count: number }[]>([]);
   const [datePagination, setDatePagination] = useState<DatePaginationState>({});
@@ -190,7 +189,7 @@ const LeadManagementPage: React.FC = () => {
   // Format date for API
   const formatDateForAPI = (date: Date | null): string | null => {
     if (!date) return null;
-    return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    return date.toISOString().split('T')[0];
   };
 
   const isToday = (dateString: string): boolean => {
@@ -209,10 +208,6 @@ const LeadManagementPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true))
-  }, [])
-
-  useEffect(() => {
     if (c) setCompanyTab(c === "Quality Packaging" || c === "QP" ? 1 : 0)
     if (st) setStartDate(new Date(st as string));
     if (e) setEndDate(new Date(e as string));
@@ -228,16 +223,13 @@ const LeadManagementPage: React.FC = () => {
 
   const handleExcelDownload = async () => {
     try {
-      console.log("Starting Excel download...");
-
-      // Prepare payload with all current filters
       const payload: any = {
-        status: selectedStatus, // Array of statuses from tab
-        companyName: selectedCompany, // From company tab
+        status: selectedStatus,
+        companyName: selectedCompany,
         startDate: startDate ? startDate.toISOString() : null,
         endDate: endDate ? endDate.toISOString() : null,
         staffId: si,
-        date: null, // We're using date range instead of single date
+        date: null,
         search: searchQuery || null,
         mobile: filters['Mobile No']?.[0] || null,
         unitNo: filters['Unit No']?.[0] || null,
@@ -252,9 +244,8 @@ const LeadManagementPage: React.FC = () => {
       // Handle multiple filter values
       Object.keys(filters).forEach(key => {
         if (filters[key] && filters[key].length > 1) {
-          // Handle comma-separated values for fields that support it
           const multiValueFields = [
-            'Mobile No', 'unitNo', 'market', 'area', 'party status',
+            'Mobile No', 'Unit No', 'market', 'area', 'party status',
             'Reason to Call', 'assign to', 'Created By'
           ];
 
@@ -276,17 +267,14 @@ const LeadManagementPage: React.FC = () => {
         }
       });
 
-      // Handle partyName separately (can be ID or name)
       if (filters['party'] && filters['party'].length > 0) {
         payload.partyName = filters['party'][0];
       }
 
-      // Apply assignedTo filter for canViewOwn permission
       if (canViewOwn && !canViewGlobal && currentUserName) {
         payload.assignedToFilter = currentUserName;
       }
 
-      // Clean payload - remove null/undefined/empty values
       const cleanPayload = Object.fromEntries(
         Object.entries(payload).filter(([_, value]) =>
           value !== null && value !== undefined && value !== '' &&
@@ -294,33 +282,21 @@ const LeadManagementPage: React.FC = () => {
         )
       );
 
-      console.log("Download payload:", cleanPayload);
-
-      // Call the export service
       const response = await leadService.exportLeadsToExcel(cleanPayload);
 
-      // Check if response is a blob (Excel file)
       if (response instanceof Blob) {
-        // Create a download link
         const url = window.URL.createObjectURL(response);
         const link = document.createElement('a');
         link.href = url;
         link.setAttribute('download', `Leads_${new Date().toISOString().split('T')[0]}.xlsx`);
         document.body.appendChild(link);
-
-        // Trigger download
         link.click();
-
-        // Clean up
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
-
         toast.success('Excel file downloaded successfully');
       } else if (response && response.success === false) {
-        // Handle API error response
         toast.error(response.message || 'Failed to download Excel file');
       } else {
-        // Handle unexpected response
         console.error('Unexpected response:', response);
         toast.error('Unexpected response from server');
       }
@@ -344,9 +320,8 @@ const LeadManagementPage: React.FC = () => {
     }));
 
     try {
-      // Prepare query parameters with all current filters
       const queryParams: any = {
-        companyName: StaticCompanyOptions[comapanyTab],
+        companyName: selectedCompanyId,
         status: selectedStatus,
         staffId: si,
         startDate: formatDateForAPI(startDate),
@@ -357,12 +332,10 @@ const LeadManagementPage: React.FC = () => {
         limit: itemsPerPage,
       };
 
-      // Add search query if available
       if (searchQuery) {
         queryParams.search = searchQuery;
       }
 
-      // Add other filters if available
       if (Object.keys(filters).length > 0) {
         Object.keys(filters).forEach(key => {
           if (filters[key] && filters[key].length > 0) {
@@ -390,7 +363,6 @@ const LeadManagementPage: React.FC = () => {
         });
       }
 
-      // Add assignedTo filter for canViewOwn permission
       if (canViewOwn && !canViewGlobal && currentUserName) {
         queryParams.assignedToFilter = currentUserName;
       }
@@ -401,7 +373,8 @@ const LeadManagementPage: React.FC = () => {
         setDatePagination(prev => ({
           ...prev,
           [date]: {
-            ...prev[date],
+            currentPage: page,
+            itemsPerPage: itemsPerPage,
             data: response.data || [],
             totalItems: response.count || 0,
             loading: false,
@@ -419,24 +392,21 @@ const LeadManagementPage: React.FC = () => {
         }
       }));
     }
-  }, [searchQuery, filters, si, r, selectedCompanyId, selectedStatus, canViewOwn, canViewGlobal, currentUserName, startDate, endDate]);
+  }, [selectedCompanyId, selectedStatus, si, r, searchQuery, filters, startDate, endDate, canViewOwn, canViewGlobal, currentUserName]);
 
   const sortDatesDesc = (dates: { date: string; count: number }[]) => {
     return dates.sort((a, b) => {
       const [da, ma, ya] = a.date.split('/').map(Number);
       const [db, mb, yb] = b.date.split('/').map(Number);
-
       const dateA = new Date(ya, ma - 1, da);
       const dateB = new Date(yb, mb - 1, db);
-
-      return dateB.getTime() - dateA.getTime(); // Latest first
+      return dateB.getTime() - dateA.getTime();
     });
   };
 
   const fetchDates = useCallback(async () => {
     setLoadingDates(true);
     try {
-      // Apply all current filters to the dates fetch
       const queryParams: any = {
         companyName: selectedCompanyId,
         status: selectedStatus,
@@ -447,12 +417,10 @@ const LeadManagementPage: React.FC = () => {
         getDatesOnly: true,
       };
 
-      // Add search query if available
       if (searchQuery) {
         queryParams.search = searchQuery;
       }
 
-      // Add other filters if available
       if (Object.keys(filters).length > 0) {
         Object.keys(filters).forEach(key => {
           if (filters[key] && filters[key].length > 0) {
@@ -480,7 +448,6 @@ const LeadManagementPage: React.FC = () => {
         });
       }
 
-      // Add assignedTo filter for canViewOwn permission
       if (canViewOwn && !canViewGlobal && currentUserName) {
         queryParams.assignedToFilter = currentUserName;
       }
@@ -489,10 +456,7 @@ const LeadManagementPage: React.FC = () => {
       const response = res.res.data;
 
       if (response.success) {
-
-        // 🔥 SORT HERE (latest → oldest)
         const sortedDates = sortDatesDesc(response.dates || []);
-
         setAvailableDates(sortedDates);
 
         const newPagination: DatePaginationState = {};
@@ -511,18 +475,16 @@ const LeadManagementPage: React.FC = () => {
           fetchLeadsForDate(dateInfo.date, 1, ITEMS_PER_PAGE);
         });
       }
-
     } catch (error) {
       console.error('Error fetching dates:', error);
       toast.error('Failed to fetch lead dates');
     } finally {
       setLoadingDates(false);
     }
-  }, [searchQuery, filters, si, r, selectedCompanyId, selectedStatus, fetchLeadsForDate, canViewOwn, canViewGlobal, currentUserName, startDate, endDate]);
+  }, [selectedCompanyId, selectedStatus, si, r, searchQuery, filters, startDate, endDate, fetchLeadsForDate, canViewOwn, canViewGlobal, currentUserName]);
 
   // Tab changes को handle करें
   useEffect(() => {
-    // Check both permissions
     if ((canViewGlobal || canViewOwn) && router.isReady) {
       setDatePagination({});
       fetchDates();
@@ -580,7 +542,6 @@ const LeadManagementPage: React.FC = () => {
           icon: "success",
           confirmButtonColor: "#7F56D9",
         });
-
         setDatePagination({});
         fetchDates();
       } catch (err: any) {
@@ -599,13 +560,6 @@ const LeadManagementPage: React.FC = () => {
     const pagination = datePagination[date];
     if (pagination) {
       fetchLeadsForDate(date, page, pagination.itemsPerPage);
-      setDatePagination(prev => ({
-        ...prev,
-        [date]: {
-          ...prev[date],
-          currentPage: page,
-        }
-      }));
     }
   };
 
@@ -632,7 +586,6 @@ const LeadManagementPage: React.FC = () => {
         };
 
         const apiField = fieldMap[selectedFilterField] || selectedFilterField;
-
         const response = await leadService.searchFilterOptions(apiField, "", filters);
 
         if (response.success) {
@@ -651,7 +604,7 @@ const LeadManagementPage: React.FC = () => {
     };
 
     fetchFilterOptions();
-  }, [selectedFilterField, filters]);
+  }, [selectedFilterField]);
 
   const handleAssignSuccess = () => {
     setOpenAssignDialog(false);
@@ -680,6 +633,7 @@ const LeadManagementPage: React.FC = () => {
     setStartDate(null);
     setEndDate(null);
     setFilters({});
+    setSelectedFilterField(null);
     setDatePagination({});
     fetchDates();
   };
@@ -699,14 +653,6 @@ const LeadManagementPage: React.FC = () => {
             src={row.companyName?.avatar}
             alt={row.companyName?.companyName || "Company"}
           />
-          {/* <Typography fontWeight={500} sx={{ fontSize: 14 }}>
-            {row.companyName?.companyName || "N/A"}
-            {row.isRescheduledCall && (
-              <Tooltip title={`Rescheduled from ${new Date(row.originalLeadId?.date).toLocaleDateString('en-GB')}`}>
-                <ThemeChip label="Rescheduled" color="warning" size="small" sx={{ ml: 1, background: "#FFFAEB", color: "#B54708" }} />
-              </Tooltip>
-            )}
-          </Typography> */}
         </Box>
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>
@@ -720,10 +666,7 @@ const LeadManagementPage: React.FC = () => {
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>
         {row.partyName?.address
-          ? truncateText(
-            `${row.partyName.address.unitNo}`,
-            30
-          )
+          ? truncateText(`${row.partyName.address.unitNo}`, 30)
           : "N/A"}
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.partyName?.address?.marketName?.marketName || "N/A"}</TableCell>
@@ -731,20 +674,11 @@ const LeadManagementPage: React.FC = () => {
       <TableCell sx={{ fontSize: 14 }}>{row.partyName?.contactPerson || "N/A"}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.partyName?.ownerWhatsAppNo || "N/A"}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.partyName?.partyTag?.substring(0, 4)}</TableCell>
-      {/* <TableCell sx={{ fontSize: 14 }}>
-          <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>
-          {row.remarks && row.remarks.length > 10
-          ? `${row.remarks.substring(0, 10)}...`
-              : row.remarks}
-              </Typography>
-              </TableCell> */}
       <TableCell sx={{ fontSize: 14 }}>
         {row.reason === "Other" ? row.customReason || "Other" : row.reason}
       </TableCell>
-
-
       <TableCell sx={{ fontSize: 14 }}>
-        <Tooltip title={row.feedback || row.callFeedback || "No feedback"}>
+        <Tooltip title={row.callFeedback || "No feedback"}>
           <Typography
             sx={{
               maxWidth: 150,
@@ -753,46 +687,11 @@ const LeadManagementPage: React.FC = () => {
               textOverflow: 'ellipsis'
             }}
           >
-            {truncateText(row.feedback || row.callFeedback || "N/A", 20)}
+            {truncateText(row.callFeedback || "N/A", 20)}
           </Typography>
         </Tooltip>
       </TableCell>
-      {/* <TableCell sx={{ fontSize: 14 }}>
-        <ThemeChip
-          label={row.partyName?.partyTag || "N/A"}
-          color={row.partyName?.partyTag === "New" ? "primary" : "default"}
-          variant={row.partyName?.partyTag === "New" ? "filled" : "outlined"}
-          sx={{
-            background:
-              row.partyName?.partyTag === "New" ? "#F4EBFF" : "#F4F3FF",
-              color: "#7F56D9",
-            fontWeight: 600,
-            fontSize: 13,
-            px: 1.5,
-            height: 28,
-            }}
-        />
-      </TableCell> */}
       <TableCell sx={{ fontSize: 14 }}>{row.status?.substring(0, 4)}</TableCell>
-      {/* <TableCell sx={{ fontSize: 14 }}>
-        <ThemeChip
-          label={getFirstFourChars(row.status) || "N/A"}
-          color={
-            row.status === "pending" ? "primary" :
-              row.status === "rescheduled" ? "warning" :
-                row.status === "completed" ? "success" :
-                  row.status === "cancelled" ? "error" : "default"
-          }
-          variant="filled"
-          sx={{
-            fontWeight: 600,
-            fontSize: 13,
-            px: 1.5,
-            height: 28,
-          }}
-        />
-      </TableCell> */}
-
       <TableCell sx={{ fontSize: 14 }}>
         {row.partyName?.createdBy
           ? `${row.partyName.createdBy.firstName} ${row.partyName.createdBy.lastName}`.trim()
@@ -823,8 +722,7 @@ const LeadManagementPage: React.FC = () => {
 
   return (
     <>
-      {/* Only show company tabs if user has access to both companies AND has viewGlobal permission */}
-      {hasBothCompanies && canViewGlobal && (
+      {hasBothCompanies && (
         <TabComponent activeTab={comapanyTab} setActiveTab={handleCompanyTabChange} />
       )}
 
@@ -882,9 +780,7 @@ const LeadManagementPage: React.FC = () => {
             sx={{
               backgroundColor: "#7F56D9",
               color: "white",
-              "&:hover": {
-                backgroundColor: "#5d35b3",
-              },
+              "&:hover": { backgroundColor: "#5d35b3" },
               height: 35,
             }}
           >
@@ -906,7 +802,9 @@ const LeadManagementPage: React.FC = () => {
             Clear
           </Button>
           <FilterDropdown
-            filterOptions={canViewOwn && !canViewGlobal ? ['created date', 'party', 'Mobile No', 'Reason to Call', 'Unit No', 'market', 'area', 'party status', 'assign to'] : ['created date', 'party', 'Mobile No', 'Reason to Call', 'Unit No', 'market', 'area', 'party status', 'assign to', 'Created By']}
+            filterOptions={canViewOwn && !canViewGlobal
+              ? ['created date', 'party', 'Mobile No', 'Reason to Call', 'Unit No', 'market', 'area', 'party status', 'assign to']
+              : ['created date', 'party', 'Mobile No', 'Reason to Call', 'Unit No', 'market', 'area', 'party status', 'assign to', 'Created By']}
             uniqueValues={filterOptions}
             loading={loadingFilterOptions}
             onFiltersChange={setFilters}
@@ -926,6 +824,7 @@ const LeadManagementPage: React.FC = () => {
             }}
             title="Download as Excel"
           >
+
             <svg
               xmlns="http://www.w3.org/2000/svg"
               height="16"

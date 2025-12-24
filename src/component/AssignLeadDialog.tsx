@@ -9,11 +9,12 @@ import ThemeInput from '@/component/common_component/themeinput';
 import ThemeButton from '@/component/common_component/themebutton';
 import InputReasonDialog from '@/component/assigntaskdailog/InputReasonDialog';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { createLeadThunk, updateLeadThunk, bulkCreateLeadsThunk, clearSuccessMessage, clearError } from '@/store/slices/leadSlice';
+import { createLeadThunk, updateLeadThunk, bulkCreateLeadsThunk, clearSuccessMessage, clearError, getLeadsByStaffIdThunk } from '@/store/slices/leadSlice';
 import { getAllStaffThunk } from '@/store/slices/staffSlice';
 import { Lead, OptionType } from '@/services/types';
 import Swal from 'sweetalert2';
 import CompanySelect from "./reusablecomponents/CompanyWithPartyName"
+import { partyService } from '@/services/party.service';
 
 interface AssignLeadDialogProps {
     open: boolean;
@@ -27,11 +28,8 @@ interface AssignLeadDialogProps {
 
 const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accountMasters, lead, type, partyIds, onSuccess, company }) => {
     const dispatch = useAppDispatch();
-    const { 
-        // accountMasters, 
-        loading: accountLoading, error: accountError } = useAppSelector(
-        (state) => state.accountMasters || {}
-    );
+
+    console.log(lead,'jkxdfhbgdfjikhgui')
     const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
         (state) => state.staff || {}
     );
@@ -243,27 +241,37 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accou
             }
         }
     }, []);
+    console.log(partyDetails,'selectedParty')
+
+    const getPartyDetails = async(id:string)=>{
+        const selectedParty = await partyService.getPartyById(id);
+        console.log("selectedParty", selectedParty?.data?.address?.marketName?.marketName);
+        setPartyDetails({
+            unitNo: selectedParty?.data?.address?.unitNo || "",
+            marketName: selectedParty?.data?.address?.marketName?.marketName || "",
+            area: selectedParty?.data?.address?.area?.area || "",
+            ownerWhatsAppNo: selectedParty?.data?.ownerWhatsAppNo || "",
+        });
+        return selectedParty;
+    }
 
     useEffect(() => {
         if (open && lead?._id) {
-            const selectedParty = accountMasters?.find((account) => account.party?._id === formik.values.partyName);
-            setPartyDetails({
-                unitNo: selectedParty?.party?.address?.unitNo || "",
-                marketName: selectedParty?.party?.address || "",
-                area: selectedParty?.party?.address?.area?.area || "",
-                ownerWhatsAppNo: selectedParty?.party?.ownerWhatsAppNo || "",
-            });
+            getPartyDetails(lead?.partyName?._id);
         }
         if (open && formik.values.partyName) {
-            const selectedParty = accountMasters?.find((account) => account.party?._id === formik.values.partyName);
-            setPartyDetails({
-                unitNo: selectedParty?.party?.address?.unitNo || "",
-                marketName: selectedParty?.party?.address?.marketName || "",
-                area: selectedParty?.party?.address?.area || "",
-                ownerWhatsAppNo: selectedParty?.party?.ownerWhatsAppNo || "",
-            });
+            getPartyDetails(formik.values.partyName);
         }
-    }, [open, lead, formik.values.partyName, accountMasters]);
+    }, [open, lead, formik.values.partyName]);
+
+    useEffect(() => {
+        if (open) {
+            if (leadError) {
+                toast.error(leadError);
+                dispatch(clearError());
+            }
+        }
+    }, [open, leadError]);
 
     useEffect(() => {
         if (open) {
@@ -328,7 +336,7 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accou
         formik.setFieldValue('partyName', partyId);
 
         // Find the selected party's createdBy and details from accountMasters
-        const selectedParty = accountMasters?.find((account) => account?.party?._id === partyId);
+        const selectedParty = getPartyDetails(partyId);
         const createdById = selectedParty?.createdBy?._id || "";
         if (createdById) {
             const isSalesStaff = staffList.find(
@@ -342,14 +350,6 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accou
         } else {
             formik.setFieldValue('assignedTo', '');
         }
-
-        // Set party details for display
-        setPartyDetails({
-            unitNo: selectedParty?.party?.address?.unitNo || "",
-            marketName: selectedParty?.party?.address?.marketName || "",
-            area: selectedParty?.party?.address?.area || "",
-            ownerWhatsAppNo: selectedParty?.party?.ownerWhatsAppNo || "",
-        });
     };
 
     const handleSaveReason = (reason: string) => {
@@ -407,14 +407,14 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accou
                             <ThemeInput
                                 labelName="Market Name"
                                 type="text"
-                                value={partyDetails.marketName?.marketName}
+                                value={partyDetails.marketName}
                                 disabled
                                 fullWidth
                             />
                             <ThemeInput
                                 labelName="Area"
                                 type="text"
-                                value={partyDetails.area?.area}
+                                value={partyDetails.area}
                                 disabled
                                 fullWidth
                             />

@@ -298,7 +298,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
         startDate: currentFilterState?.startDate,
         endDate: currentFilterState?.endDate,
         companyName: currentFilterState?.companyName,
-         companyName: companies.find((item) => item.companyName === companyName)?._id,
+        companyName: companies.find((item) => item.companyName === companyName)?._id,
         // Add other relevant filters
       };
 
@@ -308,7 +308,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
       if (response.success && response.data) {
         // Store in local state for future use
         let values: string[] = [];
-        
+
         if (Array.isArray(response.data)) {
           if (response.data.length > 0 && typeof response.data[0] === 'object' && response.data[0].name) {
             // If data is array of objects with name property
@@ -318,12 +318,12 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
             values = [...new Set(response.data)];
           }
         }
-        
+
         setFilterOptionsLocal(prev => ({
           ...prev,
           [field]: values
         }));
-        
+
         return values;
       }
       return [];
@@ -346,7 +346,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   }, [getUniqueValues]);
 
   // Get current unique values for selected field
-   const uniqueValues = useMemo(() => {
+  const uniqueValues = useMemo(() => {
     if (!selectedFilterField) return { values: [], isLoading: false };
 
     const data = filterOptionsLocal[selectedFilterField] || [];
@@ -576,6 +576,24 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
               </Box>
             )}
 
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleApplySearchAndDate}
+                disabled={!hasSearchOrDateChanges}
+              >
+                Search
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleClearSearchAndDate}
+              >
+                Clear
+              </Button>
+            </Box>
+
             {/* Filter */}
             {showFillter && (
               <Box>
@@ -594,23 +612,6 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
             )}
 
             {/* Search and Clear Buttons */}
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleApplySearchAndDate}
-                disabled={!hasSearchOrDateChanges}
-              >
-                Search
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleClearSearchAndDate}
-              >
-                Clear
-              </Button>
-            </Box>
 
             {showExcelDownload && (
               <IconButton
