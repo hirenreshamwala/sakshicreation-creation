@@ -18,7 +18,7 @@ import {
   bulkCreateAssignTasksThunk,
 } from "@/store/slices/assignTaskSlice";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
-import type { CreateAssignTask, UpdateAssignTask } from "@/services/assignTask.service";
+import { assignTaskService, type CreateAssignTask, type UpdateAssignTask } from "@/services/assignTask.service";
 import Swal from "sweetalert2";
 import CompanySelect from "../reusablecomponents/CompanyWithPartyName";
 import { useRouter } from "next/router";
@@ -72,6 +72,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   const dispatch = useAppDispatch();
   const singleAssignTask = rowData;
 
+  console.log(rowData, 'rowData')
   const {
     loading: accountLoading,
     error: accountError,
@@ -138,6 +139,8 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
       }),
     });
 
+
+
   const formik = useFormik<CreateAssignTask>({
     initialValues: {
       companyName: companyOptions?.value || "",
@@ -189,22 +192,22 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
           if (values.reasonForVisit === "Order" && companyTab === 0 && values.status === "Completed") toggleScDialog()
           if (values.reasonForVisit === "Order" && companyTab === 1 && values.status === "Completed") toggleQpDialog()
           if (refreshData) refreshData();
-        // } else if (isBulkMode) {
-        //   const tasks = selectedParties.map((party) => ({
-        //     ...values,
-        //     companyName: party.companyId,
-        //     partyName: party.partyId,
-        //   }));
-        //   await Promise.all(
-        //     tasks.map((task) => dispatch(createAssignTaskThunk(task)).unwrap())
-        //   );
-        //   Swal.fire({
-        //     title: "Success!",
-        //     text: `Assigned ${tasks.length} tasks successfully`,
-        //     icon: "success",
-        //     confirmButtonColor: "#7F56D9",
-        //   });
-        //   if (refreshData) refreshData();
+          // } else if (isBulkMode) {
+          //   const tasks = selectedParties.map((party) => ({
+          //     ...values,
+          //     companyName: party.companyId,
+          //     partyName: party.partyId,
+          //   }));
+          //   await Promise.all(
+          //     tasks.map((task) => dispatch(createAssignTaskThunk(task)).unwrap())
+          //   );
+          //   Swal.fire({
+          //     title: "Success!",
+          //     text: `Assigned ${tasks.length} tasks successfully`,
+          //     icon: "success",
+          //     confirmButtonColor: "#7F56D9",
+          //   });
+          //   if (refreshData) refreshData();
         } else if (isBulkMode) {
           const tasks: CreateAssignTask[] = selectedParties.map((party) => ({
             companyName: party.companyId,
@@ -218,14 +221,14 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
           }));
           try {
             await dispatch(bulkCreateAssignTasksThunk(tasks)).unwrap();
-            
-          Swal.fire({
-            title: "Success!",
-            text: `Successfully assigned tasks to ${tasks.length} parties`,
-            icon: "success",
-            confirmButtonColor: "#7F56D9",
-          });
-            
+
+            Swal.fire({
+              title: "Success!",
+              text: `Successfully assigned tasks to ${tasks.length} parties`,
+              icon: "success",
+              confirmButtonColor: "#7F56D9",
+            });
+
             if (refreshData) refreshData();
           } catch (err: any) {
             Swal.fire({
@@ -260,6 +263,26 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
     },
   });
 
+  const fetchTaskById = async () => {
+    if (!taskId) return;
+
+    try {
+      const response = await assignTaskService.getAssignTaskById(taskId);
+
+      if (response.data) {
+        const assignToId = response.data.assignTo?._id || response.data.AssignTo?._id || "";
+        formik.setFieldValue('assignTo', assignToId)
+      }
+    } catch (error) {
+      console.error("Error fetching task by ID:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (taskId) {
+      fetchTaskById();
+    }
+  }, [taskId]);
   const statusOptions = useMemo(
     () => [
       { label: "Pending", value: "Pending" },
