@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
-  Box,
-  TableCell,
-  IconButton,
-  Typography,
-  Button,
-  CircularProgress,
+    Box,
+    TableCell,
+    IconButton,
+    Typography,
+    Button,
+    CircularProgress,
 } from "@mui/material";
 import { Delete, Edit, Visibility, AttachFile, Download as DownloadIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
@@ -20,7 +20,7 @@ import { StaticCompanyOptions } from '@/constants';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { getAllCompaniesThunk } from '@/store/slices/compnaySlice';
 import { deleteComplainThunk, getAllComplainsThunk, getComplainsByStaffThunk } from '@/store/slices/complainSlice';
-import { reportService } from "@/services/reportService"; 
+import { reportService } from "@/services/reportService";
 import { complainService } from "@/services/complain.service";
 
 import moment from 'moment';
@@ -44,7 +44,7 @@ interface CompanyType {
 
 const ComplainPage = ({ company }: { company?: CompanyType }) => {
     const dispatch = useAppDispatch();
-    
+
     // State variables
     const [open, setOpen] = useState(false);
     const [viewOpen, setViewOpen] = useState(false);
@@ -65,14 +65,14 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
         if (company && company._id && company.companyName) {
             return company;
         }
-        
+
         const companyName = company?.companyName || StaticCompanyOptions[0];
         const foundCompany = companies.find((item) => item.companyName === companyName);
         return foundCompany || { _id: "default", companyName };
     }, [company, companies]);
 
     const defaultFilter = {
-         page: 1,
+        page: 1,
         pageSize: 10,
         search: "",
         filters: {},
@@ -102,33 +102,33 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
     const canEdit = user?.role?.permissions?.all_complains?.edit;
     const canDelete = user?.role?.permissions?.all_complains?.delete;
 
-  const companyNames = useMemo(() => {
-    return [...new Set(companies.map(c => c.companyName))].sort();
-  }, [companies]);
+    const companyNames = useMemo(() => {
+        return [...new Set(companies.map(c => c.companyName))].sort();
+    }, [companies]);
 
-  const loadComplains = useCallback(async () => {
-    if (isLoadingRef.current) return;
-    if (!selectedCompany?._id) return;
+    const loadComplains = useCallback(async () => {
+        if (isLoadingRef.current) return;
+        if (!selectedCompany?._id) return;
 
         setIsLoadingData(true);
         isLoadingRef.current = true;
 
         try {
-        const params = {
-            ...currentFilterState,
-            filters: {
-            ...currentFilterState.filters,
-            company: [selectedCompany.companyName],
-            },
-            isPagination: true,
-            includeCounts: true
-        };
+            const params = {
+                ...currentFilterState,
+                filters: {
+                    ...currentFilterState.filters,
+                    company: [selectedCompany.companyName],
+                },
+                isPagination: true,
+                includeCounts: true
+            };
 
-        if (canViewGlobal) {
-            await dispatch(getAllComplainsThunk(params));
-        } else if (canViewOwn && user?.id) {
-            await dispatch(getComplainsByStaffThunk({ staffId: user.id, filters: params }));
-        }
+            if (canViewGlobal) {
+                await dispatch(getAllComplainsThunk(params));
+            } else if (canViewOwn && user?.id) {
+                await dispatch(getComplainsByStaffThunk({ staffId: user.id, filters: params }));
+            }
 
             setIsInitialLoad(true);
         } catch (err: any) {
@@ -176,7 +176,7 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
     const handleFilterFieldSelect = useCallback(async (field: string | null) => {
         setSelectedFilterField(field);
         if (field && !filterOptionsData[field]) {
-        await loadFilterOptions(field);
+            await loadFilterOptions(field);
         }
         return Promise.resolve();
     }, [filterOptionsData, loadFilterOptions]);
@@ -209,7 +209,7 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
     // Effect for initial load
     useEffect(() => {
         if (user && !isInitialLoad && selectedCompany?._id) {
-        loadComplains();
+            loadComplains();
         }
     }, [selectedCompany]); // company change થાય તો reload
 
@@ -293,186 +293,188 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
         setSelectedComplaintSubject('');
     };
 
-  const formattedRows = useMemo(() => {
-    if (!complains || !Array.isArray(complains)) return [];
+    const formattedRows = useMemo(() => {
+        if (!complains || !Array.isArray(complains)) return [];
 
-    return complains.map((complaint, index) => ({
-                _id: complaint?._id || `temp-${index}`,
-                id: complaint?._id || `temp-${index}`,
-                orderNo: complaint?.qporder?.orderNo 
-                    ? `QP-${complaint.qporder.orderNo}` 
-                    : complaint?.scorder?.orderNumber || 'N/A',
-                partyName: complaint?.party?.partyName || 'N/A',
-                subject: complaint?.subject || 'N/A',
-                status: complaint?.status || 'N/A',
-                createdBy: `${complaint?.createdBy?.firstName || ''} ${complaint?.createdBy?.lastName || ''}`.trim() || 'N/A',
-                filePaths: complaint?.filePaths || [],
-                createdAt: complaint?.createdAt || new Date().toISOString(),
-                party: complaint?.party?.partyName || 'N/A',
-                srNo: index + 1,
-                }));
-            }, [complains]);
+        return complains.map((complaint, index) => ({
+            _id: complaint?._id || `temp-${index}`,
+            id: complaint?._id || `temp-${index}`,
+            orderNo: complaint?.qporder?.orderNo
+                ? `QP-${complaint.qporder.orderNo}`
+                : complaint?.scorder?.orderNumber || 'N/A',
+            partyName: complaint?.party?.partyName || 'N/A',
+            subject: complaint?.subject || 'N/A',
+            status: complaint?.status || 'N/A',
+            createdBy: `${complaint?.createdBy?.firstName || ''} ${complaint?.createdBy?.lastName || ''}`.trim() || 'N/A',
+            filePaths: complaint?.filePaths || [],
+            createdAt: complaint?.createdAt || new Date().toISOString(),
+            party: complaint?.party?.partyName || 'N/A',
+            srNo: index + 1,
+        }));
+    }, [complains]);
 
     // Render row function
-                const renderRow = useCallback((row: any, index: number) => (
-                    <>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>{row.orderNo}</TableCell>
-                        <TableCell>{row.partyName}</TableCell>
-                        <TableCell>{row.subject}</TableCell>
-                        <TableCell>{row.status}</TableCell>
-                        <TableCell>{row.createdBy}</TableCell>
-                        <TableCell>
-                            {/* Files Button */}
-                            {row.filePaths && row.filePaths.length > 0 ? (
-                                <Button
-                                    variant="outlined"
-                                    size="small"
-                                    startIcon={<AttachFile />}
-                                    onClick={() => handleViewFiles(row.id)}
-                                    sx={{
-                                        textTransform: 'none',
-                                        fontSize: '0.75rem',
-                                        py: 0.5,
-                                    }}
-                                >
-                                    View Files ({row.filePaths.length})
-                                </Button>
-                            ) : (
-                                <Typography variant="body2" color="text.secondary">
-                                    No Files
-                                </Typography>
-                            )}
-                        </TableCell>
-                        <TableCell>
-                            <IconButton onClick={() => handleView(row.id)} color="info">
-                                <Visibility />
-                            </IconButton>
-                            {canEdit && (
-                                <IconButton onClick={() => handleEdit(row.id)} color="primary">
-                                    <Edit />
-                                </IconButton>
-                            )}
-                            {canDelete && (
-                                <IconButton onClick={() => handleDelete(row.id)} color="error">
-                                    <Delete />
-                                </IconButton>
-                            )}
-                        </TableCell>
-                    </>
+    const renderRow = useCallback((row: any, index: number) => (
+        <>
+            <TableCell>{index + 1}</TableCell>
+            <TableCell>{row.orderNo}</TableCell>
+            <TableCell>{row.partyName}</TableCell>
+            <TableCell>{row.subject}</TableCell>
+            <TableCell>{row.status}</TableCell>
+            <TableCell>{row.createdBy}</TableCell>
+            <TableCell>
+                {/* Files Button */}
+                {row.filePaths && row.filePaths.length > 0 ? (
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<AttachFile />}
+                        onClick={() => handleViewFiles(row.id)}
+                        sx={{
+                            textTransform: 'none',
+                            fontSize: '0.75rem',
+                            py: 0.5,
+                        }}
+                    >
+                        View Files ({row.filePaths.length})
+                    </Button>
+                ) : (
+                    <Typography variant="body2" color="text.secondary">
+                        No Files
+                    </Typography>
+                )}
+            </TableCell>
+            <TableCell>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <IconButton onClick={() => handleView(row.id)} color="info">
+                        <Visibility />
+                    </IconButton>
+                    {canEdit && (
+                        <IconButton onClick={() => handleEdit(row.id)} color="primary">
+                            <Edit />
+                        </IconButton>
+                    )}
+                    {canDelete && (
+                        <IconButton onClick={() => handleDelete(row.id)} color="error">
+                            <Delete />
+                        </IconButton>
+                    )}
+                </Box>
+            </TableCell>
+        </>
     ), [canEdit, canDelete, handleViewFiles, handleView, handleEdit, handleDelete]);
 
-  // Export to Excel with all current filters
-  const handleExportToExcel = async () => {
-    setExporting(true);
-    try {
-      // Prepare payload with ALL current filters
-      const payload: any = {
-        filters: currentFilterState.filters || {},
-        search: currentFilterState.search || "",
-        pageSize: -1, // Export all records
-      };
+    // Export to Excel with all current filters
+    const handleExportToExcel = async () => {
+        setExporting(true);
+        try {
+            // Prepare payload with ALL current filters
+            const payload: any = {
+                filters: currentFilterState.filters || {},
+                search: currentFilterState.search || "",
+                pageSize: -1, // Export all records
+            };
 
-      // Add date filters if available
-      if (currentFilterState.startDate) payload.startDate = currentFilterState.startDate;
-      if (currentFilterState.endDate) payload.endDate = currentFilterState.endDate;
+            // Add date filters if available
+            if (currentFilterState.startDate) payload.startDate = currentFilterState.startDate;
+            if (currentFilterState.endDate) payload.endDate = currentFilterState.endDate;
 
-      // Always export current company only
-      payload.companyNames = [selectedCompany.companyName];
+            // Always export current company only
+            payload.companyNames = [selectedCompany.companyName];
 
-      // For staff view, add staffId
-      if (canViewOwn && !canViewGlobal && user?.id) {
-        payload.staffId = user.id;
-      }
+            // For staff view, add staffId
+            if (canViewOwn && !canViewGlobal && user?.id) {
+                payload.staffId = user.id;
+            }
 
-      console.log('Export payload:', payload); // Debug
+            console.log('Export payload:', payload); // Debug
 
-      const blob = await reportService.exportComplainToExcel(payload);
+            const blob = await reportService.exportComplainToExcel(payload);
 
-      const fileName = `Complains_${selectedCompany.companyName.replace(/ /g, '_')}_${payload.startDate ? moment(payload.startDate).format('DDMMYYYY') + '_to_' + moment(payload.endDate).format('DDMMYYYY') : 'All_Time'}_${moment().format('DDMMYYYY_HHmm')}.xlsx`;
+            const fileName = `Complains_${selectedCompany.companyName.replace(/ /g, '_')}_${payload.startDate ? moment(payload.startDate).format('DDMMYYYY') + '_to_' + moment(payload.endDate).format('DDMMYYYY') : 'All_Time'}_${moment().format('DDMMYYYY_HHmm')}.xlsx`;
 
-      const url = window.URL.createObjectURL(new Blob([blob]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('Excel file downloaded successfully');
-    } catch (error: any) {
-      console.error('Export error:', error);
-      toast.error(error.message || 'Failed to export Excel file');
-    } finally {
-      setExporting(false);
+            const url = window.URL.createObjectURL(new Blob([blob]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            toast.success('Excel file downloaded successfully');
+        } catch (error: any) {
+            console.error('Export error:', error);
+            toast.error(error.message || 'Failed to export Excel file');
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    if ((loading || isLoadingData) && !isInitialLoad && complains.length === 0) {
+        return <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>;
     }
-  };
-
-  if ((loading || isLoadingData) && !isInitialLoad && complains.length === 0) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>;
-  }
 
     if (!selectedCompany?._id) {
         return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-        <Typography color="error">Company information is not available.</Typography>
-        </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+                <Typography color="error">Company information is not available.</Typography>
+            </Box>
         );
     }
 
     return (
         <>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2, flexWrap: 'wrap' }}>
                 {canCreate && (
-                        <Button
-                            variant="contained"
-                            onClick={handleAddNewOrder}
-                            sx={{
-                                backgroundColor: '#7F56D9',
-                                '&:hover': {
-                                    backgroundColor: '#6941C6',
-                                },
-                            }}
-                        >
-                            + Add New Complain
-                        </Button>
-                        )}
+                    <Button
+                        variant="contained"
+                        onClick={handleAddNewOrder}
+                        sx={{
+                            backgroundColor: '#7F56D9',
+                            '&:hover': {
+                                backgroundColor: '#6941C6',
+                            },
+                        }}
+                    >
+                        + Add New Complain
+                    </Button>
+                )}
 
-            <IconButton
+                <IconButton
                     onClick={handleExportToExcel}
                     disabled={loading || exporting}
-                    // sx={{
-                    //     border: "1px solid #D0D5DD",
-                    //     borderRadius: 2,
-                    //     p: 1.5,
-                    //     color: "#667085",
-                    //     bgcolor: exporting ? '#f0f0f0' : 'transparent',
-                    //     '&:hover': {
-                    //     bgcolor: '#f5f5f5',
-                    //     borderColor: '#b0b0b0',
-                    //     },
-                    //     '&.Mui-disabled': {
-                    //     borderColor: '#e0e0e0',
-                    //     color: '#aaa',
-                    //     },
-                    // }}
-                    >
+                // sx={{
+                //     border: "1px solid #D0D5DD",
+                //     borderRadius: 2,
+                //     p: 1.5,
+                //     color: "#667085",
+                //     bgcolor: exporting ? '#f0f0f0' : 'transparent',
+                //     '&:hover': {
+                //     bgcolor: '#f5f5f5',
+                //     borderColor: '#b0b0b0',
+                //     },
+                //     '&.Mui-disabled': {
+                //     borderColor: '#e0e0e0',
+                //     color: '#aaa',
+                //     },
+                // }}
+                >
                     {exporting ? (
                         <CircularProgress size={20} color="inherit" />
                     ) : (
                         <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        height="20"
-                        width="20"
-                        viewBox="0 0 384 512"
-                        fill="#667085"
+                            xmlns="http://www.w3.org/2000/svg"
+                            height="20"
+                            width="20"
+                            viewBox="0 0 384 512"
+                            fill="#667085"
                         >
-                        <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c0-13.3 10.7-24 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373s-16.9 32.5-36.6 68.8c-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 33.6 62.3 36.6 68.5 3-6.2 9.7-19.9 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"/>
+                            <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c0-13.3 10.7-24 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373s-16.9 32.5-36.6 68.8c-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 33.6 62.3 36.6 68.5 3-6.2 9.7-19.9 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z" />
                         </svg>
                     )}
-                    </IconButton>
-        </Box>
+                </IconButton>
+            </Box>
 
             <CustomTable2
                 showDatePicker={true}
@@ -484,7 +486,7 @@ const ComplainPage = ({ company }: { company?: CompanyType }) => {
                 rowData={formattedRows}
                 setCurrentFilterState={setCurrentFilterState}
                 currentFilterState={currentFilterState}
-                defaultFilter ={defaultFilter}
+                defaultFilter={defaultFilter}
                 renderRow={renderRow}
                 totalRows={totalCount || formattedRows.length}
                 onFilterFieldSelect={handleFilterFieldSelect}

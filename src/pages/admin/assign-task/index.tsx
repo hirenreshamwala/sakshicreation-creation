@@ -283,7 +283,7 @@ const AssignTaskPage: React.FC = () => {
       toast.error(error.message || 'Failed to download Excel file');
     }
   };
-  
+
   const handleBulkDelete = async () => {
     if (selectedTaskIds.length === 0) return;
 
@@ -704,7 +704,7 @@ const AssignTaskPage: React.FC = () => {
       market: task.partyName?.address?.marketName?.marketName || "N/A",
       contactPerson: task.partyName?.contactPerson || task.partyName?.ownerName || "N/A",
       area: task.partyName?.address?.area?.area || "N/A",
-      mobile: task.partyName?.personMobileNo ||  task.partyName?.ownerMobile ||  "N/A",
+      mobile: task.partyName?.personMobileNo || task.partyName?.ownerMobile || "N/A",
       partyTag: task.partyName?.partyTag?.substring(0, 4) || "N/A",
       remarks: task.remarks || "N/A",
       assignBy: task.partyName.createdBy
@@ -797,7 +797,7 @@ const AssignTaskPage: React.FC = () => {
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.mobile}</TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.partyTag}</TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.reason}</TableCell>
-        
+
         <TableCell sx={getCellSx()}>
           <Typography sx={{ fontSize: 14 }} title={row.remarks} noWrap>
             {row.remarks && row.remarks.length > 10
@@ -847,21 +847,27 @@ const AssignTaskPage: React.FC = () => {
         </TableCell> */}
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignBy}</TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>{row.assignTo}</TableCell>
-        <TableCell sx={getCellSx({ display: "flex" })}>
-          {canedit && (
-            <IconButton color="primary" onClick={() => {
-              setRowData(row)
-              handleEdit(row.id)
-            }}>
-              <EditIcon />
-            </IconButton>
-          )}
-          {candelete && (
-            <IconButton color="error" onClick={() => handleDelete(row.id)}>
-              <DeleteIcon />
-            </IconButton>
-          )}
+        <TableCell sx={{ borderBottom: "1px solid #e0e0e0" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {canedit && (
+              <IconButton
+                color="primary"
+                onClick={() => {
+                  setRowData(row);
+                  handleEdit(row.id);
+                }}
+              >
+                <EditIcon />
+              </IconButton>
+            )}
+            {candelete && (
+              <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                <DeleteIcon />
+              </IconButton>
+            )}
+          </Box>
         </TableCell>
+
       </>
     );
   };

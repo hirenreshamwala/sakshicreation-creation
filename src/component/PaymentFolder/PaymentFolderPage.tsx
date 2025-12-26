@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Tooltip,
 } from "@mui/material";
 import { Delete as DeleteIcon, Edit as EditIcon, Payment as PaymentIcon, Visibility as VisibilityIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
@@ -378,11 +379,14 @@ const PaymentFolderPage: React.FC = () => {
       <TableCell sx={{ fontSize: 14 }}>{row.assignTo}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{moment(row.assignedDate).format('DD-MM-YYYY')}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>
-        <Typography title={row.remarks} noWrap>
-          {row.remarks?.substring(0, 20) || 'N/A'}...
-        </Typography>
+        <Tooltip title={row.payments?.length > 0 ? row.payments[0].note : row.remarks}>
+          <Typography noWrap>
+            {row.payments?.length > 0 ? row.payments[0].note?.substring(0, 20) : row.remarks?.substring(0, 20)}...
+          </Typography>
+        </Tooltip>
       </TableCell>
-      <TableCell sx={{ display: "flex", gap: 1 }}>
+      <TableCell>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         {/* View Payment History Button - Always show if there are payments */}
         {row.payments?.length > 0 && (
           <IconButton
@@ -413,6 +417,7 @@ const PaymentFolderPage: React.FC = () => {
             <DeleteIcon />
           </IconButton>
         )}
+        </Box>
       </TableCell>
     </>
   ), [canedit, candelete, handleViewPaymentHistory, handleAddPayment, handleEdit, handleDelete, paymentFolders, getFirstContact]);

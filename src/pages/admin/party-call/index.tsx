@@ -702,7 +702,8 @@ const LeadManagementPage: React.FC = () => {
           ? `${row.assignedTo.firstName} ${row.assignedTo.lastName}`.trim()
           : "N/A"}
       </TableCell>
-      <TableCell sx={{ display: "flex", fontSize: 14 }}>
+      <TableCell>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         {canEdit && (
           <IconButton onClick={() => handleUpdateClick(row)} color="primary">
             <EditIcon />
@@ -716,6 +717,7 @@ const LeadManagementPage: React.FC = () => {
             <DeleteIcon />
           </IconButton>
         )}
+        </Box>
       </TableCell>
     </>
   );
