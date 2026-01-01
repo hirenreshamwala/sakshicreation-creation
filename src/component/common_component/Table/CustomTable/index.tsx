@@ -544,7 +544,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
               {/* Clear Date Range Button */}
               {/* {isDateRangeSelected && ( */}
               <Button
-                variant="outlined"
+                variant="contained"
                 size="small"
                 onClick={clearDateRange}
                 disabled={!isDateRangeSelected}
