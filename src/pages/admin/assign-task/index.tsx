@@ -715,7 +715,7 @@ const AssignTaskPage: React.FC = () => {
       assignTo: task.assignTo
         ? `${task.assignTo.firstName} ${task.assignTo.lastName}`
         : "Unassigned",
-      status: task.status?.substring(0, 4) || "Pending",
+      status: task.status || "Pending",
       statusType: mapStatusToType(task.status),
       isRescheduledTask: task.isRescheduledTask || false,
       originalTaskDate: task.originalTaskId?.date
@@ -810,7 +810,7 @@ const AssignTaskPage: React.FC = () => {
             ? `${row?.feedback.substring(0, 10)}...`
             : row?.feedback}</Typography>
         </TableCell>
-        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.status}</TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{getFirstFourChars(row.status)}</TableCell>
         {/* <TableCell sx={getCellSx({ fontSize: 14 })}>
           <ThemeChip
             label={getFirstFourChars(row.status)}
