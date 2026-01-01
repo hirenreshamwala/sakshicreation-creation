@@ -136,7 +136,7 @@ const AccountMasterPage: React.FC = memo(() => {
   const columns = [
     { id: "checkbox", label: "" },
     { id: "company", label: "company" },
-    { id: "createdDate", label: "Created Date", value: "createdAt" },
+    { id: "createdDate", label: "Created Date" },
     { id: "party", label: "party", value: "party" },
     { id: "unitno", label: "Unit No", value: "unitNo" },
     { id: "market", label: "Market", value: "market" },

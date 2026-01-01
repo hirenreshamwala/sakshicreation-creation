@@ -174,7 +174,20 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   const clearDateRange = useCallback(() => {
     setTempStartDate(null);
     setTempEndDate(null);
-  }, []);
+    if (setCurrentFilterState) {
+      setCurrentFilterState((prev: any) => ({
+        ...prev,
+        startDate: null,
+        endDate: null,
+        dateRange: { start: null, end: null },
+        search: tempSearch,
+        searchQuery: tempSearch,
+        page: 1,
+      }));
+      setStartDate(null);
+      setEndDate(null);
+    }
+  }, [setCurrentFilterState, tempSearch]);
 
   const getRowBackgroundColor = useCallback((row: T): string => {
     if (getRowColor) {
@@ -529,16 +542,16 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
               />
 
               {/* Clear Date Range Button */}
-              {isDateRangeSelected && (
-                <Tooltip title="Clear date range">
-                  <IconButton
-                    color="error"
-                    onClick={clearDateRange}
-                  >
-                    <FiX size={16} />
-                  </IconButton>
-                </Tooltip>
-              )}
+              {/* {isDateRangeSelected && ( */}
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={clearDateRange}
+                disabled={!isDateRangeSelected}
+              >
+                Clear Range
+              </Button>
+              {/* )} */}
             </Box>
           )}
 
