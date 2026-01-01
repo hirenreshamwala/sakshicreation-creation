@@ -491,6 +491,13 @@ const LeadManagementPage: React.FC = () => {
     }
   }, [comapanyTab, tab, canViewGlobal, canViewOwn, router.isReady]);
 
+  useEffect(() => {
+    if ((canViewGlobal || canViewOwn) && router.isReady) {
+      setDatePagination({});
+      fetchDates();
+    }
+  }, [filters]);
+
   // Auto-scroll to today's section
   useEffect(() => {
     if (todayRef.current) todayRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -704,19 +711,19 @@ const LeadManagementPage: React.FC = () => {
       </TableCell>
       <TableCell>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        {canEdit && (
-          <IconButton onClick={() => handleUpdateClick(row)} color="primary">
-            <EditIcon />
-          </IconButton>
-        )}
-        {canDelete && (
-          <IconButton
-            onClick={() => handleDeleteClick(row._id || "")}
-            color="error"
-          >
-            <DeleteIcon />
-          </IconButton>
-        )}
+          {canEdit && (
+            <IconButton onClick={() => handleUpdateClick(row)} color="primary">
+              <EditIcon />
+            </IconButton>
+          )}
+          {canDelete && (
+            <IconButton
+              onClick={() => handleDeleteClick(row._id || "")}
+              color="error"
+            >
+              <DeleteIcon />
+            </IconButton>
+          )}
         </Box>
       </TableCell>
     </>
