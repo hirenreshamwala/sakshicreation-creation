@@ -691,7 +691,7 @@ const LeadManagementPage: React.FC = () => {
           </Typography>
         </Tooltip>
       </TableCell>
-      <TableCell sx={{ fontSize: 14 }}>{row.status?.substring(0, 4)}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{getFirstFourChars(row.status)}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>
         {row.partyName?.createdBy
           ? `${row.partyName.createdBy.firstName} ${row.partyName.createdBy.lastName}`.trim()

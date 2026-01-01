@@ -105,18 +105,12 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
         ? Yup.string().notRequired()
         : Yup.string().required("Party Name is required"),
       date: Yup.string().required("Date is required"),
-      time: Yup.string().matches(
-        /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
-        "Invalid time format (use HH:MM)"
-      ),
+      time: Yup.string(),
       reasonForVisit: Yup.string().required("Reason for Visit is required"),
       remarks: Yup.string(),
       assignTo: Yup.string().required("Assign To is required"),
       visitDate: Yup.string(),
-      visitTime: Yup.string().matches(
-        /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
-        "Invalid time format (use HH:MM)"
-      ),
+      visitTime: Yup.string(),
       feedback: isEditMode
         ? Yup.string()
           .required('Call feedback is required')
@@ -222,41 +216,24 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
           try {
             await dispatch(bulkCreateAssignTasksThunk(tasks)).unwrap();
 
-            Swal.fire({
-              title: "Success!",
-              text: `Successfully assigned tasks to ${tasks.length} parties`,
-              icon: "success",
-              confirmButtonColor: "#7F56D9",
-            });
+            toast.success(`Successfully assigned tasks to ${tasks.length} parties`);
 
             if (refreshData) refreshData();
           } catch (err: any) {
-            Swal.fire({
-              title: "Error!",
-              text: err.message || "Failed to assign some tasks",
-              icon: "error",
-              confirmButtonColor: "#7F56D9",
-            });
+            console.log("DEBUG : err:", err);
+
+            toast.error(err || "Failed to assign some tasks");
           }
         } else {
           await dispatch(createAssignTaskThunk(values)).unwrap();
-          Swal.fire({
-            title: "Success!",
-            text: "Task assigned successfully",
-            icon: "success",
-            confirmButtonColor: "#7F56D9",
-          });
+          toast.success("Task assigned successfully");
           if (refreshData) refreshData();
         }
         handleClose();
       } catch (err: any) {
         console.error("Update error:", err);
-        Swal.fire({
-          title: "Error!",
-          text: err.message || "Operation failed",
-          icon: "error",
-          confirmButtonColor: "#7F56D9",
-        });
+        handleClose();
+        // toast.error(err.message || "Operation failed");
       } finally {
         setIsLoading(false);
       }
@@ -527,54 +504,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
     }
   }, [isEditMode, taskId, singleAssignTask?._id, isBulkMode, selectedParties.length]);
 
-  useEffect(() => {
-    if (open && taskError) {
-      Swal.fire({
-        title: "Error!",
-        text: taskError,
-        icon: "error",
-        confirmButtonColor: "#7F56D9",
-      });
-      dispatch(clearError());
-    }
-    if (open && accountError) {
-      Swal.fire({
-        title: "Error!",
-        text: accountError,
-        icon: "error",
-        confirmButtonColor: "#7F56D9",
-      });
-      dispatch(clearError());
-    }
-    if (open && staffError) {
-      Swal.fire({
-        title: "Error!",
-        text: staffError,
-        icon: "error",
-        confirmButtonColor: "#7F56D9",
-      });
-      dispatch(clearError());
-    }
-  }, [taskError, accountError, staffError, open, dispatch]);
-
-  useEffect(() => {
-    if (open && successMessage) {
-      Swal.fire({
-        title: "Success!",
-        text: successMessage,
-        icon: "success",
-        confirmButtonColor: "#7F56D9",
-      });
-      dispatch(clearSuccessMessage());
-    }
-  }, [successMessage, open, dispatch]);
-
-  useEffect(() => {
-    return () => {
-      dispatch(clearSuccessMessage());
-      dispatch(clearError());
-    };
-  }, [dispatch]);
+  // Failed to assign some tasks
 
   const handleClose = () => {
     formik.resetForm();
@@ -599,6 +529,8 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
     }
     setInputReasonOpen(false);
   };
+
+                  console.log("DEBUG : formik:", formik);
 
   return (
     <>
