@@ -530,7 +530,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
     setInputReasonOpen(false);
   };
 
-                  console.log("DEBUG : formik:", formik);
 
   return (
     <>
