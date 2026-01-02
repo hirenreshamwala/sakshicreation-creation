@@ -245,6 +245,7 @@ const PrintersPage = () => {
           tableHeader={columns}
           rowData={filteredPrinters}
           showDatePicker={false}
+          showSearch={false}
           showFillter={false}
           renderRow={(row: PrinterPerformance) => (
             <>

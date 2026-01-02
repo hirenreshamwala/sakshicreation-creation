@@ -253,6 +253,7 @@ const DesignerPage = () => {
         tableHeader={columns}
         rowData={filteredDesigners}
         showDatePicker={false}
+        showSearch={false}
         showFillter={false}
         renderRow={(row: DesignerPerformance) => (
           <>

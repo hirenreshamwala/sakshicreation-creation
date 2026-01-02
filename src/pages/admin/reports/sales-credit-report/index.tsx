@@ -155,6 +155,7 @@ const SalesCreditReportPage = () => {
         tableHeader={columns}
         rowData={reportData}
         showDatePicker={false}
+        showSearch={false}
         renderRow={(row: StaffSalesData) => (
           <>
             <TableCell sx={{ fontWeight: 'medium', color: '#333' }}>

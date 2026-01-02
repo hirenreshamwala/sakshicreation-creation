@@ -163,6 +163,7 @@ const ProductsItemsReportPage = () => {
         tableHeader={columns}
         rowData={flatData}
         showDatePicker={false}
+        showSearch={false}
         renderRow={(row: FlatRow) => (
           <>
             <TableCell sx={{ fontWeight: 'medium' }}>{row.staffName}</TableCell>

@@ -228,6 +228,7 @@ const BinderPage = () => {
           tableHeader={columns}
           rowData={filteredBinders}
           showDatePicker={false}
+          showSearch={false}
           showFillter={false}
           renderRow={(row: BinderPerformance) => (
             <>

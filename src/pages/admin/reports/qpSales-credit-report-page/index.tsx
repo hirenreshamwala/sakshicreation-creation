@@ -160,6 +160,7 @@ const QPSalesCreditReportPage = () => {
         tableHeader={columns}
         rowData={reportData}
         showDatePicker={false}
+        showSearch={false}
         renderRow={(row: StaffQPSalesData) => (
           <>
             {/* Staff Name */}

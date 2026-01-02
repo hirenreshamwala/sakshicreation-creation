@@ -214,6 +214,7 @@ const BookletAndBinderPage = () => {
           rowData={filteredBookletBinders}
           showDatePicker={false}
           showFillter={false}
+          showSearch={false}
           renderRow={(row: BookletBinderPerformance) => (
             <>
               <TableCell>{row.name}</TableCell>
