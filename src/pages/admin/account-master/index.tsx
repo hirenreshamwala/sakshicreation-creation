@@ -251,8 +251,8 @@ const AccountMasterPage: React.FC = memo(() => {
 
   // Update tabLabels to include counts
   const tabLabelsWithCount = [
-    `APPROVED (${responseState?.counts?.approved})`,
-    `PENDING (${responseState?.counts?.pending})`,
+    `APPROVED (${responseState?.counts?.approved || 0})`,
+    `PENDING (${responseState?.counts?.pending || 0})`,
   ];
 
   const mapStatusToType = (status: string): RowData["statusType"] => {
