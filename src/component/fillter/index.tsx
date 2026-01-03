@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Button,
   Menu,
@@ -8,7 +8,6 @@ import {
   Box,
   IconButton,
   Checkbox,
-  Chip,
   Divider,
   Stack,
   CircularProgress,
@@ -42,6 +41,22 @@ const labelMap: Record<string, string> = {
   orderStatus: "Order Status",
 };
 
+// Debounce function for search
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 const FilterDropdown: React.FC<FilterDropdownProps> = ({
   filterOptions = [],
@@ -57,15 +72,34 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [tempSelectedValues, setTempSelectedValues] = useState<string[]>([]);
+  const [localLoading, setLocalLoading] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const open = Boolean(anchorEl);
 
+  // Debounce search query (300ms delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Reset search when opening/closing
   useEffect(() => {
-    if (open && selectedField && filters[selectedField]) {
+    if (open) {
+      setSearchQuery("");
+      // Focus search input when field is selected
+      if (selectedField && searchInputRef.current) {
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 100);
+      }
+    }
+  }, [open, selectedField]);
+
+  // Load selected values when field changes
+  useEffect(() => {
+    if (selectedField && filters[selectedField]) {
       setTempSelectedValues(filters[selectedField]);
-    } else if (open) {
+    } else {
       setTempSelectedValues([]);
     }
-  }, [open, selectedField, filters]);
+  }, [selectedField, filters]);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -75,65 +109,96 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     setAnchorEl(null);
     setSearchQuery("");
     onFieldSelect(null);
+    setTempSelectedValues([]);
   };
 
-  const handleFieldSelect = async (field: string) => {
+  const handleFieldSelect = useCallback(async (field: string) => {
+    setSearchQuery(""); // Clear search when selecting new field
     onFieldSelect(field);
-    setSearchQuery("");
 
     if (onFieldOpen) {
-      await onFieldOpen(field);
+      setLocalLoading(true);
+      try {
+        await onFieldOpen(field);
+      } finally {
+        setLocalLoading(false);
+      }
     }
-  };
+  }, [onFieldSelect, onFieldOpen]);
 
-  const handleValueToggle = (value: string) => {
+  const handleValueToggle = useCallback((value: string) => {
     setTempSelectedValues((prev) =>
       prev.includes(value)
         ? prev.filter((v) => v !== value)
         : [...prev, value]
     );
-  };
+  }, []);
 
-  const handleApplyFilter = () => {
+  const handleApplyFilter = useCallback(() => {
     if (selectedField) {
       const newFilters = { ...filters };
 
       if (tempSelectedValues.length > 0) {
         newFilters[selectedField] = tempSelectedValues;
       } else {
-        // Remove the key if no values selected
         delete newFilters[selectedField];
       }
 
       onFiltersChange(newFilters);
     }
     handleClose();
-  };
+  }, [selectedField, filters, tempSelectedValues, onFiltersChange, handleClose]);
 
-  const handleClearFilter = () => {
-    // Reset to default filters or empty object
+  const handleClearFilter = useCallback(() => {
     onFiltersChange(defaultFilter?.filters || {});
     onFieldSelect(null);
     setTempSelectedValues([]);
     handleClose();
-  };
+  }, [defaultFilter, onFiltersChange, onFieldSelect, handleClose]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     onFieldSelect(null);
     setSearchQuery("");
     setTempSelectedValues([]);
-  };
+  }, [onFieldSelect]);
 
-  // Safe filtering with array check
-  const filteredUniqueValues = Array.isArray(uniqueValues)
-    ? uniqueValues.filter((value) =>
-      value?.toString().toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    : [];
+  // Optimized filter function using useMemo with debounced query
+  const filteredUniqueValues = React.useMemo(() => {
+    if (!Array.isArray(uniqueValues)) return [];
+    
+    const query = debouncedSearchQuery.trim().toLowerCase();
+    
+    if (!query) return uniqueValues;
+
+    // Use simple for loop for better performance with large arrays
+    const result: string[] = [];
+    for (let i = 0; i < uniqueValues.length; i++) {
+      const value = uniqueValues[i];
+      if (value !== null && value !== undefined && 
+          value.toString().toLowerCase().includes(query)) {
+        result.push(value);
+      }
+      // Early exit if we have too many results (optional)
+      if (result.length > 1000) break;
+    }
+    
+    return result;
+  }, [uniqueValues, debouncedSearchQuery]);
 
   // Check if there are any active filters
   const hasActiveFilters = Object.keys(filters).length > 0 &&
-    Object.values(filters).some(arr => arr.length > 0);
+    Object.values(filters).some(arr => arr && arr.length > 0);
+
+  // Get current loading state
+  const isLoading = loading || localLoading;
+
+  // Memoize field options to prevent unnecessary re-renders
+  const filteredFieldOptions = React.useMemo(() => {
+    return filterOptions
+      ?.filter((item) => item?.trim() !== "")
+      ?.filter(item => !['actions', 'options', 'action', 'option', 'aadhar files', 'address files']
+        ?.includes(item?.toLowerCase()?.trim()));
+  }, [filterOptions]);
 
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -192,7 +257,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
             borderRadius: 2,
             px: 1,
             py: 0.5,
-            minWidth: 220,
+            minWidth: 250,
             maxHeight: 500,
             overflowY: "auto",
             display: "flex",
@@ -202,27 +267,23 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
       >
         {!selectedField ? (
           <>
-            {filterOptions?.length > 0 ? (
-              filterOptions
-                ?.filter((item) => item?.trim() !== "")
-                ?.filter(item => !['actions', 'options', 'action', 'option', 'aadhar files', 'address files']
-                  ?.includes(item?.toLowerCase()?.trim()))
-                ?.map((label) => (
-                  <MenuItem
-                    key={label}
-                    sx={{ px: 2 }}
-                    onClick={() => handleFieldSelect(label)}
-                  >
-                    <ListItemText
-                      primary={labelMap[label] || label}
-                      primaryTypographyProps={{
-                        fontSize: 14,
-                        fontWeight: 500,
-                        color: "#344054",
-                      }}
-                    />
-                  </MenuItem>
-                ))
+            {filteredFieldOptions?.length > 0 ? (
+              filteredFieldOptions.map((label) => (
+                <MenuItem
+                  key={label}
+                  sx={{ px: 2 }}
+                  onClick={() => handleFieldSelect(label)}
+                >
+                  <ListItemText
+                    primary={labelMap[label] || label}
+                    primaryTypographyProps={{
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: "#344054",
+                    }}
+                  />
+                </MenuItem>
+              ))
             ) : (
               <MenuItem sx={{ px: 2 }} disabled>
                 <ListItemText
@@ -238,92 +299,125 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
           </>
         ) : (
           <>
-            {/* Search Input */}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                borderBottom: "1px solid #D0D5DD",
-                px: 2,
-                py: 1,
-                position: "sticky",
-                top: 0,
-                background: "#fff",
-                zIndex: 1,
-              }}
-            >
-              <IconButton size="small" sx={{ color: "#98A2B3" }}>
-                <FiSearch size={18} />
-              </IconButton>
-              <InputBase
-                placeholder="Search values..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{ ml: 1, fontSize: 14, flex: 1 }}
-                autoFocus
-              />
-            </Box>
-
-            <MenuItem sx={{ px: 2 }} onClick={handleBack}>
-              <ListItemText
-                primary="Back to Fields"
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: "#344054",
+            {/* Header with Back button and Search */}
+            <Box sx={{ position: "sticky", top: 0, background: "#fff", zIndex: 1 }}>
+              {/* Back button */}
+              <MenuItem sx={{ px: 2, py: 1 }} onClick={handleBack}>
+                <IconButton size="small" sx={{ mr: 1 }}>
+                  <MdArrowBack size={18} />
+                </IconButton>
+                <ListItemText
+                  primary="Back"
+                  primaryTypographyProps={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: "#344054",
+                  }}
+                />
+              </MenuItem>
+              
+              {/* Search Input */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  borderBottom: "1px solid #D0D5DD",
+                  px: 2,
+                  py: 1,
                 }}
-              />
-              <MdArrowBack size={18} style={{ marginLeft: 8 }} />
-            </MenuItem>
+              >
+                <IconButton size="small" sx={{ color: "#98A2B3" }}>
+                  <FiSearch size={18} />
+                </IconButton>
+                <InputBase
+                  placeholder="Search values..."
+                  value={searchQuery}
+                  inputRef={searchInputRef}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  sx={{ ml: 1, fontSize: 14, flex: 1 }}
+                  inputProps={{
+                    'aria-label': 'search filter values',
+                  }}
+                />
+                {searchQuery && (
+                  <IconButton 
+                    size="small" 
+                    onClick={() => setSearchQuery("")}
+                    sx={{ color: "#98A2B3" }}
+                  >
+                    <FiX size={16} />
+                  </IconButton>
+                )}
+              </Box>
+            </Box>
 
             <Divider />
 
             {/* Scrollable values list */}
             <Box sx={{ overflowY: "auto", flex: 1, maxHeight: 300 }}>
-              {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 2 }}>
+              {isLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 3 }}>
                   <CircularProgress size={20} />
                   <Typography variant="body2" sx={{ ml: 1, color: '#667085' }}>
-                    Loading...
+                    Loading values...
                   </Typography>
                 </Box>
               ) : filteredUniqueValues.length > 0 ? (
-                filteredUniqueValues.map((value) => (
-                  <MenuItem
-                    key={value}
-                    sx={{ px: 2 }}
-                    onClick={() => handleValueToggle(value)}
-                  >
-                    <Checkbox
-                      checked={tempSelectedValues.includes(value)}
-                      size="small"
-                      sx={{ p: 0, mr: 1 }}
-                    />
-                    <ListItemText
-                      primary={value}
-                      primaryTypographyProps={{
-                        fontSize: 14,
-                        fontWeight: 500,
-                        color: "#344054",
-                      }}
-                    />
-                  </MenuItem>
-                ))
-              ) : (
-                <MenuItem sx={{ px: 2 }} disabled>
-                  <ListItemText
-                    primary={searchQuery ? "No matching values" : "No values available"}
-                    primaryTypographyProps={{
-                      fontSize: 14,
-                      fontWeight: 500,
-                      color: "#98A2B3",
+                <>
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      display: 'block', 
+                      px: 2, 
+                      py: 1, 
+                      color: '#667085',
+                      fontSize: 12 
                     }}
-                  />
-                </MenuItem>
+                  >
+                    {filteredUniqueValues.length} value{filteredUniqueValues.length !== 1 ? 's' : ''} found
+                    {debouncedSearchQuery !== searchQuery && ' (searching...)'}
+                  </Typography>
+                  {filteredUniqueValues.map((value) => (
+                    <MenuItem
+                      key={value}
+                      sx={{ px: 2 }}
+                      onClick={() => handleValueToggle(value)}
+                    >
+                      <Checkbox
+                        checked={tempSelectedValues.includes(value)}
+                        size="small"
+                        sx={{ p: 0, mr: 1 }}
+                      />
+                      <ListItemText
+                        primary={value || "(Empty)"}
+                        primaryTypographyProps={{
+                          fontSize: 14,
+                          fontWeight: 500,
+                          color: value ? "#344054" : "#98A2B3",
+                        }}
+                      />
+                    </MenuItem>
+                  ))}
+                </>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ color: '#667085', mb: 0.5 }}
+                  >
+                    {searchQuery ? "No matching values found" : "No values available"}
+                  </Typography>
+                  {searchQuery && (
+                    <Typography 
+                      variant="caption" 
+                      sx={{ color: '#98A2B3', fontSize: 12 }}
+                    >
+                      Try a different search term
+                    </Typography>
+                  )}
+                </Box>
               )}
             </Box>
-
-            <Divider />
 
             {/* Fixed buttons at bottom */}
             <Box
@@ -331,7 +425,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                 display: "flex",
                 justifyContent: "space-between",
                 px: 2,
-                py: 1,
+                py: 1.5,
                 position: "sticky",
                 bottom: 0,
                 background: "#fff",
@@ -354,14 +448,14 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
               <Button
                 variant="contained"
                 onClick={handleApplyFilter}
-                disabled={loading}
+                disabled={isLoading}
                 sx={{
                   backgroundColor: "#7F56D9",
                   fontWeight: 600,
                   fontSize: 14,
                   textTransform: "none",
                   "&:hover": {
-                    backgroundColor: "#7F56D9",
+                    backgroundColor: "#6941C6",
                   },
                   "&:disabled": {
                     backgroundColor: "#E9D7FE",
@@ -369,7 +463,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                   }
                 }}
               >
-                {loading ? "Loading..." : "Apply"}
+                {isLoading ? "Loading..." : "Apply"}
               </Button>
             </Box>
           </>
@@ -379,4 +473,4 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   );
 };
 
-export default FilterDropdown;
+export default React.memo(FilterDropdown);

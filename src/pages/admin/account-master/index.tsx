@@ -4,7 +4,6 @@ import { useState, useEffect, memo } from "react";
 import { Box, TableCell, Typography, Avatar, IconButton } from "@mui/material";
 import { useRouter } from "next/router";
 import ThemeButton from "@/component/common_component/themebutton";
-import ThemeChip from "@/component/common_component/themechip";
 import AddNewPartyDialog from "@/component/AddNewPartyDialog";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -24,7 +23,7 @@ import { accountMasterService } from "@/services/accountMaster.service";
 import _ from "lodash";
 import { StaticCompanyOptions } from "@/constants";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
+import { getAllCompanyNamesThunk } from "@/store/slices/companyNameSlice";
 
 interface Company {
   _id: string;
@@ -183,7 +182,7 @@ const AccountMasterPage: React.FC = memo(() => {
 
   // Load companies
   useEffect(() => {
-    dispatch(getAllCompaniesThunk())
+    if(!companies.length)dispatch(getAllCompanyNamesThunk())
   }, []);
 
   // Load account masters
@@ -252,8 +251,8 @@ const AccountMasterPage: React.FC = memo(() => {
 
   // Update tabLabels to include counts
   const tabLabelsWithCount = [
-    `APPROVED (${responseState?.counts?.approved})`,
-    `PENDING (${responseState?.counts?.pending})`,
+    `APPROVED (${responseState?.counts?.approved || 0})`,
+    `PENDING (${responseState?.counts?.pending || 0})`,
   ];
 
   const mapStatusToType = (status: string): RowData["statusType"] => {

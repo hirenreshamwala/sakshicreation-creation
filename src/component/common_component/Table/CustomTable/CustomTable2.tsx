@@ -64,9 +64,10 @@ const CustomTable2 = <T extends { id: string; lastStatusChangeDate?: string | Da
   const [page, setPage] = useState<any>(currentPage - 1 || 0);
   const [colWidths, setColWidths] = useState<number[]>([]);
 
-  const handleSetPage = (page: number) => {
-    setPage(page);
-    handlePageChange(date as any, page === 0 ? 1 : page + 1 as any);
+  const handleSetPage = (newPage: number) => {
+    if (newPage === page) return;
+    setPage(newPage);
+    handlePageChange(date as any, newPage === 0 ? 1 : newPage + 1 as any);
   };
 
   const getRowBackgroundColor = useCallback((row: T): string => {
@@ -116,6 +117,7 @@ const CustomTable2 = <T extends { id: string; lastStatusChangeDate?: string | Da
         variant="outlined"
         size="small"
         onClick={() => handleSetPage(0)}
+        disabled={pageCount === 1}
         sx={{
           background: page === 0 ? "#F9F5FF" : "transparent",
           color: page === 0 ? "#7F56D9" : "#667085",
