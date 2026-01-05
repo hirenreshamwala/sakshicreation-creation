@@ -398,7 +398,7 @@ const DriverView = () => {
     };
 
 
-    useEffect(() => { if (!companies.length) dispatch(getAllCompaniesThunk(true)); }, []);
+    useEffect(() => { if (!companies.length) dispatch(getAllCompaniesThunk()); }, []);
     useEffect(() => {
         const token = authService.getToken();
         if (!token) return;

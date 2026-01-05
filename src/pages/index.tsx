@@ -23,7 +23,7 @@ import FilterDropdown from "@/component/fillter";
 import TaskData from "@/component/dashboardPages/TaskData";
 import LeadData from "@/component/dashboardPages/LeadData";
 import VisitData from "@/component/dashboardPages/VisitData";
-import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
+// import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
 import { formatDateToDDMMYYYY, getCompanyWisePermission } from "@/utills/utills";
 import LeadManagementPage from "./admin/party-call";
@@ -39,7 +39,7 @@ import StoreIcon from '@mui/icons-material/Store';
 const IndexPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth)
-  const { companies } = useAppSelector((state) => state.company);
+  // const { companies } = useAppSelector((state) => state.company);
   const { staffList } = useAppSelector((state) => state.staff);
 
   // --- Tabs ---
@@ -85,7 +85,7 @@ const IndexPage: React.FC = () => {
 
   // Fetch companies and staff on mount
   useEffect(() => {
-    if (!companies.length && user?.id) dispatch(getAllCompaniesThunk(true));
+    // if (!companies.length && user?.id) dispatch(getAllCompaniesThunk(true));
     if (!staffList.length && user?.id) dispatch(getAllStaffThunk());
   }, []);
 

@@ -245,7 +245,7 @@ const PaymentFolderPage: React.FC = () => {
   }, [selectedCompanyName]);
 
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true));
+    if (!companies.length) dispatch(getAllCompaniesThunk());
   }, [dispatch, companies.length]);
 
   const handleMultipleDelete = async () => {

@@ -196,7 +196,7 @@ const StaffView = () => {
   })
 
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true))
+    if (!companies.length) dispatch(getAllCompaniesThunk())
     if (!roles.length) dispatch(getAllRolesThunk())
   }, [])
 

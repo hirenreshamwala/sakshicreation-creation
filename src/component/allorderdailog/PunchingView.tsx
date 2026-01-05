@@ -306,7 +306,7 @@ const OperatorView = () => {
   }, [selectedFilterField, orders, columns])
 
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true))
+    if (!companies.length) dispatch(getAllCompaniesThunk())
   }, [])
 
   useEffect(() => {

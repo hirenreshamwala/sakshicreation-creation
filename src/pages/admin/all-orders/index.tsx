@@ -251,7 +251,7 @@ const AllOrdersPage = () => {
 
   // Initial companies load
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true));
+    if (!companies.length) dispatch(getAllCompaniesThunk());
   }, [dispatch, companies.length]);
 
   // Tab sync

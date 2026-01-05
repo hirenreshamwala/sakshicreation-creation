@@ -52,15 +52,7 @@ const CompanySelect: React.FC<CompanySelectProps> = ({
 
   // Fetch companies on component mount
   useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        await dispatch(getAllCompaniesThunk(hasParties)).unwrap()
-      } catch (err) {
-        console.error("Company fetch error:", err)
-      }
-    }
-
-    fetchCompanies()
+    if (!companies.length) dispatch(getAllCompaniesThunk()).unwrap()
   }, [hasParties])
 
   // Set company options and default to "Sakshi Creation" when companies data changes

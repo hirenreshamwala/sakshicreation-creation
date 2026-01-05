@@ -18,7 +18,7 @@ const Index = () => {
     const hasBothPermissions = getCompanyWisePermission(0)
 
     useEffect(() => {
-        if (!companies.length) dispatch(getAllCompaniesThunk(true))
+        if (!companies.length) dispatch(getAllCompaniesThunk())
     }, [])
 
     // Show tabs only if user has both permissions

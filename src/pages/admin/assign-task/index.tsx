@@ -369,7 +369,7 @@ const AssignTaskPage: React.FC = () => {
   }, [c]);
 
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompaniesThunk(true));
+    if (!companies.length) dispatch(getAllCompaniesThunk());
   }, []);
 
   const toggleQpDialog = () => setQpDialog(!qpDialog);
