@@ -660,9 +660,9 @@ const AssignTaskPage: React.FC = () => {
   };
 
   // Auto-scroll to today's section
-  // useEffect(() => {
-  //   if (todayRef.current) todayRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-  // }, [availableDates]);
+  useEffect(() => {
+    if (todayRef.current) todayRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [availableDates]);
 
   useEffect(() => {
     const token = authService.getToken();
@@ -671,10 +671,6 @@ const AssignTaskPage: React.FC = () => {
       return;
     }
   }, [dispatch, router]);
-
-    useEffect(() => {
-      if (todayRef.current) todayRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, [availableDates]);
 
   const defaultReasons = [
     "Delivery",
@@ -782,8 +778,7 @@ const AssignTaskPage: React.FC = () => {
           sx={getCellSx({ cursor: "pointer", fontSize: 14 })}
         >
           {row.party}
-        </TableCell>
-        </Link>
+        </TableCell></Link>
 
         <TableCell sx={getCellSx({ fontSize: 14 })}>
           <Typography
