@@ -15,7 +15,8 @@ import { createOrderThunk, clearOrderError, clearOrderSuccessMessage } from "@/s
 import { toast } from "react-toastify"
 import { printerTypeOption } from "@/constants"
 import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice"
-
+import { getAllStaffThunk } from "@/store/slices/staffSlice"
+import { authService } from "@/services/auth.service";
 interface OptionType {
   company: String
   label: string
@@ -32,6 +33,7 @@ interface AddOrderDialogProps {
 const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClose, refreshData, party }) => {
   const dispatch = useAppDispatch()
   const fileUploadRef = useRef<FileUploadRef>(null)
+  const currentUser = authService.getUser();
   const { productItems, loading: productLoading } = useAppSelector((state) => state.productItems)
   const { singleAccountMaster, loading: accountLoading }: any = useAppSelector((state) => state.accountMasters)
   const { loading: orderLoading, error: orderError, successMessage } = useAppSelector((state) => state.orders)
@@ -40,7 +42,8 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
   const [gstNotApplicable, setGstNotApplicable] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [selectedCompany, setSelectedCompany] = useState<string>(company)
-
+  const { staffList, loading: staffLoading } = useAppSelector((state) => state.staff)
+  const isAdmin = currentUser?.role?.roleName === "Admin";
   // Sakshi Creation form data
   const [sakshiFormData, setSakshiFormData] = useState({
     companyName: company,
@@ -52,6 +55,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
     bindingPage: "",
     bookletFolder: false,
     bookletFolderType: null as string | null,
+    createdBy: "",
     itemName: "",
     qty: "",
     gst: "",
@@ -112,8 +116,19 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
     if (open) {
       dispatch(getAllProductItemsThunk())
       if (!binderTypes.length) dispatch(getAllBinderTypesThunk())
+        dispatch(getAllStaffThunk())
     }
   }, [open, dispatch])
+
+  const staffOptions = useMemo(() => {
+  return staffList
+    .filter((staff) => staff.role?.roleName === "Sales Staff")
+    .map((staff) => ({
+      label: staff.name,
+      value: staff._id,
+    }))
+}, [staffList])
+
 
   // Auto-fill form when account master data is loaded
   useEffect(() => {
@@ -200,6 +215,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
         filePaths: filePaths,
         gstStatus: gstNotApplicable ? "Not Applicable" : "Applicable",
         gstNumber: gstNotApplicable ? "" : sakshiFormData.gst,
+        createdBy: sakshiFormData.createdBy || undefined,
         isGst: !gstNotApplicable,
         size: sakshiFormData.size || "",
         rate: sakshiFormData.rate ? Number.parseFloat(sakshiFormData.rate) : undefined,
@@ -237,6 +253,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
       bindingPage: "",
       bookletFolderType: "",
       pType: "",
+      createdBy: "",
       binding: false,
       bookletFolder: false,
       remarks: "",
@@ -285,6 +302,15 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
             },
           }}
         />
+        {isAdmin && (
+         <ThemeSelect
+          label="Sales Staff"
+          value={getSelectedOption(sakshiFormData.createdBy, staffOptions)}
+          options={staffOptions}
+          onChange={(_, v) => handleSakshiChange("createdBy", v ? v.value : "")}
+          disabled={staffLoading}
+        />
+        )}
         <ThemeInput
           labelName="WhatsApp no."
           placeholder="98233-12342"
