@@ -253,6 +253,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
       bindingPage: "",
       bookletFolderType: "",
       pType: "",
+      createdBy: "",
       binding: false,
       bookletFolder: false,
       remarks: "",
