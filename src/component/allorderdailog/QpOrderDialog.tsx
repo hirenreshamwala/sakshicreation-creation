@@ -16,7 +16,9 @@ import { getAllPackagingOptionsThunk } from "@/store/slices/packagingOptionSlice
 import { getAllKantansThunk } from "@/store/slices/kantanSlice";
 import { calculateDeckal, calculateGSM, calculateKgPerPiece, calculateTotalKg, calculateTotalAmount, calculateKantan, calculatePaperKg } from "@/utills/qpCalculations";
 import { createSaleQpOrderThunk, updateSaleQpOrderThunk } from "@/store/slices/saleQpOrderSlice";
-
+import { getAllStaffThunk } from "@/store/slices/staffSlice";
+import { authService } from "@/services/auth.service";
+import ThemeSelect from "../common_component/themeselect";
 interface OptionType {
     label: string;
     value: string;
@@ -38,7 +40,14 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
     const { loading: accountLoading } = useAppSelector((state) => state.accountMasters);
     const { loading: orderLoading, error: orderError, successMessage } = useAppSelector((state) => state.orders);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
+    const { staffList, loading: staffLoading } = useAppSelector((state) => state.staff);
+    const currentUser = authService.getUser();
+    const isAdmin = currentUser?.role?.roleName === "Admin";
+    useEffect(() => {
+        if (open) {
+            dispatch(getAllStaffThunk());
+        }
+        }, [open, dispatch]);
     const [qpFormData, setQpFormData] = useState({
         companyName: company,
         partyName: "",
@@ -66,6 +75,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
             reel: "",
             inch: "",
         },
+        createdBy: "",
         kantanDeckal: "",
         salesRemark: "",
         lamination: false,
@@ -252,6 +262,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 companyName: qpFormData?.companyName?._id ? qpFormData?.companyName?._id : qpFormData.companyName,
                 party: qpFormData.partyName,
                 packagingOption,
+                createdBy: qpFormData.createdBy || undefined,
                 date: qpFormData.date || undefined,
                 orderFrom: qpFormData.orderFrom || undefined,
                 gsm: qpFormData.gsm || undefined,
@@ -339,6 +350,7 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                 reel: "",
                 inch: "",
             },
+            createdBy: "",
             kantanDeckal: "",
             salesRemark: "",
             lamination: false,
@@ -356,6 +368,15 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
         resetForm();
         onClose();
     };
+
+    const salesStaffOptions = useMemo(() => {
+    return staffList
+        .filter((staff) => staff.role?.roleName === "Sales Staff")
+        .map((staff) => ({
+        label: staff.name,
+        value: staff._id,
+        }));
+    }, [staffList]);
 
     const getSelectedOption = (value: string, options: OptionType[]) => {
         return options.find((option) => option.value === value) || null;
@@ -883,18 +904,37 @@ const AddQPOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onClos
                     />
                 </Stack>
 
-                <Box mb={2}>
+                <Stack direction="row" spacing={2} alignItems="center" mb={2}>
                     <FormControlLabel
                         control={
                             <Checkbox
                                 checked={qpFormData.isKantan}
-                                onChange={(e) => handleQpChange("isKantan", e.target.checked)}
+                                onChange={(e) =>
+                                    handleQpChange("isKantan", e.target.checked)
+                                }
                                 color="primary"
                             />
                         }
                         label="Include Kantan"
                     />
-                </Box>
+
+                    {isAdmin && (
+                        <ThemeSelect
+                            label="Sales Staff"
+                            value={getSelectedOption(
+                                qpFormData.createdBy,
+                                salesStaffOptions
+                            )}
+                            options={salesStaffOptions}
+                            onChange={(_, v) =>
+                                handleQpChange("createdBy", v ? v.value : "")
+                            }
+                            disabled={staffLoading}
+                            sx={{ minWidth: 250 }}
+                        />
+                    )}
+                </Stack>
+
 
                 {qpFormData.isKantan && (
                     <Stack direction="row" spacing={2} mb={2}>
