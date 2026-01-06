@@ -143,6 +143,7 @@ const AccountMasterPage: React.FC = memo(() => {
     { id: "contactPerson", label: "Contact Person", value: "contactPerson" },
     { id: "mobile", label: "Mobile No.", value: "mobile" },
     { id: "partyTag", label: "Party Tag", value: "partyTag" },
+    { id: "partyType", label: "Party Type", value: "partyType" },
     // { id: "reason", label: "Reason to Visit", value: "reason" },
     
     // { id: "remarks", label: "Remarks" },
@@ -387,6 +388,7 @@ const AccountMasterPage: React.FC = memo(() => {
     party: account.party?.partyName || "N/A",
     contactPerson: account.party?.contactPerson || "N/A",
     partyTag: account.party?.partyTag || "New",
+    partyType: account.party?.partyType || "New",
     mobile: account.party?.ownerMobileNo || "N/A",
     reason: account.reasonToVisit || "N/A",
     unitno: account.party?.address?.unitNo || "N/A",
@@ -552,6 +554,7 @@ const AccountMasterPage: React.FC = memo(() => {
               <TableCell sx={{ fontSize: 14 }}>{row.contactPerson}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{row.mobile}</TableCell>
               <TableCell sx={{ fontSize: 14 }}>{getFirstFourChars(row.partyTag)}</TableCell>
+              <TableCell sx={{ fontSize: 14 }}>{row.partyType}</TableCell>
               {/* <TableCell>
                 <ThemeChip
                   label={getFirstFourChars(row.partyTag)}

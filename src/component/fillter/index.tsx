@@ -33,6 +33,7 @@ const labelMap: Record<string, string> = {
   contactNumber: "Contact Number",
   createdAt: "Created At",
   partyTag: "Party Tag",
+  partyType: "Party Type",
   createdBy: "Created By",
   assignTo: "Assign To",
   assignedTo: "Assigned To",
