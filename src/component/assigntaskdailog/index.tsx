@@ -112,9 +112,9 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
       visitDate: Yup.string(),
       visitTime: Yup.string(),
       feedback: isEditMode
-        ? Yup.string()
+        ? Yup.string().trim()
           .required('Call feedback is required')
-          .min(20, 'Call feedback must be at least 20 characters')
+          // .min(20, 'Call feedback must be at least 20 characters')
         : Yup.string(),
       status: Yup.string().required("Status is required"),
       rescheduleDate: Yup.string().when("status", {

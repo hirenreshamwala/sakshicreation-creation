@@ -672,6 +672,10 @@ const AssignTaskPage: React.FC = () => {
     }
   }, [dispatch, router]);
 
+    useEffect(() => {
+      if (todayRef.current) todayRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, [availableDates]);
+
   const defaultReasons = [
     "Delivery",
     "Get Payment",
@@ -753,7 +757,7 @@ const AssignTaskPage: React.FC = () => {
               {/* <Typography fontWeight={500} sx={{ fontSize: 14 }}>
                 {row.company.name}
               </Typography> */}
-              {/* {row.isRescheduledTask && (
+              {row.isRescheduledTask && (
                 <Tooltip title={`Rescheduled from ${row.originalTaskDate}`}>
                   <ThemeChip
                     label="Rescheduled"
@@ -768,16 +772,18 @@ const AssignTaskPage: React.FC = () => {
                     }}
                   />
                 </Tooltip>
-              )} */}
+              )}
             </Box>
           </Box>
         </TableCell>
         <TableCell sx={getCellSx({ fontSize: 14, color: "blue" })}>{row.date}</TableCell>
-        <Link href={`/admin/assign-task/view-task/${row.partyId}?taskId=${row?._id}`}><TableCell
+        <Link href={`/admin/assign-task/view-task/${row.partyId}?taskId=${row?._id}`}>
+        <TableCell
           sx={getCellSx({ cursor: "pointer", fontSize: 14 })}
         >
           {row.party}
-        </TableCell></Link>
+        </TableCell>
+        </Link>
 
         <TableCell sx={getCellSx({ fontSize: 14 })}>
           <Typography
