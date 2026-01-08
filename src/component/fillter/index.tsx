@@ -24,7 +24,7 @@ interface FilterDropdownProps {
   filters: { [key: string]: string[] };
   selectedField: string | null;
   onFieldSelect: (field: string | null) => void;
-  onFieldOpen?: (field: string) => void;
+  onFieldOpen?: (field: string) => Promise<void>;
   defaultFilter?: any;
 }
 
@@ -42,23 +42,6 @@ const labelMap: Record<string, string> = {
   orderStatus: "Order Status",
 };
 
-// Debounce function for search
-const useDebounce = (value: string, delay: number) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
-
 const FilterDropdown: React.FC<FilterDropdownProps> = ({
   filterOptions = [],
   uniqueValues = [],
@@ -73,59 +56,65 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [tempSelectedValues, setTempSelectedValues] = useState<string[]>([]);
-  const [localLoading, setLocalLoading] = useState(false);
+  const [fieldLoading, setFieldLoading] = useState<string | null>(null);
+  const [cachedValues, setCachedValues] = useState<Record<string, string[]>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
   const open = Boolean(anchorEl);
 
-  // Debounce search query (300ms delay)
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  // Debounce search query (150ms delay - reduced from 300ms)
+  const debouncedSearchQuery = searchQuery;
 
   // Reset search when opening/closing
   useEffect(() => {
     if (open) {
       setSearchQuery("");
-      // Focus search input when field is selected
-      if (selectedField && searchInputRef.current) {
-        setTimeout(() => {
-          searchInputRef.current?.focus();
-        }, 100);
-      }
-    }
+      if (selectedField && searchInputRef.current) searchInputRef.current?.focus();
+    } else setFieldLoading(null);
+
   }, [open, selectedField]);
 
   // Load selected values when field changes
   useEffect(() => {
-    if (selectedField && filters[selectedField]) {
-      setTempSelectedValues(filters[selectedField]);
-    } else {
-      setTempSelectedValues([]);
-    }
+    if (selectedField && filters[selectedField]) setTempSelectedValues(filters[selectedField]);
+    else setTempSelectedValues([]);
   }, [selectedField, filters]);
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+  // Check if we have cached values for the selected field
+  useEffect(() => {
+    if (selectedField && cachedValues[selectedField] && cachedValues[selectedField].length > 0) return;
+  }, [selectedField, cachedValues]);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget);
 
   const handleClose = () => {
     setAnchorEl(null);
     setSearchQuery("");
     onFieldSelect(null);
     setTempSelectedValues([]);
+    setFieldLoading(null);
   };
 
   const handleFieldSelect = useCallback(async (field: string) => {
     setSearchQuery(""); // Clear search when selecting new field
     onFieldSelect(field);
 
+    if (cachedValues[field] && cachedValues[field].length > 0) return;
+
     if (onFieldOpen) {
-      setLocalLoading(true);
+      setFieldLoading(field);
+
       try {
         await onFieldOpen(field);
+        if (uniqueValues.length > 0)
+          setCachedValues(prev => ({
+            ...prev,
+            [field]: [...uniqueValues]
+          }));
       } finally {
-        setLocalLoading(false);
+        setFieldLoading(null);
       }
     }
-  }, [onFieldSelect, onFieldOpen]);
+  }, [onFieldSelect, onFieldOpen, cachedValues, uniqueValues]);
 
   const handleValueToggle = useCallback((value: string) => {
     setTempSelectedValues((prev) =>
@@ -139,50 +128,50 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     if (selectedField) {
       const newFilters = { ...filters };
 
-      if (tempSelectedValues.length > 0) {
-        newFilters[selectedField] = tempSelectedValues;
-      } else {
-        delete newFilters[selectedField];
-      }
+      if (tempSelectedValues.length > 0) newFilters[selectedField] = tempSelectedValues;
+      else delete newFilters[selectedField];
 
       onFiltersChange(newFilters);
     }
     handleClose();
-  }, [selectedField, filters, tempSelectedValues, onFiltersChange, handleClose]);
+  }, [selectedField, filters, tempSelectedValues, onFiltersChange]);
 
   const handleClearFilter = useCallback(() => {
     onFiltersChange(defaultFilter?.filters || {});
     onFieldSelect(null);
     setTempSelectedValues([]);
     handleClose();
-  }, [defaultFilter, onFiltersChange, onFieldSelect, handleClose]);
+  }, [defaultFilter, onFiltersChange, onFieldSelect]);
 
   const handleBack = useCallback(() => {
     onFieldSelect(null);
     setSearchQuery("");
     setTempSelectedValues([]);
+    setFieldLoading(null);
   }, [onFieldSelect]);
 
   // Optimized filter function using useMemo with debounced query
   const filteredUniqueValues = React.useMemo(() => {
     if (!Array.isArray(uniqueValues)) return [];
-    
+
     const query = debouncedSearchQuery.trim().toLowerCase();
-    
+
     if (!query) return uniqueValues;
 
-    // Use simple for loop for better performance with large arrays
+    // For better performance with large arrays
     const result: string[] = [];
-    for (let i = 0; i < uniqueValues.length; i++) {
+    const length = Math.min(uniqueValues.length, 2000); // Limit for very large datasets
+
+    for (let i = 0; i < length; i++) {
       const value = uniqueValues[i];
-      if (value !== null && value !== undefined && 
-          value.toString().toLowerCase().includes(query)) {
+      if (value !== null && value !== undefined &&
+        value.toString().toLowerCase().includes(query)) {
         result.push(value);
+        // Limit search results for better performance
+        if (result.length >= 500) break;
       }
-      // Early exit if we have too many results (optional)
-      if (result.length > 1000) break;
     }
-    
+
     return result;
   }, [uniqueValues, debouncedSearchQuery]);
 
@@ -190,8 +179,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   const hasActiveFilters = Object.keys(filters).length > 0 &&
     Object.values(filters).some(arr => arr && arr.length > 0);
 
-  // Get current loading state
-  const isLoading = loading || localLoading;
+  // Check if currently loading this specific field
+  const isFieldCurrentlyLoading = fieldLoading === selectedField;
 
   // Memoize field options to prevent unnecessary re-renders
   const filteredFieldOptions = React.useMemo(() => {
@@ -200,6 +189,22 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
       ?.filter(item => !['actions', 'options', 'action', 'option', 'aadhar files', 'address files']
         ?.includes(item?.toLowerCase()?.trim()));
   }, [filterOptions]);
+
+  // Function to get field label with loading indicator
+  const getFieldLabel = useCallback((field: string) => {
+    const baseLabel = labelMap[field] || field;
+
+    if (fieldLoading === field) {
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CircularProgress size={12} />
+          <span>{baseLabel}</span>
+        </Box>
+      );
+    }
+
+    return baseLabel;
+  }, [fieldLoading]);
 
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -263,26 +268,34 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",
+            transition: 'all 0.2s ease',
           },
         }}
       >
         {!selectedField ? (
           <>
             {filteredFieldOptions?.length > 0 ? (
-              filteredFieldOptions.map((label) => (
+              filteredFieldOptions.map((field) => (
                 <MenuItem
-                  key={label}
-                  sx={{ px: 2 }}
-                  onClick={() => handleFieldSelect(label)}
+                  key={field}
+                  sx={{
+                    px: 2,
+                    opacity: fieldLoading === field ? 0.7 : 1
+                  }}
+                  onClick={() => !fieldLoading && handleFieldSelect(field)}
+                  disabled={fieldLoading === field}
                 >
                   <ListItemText
-                    primary={labelMap[label] || label}
+                    primary={getFieldLabel(field)}
                     primaryTypographyProps={{
                       fontSize: 14,
                       fontWeight: 500,
-                      color: "#344054",
+                      color: fieldLoading === field ? "#98A2B3" : "#344054",
                     }}
                   />
+                  {fieldLoading === field && (
+                    <CircularProgress size={16} sx={{ ml: 1 }} />
+                  )}
                 </MenuItem>
               ))
             ) : (
@@ -316,7 +329,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                   }}
                 />
               </MenuItem>
-              
+
               {/* Search Input */}
               <Box
                 sx={{
@@ -339,10 +352,11 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                   inputProps={{
                     'aria-label': 'search filter values',
                   }}
+                  autoFocus
                 />
                 {searchQuery && (
-                  <IconButton 
-                    size="small" 
+                  <IconButton
+                    size="small"
                     onClick={() => setSearchQuery("")}
                     sx={{ color: "#98A2B3" }}
                   >
@@ -356,7 +370,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
             {/* Scrollable values list */}
             <Box sx={{ overflowY: "auto", flex: 1, maxHeight: 300 }}>
-              {isLoading ? (
+              {isFieldCurrentlyLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 3 }}>
                   <CircularProgress size={20} />
                   <Typography variant="body2" sx={{ ml: 1, color: '#667085' }}>
@@ -365,20 +379,20 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                 </Box>
               ) : filteredUniqueValues.length > 0 ? (
                 <>
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      display: 'block', 
-                      px: 2, 
-                      py: 1, 
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      px: 2,
+                      py: 1,
                       color: '#667085',
-                      fontSize: 12 
+                      fontSize: 12
                     }}
                   >
                     {filteredUniqueValues.length} value{filteredUniqueValues.length !== 1 ? 's' : ''} found
                     {debouncedSearchQuery !== searchQuery && ' (searching...)'}
                   </Typography>
-                  {filteredUniqueValues.map((value) => (
+                  {filteredUniqueValues.slice(0, 500).map((value) => ( // Limit to 500 for performance
                     <MenuItem
                       key={value}
                       sx={{ px: 2 }}
@@ -399,18 +413,33 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                       />
                     </MenuItem>
                   ))}
+                  {filteredUniqueValues.length > 500 && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display: 'block',
+                        px: 2,
+                        py: 1,
+                        color: '#667085',
+                        fontSize: 12,
+                        textAlign: 'center'
+                      }}
+                    >
+                      Showing 500 of {filteredUniqueValues.length} values
+                    </Typography>
+                  )}
                 </>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Typography 
-                    variant="body2" 
+                  <Typography
+                    variant="body2"
                     sx={{ color: '#667085', mb: 0.5 }}
                   >
                     {searchQuery ? "No matching values found" : "No values available"}
                   </Typography>
                   {searchQuery && (
-                    <Typography 
-                      variant="caption" 
+                    <Typography
+                      variant="caption"
                       sx={{ color: '#98A2B3', fontSize: 12 }}
                     >
                       Try a different search term
@@ -449,7 +478,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
               <Button
                 variant="contained"
                 onClick={handleApplyFilter}
-                disabled={isLoading}
+                disabled={isFieldCurrentlyLoading}
                 sx={{
                   backgroundColor: "#7F56D9",
                   fontWeight: 600,
@@ -464,7 +493,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                   }
                 }}
               >
-                {isLoading ? "Loading..." : "Apply"}
+                {isFieldCurrentlyLoading ? "Loading..." : "Apply"}
               </Button>
             </Box>
           </>

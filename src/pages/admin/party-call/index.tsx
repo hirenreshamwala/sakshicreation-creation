@@ -145,6 +145,29 @@ const LeadManagementPage: React.FC = () => {
 
   const ITEMS_PER_PAGE = 10;
 
+  // Use refs to avoid closure issues
+  const filtersRef = useRef(filters);
+  const searchQueryRef = useRef(searchQuery);
+  const startDateRef = useRef(startDate);
+  const endDateRef = useRef(endDate);
+
+  // Update refs when state changes
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
+
+  useEffect(() => {
+    startDateRef.current = startDate;
+  }, [startDate]);
+
+  useEffect(() => {
+    endDateRef.current = endDate;
+  }, [endDate]);
+
   const canViewGlobal = user?.role?.permissions?.party_call?.view_global;
   const canViewOwn = user?.role?.permissions?.party_call?.view_own;
   const canDelete = user?.role?.permissions?.party_call?.delete;
@@ -324,21 +347,25 @@ const LeadManagementPage: React.FC = () => {
         companyName: selectedCompanyId,
         status: selectedStatus,
         staffId: si,
-        startDate: formatDateForAPI(startDate),
-        endDate: formatDateForAPI(endDate),
+        startDate: formatDateForAPI(startDateRef.current),
+        endDate: formatDateForAPI(endDateRef.current),
         reason: r,
         date,
         page: page,
         limit: itemsPerPage,
       };
 
-      if (searchQuery) {
-        queryParams.search = searchQuery;
+      // Use refs for current values
+      if (searchQueryRef.current) {
+        queryParams.search = searchQueryRef.current;
       }
 
-      if (Object.keys(filters).length > 0) {
-        Object.keys(filters).forEach(key => {
-          if (filters[key] && filters[key].length > 0) {
+      // Use filtersRef.current instead of filters
+      const currentFilters = filtersRef.current;
+      
+      if (Object.keys(currentFilters).length > 0) {
+        Object.keys(currentFilters).forEach(key => {
+          if (currentFilters[key] && currentFilters[key].length > 0) {
             const fieldMap: Record<string, string> = {
               'created date': 'createdAt',
               'party': 'partyName',
@@ -354,10 +381,10 @@ const LeadManagementPage: React.FC = () => {
 
             const backendField = fieldMap[key] || key;
 
-            if (filters[key].length > 1) {
-              queryParams[backendField] = filters[key].join(',');
+            if (currentFilters[key].length > 1) {
+              queryParams[backendField] = currentFilters[key].join(',');
             } else {
-              queryParams[backendField] = filters[key][0];
+              queryParams[backendField] = currentFilters[key][0];
             }
           }
         });
@@ -392,7 +419,7 @@ const LeadManagementPage: React.FC = () => {
         }
       }));
     }
-  }, [selectedCompanyId, selectedStatus, si, r, searchQuery, filters, startDate, endDate, canViewOwn, canViewGlobal, currentUserName]);
+  }, [selectedCompanyId, selectedStatus, si, r, canViewOwn, canViewGlobal, currentUserName]);
 
   const sortDatesDesc = (dates: { date: string; count: number }[]) => {
     return dates.sort((a, b) => {
@@ -411,19 +438,23 @@ const LeadManagementPage: React.FC = () => {
         companyName: selectedCompanyId,
         status: selectedStatus,
         staffId: si,
-        startDate: formatDateForAPI(startDate),
-        endDate: formatDateForAPI(endDate),
+        startDate: formatDateForAPI(startDateRef.current),
+        endDate: formatDateForAPI(endDateRef.current),
         reason: r,
         getDatesOnly: true,
       };
 
-      if (searchQuery) {
-        queryParams.search = searchQuery;
+      // Use refs for current values
+      if (searchQueryRef.current) {
+        queryParams.search = searchQueryRef.current;
       }
 
-      if (Object.keys(filters).length > 0) {
-        Object.keys(filters).forEach(key => {
-          if (filters[key] && filters[key].length > 0) {
+      // Use filtersRef.current instead of filters
+      const currentFilters = filtersRef.current;
+      
+      if (Object.keys(currentFilters).length > 0) {
+        Object.keys(currentFilters).forEach(key => {
+          if (currentFilters[key] && currentFilters[key].length > 0) {
             const fieldMap: Record<string, string> = {
               'created date': 'createdAt',
               'party': 'partyName',
@@ -439,10 +470,10 @@ const LeadManagementPage: React.FC = () => {
 
             const backendField = fieldMap[key] || key;
 
-            if (filters[key].length > 1) {
-              queryParams[backendField] = filters[key].join(',');
+            if (currentFilters[key].length > 1) {
+              queryParams[backendField] = currentFilters[key].join(',');
             } else {
-              queryParams[backendField] = filters[key][0];
+              queryParams[backendField] = currentFilters[key][0];
             }
           }
         });
@@ -481,7 +512,7 @@ const LeadManagementPage: React.FC = () => {
     } finally {
       setLoadingDates(false);
     }
-  }, [selectedCompanyId, selectedStatus, si, r, searchQuery, filters, startDate, endDate, fetchLeadsForDate, canViewOwn, canViewGlobal, currentUserName]);
+  }, [selectedCompanyId, selectedStatus, si, r, fetchLeadsForDate, canViewOwn, canViewGlobal, currentUserName]);
 
   // Tab changes को handle करें
   useEffect(() => {
@@ -491,12 +522,18 @@ const LeadManagementPage: React.FC = () => {
     }
   }, [comapanyTab, tab, canViewGlobal, canViewOwn, router.isReady]);
 
+  // Filters change पर fetchDates call करें
   useEffect(() => {
     if ((canViewGlobal || canViewOwn) && router.isReady) {
-      setDatePagination({});
-      fetchDates();
+      // Set timeout to avoid multiple rapid calls
+      const timer = setTimeout(() => {
+        setDatePagination({});
+        fetchDates();
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
-  }, [filters]);
+  }, [filters, canViewGlobal, canViewOwn, router.isReady]);
 
   // Auto-scroll to today's section
   useEffect(() => {
@@ -636,11 +673,20 @@ const LeadManagementPage: React.FC = () => {
 
   // Function to handle clear button click
   const handleClearClick = () => {
+    // Clear all states
     setSearchQuery("");
     setStartDate(null);
     setEndDate(null);
     setFilters({});
     setSelectedFilterField(null);
+    
+    // Update refs immediately
+    searchQueryRef.current = "";
+    startDateRef.current = null;
+    endDateRef.current = null;
+    filtersRef.current = {};
+    
+    // Reset pagination and fetch fresh data
     setDatePagination({});
     fetchDates();
   };
