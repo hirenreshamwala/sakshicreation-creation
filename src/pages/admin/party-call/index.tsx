@@ -344,7 +344,7 @@ const LeadManagementPage: React.FC = () => {
 
     try {
       const queryParams: any = {
-        companyName: selectedCompanyId,
+        companyName: StaticCompanyOptions[comapanyTab],
         status: selectedStatus,
         staffId: si,
         startDate: formatDateForAPI(startDateRef.current),
@@ -435,7 +435,7 @@ const LeadManagementPage: React.FC = () => {
     setLoadingDates(true);
     try {
       const queryParams: any = {
-        companyName: selectedCompanyId,
+        companyName: StaticCompanyOptions[comapanyTab],
         status: selectedStatus,
         staffId: si,
         startDate: formatDateForAPI(startDateRef.current),
