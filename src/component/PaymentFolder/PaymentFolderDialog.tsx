@@ -453,20 +453,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
           />
         </Box>
 
-        {/* Info message about auto date calculation */}
-        {!isEditMode && formik.values.month && formik.values.paymentTerms && (
-          <Box sx={{
-            mb: 2,
-            p: 1.5,
-            backgroundColor: 'info.lighter',
-            borderRadius: 1,
-            fontSize: '12px',
-            color: 'info.dark'
-          }}>
-            Assigned date has been automatically calculated based on the selected month and payment terms.
-          </Box>
-        )}
-
         <ThemeButton
           type="submit"
           sx={{
