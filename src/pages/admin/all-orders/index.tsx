@@ -282,16 +282,20 @@ const AllOrdersPage = () => {
 
     const blob = await reportService.exportPendingClientApprovalOrders(payload);
 
+    // 🔧 FIX: Ensure correct extension and remove invalid characters
     const dateStr = payload.startDate && payload.endDate
       ? `${moment(payload.startDate).format('DDMMYYYY')}_to_${moment(payload.endDate).format('DDMMYYYY')}`
       : 'All_Time';
 
-    const fileName = `Pending_Client_Approval_Orders_${dateStr}.xlsx`;
+    // 🔧 FIX: Replace spaces with underscores and ensure .xlsx extension
+    const fileName = `Pending_Client_Approval_Orders_${dateStr.replace(/ /g, '_')}.xlsx`;
 
-    const url = window.URL.createObjectURL(new Blob([blob]));
+    // 🔧 FIX: Ensure correct blob handling
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = fileName;
+    link.setAttribute('download', fileName); // Use setAttribute
+    link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -304,6 +308,7 @@ const AllOrdersPage = () => {
     setExportingPendingApproval(false);
   }
 };
+
 
   const handleExcelDownload = async () => {
     // डाउनलोड प्रक्रिया शुरू करने से पहले कुछ चेक

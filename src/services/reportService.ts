@@ -339,11 +339,19 @@ async exportPendingClientApprovalOrders(data: any): Promise<Blob> {
     const response = await Request.post(
       Endpoint.EXPORT_PENDING_CLIENT_APPROVAL_ORDERS,
       data,
-      { responseType: 'blob', timeout: 300000 }
+      { 
+        responseType: 'blob', 
+        timeout: 300000 
+      }
     );
-    return response.data;
+    
+    // 🔧 FIX: Ensure correct content type
+    return new Blob([response.data], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to export pending client approval orders');
   }
 }
+
 };
