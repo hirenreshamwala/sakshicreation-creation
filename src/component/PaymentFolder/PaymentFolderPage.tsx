@@ -431,7 +431,7 @@ const PaymentFolderPage: React.FC = () => {
     { id: 'mobileNumber', label: 'Mobile Number' },
     { id: 'area', label: 'Area', value: 'area' },
     { id: 'month', label: 'Month', value: 'month' },
-    { id: 'paymentTerms', label: 'Payment Terms', value: 'paymentTerms' },
+    { id: 'paymentTerms', label: 'Payment Terms' /* value: 'paymentTerms' */ },
     { id: 'paymentAmount', label: 'Payment Amount' /*value: 'paymentAmount'*/ },
     { id: 'receivedAmount', label: 'Received Amount'/* value: 'receivedAmount'*/ },
     { id: 'pendingAmount', label: 'Pending Amount'/* value: 'pendingAmount'*/ },

@@ -346,7 +346,18 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             labelName="Payment Amount"
             type="number"
             value={formik.values.paymentAmount}
-            onChange={(e) => formik.setFieldValue("paymentAmount", parseFloat(e.target.value) || 0)}
+            onChange={(e) => {
+              let val = e.target.value;
+
+              if (val === "0") return;
+
+              if (formik.values.amount === "0" && val !== "" && val !== "0") {
+                formik.setFieldValue("paymentAmount", val.replace(/^0+/, ""));
+                return;
+              }
+              val = val.replace(/^0+/, "");
+              formik.setFieldValue("paymentAmount", val);
+            }}
             error={formik.touched.paymentAmount && Boolean(formik.errors.paymentAmount)}
             helperText={formik.touched.paymentAmount && formik.errors.paymentAmount}
             required
