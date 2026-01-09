@@ -553,7 +553,7 @@ const AssignTaskPage: React.FC = () => {
     setLoadingDates(true);
     try {
       const queryParams: any = {
-        companyName: selectedCompanyId,
+        companyName: StaticCompanyOptions[companyTab],
         status: selectedStatus,
         staffId: si,
         reason: r,
@@ -774,11 +774,11 @@ const AssignTaskPage: React.FC = () => {
         </TableCell>
         <TableCell sx={getCellSx({ fontSize: 14, color: "blue" })}>{row.date}</TableCell>
         <Link href={`/admin/assign-task/view-task/${row.partyId}?taskId=${row?._id}`}>
-        <TableCell
-          sx={getCellSx({ cursor: "pointer", fontSize: 14 })}
-        >
-          {row.party}
-        </TableCell></Link>
+          <TableCell
+            sx={getCellSx({ cursor: "pointer", fontSize: 14 })}
+          >
+            {row.party}
+          </TableCell></Link>
 
         <TableCell sx={getCellSx({ fontSize: 14 })}>
           <Typography
@@ -901,7 +901,7 @@ const AssignTaskPage: React.FC = () => {
 
         // Call API to get filter options
         const response = await assignTaskService.searchFilterOptions(apiField, "", {
-          companyName: selectedCompanyId,
+          companyName: StaticCompanyOptions[companyTab],
           status: selectedStatus,
           getFilterOptions: true,
           filterField: apiField,
@@ -959,7 +959,7 @@ const AssignTaskPage: React.FC = () => {
               const companyName = newTab === 0 ? "Sakshi Creation" : "Quality Packaging";
               router.push({
                 pathname: router.pathname,
-                query: { ...router.query, c: companyName }
+                // query: { ...router.query, c: companyName }
               });
             }}
             tabs={companyTabs.map((c) => c.name)}
@@ -1112,8 +1112,7 @@ const AssignTaskPage: React.FC = () => {
           setStatusTab(newTab);
           const status = newTab === 0 ? "pending,rescheduled" : "completed,cancelled";
           router.push({
-            pathname: router.pathname,
-            query: { ...router.query, status }
+            pathname: router.pathname
           });
         }}
         tabList={tabLabels}

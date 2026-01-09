@@ -94,7 +94,8 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     remarks: Yup.string(),
   });
 
-  const calculateDueDate = (month1: string, paymentTerm: string) => {
+  const calculateDueDate = (month1: string, pTerm: string) => {
+    const paymentTerm = parseInt(pTerm) + parseInt(pTerm)
     if (!month1 || !paymentTerm) return "";
 
     const days = parseInt(paymentTerm, 10);
@@ -370,7 +371,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             error={formik.touched.assignedDate && Boolean(formik.errors.assignedDate)}
             helperText={formik.touched.assignedDate && formik.errors.assignedDate}
             required
-            disabled={!isEditMode && formik.values.month && formik.values.paymentTerms}
+            // disabled={!isEditMode && formik.values.month && formik.values.paymentTerms}
           />
         </Stack>
 
