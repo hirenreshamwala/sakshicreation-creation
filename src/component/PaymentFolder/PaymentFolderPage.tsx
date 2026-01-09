@@ -100,7 +100,7 @@ const PaymentFolderPage: React.FC = () => {
   // Initialize currentFilterState with company and area filters after selectedCompanyName is computed
   const [currentFilterState, setCurrentFilterState] = useState<any>(() => {
     const initialState = {
-     ...defaultOrderFilter,  
+      ...defaultOrderFilter,
       filters: {
         company: selectedCompanyName ? [selectedCompanyName] : [],
         area: [], // Initial areaTab=0, so empty array for "All"
@@ -158,7 +158,7 @@ const PaymentFolderPage: React.FC = () => {
       return;
     }
     setIsLoadingData(true);
-   
+
     try {
       const params = {
         ...currentFilterState,
@@ -170,7 +170,7 @@ const PaymentFolderPage: React.FC = () => {
         isPagination: true,
         includeCounts: true
       };
-     await dispatch(getAllPaymentFoldersThunk(params));
+      await dispatch(getAllPaymentFoldersThunk(params));
       setIsInitialLoad(true);
     } catch (err: any) {
       console.error("❌ Error loading payment folders:", err);
@@ -338,6 +338,7 @@ const PaymentFolderPage: React.FC = () => {
       party: folder.party?.partyName || 'N/A',
       mobileNumber: getFirstContact(folder.party),
       area: folder.area || 'N/A',
+      paymentTerms: folder.paymentTerms || 'N/A',
       month: folder.month || 'N/A',
       paymentAmount: folder.paymentAmount || 0,
       receivedAmount: folder.receivedAmount || 0,
@@ -371,6 +372,7 @@ const PaymentFolderPage: React.FC = () => {
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.area}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.month}</TableCell>
+      <TableCell sx={{ fontSize: 14 }}>{row.paymentTerms}</TableCell>
       <TableCell sx={{ fontSize: 14 }}>₹{row.paymentAmount}</TableCell>
       <TableCell sx={{ fontSize: 14, color: "success.main" }}>₹{row.receivedAmount}</TableCell>
       <TableCell sx={{ fontSize: 14, color: row.pendingAmount > 0 ? "error.main" : "success.main" }}>
@@ -387,36 +389,36 @@ const PaymentFolderPage: React.FC = () => {
       </TableCell>
       <TableCell>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        {/* View Payment History Button - Always show if there are payments */}
-        {row.payments?.length > 0 && (
-          <IconButton
-            color="info"
-            onClick={() => handleViewPaymentHistory(row)}
-            title="View Payment History"
-          >
-            <VisibilityIcon />
-          </IconButton>
-        )}
+          {/* View Payment History Button - Always show if there are payments */}
+          {row.payments?.length > 0 && (
+            <IconButton
+              color="info"
+              onClick={() => handleViewPaymentHistory(row)}
+              title="View Payment History"
+            >
+              <VisibilityIcon />
+            </IconButton>
+          )}
 
-        {row.pendingAmount > 0 && (
-          <IconButton
-            color="success"
-            onClick={() => handleAddPayment(row)}
-            title="Add Payment"
-          >
-            <PaymentIcon />
-          </IconButton>
-        )}
-        {canedit && row.pendingAmount > 0 && (
-          <IconButton color="primary" onClick={() => handleEdit(row)} title="Edit">
-            <EditIcon />
-          </IconButton>
-        )}
-        {candelete && (
-          <IconButton color="error" onClick={() => handleDelete(row.id)} title="Delete">
-            <DeleteIcon />
-          </IconButton>
-        )}
+          {row.pendingAmount > 0 && (
+            <IconButton
+              color="success"
+              onClick={() => handleAddPayment(row)}
+              title="Add Payment"
+            >
+              <PaymentIcon />
+            </IconButton>
+          )}
+          {canedit && row.pendingAmount > 0 && (
+            <IconButton color="primary" onClick={() => handleEdit(row)} title="Edit">
+              <EditIcon />
+            </IconButton>
+          )}
+          {candelete && (
+            <IconButton color="error" onClick={() => handleDelete(row.id)} title="Delete">
+              <DeleteIcon />
+            </IconButton>
+          )}
         </Box>
       </TableCell>
     </>
@@ -425,17 +427,18 @@ const PaymentFolderPage: React.FC = () => {
   // Columns for CustomTable2
   const columns = useMemo(() => [
     { id: 'company', label: 'Company' },
-  { id: 'party', label: 'Party', value: 'party' },
-  { id: 'mobileNumber', label: 'Mobile Number' },
-  { id: 'area', label: 'Area', value: 'area' },
-  { id: 'month', label: 'Month', value: 'month' },
-  { id: 'paymentAmount', label: 'Payment Amount' /*value: 'paymentAmount'*/ },
-  { id: 'receivedAmount', label: 'Received Amount'/* value: 'receivedAmount'*/ },
-  { id: 'pendingAmount', label: 'Pending Amount'/* value: 'pendingAmount'*/ },
-  { id: 'assignTo', label: 'Assigned To', value: 'assignTo' },
-  { id: 'assignedDate', label: 'Assigned Date' },
-  { id: 'remarks', label: 'Remarks', value: 'remarks' },
-  { id: 'action', label: 'Action' },
+    { id: 'party', label: 'Party', value: 'party' },
+    { id: 'mobileNumber', label: 'Mobile Number' },
+    { id: 'area', label: 'Area', value: 'area' },
+    { id: 'month', label: 'Month', value: 'month' },
+    { id: 'paymentTerms', label: 'Payment Terms', value: 'paymentTerms' },
+    { id: 'paymentAmount', label: 'Payment Amount' /*value: 'paymentAmount'*/ },
+    { id: 'receivedAmount', label: 'Received Amount'/* value: 'receivedAmount'*/ },
+    { id: 'pendingAmount', label: 'Pending Amount'/* value: 'pendingAmount'*/ },
+    { id: 'assignTo', label: 'Assigned To', value: 'assignTo' },
+    { id: 'assignedDate', label: 'Assigned Date' },
+    { id: 'remarks', label: 'Remarks', value: 'remarks' },
+    { id: 'action', label: 'Action' },
   ], []);
 
   const getRowColor = useCallback((row: any) => {
@@ -464,7 +467,7 @@ const PaymentFolderPage: React.FC = () => {
 
       const blob = await reportService.exportPaymentFolderToExcel(payload);
 
-      const dateStr = payload.startDate 
+      const dateStr = payload.startDate
         ? `${moment(payload.startDate).format('DDMMYYYY')}_to_${moment(payload.endDate).format('DDMMYYYY')}`
         : 'All_Time';
 
@@ -550,78 +553,78 @@ const PaymentFolderPage: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 2 }}>
         <Box>
           {cancreate && (
-        <Box sx={{ mb: 2 }}>
-          <ThemeButton
-            onClick={() => {
-              setModalType('Add')
-              setRowData(null)
-              setOpen(true);
-            }}
-          >
-            + Add New Payment Folder
-          </ThemeButton>
-        </Box>
-      )}
+            <Box sx={{ mb: 2 }}>
+              <ThemeButton
+                onClick={() => {
+                  setModalType('Add')
+                  setRowData(null)
+                  setOpen(true);
+                }}
+              >
+                + Add New Payment Folder
+              </ThemeButton>
+            </Box>
+          )}
         </Box>
 
         <IconButton
-      onClick={handleExportToExcel}
-      disabled={loading || exporting}
-      // sx={{
-      //   border: "1px solid #D0D5DD",
-      //   borderRadius: 2,
-      //   p: 1.5,
-      //   color: "#667085",
-      //   bgcolor: exporting ? '#f0f0f0' : 'transparent',
-      //   '&:hover': {
-      //     bgcolor: '#f5f5f5',
-      //     borderColor: '#b0b0b0',
-      //   },
-      //   '&.Mui-disabled': {
-      //     borderColor: '#e0e0e0',
-      //     color: '#aaa',
-      //   },
-      // }}
-    >
-      {exporting ? (
-        <CircularProgress size={20} color="inherit" />
-      ) : (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          height="20"
-          width="20"
-          viewBox="0 0 384 512"
-          fill="#667085"
+          onClick={handleExportToExcel}
+          disabled={loading || exporting}
+        // sx={{
+        //   border: "1px solid #D0D5DD",
+        //   borderRadius: 2,
+        //   p: 1.5,
+        //   color: "#667085",
+        //   bgcolor: exporting ? '#f0f0f0' : 'transparent',
+        //   '&:hover': {
+        //     bgcolor: '#f5f5f5',
+        //     borderColor: '#b0b0b0',
+        //   },
+        //   '&.Mui-disabled': {
+        //     borderColor: '#e0e0e0',
+        //     color: '#aaa',
+        //   },
+        // }}
         >
-          <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c0-13.3 10.7-24 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373s-16.9 32.5-36.6 68.8c-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 33.6 62.3 36.6 68.5 3-6.2 9.7-19.9 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"/>
-        </svg>
-      )}
-    </IconButton>
+          {exporting ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="20"
+              width="20"
+              viewBox="0 0 384 512"
+              fill="#667085"
+            >
+              <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c0-13.3 10.7-24 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373s-16.9 32.5-36.6 68.8c-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 33.6 62.3 36.6 68.5 3-6.2 9.7-19.9 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z" />
+            </svg>
+          )}
+        </IconButton>
       </Box>
 
       <CustomTable2
         showDatePicker={true}
-          tableHeader={columns}
-          showFillter={true}
-          showSearch={true}
-          title={`Payment Folders - ${selectedCompanyName}`}
-          showExcelDownload={false}
-          defaultFilter={defaultOrderFilter}
-          rowData={formattedRows}
-          setCurrentFilterState={setCurrentFilterState}
-          currentFilterState={currentFilterState}
-          renderRow={renderRow}
-          totalRows={totalCount || formattedRows.length}
-          onFilterFieldSelect={handleFilterFieldSelect}
-          selectedFilterField={selectedFilterField}
-          filterOptionsData={filterOptionsData}
-          loadingFilterOptions={loadingFilterOptions}
-          onFiltersChange={handleFiltersChange}
-          onSelectAll={handleSelectAll}
-          onSelectRow={handleSelectRow}
-          selectedRows={selectedRows}
-          getRowColor={getRowColor}
-        />
+        tableHeader={columns}
+        showFillter={true}
+        showSearch={true}
+        title={`Payment Folders - ${selectedCompanyName}`}
+        showExcelDownload={false}
+        defaultFilter={defaultOrderFilter}
+        rowData={formattedRows}
+        setCurrentFilterState={setCurrentFilterState}
+        currentFilterState={currentFilterState}
+        renderRow={renderRow}
+        totalRows={totalCount || formattedRows.length}
+        onFilterFieldSelect={handleFilterFieldSelect}
+        selectedFilterField={selectedFilterField}
+        filterOptionsData={filterOptionsData}
+        loadingFilterOptions={loadingFilterOptions}
+        onFiltersChange={handleFiltersChange}
+        onSelectAll={handleSelectAll}
+        onSelectRow={handleSelectRow}
+        selectedRows={selectedRows}
+        getRowColor={getRowColor}
+      />
 
       <Dialog
         open={deleteDialogOpen}

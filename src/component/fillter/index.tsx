@@ -31,6 +31,7 @@ interface FilterDropdownProps {
 const labelMap: Record<string, string> = {
   contactPerson: "Contact Person",
   contactNumber: "Contact Number",
+  paymentTerms:"Payment Terms",
   createdAt: "Created At",
   partyTag: "Party Tag",
   partyType: "Party Type",

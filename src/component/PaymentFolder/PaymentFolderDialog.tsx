@@ -44,9 +44,9 @@ const monthOptions = [
 
 // Quick action buttons for common payment terms
 const quickPaymentTerms = [
-  { label: "30 Days", value: "30 Days" },
-  { label: "60 Days", value: "60 Days" },
-  { label: "90 Days", value: "90 Days" },
+  { label: "30 Days", value: "30" },
+  { label: "60 Days", value: "60" },
+  { label: "90 Days", value: "90" },
 ]
 
 interface OptionType {
@@ -94,9 +94,43 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     remarks: Yup.string(),
   });
 
+  const calculateDueDate = (month1: string, paymentTerm: string) => {
+    if (!month1 || !paymentTerm) return "";
+
+    const days = parseInt(paymentTerm, 10);
+    if (isNaN(days) || days <= 0) return "";
+
+    const monthMap: Record<string, number> = {
+      Jan: 0, Feb: 1, Mar: 2, Apr: 3,
+      May: 4, Jun: 5, Jul: 6, Aug: 7,
+      Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+    };
+
+    const monthNumber = monthMap[month1];
+    if (monthNumber === undefined) return "";
+
+    const year = moment().year();
+
+    // ✅ Month ke first day se start
+    const startDate = moment({ year, month: monthNumber, day: 1 });
+
+    // ✅ Day-1 logic (important)
+    const dueDate = startDate.add(days - 1, "days");
+
+    return dueDate.format("YYYY-MM-DD");
+  };
+
   // Get initial values based on modal type and rowData
   const getInitialValues = () => {
     if (isEditMode && rowData) {
+      // For edit mode, we need to extract the number from the payment term
+      let paymentTermValue = "";
+      if (rowData?.paymentTerms) {
+        // Extract just the number from the payment term
+        const match = rowData.paymentTerms.match(/(\d+)/);
+        paymentTermValue = match ? match[1] : "";
+      }
+
       return {
         companyName: rowData?.company?._id || "",
         partyName: rowData?.party?._id || "",
@@ -105,7 +139,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
         paymentAmount: rowData?.paymentAmount || 0,
         assignTo: rowData?.assignedTo?._id || "",
         assignedDate: moment(rowData?.assignedDate).format('YYYY-MM-DD') || "",
-        paymentTerms: rowData?.paymentTerms || "",
+        paymentTerms: paymentTermValue,
         remarks: rowData?.remarks || "",
         receivedAmount: rowData?.receivedAmount || 0,
       };
@@ -131,6 +165,11 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
+        // Format paymentTerms for submission (add "Days" suffix if it's just a number)
+        const formattedPaymentTerms = /^\d+$/.test(values.paymentTerms)
+          ? `${values.paymentTerms} Days`
+          : values.paymentTerms;
+
         const submitData = {
           ...values,
           company: values.companyName,
@@ -140,7 +179,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
           month: values.month,
           paymentAmount: values.paymentAmount,
           area: values.area,
-          paymentTerms: values.paymentTerms,
+          paymentTerms: formattedPaymentTerms,
           remarks: values.remarks,
           ...(isEditMode && { receivedAmount: values.receivedAmount }),
         };
@@ -189,6 +228,17 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
       }
     }
   }, [open, modalType, rowData]);
+
+  // Update assigned date when month or payment terms change
+  useEffect(() => {
+    // Only auto-calculate in create mode, not in edit mode
+    if (!isEditMode && formik.values.month && formik.values.paymentTerms) {
+      const dueDate = calculateDueDate(formik.values.month, formik.values.paymentTerms);
+      if (dueDate) {
+        formik.setFieldValue("assignedDate", dueDate);
+      }
+    }
+  }, [formik.values.month, formik.values.paymentTerms, isEditMode]);
 
   const handleCompanyChange = (event: any, newValue: any) => {
     const companyId = newValue ? newValue.value : "";
@@ -309,6 +359,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             error={formik.touched.assignedDate && Boolean(formik.errors.assignedDate)}
             helperText={formik.touched.assignedDate && formik.errors.assignedDate}
             required
+            disabled={!isEditMode && formik.values.month && formik.values.paymentTerms}
           />
         </Stack>
 
@@ -371,8 +422,8 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
               {/* Custom Input Field */}
               {showCustomInput && (
                 <ThemeInput
-                  labelName="Custom Payment Term"
-                  type="text"
+                  labelName="Custom Payment Term (days)"
+                  type="number"
                   value={customPaymentTerm}
                   onChange={(e) => handleCustomPaymentTermChange(e.target.value)}
                   error={formik.touched.paymentTerms && Boolean(formik.errors.paymentTerms)}
@@ -383,7 +434,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
               {/* Show current payment term value for debugging */}
               {formik.values.paymentTerms && (
                 <Box sx={{ fontSize: "12px", color: "text.secondary", mt: 0.5 }}>
-                  Current value: {formik.values.paymentTerms}
+                  Current value: {formik.values.paymentTerms} days
                 </Box>
               )}
             </Box>
@@ -401,6 +452,20 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             fullWidth
           />
         </Box>
+
+        {/* Info message about auto date calculation */}
+        {!isEditMode && formik.values.month && formik.values.paymentTerms && (
+          <Box sx={{
+            mb: 2,
+            p: 1.5,
+            backgroundColor: 'info.lighter',
+            borderRadius: 1,
+            fontSize: '12px',
+            color: 'info.dark'
+          }}>
+            Assigned date has been automatically calculated based on the selected month and payment terms.
+          </Box>
+        )}
 
         <ThemeButton
           type="submit"
