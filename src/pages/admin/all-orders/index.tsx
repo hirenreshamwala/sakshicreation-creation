@@ -280,22 +280,27 @@ const AllOrdersPage = () => {
       endDate: currentFilterState.endDate || undefined,
     };
 
-    const blob = await reportService.exportPendingClientApprovalOrders(payload);
+    const result = await reportService.exportPendingClientApprovalOrders(payload);
 
-    // 🔧 FIX: Ensure correct extension and remove invalid characters
+    // Check if result is empty response
+    if (typeof result === 'object' && result.empty) {
+      toast.info(result.message || 'No pending approval orders found for export.');
+      return;
+    }
+
+    // If we get here, result is a Blob
+    const blob = result as Blob;
+
     const dateStr = payload.startDate && payload.endDate
       ? `${moment(payload.startDate).format('DDMMYYYY')}_to_${moment(payload.endDate).format('DDMMYYYY')}`
       : 'All_Time';
 
-    // 🔧 FIX: Replace spaces with underscores and ensure .xlsx extension
-    const fileName = `Pending_Client_Approval_Orders_${dateStr.replace(/ /g, '_')}.xlsx`;
+    const fileName = `Pending_Client_Approval_Orders_${dateStr}.xlsx`;
 
-    // 🔧 FIX: Ensure correct blob handling
-    const url = window.URL.createObjectURL(blob);
+    const url = window.URL.createObjectURL(new Blob([blob]));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', fileName); // Use setAttribute
-    link.style.display = 'none';
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
