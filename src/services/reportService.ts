@@ -334,24 +334,31 @@ async exportPaymentFolderToExcel(data: any): Promise<Blob> {
   }
 },
 
-async exportPendingClientApprovalOrders(data: any): Promise<Blob> {
-  try {
-    const response = await Request.post(
-      Endpoint.EXPORT_PENDING_CLIENT_APPROVAL_ORDERS,
-      data,
-      { 
-        responseType: 'blob', 
-        timeout: 300000 
+async exportPendingClientApprovalOrders(data: any): Promise<Blob | { empty: boolean; message: string }> {
+    try {
+      const response = await Request.post(
+        Endpoint.EXPORT_PENDING_CLIENT_APPROVAL_ORDERS,
+        data,
+        { responseType: 'blob', timeout: 300000 }
+      );
+      
+      // Check if response is JSON (empty case)
+      const contentType = response.headers['content-type'];
+      if (contentType && contentType.includes('application/json')) {
+        // Try to parse as JSON
+        try {
+          const text = await response.data.text();
+          const jsonResponse = JSON.parse(text);
+          return jsonResponse; // Return JSON response for empty case
+        } catch (e) {
+          throw new Error('Failed to parse empty response');
+        }
       }
-    );
-    
-    // 🔧 FIX: Ensure correct content type
-    return new Blob([response.data], { 
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-    });
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to export pending client approval orders');
-  }
-}
+      
+      return response.data as Blob;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to export pending client approval orders');
+    }
+  },
 
 };
