@@ -41,6 +41,7 @@ const labelMap: Record<string, string> = {
   orderNumber: "Order Number",
   orderedBy: "Ordered By",
   orderStatus: "Order Status",
+  assignedDate: "assigned date"
 };
 
 const FilterDropdown: React.FC<FilterDropdownProps> = ({
