@@ -207,7 +207,6 @@ const AccountMasterPage: React.FC = memo(() => {
         if (e) params.endDate = e;
         if (p) params.partyTag = p.toString().split(",").map((x: string) => x.toLowerCase());
 
-
         const data = await accountMasterService.getAccountMasters({ ...params, ...payload, isPagination: true, includeCounts: true });
         setAccountMasters(data.data);
         setResponseState(data.pagination)
@@ -227,9 +226,11 @@ const AccountMasterPage: React.FC = memo(() => {
   };
 
   useEffect(() => {
-    const isSame = _.isEqual(appliedFilterState, currentFilterState);
+    // const isSame = _.isEqual(appliedFilterState, currentFilterState);
+    // console.log(isSame,'issameissameissame')
 
-    if (!isSame) loadAccountMasters();
+    // if (!isSame)
+       loadAccountMasters();
   }, [currentFilterState]);
 
   useEffect(() => {
@@ -620,7 +621,7 @@ const AccountMasterPage: React.FC = memo(() => {
           onSelectAll={handleSelectAll}
           onSelectRow={handleSelectRow}
           selectedRows={selectedRows}
-          totalRows={responseState?.counts?.approved}
+          totalRows={statusTab === 0 ? responseState?.counts?.approved : responseState?.counts?.pending}
           pageName="account-master"
           setDownloadLoading={setDownloadLoading}
           downloadLoading={downloadLoading}
