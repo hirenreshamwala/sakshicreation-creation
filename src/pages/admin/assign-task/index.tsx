@@ -16,7 +16,6 @@ import ThemeButton from "@/component/common_component/themebutton";
 import ThemeChip from "@/component/common_component/themechip";
 import AssignTaskDialog from "@/component/assigntaskdailog";
 import { authService } from "@/services/auth.service";
-import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import DateRangePicker from "@/component/daterangepicker";
@@ -205,30 +204,24 @@ const AssignTaskPage: React.FC = () => {
       { id: "assignTo", label: "Assign To" },
     ];
 
-    if (canedit || candelete) {
-      baseColumns.push({ id: "action", label: "Action" });
-    }
+    if (canedit || candelete) baseColumns.push({ id: "action", label: "Action" });
 
     return baseColumns;
   }, [canedit, candelete]);
 
   const handleSelectTask = (taskId: string) => {
     setSelectedTaskIds(prev => {
-      if (prev.includes(taskId)) {
+      if (prev.includes(taskId))
         return prev.filter(id => id !== taskId);
-      } else {
+      else
         return [...prev, taskId];
-      }
     });
   };
 
   const handleSelectAllTasks = () => {
     const currentTaskIds = datePagination[availableDates[0]?.date]?.data?.map(task => task._id) || [];
-    if (selectedTaskIds.length === currentTaskIds.length) {
-      setSelectedTaskIds([]);
-    } else {
-      setSelectedTaskIds(currentTaskIds);
-    }
+    if (selectedTaskIds.length === currentTaskIds.length) setSelectedTaskIds([]);
+    else setSelectedTaskIds(currentTaskIds);
   };
   const handleExcelDownload = async () => {
     try {
@@ -347,13 +340,10 @@ const AssignTaskPage: React.FC = () => {
 
   // Selected company based on permissions
   const selectedCompanyId = useMemo(() => {
-    if (hasBothCompanies) {
-      return companyTabs[companyTab]?.companyId;
-    } else if (hasSakshi) {
-      return getCompanyWisePermission(5);
-    } else if (hasQP) {
-      return getCompanyWisePermission(6);
-    }
+    if (hasBothCompanies) return companyTabs[companyTab]?.companyId;
+    else if (hasSakshi) return getCompanyWisePermission(5);
+    else if (hasQP) return getCompanyWisePermission(6);
+    
     return null;
   }, [hasBothCompanies, companyTab, hasSakshi, hasQP, companyTabs]);
 
@@ -389,11 +379,8 @@ const AssignTaskPage: React.FC = () => {
     }
     if (s) {
       const statuses = (s as string)?.split(",");
-      if (statuses.includes("completed") || statuses.includes("cancelled")) {
-        setStatusTab(1);
-      } else {
-        setStatusTab(0);
-      }
+      if (statuses.includes("completed") || statuses.includes("cancelled")) setStatusTab(1);
+      else setStatusTab(0);
     }
   }, [st, e, s]);
 
@@ -451,10 +438,6 @@ const AssignTaskPage: React.FC = () => {
     }
   };
 
-  const handleClick = (id: string) => {
-    router.push(`/admin/assign-task/view-task/${id}`);
-  };
-
   // Fetch tasks for specific date with pagination
   const fetchTasksForDate = useCallback(async (date: string, page: number, itemsPerPage: number) => {
     setDatePagination(prev => ({
@@ -477,9 +460,8 @@ const AssignTaskPage: React.FC = () => {
       };
 
       // Use applied search query instead of current searchQuery
-      if (appliedSearchQuery) {
+      if (appliedSearchQuery) 
         queryParams.search = appliedSearchQuery;
-      }
 
       // Add other filters if available
       if (Object.keys(filters).length > 0) {
@@ -517,14 +499,13 @@ const AssignTaskPage: React.FC = () => {
       }
 
       // Add assignedTo filter for canViewOwn permission
-      if (canViewOwn && !canViewGlobal && currentUserName) {
+      if (canViewOwn && !canViewGlobal && currentUserName) 
         queryParams.assignToFilter = currentUserName;
-      }
 
       // Call the API
       const response = await assignTaskService.getAllAssignTasks(queryParams);
 
-      if (response) {
+      if (response) 
         setDatePagination(prev => ({
           ...prev,
           [date]: {
@@ -534,7 +515,6 @@ const AssignTaskPage: React.FC = () => {
             loading: false,
           }
         }));
-      }
     } catch (error) {
       console.error(`Error fetching tasks for date ${date}:`, error);
       toast.error(`Failed to fetch tasks for ${date}`);
@@ -597,9 +577,8 @@ const AssignTaskPage: React.FC = () => {
         queryParams.endDate = endDate.toISOString();
       }
 
-      if (canViewOwn && !canViewGlobal && currentUserName) {
+      if (canViewOwn && !canViewGlobal && currentUserName) 
         queryParams.assignToFilter = currentUserName;
-      }
 
       const response = await assignTaskService.getAllAssignTasks(queryParams);
 
@@ -907,9 +886,9 @@ const AssignTaskPage: React.FC = () => {
           filterField: apiField,
         });
 
-        if (response?.data) {
+        if (response?.data) 
           setFilterOptions(response.data || []);
-        } else {
+        else {
           toast.error("Failed to load filter options");
           setFilterOptions([]);
         }
@@ -925,7 +904,6 @@ const AssignTaskPage: React.FC = () => {
     fetchFilterOptions();
   }, [dispatch, selectedFilterField, filters, selectedCompanyId, selectedStatus]);
 
-  // Handle search button click
   const handleSearch = (start, end) => {
     setAppliedSearchQuery(searchQuery);
     setAppliedStartDate(start);
@@ -934,7 +912,6 @@ const AssignTaskPage: React.FC = () => {
     fetchDates(start, end);
   };
 
-  // Handle clear button click
   const handleClear = () => {
     setSearchQuery("");
     setStartDate(null);
@@ -946,10 +923,8 @@ const AssignTaskPage: React.FC = () => {
     fetchDates(null, null);
   };
 
-
   return (
     <>
-      {/* Company Tabs - Only show if user has both companies */}
       {hasBothCompanies && (
         <Box sx={{ mb: 2 }}>
           <TabComponent
@@ -959,7 +934,6 @@ const AssignTaskPage: React.FC = () => {
               const companyName = newTab === 0 ? "Sakshi Creation" : "Quality Packaging";
               router.push({
                 pathname: router.pathname,
-                // query: { ...router.query, c: companyName }
               });
             }}
             tabs={companyTabs.map((c) => c.name)}
@@ -967,7 +941,6 @@ const AssignTaskPage: React.FC = () => {
         </Box>
       )}
 
-      {/* Show current company name when user has only one permission */}
       {!hasBothCompanies && selectedCompanyId && (
         <Box sx={{ mb: 2, p: 2, backgroundColor: 'primary.light', color: 'primary.contrastText', borderRadius: 1 }}>
           <Typography variant="h6">
@@ -1025,7 +998,6 @@ const AssignTaskPage: React.FC = () => {
             />
           </Box>
 
-          {/* Search and Clear buttons */}
           <ThemeButton onClick={() => handleSearch(startDate, endDate)}>
             Search
           </ThemeButton>
@@ -1061,7 +1033,6 @@ const AssignTaskPage: React.FC = () => {
               height="16"
               width="16"
               viewBox="0 0 384 512"
-            // style={{ marginRight: "8px" }}
             >
               <path
                 fill="#667085"
@@ -1081,7 +1052,6 @@ const AssignTaskPage: React.FC = () => {
                                  10.6 7 16.9z"
               />
             </svg>
-            {/* <Typography fontSize={12}>Download excel</Typography>  */}
           </IconButton>
           {cancreate && (
             <ThemeButton

@@ -117,7 +117,7 @@ const AccountMasterPage: React.FC = memo(() => {
     companyTab: companyTab
   }
   const [currentFilterState, setCurrentFilterState] = useState<any>(defaultAccountMasterFilter);
-  const [appliedFilterState, setAppliedFilterState] = useState<any>(defaultAccountMasterFilter);
+  // const [appliedFilterState, setAppliedFilterState] = useState<any>(defaultAccountMasterFilter);
 
   // Permissions - you might need to adjust this based on your user structure
   const canViewGlobal = user?.role?.permissions?.account_master?.view_global;
@@ -210,12 +210,12 @@ const AccountMasterPage: React.FC = memo(() => {
         const data = await accountMasterService.getAccountMasters({ ...params, ...payload, isPagination: true, includeCounts: true });
         setAccountMasters(data.data);
         setResponseState(data.pagination)
-        setAppliedFilterState(currentFilterState)
+        // setAppliedFilterState(currentFilterState)
       } else if (canViewOwn && user?.id) {
         const data = await accountMasterService.getAccountMasterByStaffId(user.id, { ...payload, filters: { ...payload.filters, createdBy: [`${user.firstName} ${user.lastName}`] }, isPagination: true, includeCounts: true });
         setAccountMasters(data.data);
         setResponseState({ ...data.pagination, counts: data.counts })
-        setAppliedFilterState(currentFilterState)
+        // setAppliedFilterState(currentFilterState)
       }
     } catch (err: any) {
       setError(err.message || "Failed to load account masters");
@@ -641,7 +641,6 @@ const AccountMasterPage: React.FC = memo(() => {
         />
       )}
 
-      {console.log(companies?.find((item) => item?.name === (hasBothCompanies ? companyTabs[companyTab]?.value : hasSakshi ? "Sakshi" : "QP")), 'ksdjksjdoikdjikj', (hasBothCompanies ? companyTabs[companyTab]?.value : hasSakshi ? "Sakshi" : "QP"))}
       {openAssignLeadDialog ?
         <AssignLeadDialog
           open={openAssignLeadDialog}
