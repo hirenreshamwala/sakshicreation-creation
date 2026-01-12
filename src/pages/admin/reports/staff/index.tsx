@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, TableCell, Button, TextField, Popover, List, ListItem, ListItemText, Chip, Menu, MenuItem, Checkbox, FormControlLabel, Typography, Stack } from '@mui/material';
+import { Box, TableCell, Button, TextField, Popover, List, ListItem, ListItemText, Chip, Menu, MenuItem, Checkbox, FormControlLabel, Typography, Stack, Paper, Grid, Divider, Table, TableBody, TableContainer, TableHead, TableRow } from '@mui/material';
 import BasicTable from '@/component/common_component/Table/themetable';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { companyOptions } from '@/constants';
@@ -7,8 +7,8 @@ import Request from '@/services/axios';
 import Loader from '@/component/common_component/loader';
 import TabComponent from '@/component/Dialog/TabComponent';
 import { getCompanyWisePermission } from '@/utills/utills';
-import FilterDropdown from '@/component/fillter'; // Adjust path as needed
-import { getAllStaffThunk } from '@/store/slices/staffSlice'; // Adjust path as needed
+import FilterDropdown from '@/component/fillter';
+import { getAllStaffThunk } from '@/store/slices/staffSlice';
 
 // Task reasons for filtering
 const TASK_REASONS = [
@@ -170,6 +170,7 @@ const StaffPage = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reportData, setReportData] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -275,14 +276,17 @@ const StaffPage = () => {
 
       if (response.data.success) {
         setReportData(response.data.data);
+        setSummary(response.data.summary);
       } else {
         setError(response.data.message);
         setReportData([]);
+        setSummary(null);
       }
     } catch (error) {
       console.error('Error fetching report:', error);
       setError(error.response ? error.response.data.message : 'Network error');
       setReportData([]);
+      setSummary(null);
     } finally {
       setLoading(false);
     }
@@ -430,7 +434,6 @@ const StaffPage = () => {
   useEffect(() => {
     if (user) fetchReport();
   }, [tab, startDate, endDate, apiEndpoint]);
-
   return (
     <Box sx={{ p: 2 }}>
       {/* Conditionally render tabs based on permissions */}
@@ -650,6 +653,131 @@ const StaffPage = () => {
 
       {(loading || staffLoading) && <Loader />}
 
+      {/* Summary Section */}
+      {!loading && !staffLoading && summary && (
+        <Paper sx={{ p: 3, mb: 3, backgroundColor: 'background.paper' }}>
+          <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
+            Summary Report
+          </Typography>
+          
+          <Grid container spacing={3}>
+            {/* Party Visit Summary */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                Party Visit Summary
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body1">Total New Party Visits:</Typography>
+                  <Typography variant="body1" fontWeight="bold">{summary.totalNewPartyVisits || 0}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body1">New Party Visits to Customer:</Typography>
+                  <Typography variant="body1" fontWeight="bold">{summary.totalNewToCustomer || 0}</Typography>
+                </Box>
+              </Box>
+            </Grid>
+            
+            {/* Order Summary */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                Order Summary
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body1">Total Stationary Orders:</Typography>
+                  <Typography variant="body1" fontWeight="bold">{summary.totalStationaryOrders || 0}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body1">Total Booklet Orders:</Typography>
+                  <Typography variant="body1" fontWeight="bold">{summary.totalBookletOrders || 0}</Typography>
+                </Box>
+              </Box>
+            </Grid>
+            
+            {/* Sales Summary */}
+            <Grid item xs={12}>
+              <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                Sales Summary
+              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body1">Total Stationary Sales:</Typography>
+                <Typography variant="body1" fontWeight="bold">₹{(summary.totalStationarySales || 0).toFixed(2)}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body1">Total Booklet Sales:</Typography>
+                <Typography variant="body1" fontWeight="bold">₹{(summary.totalBookletSales || 0).toFixed(2)}</Typography>
+              </Box>
+              <Divider sx={{ my: 1 }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="h6">Total Sales:</Typography>
+                <Typography variant="h6" fontWeight="bold" color="primary.main">
+                  ₹{(summary.totalSales || 0).toFixed(2)}
+                </Typography>
+              </Box>
+            </Grid>
+            
+            {/* Itemwise Stationary Orders */}
+            {summary.totalStationaryItemwise && summary.totalStationaryItemwise.length > 0 && (
+              <Grid item xs={12} md={6}>
+                <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                  Stationary Orders (Itemwise)
+                </Typography>
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Item Name</TableCell>
+                        <TableCell align="right">Quantity</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {summary.totalStationaryItemwise.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.itemName}</TableCell>
+                          <TableCell align="right">{item.quantity}</TableCell>
+                          <TableCell align="right">₹{item.totalAmount.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Grid>
+            )}
+            
+            {/* Itemwise Booklet Orders */}
+            {summary.totalBookletItemwise && summary.totalBookletItemwise.length > 0 && (
+              <Grid item xs={12} md={6}>
+                <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                  Booklet Orders (Itemwise)
+                </Typography>
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Item Name</TableCell>
+                        <TableCell align="right">Quantity</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {summary.totalBookletItemwise.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.itemName}</TableCell>
+                          <TableCell align="right">{item.quantity}</TableCell>
+                          <TableCell align="right">₹{item.totalAmount.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Grid>
+            )}
+          </Grid>
+        </Paper>
+      )}
+
       {/* Tasks Table */}
       {!loading && !staffLoading && filteredReportData.length > 0 && (
         <>
@@ -704,12 +832,6 @@ const StaffPage = () => {
                           onClick={() => handleTaskClick(row.staffId, row.companyId, reason, status, value)}
                           sx={{
                             cursor: value > 0 ? 'pointer' : 'default',
-                            // color: value > 0 ? 'primary.main' : 'text.secondary',
-                            // fontWeight: value > 0 ? 500 : 400,
-                            // '&:hover': value > 0 ? {
-                            //   backgroundColor: 'action.hover',
-                            //   textDecoration: 'underline'
-                            // } : {}
                           }}
                         >
                           {displayValue}
@@ -778,12 +900,6 @@ const StaffPage = () => {
                           onClick={() => value > 0 && handleLeadClick(row.staffId, row.companyId, reason, status, value)}
                           sx={{
                             cursor: value > 0 ? 'pointer' : 'default',
-                            // color: value > 0 ? 'secondary.main' : 'text.secondary',
-                            // fontWeight: value > 0 ? 500 : 400,
-                            // '&:hover': value > 0 ? {
-                            //   backgroundColor: 'action.hover',
-                            //   textDecoration: 'underline'
-                            // } : {}
                           }}
                         >
                           {displayValue}
