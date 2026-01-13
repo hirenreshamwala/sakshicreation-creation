@@ -118,10 +118,8 @@ export const paymentFolderService = {
                 `${Endpoint.ADD_PAYMENT_FOLDER}/${id}`,
                 data
             );
-            console.log("last respoinse", response.data.data)
             return response.data.data;
         } catch (error: any) {
-            console.log(error, ';error in service')
             throw new Error(error.response?.data?.message || 'Failed to update payment folder');
         }
     },

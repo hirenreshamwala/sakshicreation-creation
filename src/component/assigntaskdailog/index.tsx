@@ -72,7 +72,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   const dispatch = useAppDispatch();
   const singleAssignTask = rowData;
 
-  console.log(rowData, 'rowData')
   const {
     loading: accountLoading,
     error: accountError,
@@ -220,7 +219,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
 
             if (refreshData) refreshData();
           } catch (err: any) {
-            console.log("DEBUG : err:", err);
 
             toast.error(err || "Failed to assign some tasks");
           }

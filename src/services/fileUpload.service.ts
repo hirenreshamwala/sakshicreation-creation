@@ -69,8 +69,6 @@ export const fileUploadService = {
       })
       formData.append("folder", folder)
 
-      console.log("Uploading multiple files:", files.length, "files to folder:", folder)
-
       const response: AxiosResponse<ApiResponse<UploadedFile[]>> = await axios.post(
         Endpoint.UPLOAD_MULTIPLE_FILES,
         formData,

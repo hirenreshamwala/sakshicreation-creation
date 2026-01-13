@@ -29,7 +29,6 @@ interface InvoiceFormData {
 }
 
 export const generateInvoicePDF = async (formData: InvoiceFormData) => {
-  console.log("DEBUG : generateInvoicePDF : formData:", formData);
 
   const doc = new jsPDF("p", "mm", "a4");
   const pageWidth = doc.internal.pageSize.getWidth();

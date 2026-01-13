@@ -124,16 +124,20 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
         pincode: Yup.string()
           .required("Pincode is required"),
       }),
-      partyType: Yup.string().when('companyName', {
-        is: (companyId: string) => {
-          const selectedCompany = companies.find(company => company._id === companyId);
-          return selectedCompany?.companyName === "Sakshi Creation";
-        },
-        then: (schema) => schema
-          .oneOf(['STATIONERY', 'BOOKLET', 'OTHER'], 'Please select a valid party type')
-          .required('Party Type is required'),
-        otherwise: (schema) => schema.optional()
-      }),
+      createdBy: Yup.string().required("Created By is required"),
+      partyType: Yup.string()
+        .nullable()
+        .when("companyName", {
+          is: (companyId: string) => {
+            const selectedCompany = companies.find(
+              company => company._id === companyId
+            );
+            return selectedCompany?.companyName === "Sakshi Creation";
+          },
+          then: schema =>
+            schema.required("Party Type is required"),
+          otherwise: schema => schema.notRequired(),
+        }),
       reasonToVisit: Yup.string().required("Reason to Visit is required"),
     });
   };
@@ -281,8 +285,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
       try {
         await dispatch(getAllStaffThunk());
         if (isEditMode && accountId) {
-          const result:any = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
-          console.log(result,'result')
+          const result: any = await dispatch(getAccountMasterByIdThunk(accountId)).unwrap();
 
           const resultCompany = companies.find(comp => comp._id === result.companyName);
           const isResultSakshiCreation = resultCompany?.companyName === "Sakshi Creation";

@@ -219,7 +219,6 @@ export const saleQpOrderService = {
     data: BulkStatusUpdateData
   ): Promise<ApiResponse<SaleQpOrder[]>> {
     try {
-      console.log(data, 'service data for sale QP orders');
       const response: AxiosResponse<ApiResponse<SaleQpOrder[]>> = await Request.post(
         Endpoint.UPDATE_SALE_QP_ORDER_BULK_STATUS,
         data

@@ -393,7 +393,6 @@ export const getQPOrdersByStaffIdThunk = createAsyncThunk(
   "qpOrder/getByStaffId",
   async ({ id, filters }: { id: string; filters: any }, { rejectWithValue }) => {
     try {
-      console.log("🔄 Redux: Fetching QP orders by staff with filters:", { id, filters });
       
       const response = await orderService.getOrdersByStaffId(id, filters);
       
@@ -460,7 +459,6 @@ export const bulkUpdateQPOrderStatusThunk = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      console.log('Bulk update data:', { orderIds, status, deliveryStatus, billPhotos, dispatchPhotos, dispatchTime, deliveryTime,billNumber  });
       const updateData: any = { orderIds };
       if (status) updateData.status = status;
       if (deliveryStatus) updateData.deliveryStatus = deliveryStatus;
@@ -590,7 +588,6 @@ const qpOrderSlice = createSlice({
             hasPrev: false,
           };
           state.error = null;
-          console.log(`✅ Loaded ${action.payload.data.length} QP orders, total: ${action.payload.totalCount}`);
         }
       )
       .addCase(getAllQPOrdersThunk.rejected, (state, action) => {
@@ -821,7 +818,6 @@ const qpOrderSlice = createSlice({
           state.totalCount = action.payload.totalCount;
           state.pagination = action.payload.pagination || state.pagination;
           state.error = null;
-          console.log(`✅ Loaded ${action.payload.data.length} QP orders for staff, total: ${action.payload.totalCount}`);
         }
       )
       .addCase(getQPOrdersByStaffIdThunk.rejected, (state, action) => {

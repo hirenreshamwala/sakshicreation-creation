@@ -118,14 +118,10 @@ export const orderService = {
   },
   async getAllOrdersForDriver(filters: any): Promise<ApiResponse<Order[]>> {
     try {
-      console.log("📊 Service: Fetching QP orders with filters:", filters);
-
       const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
         Endpoint.GET_ALL_QP_ORDER_FOR_DRIVER,
         filters
       );
-
-      console.log("📊 Service: QP orders response:", response.data);
 
       if (response.data.success) {
         return {
@@ -160,8 +156,6 @@ export const orderService = {
 
   async searchFilterOptions(field: string, search: string = "", filters: any = {}): Promise<ApiResponse<string[]>> {
     try {
-      console.log(`🔍 Fetching QP filter options for ${field}:`, { search, filters });
-
       const response: AxiosResponse<ApiResponse<string[]>> = await Request.post(
         `${Endpoint.GET_QP_ORDER_FILTER_OPTIONS}/${field}`,
         { search, ...filters }
@@ -182,8 +176,6 @@ export const orderService = {
         `${Endpoint.GET_QP_ORDER_BY_STAFF_ID}/${id}`,
         filters
       );
-
-      console.log("Orders by Staff API Response:", response.data);
 
       return {
         success: response.data.success,
@@ -286,7 +278,6 @@ export const orderService = {
     data: BulkStatusUpdateData
   ): Promise<ApiResponse<Order[]>> {
     try {
-      console.log(data, 'service data')
       const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
         Endpoint.UPDATE_QP_ORDER_BULK_STATUS,
         data

@@ -128,8 +128,6 @@ export const orderService = {
         filters
       );
 
-      console.log("Orders by Staff API Response:", response.data);
-
       return {
         success: response.data.success,
         data: response.data.data || [],

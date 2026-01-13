@@ -365,7 +365,6 @@ export const bulkUpdateSaleQpOrderStatusThunk = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      console.log('Bulk update data for sale QP orders:', { orderIds, status, deliveryStatus, billPhotos, dispatchPhotos, dispatchTime, deliveryTime, billNumber });
       const updateData: any = { orderIds };
       if (status) updateData.status = status;
       if (deliveryStatus) updateData.deliveryStatus = deliveryStatus;

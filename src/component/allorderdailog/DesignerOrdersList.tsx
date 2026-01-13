@@ -43,8 +43,6 @@ const DesignerOrdersList: React.FC = () => {
   const filteredOrders = orders.filter((order: Order) => 
     order.designer?._id === user?.id
   );
-  console.log("DEBUG : DesignerOrdersList : filteredOrders:", filteredOrders);
-
 
   useEffect(() => {
     if (user?.id) {

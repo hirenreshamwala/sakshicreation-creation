@@ -110,7 +110,6 @@ export const updatePaymentFolderThunk = createAsyncThunk(
   async ({ id, data }: { id: string; data: Partial<PaymentFolder> }, { rejectWithValue }) => {
     try {
       const response = await paymentFolderService.updatePaymentFolder(id, data);
-      console.log(response,'response');
       return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to update payment folder');
@@ -137,7 +136,6 @@ export const addPaymentToFolderThunk = createAsyncThunk(
       const response = await paymentFolderService.addPaymentFolder(folderId, payment);
       return response;
     } catch (error: any) {
-      console.log(error, 'error in addPaymentToFolderThunk');
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to add payment');
     }
   }

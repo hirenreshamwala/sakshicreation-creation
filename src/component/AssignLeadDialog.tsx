@@ -29,7 +29,6 @@ interface AssignLeadDialogProps {
 const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accountMasters, lead, type, partyIds, onSuccess, company }) => {
     const dispatch = useAppDispatch();
 
-    console.log(lead,'jkxdfhbgdfjikhgui')
     const { staffList, loading: staffLoading, error: staffError } = useAppSelector(
         (state) => state.staff || {}
     );
@@ -241,11 +240,9 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose,accou
             }
         }
     }, []);
-    console.log(partyDetails,'selectedParty')
 
     const getPartyDetails = async(id:string)=>{
         const selectedParty = await partyService.getPartyById(id);
-        console.log("selectedParty", selectedParty?.data?.address?.marketName?.marketName);
         setPartyDetails({
             unitNo: selectedParty?.data?.address?.unitNo || "",
             marketName: selectedParty?.data?.address?.marketName?.marketName || "",
