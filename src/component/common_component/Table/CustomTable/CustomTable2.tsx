@@ -263,11 +263,11 @@ const CustomTable2 = <T extends { id: string; lastStatusChangeDate?: string | Da
                         },
                       }}
                     >
-                      {tableHeader[0]?.id === "checkbox" && (
+                      {tableHeader[0]?.id === "checkbox" && onSelectRow && (
                         <TableCell>
                           <Checkbox
-                            checked={selectedRows.includes(row.id)}
-                            onChange={() => onSelectRow && onSelectRow(row.id)}
+                            checked={selectedRows.some((r) => r._id === row._id)}
+                            onChange={() => onSelectRow(row)}
                           />
                         </TableCell>
                       )}

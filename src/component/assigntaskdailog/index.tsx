@@ -19,11 +19,9 @@ import {
 } from "@/store/slices/assignTaskSlice";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
 import { assignTaskService, type CreateAssignTask, type UpdateAssignTask } from "@/services/assignTask.service";
-import Swal from "sweetalert2";
 import CompanySelect from "../reusablecomponents/CompanyWithPartyName";
 import { useRouter } from "next/router";
 import { toast } from "react-toastify";
-import { StaticCompanyOptions } from "@/constants";
 import moment from "moment";
 
 // API service import - आपके project के structure के according adjust करें
@@ -71,21 +69,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   const router = useRouter()
   const dispatch = useAppDispatch();
   const singleAssignTask = rowData;
-
-  const {
-    loading: accountLoading,
-    error: accountError,
-  } = useAppSelector((state) => state.accountMasters || {});
-
-  const { staffList = [], loading: staffLoading, error: staffError } = useAppSelector(
-    (state) => state.staff || {}
-  );
-
-  const {
-    loading: taskLoading,
-    error: taskError,
-    successMessage,
-  } = useAppSelector((state) => state.assignTasks || {});
+  const { staffList = [] } = useAppSelector((state) => state.staff || {})
 
   const [isLoading, setIsLoading] = useState(false);
   const [inputReasonOpen, setInputReasonOpen] = useState(false);
@@ -113,7 +97,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
       feedback: isEditMode
         ? Yup.string().trim()
           .required('Call feedback is required')
-          // .min(20, 'Call feedback must be at least 20 characters')
+        // .min(20, 'Call feedback must be at least 20 characters')
         : Yup.string(),
       status: Yup.string().required("Status is required"),
       rescheduleDate: Yup.string().when("status", {
@@ -131,8 +115,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
         otherwise: () => Yup.string().nullable(),
       }),
     });
-
-
 
   const formik = useFormik<CreateAssignTask>({
     initialValues: {
@@ -219,7 +201,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
 
             if (refreshData) refreshData();
           } catch (err: any) {
-
             toast.error(err || "Failed to assign some tasks");
           }
         } else {
@@ -254,9 +235,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   };
 
   useEffect(() => {
-    if (taskId) {
-      fetchTaskById();
-    }
+    if (taskId) fetchTaskById();
   }, [taskId]);
   const statusOptions = useMemo(
     () => [
@@ -269,7 +248,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   );
 
   useEffect(() => {
-    if (open && router.pathname === "/admin/account-master/view-company/[id]") {
+    if (open && router.pathname === "/admin/account-master/view-company/[id]")
       formik.resetForm({
         values: {
           ...formik.initialValues,
@@ -277,7 +256,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
           partyName: partyOptions[0]?.value || "",
         }
       });
-    }
   }, [open, companyOptions, partyOptions]);
 
   const staffOptions = useMemo(() => {
@@ -351,7 +329,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
 
       } else {
         console.error("Failed to fetch party details");
-        // Clear party details if fetch fails
         formik.setFieldValue("unitNo", "", false);
         formik.setFieldValue("marketName", "", false);
         formik.setFieldValue("area", "", false);
@@ -360,8 +337,6 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
     } catch (error) {
       console.error("Error fetching party details:", error);
       toast.error("Failed to fetch party details");
-
-      // Clear party details on error
       formik.setFieldValue("unitNo", "", false);
       formik.setFieldValue("marketName", "", false);
       formik.setFieldValue("area", "", false);
@@ -397,9 +372,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
     formik.setFieldValue("assignTo", "", false);
 
     // If party is selected, fetch details
-    if (partyId) {
-      fetchPartyDetails(partyId);
-    }
+    if (partyId) fetchPartyDetails(partyId);
   };
 
   // Function to fetch party details for edit mode
@@ -425,9 +398,8 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
 
   useEffect(() => {
     if (open) {
-      if (!staffList?.length) {
-        dispatch(getAllStaffThunk());
-      }
+      if (!staffList?.length) dispatch(getAllStaffThunk());
+      
       if (!isEditMode && !isBulkMode) {
         formik.resetForm();
         setCustomReason("");
@@ -487,9 +459,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
       }
 
       // Fetch party details for edit mode
-      if (partyNameId) {
-        fetchPartyDetailsForEdit(partyNameId);
-      }
+      if (partyNameId) fetchPartyDetailsForEdit(partyNameId);
 
       if (!reasonOptions.some((opt) => opt.value === singleAssignTask.reasonForVisit)) {
         setCustomReason(singleAssignTask.reasonForVisit || "");

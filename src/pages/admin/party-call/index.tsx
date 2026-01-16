@@ -30,6 +30,7 @@ import { StaticCompanyOptions } from "@/constants";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { leadService } from "@/services/lead.service";
 import CustomTable2 from "@/component/common_component/Table/CustomTable/CustomTable2";
+import AssignTaskDialog from "@/component/assigntaskdailog";
 
 interface Lead {
   _id: string;
@@ -100,6 +101,7 @@ interface DatePaginationState {
 }
 
 const columns = [
+  { id: "checkbox", label: "" },
   { id: "company", label: "Company" },
   { id: "createdAt", label: "Created Date" },
   { id: "party", label: "Party" },
@@ -137,7 +139,8 @@ const LeadManagementPage: React.FC = () => {
   const todayRef = useRef<HTMLDivElement>(null);
   const [filterOptions, setFilterOptions] = useState<string[]>([]);
   const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
-
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [openBulkAssignTask, setOpenBulkAssignTask] = useState(false);
   // Pagination state
   const [availableDates, setAvailableDates] = useState<{ date: string, count: number }[]>([]);
   const [datePagination, setDatePagination] = useState<DatePaginationState>({});
@@ -192,6 +195,25 @@ const LeadManagementPage: React.FC = () => {
     if (comapanyTab === 1) return "Quality Packaging";
     return null;
   }, [comapanyTab]);
+
+  const handleSelectRow = (row: any) => {
+    setSelectedRows((prev) => {
+      const exists = prev.some((item) => item._id === row._id);
+
+      if (exists) {
+        return prev.filter((item) => item._id !== row._id);
+      }
+
+      return [
+        ...prev,
+        {
+          _id: row._id,
+          companyId: row.companyName._id,
+          partyId: row.partyName._id,
+        },
+      ];
+    });
+  };
 
   // Status tab से status array निकालें
   const selectedStatus = useMemo(() => {
@@ -780,7 +802,9 @@ const LeadManagementPage: React.FC = () => {
       {hasBothCompanies && (
         <TabComponent activeTab={comapanyTab} setActiveTab={handleCompanyTabChange} />
       )}
-
+      <ThemeButton onClick={() => setOpenBulkAssignTask(true)} disabled={selectedRows.length === 0}>
+        Assign Task for Selected
+      </ThemeButton>
       <Box
         sx={{
           display: "flex",
@@ -1003,6 +1027,8 @@ const LeadManagementPage: React.FC = () => {
                       page={currentPage}
                       handlePageChange={handlePageChange}
                       date={date}
+                      selectedRows={selectedRows}
+                      onSelectRow={handleSelectRow}
                     />
                   </>
                 )}
@@ -1011,6 +1037,22 @@ const LeadManagementPage: React.FC = () => {
           })
         )}
       </Box>
+
+      {openBulkAssignTask ?
+        <AssignTaskDialog
+          open={openBulkAssignTask}
+          onClose={() => {
+            setOpenBulkAssignTask(false);
+            setSelectedRows([]);
+          }}
+          selectedParties={selectedRows}
+          onSuccess={() => {
+            setOpenBulkAssignTask(false);
+            setSelectedRows([]);
+            fetchDates();
+          }}
+        />
+        : null}
 
       {openAssignDialog ? (
         <AssignLeadDialog
