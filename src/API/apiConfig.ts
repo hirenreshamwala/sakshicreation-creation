@@ -270,22 +270,23 @@ const Endpoint = {
   GET_PARTY_TASK: `${BaseURL}/api/assign-task/get-party-task`,
 
   //reports
-GET_SC_DESIGNERS: `${BaseURL}/api/report/getscdesigners`,
-GET_SC_PRINTERS: `${BaseURL}/api/report/getscprinters`,
-GET_SC_BINDER: `${BaseURL}/api/report/getscbinder`,
-GET_SC_BOOKLET_BINDER: `${BaseURL}/api/report/getscbookletbinder`,
-GET_SC_PRODUCT_ITEM: `${BaseURL}/api/report/getscproductitem`,
-GET_SALES_CREDIT_REPORT: `${BaseURL}/api/report/getscsalescredit`,
-GET_QP_SALES_CREDIT_REPORT: `${BaseURL}/api/report/getqpsalescredit`,
+  GET_SC_DESIGNERS: `${BaseURL}/api/report/getscdesigners`,
+  GET_SC_PRINTERS: `${BaseURL}/api/report/getscprinters`,
+  GET_SC_BINDER: `${BaseURL}/api/report/getscbinder`,
+  GET_SC_BOOKLET_BINDER: `${BaseURL}/api/report/getscbookletbinder`,
+  GET_SC_PRODUCT_ITEM: `${BaseURL}/api/report/getscproductitem`,
+  GET_SALES_CREDIT_REPORT: `${BaseURL}/api/report/getscsalescredit`,
+  GET_QP_SALES_CREDIT_REPORT: `${BaseURL}/api/report/getqpsalescredit`,
 
 
-//Report Excel
-GET_SC_DESIGNERS_EXPORT: `${BaseURL}/api/report/export-designer-excel`,
-EXPORT_PRINTER_EXCEL: `${BaseURL}/api/report/export-printer-excel`,
-EXPORT_BINDER_EXCEL:`${BaseURL}/api/report/export-binder-excel`,
-EXPORT_BOOKLETBINDER_EXCEL: `${BaseURL}/api/report/export-bookletbinder-excel`,
-EXPORT_COMPLAIN_EXCEL: `${BaseURL}/api/complain/export-complain-excel`,
-EXPORT_PAYMENT_FOLDER_EXCEL: `${BaseURL}/api/payment-folders/export-payment-folder-excel`,
-EXPORT_PENDING_CLIENT_APPROVAL_ORDERS: `${BaseURL}/api/orders/export-pending-client-approval-orders`,
+  //Report Excel
+  GET_SC_DESIGNERS_EXPORT: `${BaseURL}/api/report/export-designer-excel`,
+  EXPORT_PRINTER_EXCEL: `${BaseURL}/api/report/export-printer-excel`,
+  EXPORT_BINDER_EXCEL: `${BaseURL}/api/report/export-binder-excel`,
+  EXPORT_BOOKLETBINDER_EXCEL: `${BaseURL}/api/report/export-bookletbinder-excel`,
+  EXPORT_COMPLAIN_EXCEL: `${BaseURL}/api/complain/export-complain-excel`,
+  EXPORT_PAYMENT_FOLDER_EXCEL: `${BaseURL}/api/payment-folders/export-payment-folder-excel`,
+  EXPORT_PENDING_CLIENT_APPROVAL_ORDERS: `${BaseURL}/api/orders/export-pending-client-approval-orders`,
+  BULK_DELETE_LEADS: `${BaseURL}/api/lead/delete/bulk`,
 };
 export default Endpoint;

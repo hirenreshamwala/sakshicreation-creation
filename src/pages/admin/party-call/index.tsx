@@ -355,6 +355,43 @@ const LeadManagementPage: React.FC = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) return;
+
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `You are about to delete ${selectedRows.length} task(s). This action cannot be undone!`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#7F56D9",
+      cancelButtonColor: "#d33",
+      confirmButtonText: `Yes, delete ${selectedRows.length} task(s)!`,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await leadService.bulkDeleteLeads(selectedRows);
+        Swal.fire({
+          title: "Deleted!",
+          text: `${selectedRows.length} task(s) deleted successfully`,
+          icon: "success",
+          confirmButtonColor: "#7F56D9",
+        });
+        // Refresh data after deletion
+        setDatePagination({});
+        fetchDates(null, null);
+        setSelectedRows([]);
+      } catch (err: any) {
+        Swal.fire({
+          title: "Error!",
+          text: err.message || "Failed to delete tasks",
+          icon: "error",
+          confirmButtonColor: "#7F56D9",
+        });
+      }
+    }
+  };
+
   const fetchLeadsForDate = useCallback(async (date: string, page: number, itemsPerPage: number) => {
     setDatePagination(prev => ({
       ...prev,
@@ -384,7 +421,7 @@ const LeadManagementPage: React.FC = () => {
 
       // Use filtersRef.current instead of filters
       const currentFilters = filtersRef.current;
-      
+
       if (Object.keys(currentFilters).length > 0) {
         Object.keys(currentFilters).forEach(key => {
           if (currentFilters[key] && currentFilters[key].length > 0) {
@@ -473,7 +510,7 @@ const LeadManagementPage: React.FC = () => {
 
       // Use filtersRef.current instead of filters
       const currentFilters = filtersRef.current;
-      
+
       if (Object.keys(currentFilters).length > 0) {
         Object.keys(currentFilters).forEach(key => {
           if (currentFilters[key] && currentFilters[key].length > 0) {
@@ -552,7 +589,7 @@ const LeadManagementPage: React.FC = () => {
         setDatePagination({});
         fetchDates();
       }, 300);
-      
+
       return () => clearTimeout(timer);
     }
   }, [filters, canViewGlobal, canViewOwn, router.isReady]);
@@ -701,13 +738,13 @@ const LeadManagementPage: React.FC = () => {
     setEndDate(null);
     setFilters({});
     setSelectedFilterField(null);
-    
+
     // Update refs immediately
     searchQueryRef.current = "";
     startDateRef.current = null;
     endDateRef.current = null;
     filtersRef.current = {};
-    
+
     // Reset pagination and fetch fresh data
     setDatePagination({});
     fetchDates();
@@ -805,6 +842,14 @@ const LeadManagementPage: React.FC = () => {
       <ThemeButton onClick={() => setOpenBulkAssignTask(true)} disabled={selectedRows.length === 0}>
         Assign Task for Selected
       </ThemeButton>
+      {canDelete && selectedRows.length > 0 && (
+        <ThemeButton
+          sx={{ ml: 2 }}
+          onClick={handleBulkDelete}
+        >
+          Delete Selected ({selectedRows.length})
+        </ThemeButton>
+      )}
       <Box
         sx={{
           display: "flex",

@@ -118,6 +118,13 @@ const generateLeadColumns = (selectedLeadReasons: string[]) => {
   return baseColumns;
 };
 
+const visitSummaryColumns = [
+    { id: 'staffName', label: 'Staff Name' },
+    { id: 'visit', label: 'Total Visits', description: 'Total completed visits' },
+    { id: 'newPartyVisit', label: 'New Party Visits', description: 'Visits to NEW parties' },
+    { id: 'newPartyToCustomer', label: 'New to Customer', description: 'NEW parties converted to CUSTOMER' },
+  ];
+
 // Helper function to format date
 const formatDate = (date: Date): string => {
   const year = date.getFullYear();
@@ -776,6 +783,31 @@ const StaffPage = () => {
             )}
           </Grid>
         </Paper>
+      )}
+
+      {!loading && !staffLoading && filteredReportData.length > 0 && (
+        <>
+          <Typography variant="h6" sx={{ mb: 2, mt: 4 }}>
+            Visit Report
+          </Typography>
+          <BasicTable
+            showDatePicker={false}
+            showFillter={false}
+            showSearch={false}
+            tableHeader={visitSummaryColumns}
+            rowData={filteredReportData}
+            renderRow={(row, index) => {
+              return (
+                <>
+                  <TableCell sx={{ fontWeight: 500 }}>{row.staffName}</TableCell>
+                  <TableCell>{row.visit || 0}</TableCell>
+                  <TableCell>{row.newPartyVisit || 0}</TableCell>
+                  <TableCell>{row.newPartyToCustomer || 0}</TableCell> 
+                </>
+              );
+            }}
+          />
+        </>
       )}
 
       {/* Tasks Table */}
