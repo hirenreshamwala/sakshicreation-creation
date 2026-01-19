@@ -28,7 +28,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { getAllPaymentFoldersThunk, deletePaymentFolderThunk, deleteMultiplePaymentFoldersThunk } from "@/store/slices/paymentFolderSlice";
 import { getCompanyWisePermission } from "@/utills/utills";
-import { reportService } from "@/services/reportService"; // આ import ઉમેરો
+import { reportService } from "@/services/reportService";
 import { paymentFolderService } from "@/services/paymentFolder.service";
 import moment from 'moment';
 import Loader from "../common_component/loader";
@@ -49,7 +49,7 @@ const PaymentFolderPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
   const [selectedPaymentData, setSelectedPaymentData] = useState<any>(null);
-  const [exporting, setExporting] = useState(false); // Export loading
+  const [exporting, setExporting] = useState(false);
 
   const canViewGlobal = user?.role?.permissions?.payment_folders?.view_global;
   const canViewOwn = user?.role?.permissions?.payment_folders?.view_own;
@@ -94,31 +94,24 @@ const PaymentFolderPage: React.FC = () => {
     isPagination: true,
     startDate: null,
     endDate: null,
-
   }
 
-  // Initialize currentFilterState with company and area filters after selectedCompanyName is computed
   const [currentFilterState, setCurrentFilterState] = useState<any>(() => {
     const initialState = {
       ...defaultOrderFilter,
       filters: {
         company: selectedCompanyName ? [selectedCompanyName] : [],
-        area: [], // Initial areaTab=0, so empty array for "All"
+        area: [],
       },
-      // includeCounts: true,
-      // isPagination: true,
-      // startDate: null,
-      // endDate: null,
     };
     return initialState;
   });
 
   const [appliedFilterState, setAppliedFilterState] = useState<any>({});
 
-  // Add company filter to currentFilterState (using name)
   useEffect(() => {
     if (selectedCompanyName) {
-      setCurrentFilterState(prev => ({
+      setCurrentFilterState((prev: any) => ({
         ...prev,
         filters: {
           ...prev.filters,
@@ -129,10 +122,9 @@ const PaymentFolderPage: React.FC = () => {
     }
   }, [selectedCompanyName]);
 
-  // Area tab filter (server-side)
   useEffect(() => {
     const selectedArea = areaTab === 0 ? [] : [areaTabs[areaTab]];
-    setCurrentFilterState(prev => ({
+    setCurrentFilterState((prev: any) => ({
       ...prev,
       filters: {
         ...prev.filters,
@@ -146,12 +138,10 @@ const PaymentFolderPage: React.FC = () => {
     setAreaTab(0);
   }, [selectedCompanyName]);
 
-  // Helper to get first mobile/contact
   const getFirstContact = useCallback((party: any) => {
     return party?.contactForPayment || party?.contactMobileNo || party?.contactWhatsAppNo || party?.ownerMobileNo || party?.ownerWhatsAppNo || party?.mobileNumber || 'N/A';
   }, []);
 
-  // Load payment folders with filters (similar to loadComplains)
   const loadPaymentFolders = useCallback(async () => {
     if (!selectedCompanyName) {
       console.error("Cannot load payment folders: Company Name is undefined");
@@ -164,7 +154,6 @@ const PaymentFolderPage: React.FC = () => {
         ...currentFilterState,
         filters: {
           ...currentFilterState.filters,
-          // Ensure company filter
           ...(currentFilterState.filters.company ? {} : { company: [selectedCompanyName] }),
         },
         isPagination: true,
@@ -180,7 +169,6 @@ const PaymentFolderPage: React.FC = () => {
     }
   }, [dispatch, currentFilterState, selectedCompanyName]);
 
-  // Load filter options (similar to loadFilterOptions in ComplainPage)
   const loadFilterOptions = async (field: string) => {
     if (!selectedCompanyName) {
       console.error("Cannot load filter options: Company Name is undefined");
@@ -209,7 +197,6 @@ const PaymentFolderPage: React.FC = () => {
     }
   };
 
-  // Handle filter field selection
   const handleFilterFieldSelect = useCallback(async (field: string | null) => {
     setSelectedFilterField(field);
     if (field && !filterOptionsData[field]) {
@@ -218,14 +205,13 @@ const PaymentFolderPage: React.FC = () => {
   }, [filterOptionsData, loadFilterOptions]);
 
   const handleFiltersChange = useCallback((newFilters: { [key: string]: string[] }) => {
-    setCurrentFilterState(prev => ({
+    setCurrentFilterState((prev: any) => ({
       ...prev,
       filters: newFilters,
       page: 1,
     }));
   }, []);
 
-  // Effect to load payment folders when filters change
   useEffect(() => {
     if (!selectedCompanyName) return;
     const isSame = JSON.stringify(appliedFilterState) === JSON.stringify(currentFilterState);
@@ -261,7 +247,7 @@ const PaymentFolderPage: React.FC = () => {
 
       setSelectedRows([]);
       setDeleteDialogOpen(false);
-      loadPaymentFolders(); // Reload after delete
+      loadPaymentFolders();
     } catch (err: any) {
       Swal.fire({
         title: "Error!",
@@ -316,7 +302,7 @@ const PaymentFolderPage: React.FC = () => {
           icon: "success",
           confirmButtonColor: "#7F56D9",
         });
-        loadPaymentFolders(); // Reload after delete
+        loadPaymentFolders();
       } catch (err: any) {
         Swal.fire({
           title: "Error!",
@@ -351,7 +337,89 @@ const PaymentFolderPage: React.FC = () => {
     }));
   }, [paymentFolders, getFirstContact]);
 
-  // Render row function
+  const handleExportToExcel = async () => {
+    setExporting(true);
+    try {
+      // Prepare filters from current state
+      const filters: any = {};
+
+      // Add all active filters from currentFilterState
+      if (currentFilterState.filters) {
+        Object.entries(currentFilterState.filters).forEach(([key, value]) => {
+          if (Array.isArray(value) && value.length > 0) {
+            filters[key] = value;
+          }
+        });
+      }
+
+      // Always include company filter
+      if (!filters.company) {
+        filters.company = [selectedCompanyName];
+      }
+
+      // Add area filter from tab if selected
+      if (areaTab > 0) {
+        filters.area = [areaTabs[areaTab]];
+      }
+
+      const payload: any = {
+        filters: filters,
+        search: currentFilterState.search || "",
+        startDate: currentFilterState.startDate || undefined,
+        endDate: currentFilterState.endDate || undefined,
+        companyNames: [selectedCompanyName],
+        pageSize: totalCount || 10000,
+        isPagination: false,
+        includeCounts: false,
+        sortBy: currentFilterState.sortBy || 'createdAt',
+        sortOrder: currentFilterState.sortOrder || 'desc',
+      };
+
+      const blob = await reportService.exportPaymentFolderToExcel(payload);
+
+      // Create descriptive filename
+      const parts = [
+        'PaymentFolders',
+        selectedCompanyName.replace(/ /g, '_'),
+      ];
+
+      // Add date range
+      if (payload.startDate)
+        parts.push(
+          moment(payload.startDate).format('DDMMYYYY'),
+          'to',
+          moment(payload.endDate).format('DDMMYYYY')
+        );
+      else parts.push('All_Time');
+
+
+      // Add active filters to filename
+      if (filters.area && filters.area.length > 0) parts.push(`Area_${filters.area.join('-')}`);
+      if (filters.party && filters.party.length > 0) parts.push(`Party_${filters.party.length}`);
+      if (filters.assignTo && filters.assignTo.length > 0) parts.push(`AssignTo_${filters.assignTo.length}`);
+      if (filters.month && filters.month.length > 0) parts.push(`Month_${filters.month.join('-')}`);
+      if (filters.paymentTerms && filters.paymentTerms.length > 0) parts.push(`Terms_${filters.paymentTerms.length}`);
+
+      const fileName = `${parts.join('_')}.xlsx`;
+
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${totalCount || formattedRows.length} records successfully`);
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast.error(error.message || 'Failed to export Excel');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const renderRow = useCallback((row: any, index: number) => (
     <>
       <TableCell>
@@ -361,9 +429,6 @@ const PaymentFolderPage: React.FC = () => {
             src={row.company?.avatar}
             alt={row.company?.companyName}
           />
-          {/* <Typography fontWeight={500} sx={{ fontSize: 14 }}>
-            {row.company?.companyName}
-          </Typography> */}
         </Box>
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>{row.party}</TableCell>
@@ -389,7 +454,6 @@ const PaymentFolderPage: React.FC = () => {
       </TableCell>
       <TableCell>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {/* View Payment History Button - Always show if there are payments */}
           {row.payments?.length > 0 && (
             <IconButton
               color="info"
@@ -424,17 +488,16 @@ const PaymentFolderPage: React.FC = () => {
     </>
   ), [canedit, candelete, handleViewPaymentHistory, handleAddPayment, handleEdit, handleDelete, paymentFolders, getFirstContact]);
 
-  // Columns for CustomTable2
   const columns = useMemo(() => [
     { id: 'company', label: 'Company' },
     { id: 'party', label: 'Party', value: 'party' },
     { id: 'mobileNumber', label: 'Mobile Number' },
     { id: 'area', label: 'Area', value: 'area' },
     { id: 'month', label: 'Month', value: 'month' },
-    { id: 'paymentTerms', label: 'Payment Terms', value: 'paymentTerms'},
-    { id: 'paymentAmount', label: 'Payment Amount' /*value: 'paymentAmount'*/ },
-    { id: 'receivedAmount', label: 'Received Amount'/* value: 'receivedAmount'*/ },
-    { id: 'pendingAmount', label: 'Pending Amount'/* value: 'pendingAmount'*/ },
+    { id: 'paymentTerms', label: 'Payment Terms', value: 'paymentTerms' },
+    { id: 'paymentAmount', label: 'Payment Amount' },
+    { id: 'receivedAmount', label: 'Received Amount' },
+    { id: 'pendingAmount', label: 'Pending Amount' },
     { id: 'assignTo', label: 'Assigned To', value: 'assignTo' },
     { id: 'assignedDate', label: 'Assigned Date', value: 'assignedDate' },
     { id: 'remarks', label: 'Remarks', value: 'remarks' },
@@ -452,42 +515,6 @@ const PaymentFolderPage: React.FC = () => {
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) setSelectedRows(formattedRows.map((row: any) => row._id));
     else setSelectedRows([]);
-  };
-  // Excel Export Function
-  const handleExportToExcel = async () => {
-    setExporting(true);
-    try {
-      const payload: any = {
-        filters: currentFilterState.filters || {},
-        search: currentFilterState.search || "",
-        startDate: currentFilterState.startDate || undefined,
-        endDate: currentFilterState.endDate || undefined,
-        companyNames: [selectedCompanyName],
-      };
-
-      const blob = await reportService.exportPaymentFolderToExcel(payload);
-
-      const dateStr = payload.startDate
-        ? `${moment(payload.startDate).format('DDMMYYYY')}_to_${moment(payload.endDate).format('DDMMYYYY')}`
-        : 'All_Time';
-
-      const fileName = `PaymentFolders_${selectedCompanyName.replace(/ /g, '_')}_${dateStr}.xlsx`;
-
-      const url = window.URL.createObjectURL(new Blob([blob]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success('Excel downloaded successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to export Excel');
-    } finally {
-      setExporting(false);
-    }
   };
 
   if ((loading || isLoadingData) && !isInitialLoad && (!paymentFolders || paymentFolders.length === 0)) {
@@ -570,34 +597,26 @@ const PaymentFolderPage: React.FC = () => {
         <IconButton
           onClick={handleExportToExcel}
           disabled={loading || exporting}
-        // sx={{
-        //   border: "1px solid #D0D5DD",
-        //   borderRadius: 2,
-        //   p: 1.5,
-        //   color: "#667085",
-        //   bgcolor: exporting ? '#f0f0f0' : 'transparent',
-        //   '&:hover': {
-        //     bgcolor: '#f5f5f5',
-        //     borderColor: '#b0b0b0',
-        //   },
-        //   '&.Mui-disabled': {
-        //     borderColor: '#e0e0e0',
-        //     color: '#aaa',
-        //   },
-        // }}
+          sx={{
+            border: "1px solid #D0D5DD",
+            borderRadius: 2,
+            p: 1.5,
+            color: "#667085",
+            bgcolor: exporting ? '#f0f0f0' : 'transparent',
+            '&:hover': {
+              bgcolor: '#f5f5f5',
+              borderColor: '#b0b0b0',
+            },
+            '&.Mui-disabled': {
+              borderColor: '#e0e0e0',
+              color: '#aaa',
+            },
+          }}
         >
           {exporting ? (
             <CircularProgress size={20} color="inherit" />
           ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="20"
-              width="20"
-              viewBox="0 0 384 512"
-              fill="#667085"
-            >
-              <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c0-13.3 10.7-24 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373s-16.9 32.5-36.6 68.8c-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 33.6 62.3 36.6 68.5 3-6.2 9.7-19.9 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z" />
-            </svg>
+            <DownloadIcon />
           )}
         </IconButton>
       </Box>
@@ -660,7 +679,7 @@ const PaymentFolderPage: React.FC = () => {
           open={open}
           onClose={() => {
             setOpen(false);
-            loadPaymentFolders(); // Reload after add/edit
+            loadPaymentFolders();
           }}
           rowData={rowData as any}
           modalType={modalType}
@@ -672,7 +691,7 @@ const PaymentFolderPage: React.FC = () => {
           open={paymentDialogOpen}
           onClose={() => {
             setPaymentDialogOpen(false);
-            loadPaymentFolders(); // Reload after add payment
+            loadPaymentFolders();
           }}
           folderData={selectedFolder}
         />
