@@ -145,7 +145,7 @@ const AccountMasterPage: React.FC = memo(() => {
     { id: "partyTag", label: "Party Tag", value: "partyTag" },
     { id: "partyType", label: "Party Type", value: "partyType" },
     // { id: "reason", label: "Reason to Visit", value: "reason" },
-    
+
     // { id: "remarks", label: "Remarks" },
     // { id: "status", label: "Status" },
     canViewOwn ? { id: "createdBy", label: "Created By" } : { id: "createdBy", label: "Created By", value: "createdBy" },
@@ -183,7 +183,7 @@ const AccountMasterPage: React.FC = memo(() => {
 
   // Load companies
   useEffect(() => {
-    if(!companies.length)dispatch(getAllCompanyNamesThunk())
+    if (!companies.length) dispatch(getAllCompanyNamesThunk())
   }, []);
 
   // Load account masters
@@ -230,7 +230,7 @@ const AccountMasterPage: React.FC = memo(() => {
     // console.log(isSame,'issameissameissame')
 
     // if (!isSame)
-       loadAccountMasters();
+    loadAccountMasters();
   }, [currentFilterState]);
 
   useEffect(() => {
@@ -387,7 +387,7 @@ const AccountMasterPage: React.FC = memo(() => {
     },
     createdDate: moment(account.createdAt).format("DD-MM-YYYY"),
     party: account.party?.partyName || "N/A",
-    contactPerson: account.party?.contactPerson || "N/A",
+    contactPerson: account.party?.contactPerson || account.party?.ownerName || account.party?.contactForPayment || "N/A",
     partyTag: account.party?.partyTag || "New",
     partyType: account.party?.partyType || "New",
     mobile: account.party?.ownerMobileNo || "N/A",
@@ -572,7 +572,7 @@ const AccountMasterPage: React.FC = memo(() => {
                   }}
                 />
               </TableCell> */}
-              
+
               {/* <TableCell sx={{ fontSize: 14 }}>{row.reason}</TableCell>
               
               <TableCell sx={{ fontSize: 14 }}>
@@ -599,21 +599,21 @@ const AccountMasterPage: React.FC = memo(() => {
               <TableCell sx={{ fontSize: 14 }}>{row.assignedTo.toLowerCase() === "undefined undefined" ? row.createdBy : row.assignedTo}</TableCell>
               <TableCell sx={{ display: "flex", gap: 1 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                {canedit && (
-                  <IconButton color="primary" onClick={() => handleEdit(row.id)}>
-                    <EditIcon />
-                  </IconButton>
-                )}
-                {candelete && (
-                  <IconButton color="error" onClick={() => handleDelete(row.id)}>
-                    <DeleteIcon />
-                  </IconButton>
-                )}
-                {row.statusApproval === "Pending" && canViewGlobal && (
-                  <IconButton onClick={() => handleApprove(row.partyId)}>
-                    <CheckCircleIcon color="success" />
-                  </IconButton>
-                )}
+                  {canedit && (
+                    <IconButton color="primary" onClick={() => handleEdit(row.id)}>
+                      <EditIcon />
+                    </IconButton>
+                  )}
+                  {candelete && (
+                    <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  )}
+                  {row.statusApproval === "Pending" && canViewGlobal && (
+                    <IconButton onClick={() => handleApprove(row.partyId)}>
+                      <CheckCircleIcon color="success" />
+                    </IconButton>
+                  )}
                 </Box>
               </TableCell>
             </>
