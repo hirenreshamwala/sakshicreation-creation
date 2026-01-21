@@ -48,12 +48,13 @@ const LEAD_LABELS = {
   other: 'Others'
 };
 
-const STATUS_TYPES = ['total', 'completed', 'cancelled', 'rescheduled'];
+const STATUS_TYPES = ['total', 'completed', 'cancelled', 'pending', 'rescheduled'];
 
 const STATUS_LABELS = {
   total: 'Total',
   completed: 'Completed',
   cancelled: 'Cancelled',
+  pending: 'Pending',
   rescheduled: 'Rescheduled'
 };
 
@@ -119,11 +120,11 @@ const generateLeadColumns = (selectedLeadReasons: string[]) => {
 };
 
 const visitSummaryColumns = [
-    { id: 'staffName', label: 'Staff Name' },
-    { id: 'visit', label: 'Total Visits', description: 'Total completed visits' },
-    { id: 'newPartyVisit', label: 'New Party Visits', description: 'Visits to NEW parties' },
-    { id: 'newPartyToCustomer', label: 'New to Customer', description: 'NEW parties converted to CUSTOMER' },
-  ];
+  { id: 'staffName', label: 'Staff Name' },
+  { id: 'visit', label: 'Total Visits', description: 'Total completed visits' },
+  { id: 'newPartyVisit', label: 'New Party Visits', description: 'Visits to NEW parties' },
+  { id: 'newPartyToCustomer', label: 'New to Customer', description: 'NEW parties converted to CUSTOMER' },
+];
 
 // Helper function to format date
 const formatDate = (date: Date): string => {
@@ -666,7 +667,7 @@ const StaffPage = () => {
           <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
             Summary Report
           </Typography>
-          
+
           <Grid container spacing={3}>
             {/* Party Visit Summary */}
             <Grid item xs={12} md={6}>
@@ -684,7 +685,7 @@ const StaffPage = () => {
                 </Box>
               </Box>
             </Grid>
-            
+
             {/* Order Summary */}
             <Grid item xs={12} md={6}>
               <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
@@ -701,7 +702,7 @@ const StaffPage = () => {
                 </Box>
               </Box>
             </Grid>
-            
+
             {/* Sales Summary */}
             <Grid item xs={12}>
               <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
@@ -723,7 +724,7 @@ const StaffPage = () => {
                 </Typography>
               </Box>
             </Grid>
-            
+
             {/* Itemwise Stationary Orders */}
             {summary.totalStationaryItemwise && summary.totalStationaryItemwise.length > 0 && (
               <Grid item xs={12} md={6}>
@@ -752,7 +753,7 @@ const StaffPage = () => {
                 </TableContainer>
               </Grid>
             )}
-            
+
             {/* Itemwise Booklet Orders */}
             {summary.totalBookletItemwise && summary.totalBookletItemwise.length > 0 && (
               <Grid item xs={12} md={6}>
@@ -802,7 +803,7 @@ const StaffPage = () => {
                   <TableCell sx={{ fontWeight: 500 }}>{row.staffName}</TableCell>
                   <TableCell>{row.visit || 0}</TableCell>
                   <TableCell>{row.newPartyVisit || 0}</TableCell>
-                  <TableCell>{row.newPartyToCustomer || 0}</TableCell> 
+                  <TableCell>{row.newPartyToCustomer || 0}</TableCell>
                 </>
               );
             }}
@@ -841,6 +842,7 @@ const StaffPage = () => {
                       let displayValue = '0';
 
                       if (taskData) {
+                        // In your tasks table renderRow function, the switch statement already has 'pending' case:
                         switch (status) {
                           case 'total':
                             value = taskData.total || 0;
@@ -850,6 +852,9 @@ const StaffPage = () => {
                             break;
                           case 'cancelled':
                             value = taskData.cancelled || 0;
+                            break;
+                          case 'pending':
+                            value = taskData.pending || 0; // This will now be included
                             break;
                           case 'rescheduled':
                             value = taskData.rescheduled || 0;
