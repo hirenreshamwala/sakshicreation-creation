@@ -8,11 +8,15 @@ const PurchasePage = () => {
   const router = useRouter();
   const { id } = router.query;
 
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(0); // default Sakshi
 
   // 🔹 Sync tab with query param
   useEffect(() => {
-    if (router.isReady && id !== undefined) {
+    if (!router.isReady) return;
+
+    if (id === undefined) {
+      setActiveTab(0); // 👈 default Sakshi
+    } else {
       const tab = parseInt(id as string, 10);
       setActiveTab(tab === 1 ? 1 : 0);
     }
@@ -26,7 +30,7 @@ const PurchasePage = () => {
         query: { id: tab },
       },
       undefined,
-      { shallow: true } // 👈 optional (better UX)
+      { shallow: true }
     );
   };
 
@@ -37,7 +41,9 @@ const PurchasePage = () => {
         setActiveTab={handleSetActiveTab}
       />
 
-      {router.isReady && activeTab && (activeTab === 0 ? <SakshiPurchasePage /> : <QpPurchasePage />)}
+      {router.isReady && (
+        activeTab === 0 ? <SakshiPurchasePage /> : <QpPurchasePage />
+      )}
     </>
   );
 };
