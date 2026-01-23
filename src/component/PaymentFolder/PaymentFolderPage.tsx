@@ -202,7 +202,13 @@ const PaymentFolderPage: React.FC = () => {
     if (field && !filterOptionsData[field]) {
       await loadFilterOptions(field);
     }
-  }, [filterOptionsData, loadFilterOptions]);
+  }, [filterOptionsData, loadFilterOptions, companyTab]);
+
+  useEffect(() => {
+    if (companyTab) {
+      setFilterOptionsData({});
+    }
+  }, [companyTab]);
 
   const handleFiltersChange = useCallback((newFilters: { [key: string]: string[] }) => {
     setCurrentFilterState((prev: any) => ({
@@ -494,7 +500,7 @@ const PaymentFolderPage: React.FC = () => {
     { id: 'mobileNumber', label: 'Mobile Number' },
     { id: 'area', label: 'Area', value: 'area' },
     { id: 'month', label: 'Month', value: 'month' },
-    { id: 'paymentTerms', label: 'Payment Terms', value: 'paymentTerms' },
+    { id: 'paymentTerms', label: 'Payment Terms' /* , value: 'paymentTerms' */ },
     { id: 'paymentAmount', label: 'Payment Amount' },
     { id: 'receivedAmount', label: 'Received Amount' },
     { id: 'pendingAmount', label: 'Pending Amount' },
