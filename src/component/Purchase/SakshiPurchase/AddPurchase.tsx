@@ -231,11 +231,11 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
         if (isEditMode && purchaseId) {
           await dispatch(updatePurchaseThunk({ id: purchaseId, data: purchaseData })).unwrap();
           toast.success('Purchase updated successfully!');
-          router.push('/admin/purchase');
+          router.push('/admin/purchase?id=0');
         } else {
           await dispatch(createPurchaseThunk(purchaseData)).unwrap();
           toast.success('Purchase created successfully!');
-          router.push('/admin/purchase');
+          router.push('/admin/purchase?id=0');
         }
       }
     } catch (error: any) {
@@ -244,7 +244,7 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
   };
 
   const handleCancel = () => {
-    router.push('/admin/purchase');
+    router.push('/admin/purchase?id=0');
   };
 
   return (

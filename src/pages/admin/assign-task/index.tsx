@@ -209,12 +209,21 @@ const AssignTaskPage: React.FC = () => {
     return baseColumns;
   }, [canedit, candelete]);
 
-  const handleSelectTask = (taskId: string) => {
-    setSelectedTaskIds(prev => {
-      if (prev.includes(taskId))
-        return prev.filter(id => id !== taskId);
-      else
-        return [...prev, taskId];
+  const handleSelectTask = (task: Task) => {
+    setSelectedTaskIds((prevSelected) => {
+      const isSelected = prevSelected.some(
+        (t) => t?._id === task?._id
+      );
+
+      if (isSelected) {
+        // 🔴 Unselect
+        return prevSelected.filter(
+          (t) => t?._id !== task?._id
+        );
+      }
+
+      // 🟢 Select
+      return [...prevSelected, task];
     });
   };
 
@@ -343,7 +352,7 @@ const AssignTaskPage: React.FC = () => {
     if (hasBothCompanies) return companyTabs[companyTab]?.companyId;
     else if (hasSakshi) return getCompanyWisePermission(5);
     else if (hasQP) return getCompanyWisePermission(6);
-    
+
     return null;
   }, [hasBothCompanies, companyTab, hasSakshi, hasQP, companyTabs]);
 
@@ -460,7 +469,7 @@ const AssignTaskPage: React.FC = () => {
       };
 
       // Use applied search query instead of current searchQuery
-      if (appliedSearchQuery) 
+      if (appliedSearchQuery)
         queryParams.search = appliedSearchQuery;
 
       // Add other filters if available
@@ -499,13 +508,13 @@ const AssignTaskPage: React.FC = () => {
       }
 
       // Add assignedTo filter for canViewOwn permission
-      if (canViewOwn && !canViewGlobal && currentUserName) 
+      if (canViewOwn && !canViewGlobal && currentUserName)
         queryParams.assignToFilter = currentUserName;
 
       // Call the API
       const response = await assignTaskService.getAllAssignTasks(queryParams);
 
-      if (response) 
+      if (response)
         setDatePagination(prev => ({
           ...prev,
           [date]: {
@@ -577,7 +586,7 @@ const AssignTaskPage: React.FC = () => {
         queryParams.endDate = endDate.toISOString();
       }
 
-      if (canViewOwn && !canViewGlobal && currentUserName) 
+      if (canViewOwn && !canViewGlobal && currentUserName)
         queryParams.assignToFilter = currentUserName;
 
       const response = await assignTaskService.getAllAssignTasks(queryParams);
@@ -886,7 +895,7 @@ const AssignTaskPage: React.FC = () => {
           filterField: apiField,
         });
 
-        if (response?.data) 
+        if (response?.data)
           setFilterOptions(response.data || []);
         else {
           toast.error("Failed to load filter options");

@@ -302,11 +302,11 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
           const updateData = purchaseData.type === 'Box' ? { ...purchaseData, quantity: Number(purchaseData.noOfBox) } : purchaseData;
           await dispatch(updateQpPurchaseThunk({ id: purchaseId, data: updateData })).unwrap();
           toast.success('Purchase updated successfully!');
-          router.push('/admin/purchase');
+          router.push('/admin/purchase?id=1');
         } else {
           await dispatch(createQpPurchaseThunk(purchaseData)).unwrap();
           toast.success('Purchase created successfully!');
-          router.push('/admin/purchase');
+          router.push('/admin/purchase?id=1');
         }
       }
     } catch (error: any) {
@@ -616,7 +616,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         </Stack>
 
         <Stack direction="row" spacing={2} mt={3} justifyContent="flex-end">
-          <Button variant="outlined" onClick={() => router.push('/admin/purchase')}>
+          <Button variant="outlined" onClick={() => router.push('/admin/purchase?id=1')}>
             Cancel
           </Button>
           <Button
