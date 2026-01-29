@@ -761,13 +761,14 @@ const AssignTaskPage: React.FC = () => {
           </Box>
         </TableCell>
         <TableCell sx={getCellSx({ fontSize: 14, color: "blue" })}>{row.date}</TableCell>
-        <Link href={`/admin/assign-task/view-task/${row.partyId}?taskId=${row?._id}`}>
-          <TableCell
-            sx={getCellSx({ cursor: "pointer", fontSize: 14 })}
-          >
-            {row.party}
-          </TableCell></Link>
-
+        <TableCell
+          sx={getCellSx({ cursor: "pointer", fontSize: 14 })}
+          onClick={() => {
+            router.push(`/admin/assign-task/view-task/${row.partyId}?taskId=${row?._id}`);
+          }}
+        >
+          {row.party}
+        </TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>
           <Typography
             sx={{
