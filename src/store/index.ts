@@ -33,6 +33,8 @@ import complainReducer from '@/store/slices/complainSlice';
 import paymentReducer from '@/store/slices/paymentFolderSlice';
 import lowStockReducer from '@/store/slices/lowStockSlice';
 import filterReducer from '@/store/slices/accountMasterFilterSlice';
+import deckalReducer from '@/store/slices/deckalSlice'
+import gsmReducer from '@/store/slices/gsmSlice'
 // Persist configuration
 export const persistConfig = {
   key: 'auth',
@@ -77,7 +79,9 @@ export const store = configureStore({
     kantans: kantanReducer,
     complains: complainReducer,
     paymentFolders: paymentReducer,
-    dynamic: filterReducer
+    dynamic: filterReducer,
+    deckals: deckalReducer,
+    gsm: gsmReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

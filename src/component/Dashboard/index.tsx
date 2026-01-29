@@ -220,7 +220,7 @@ const menuItems = [
   {
     label: "Setup",
     icon: <MdSettings size={18} />,
-    path: "/admin/setup",
+    path: "#", // Changed to # to prevent navigation
   },
 ];
 
@@ -235,9 +235,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [dateTime, setDateTime] = useState<Date | null>(null);
   const [tasks,setTask] = useState([])
-  const [activeSubSidebar, setActiveSubSidebar] = useState<string | null>(
-    router.pathname.startsWith("/admin/setup") ? "setup" : null
-  );
+  const [activeSubSidebar, setActiveSubSidebar] = useState<string | null>(null); // Initially null
   const [filteredMenuItems, setFilteredMenuItems] = useState(menuItems);
   const transitionDuration = 300;
   const transitionEasing = "cubic-bezier(0.4, 0, 0.2, 1)";
@@ -419,7 +417,7 @@ useEffect(() => {
   }, [router, user, loading, dispatch]);
 
   const handleNavigation = async (path: string) => {
-    if (path === selectedItem) return;
+    if (path === selectedItem || path === "#") return; // Skip navigation for #
 
     if (path === "/login") {
       dispatch(clearAuth());
@@ -505,6 +503,18 @@ useEffect(() => {
       icon: <MdGroup size={18} />,
       category: "quality",
     },
+    {
+      label: "Deckal",
+      path: "/admin/setup/deckal",
+      icon: <MdGroup size={18} />,
+      category: "quality",
+    },
+    {
+      label: "Gsm",
+      path: "/admin/setup/gsm",
+      icon: <MdGroup size={18} />,
+      category: "quality",
+    },
     // {
     //   label: "Paper GSM",
     //   path: "/admin/setup/paper-gsm",
@@ -537,6 +547,30 @@ useEffect(() => {
       prev.includes(category)
         ? prev.filter((c) => c !== category)
         : [...prev, category]
+    );
+  };
+
+  // Handle setup menu click
+  const handleSetupClick = async () => {
+    if (activeSubSidebar === "setup") {
+      // If setup is already open, close it
+      setActiveSubSidebar(null);
+    } else {
+      // Open setup sidebar
+      setActiveSubSidebar("setup");
+      setDrawerOpen(false);
+      await new Promise((resolve) =>
+        setTimeout(resolve, transitionDuration)
+      );
+    }
+  };
+
+  // Handle back from setup
+  const handleBackFromSetup = async () => {
+    setActiveSubSidebar(null);
+    setDrawerOpen(false);
+    await new Promise((resolve) =>
+      setTimeout(resolve, transitionDuration)
     );
   };
 
@@ -629,14 +663,7 @@ useEffect(() => {
                   <Tooltip title={!drawerOpen ? "Back" : ""} placement="right">
                     <ListItem disablePadding sx={{ mb: 0.5 }}>
                       <ListItemButton
-                        onClick={async () => {
-                          setActiveSubSidebar(null);
-                          setDrawerOpen(false);
-                          await new Promise((resolve) =>
-                            setTimeout(resolve, transitionDuration)
-                          );
-                          await handleNavigation("/admin/setup");
-                        }}
+                        onClick={handleBackFromSetup}
                         sx={{
                           borderRadius: 2,
                           py: 0.75,
@@ -680,7 +707,6 @@ useEffect(() => {
                             router.pathname.startsWith(item.path + "/")
                           }
                           onClick={async () => {
-                            setActiveSubSidebar("setup");
                             await handleNavigation(item.path);
                           }}
                           sx={{
@@ -787,7 +813,6 @@ useEffect(() => {
                                 router.pathname.startsWith(item.path + "/")
                               }
                               onClick={async () => {
-                                setActiveSubSidebar("setup");
                                 await handleNavigation(item.path);
                               }}
                               sx={{
@@ -897,7 +922,6 @@ useEffect(() => {
                                 router.pathname.startsWith(item.path + "/")
                               }
                               onClick={async () => {
-                                setActiveSubSidebar("setup");
                                 await handleNavigation(item.path);
                               }}
                               sx={{
@@ -980,11 +1004,7 @@ useEffect(() => {
                             }
                             onClick={async () => {
                               if (item.label === "Setup") {
-                                setActiveSubSidebar("setup");
-                                setDrawerOpen(false);
-                                await new Promise((resolve) =>
-                                  setTimeout(resolve, transitionDuration)
-                                );
+                                await handleSetupClick();
                               } else if (item.children) {
                                 toggleSubmenu(item.label);
                                 setDrawerOpen(false);
@@ -1049,11 +1069,7 @@ useEffect(() => {
                           }
                           onClick={async () => {
                             if (item.label === "Setup") {
-                              setActiveSubSidebar("setup");
-                              setDrawerOpen(false);
-                              await new Promise((resolve) =>
-                                setTimeout(resolve, transitionDuration)
-                              );
+                              await handleSetupClick();
                             } else if (item.children) {
                               toggleSubmenu(item.label);
                               setDrawerOpen(false);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Stack, Button, Autocomplete } from '@mui/material';
+import { Box, Stack, Button, Autocomplete, Checkbox, FormControlLabel } from '@mui/material'; // Added Checkbox, FormControlLabel
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ThemeInput from '@/component/common_component/themeinput';
@@ -14,6 +14,8 @@ import { StaticCompanyOptions } from '@/constants';
 import { createQpPurchaseThunk, getQpPurchaseByIdThunk, updateQpPurchaseThunk } from '@/store/slices/qpPurchaseSlice';
 import { getAllPaperGSMThunk } from '@/store/slices/paperGSMSlice';
 import { getAllPackagingOptionsThunk } from '@/store/slices/packagingOptionSlice';
+import { getAllGsmThunk } from '@/store/slices/gsmSlice';
+import { getAllDeckalsThunk, getAllPliesThunk } from '@/store/slices/deckalSlice';
 
 interface NewPurchaseProps {
   isEditMode?: boolean;
@@ -41,7 +43,8 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
   const { paperGSM } = useAppSelector(state => state.paperGSMs);
   const { companies, roles, staff, singlePurchase, error } = useAppSelector(state => state.purchase);
   const { packagingOptions } = useAppSelector((state) => state.packagingOptions);
-
+  const { deckals } = useAppSelector((state) => state.deckals);
+  const { gsm } = useAppSelector((state) => state.gsm);
   const [deckalOptions, setDeckalOptions] = useState<Option[]>([]);
   const [gsmOptions, setGsmOptions] = useState<Option[]>([]);
   const [vendorOptions, setVendorOptions] = useState<Option[]>([]);
@@ -59,7 +62,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     category: "",
     kg: '',
     reel: '',
-    reelBatchNo: '', // Added REEL/BATCH NO field
+    reelBatchNo: '',
     paperMil: '',
     bf: '',
     color: '',
@@ -71,7 +74,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     paper2GSM: "",
     paper3GSM: "",
     noOfBox: "",
-
+    isDuplex: false,
   });
 
   const colorOptions = [
@@ -86,36 +89,26 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     if (!companies.length) dispatch(getCompaniesThunk());
     dispatch(getRolesThunk());
     dispatch(getAllVendorsThunk());
+    if (gsm.length === 0) dispatch(getAllGsmThunk())
+    if (deckals.length === 0) dispatch(getAllDeckalsThunk())
   }, []);
 
   useEffect(() => {
     if (packagingOptions.length) {
-      // Unique Deckal options for paper
-      const uniqueDeckals = Array.from(
-        new Set(packagingOptions.map(opt => opt.deckal).filter(Boolean))
-      ).map(deckal => ({
-        value: deckal,
-        label: deckal,
+      const uniqueDeckals = deckals.map(deckal => ({
+        value: deckal.name,
+        label: deckal.name,
       }));
       setDeckalOptions(uniqueDeckals);
 
-      // Collect all GSMs (paper1GSM, paper2GSM, paper3GSM)
-      const allGsms = packagingOptions.flatMap(opt => [
-        opt.paper1GSM,
-        opt.paper2GSM,
-        opt.paper3GSM,
-      ]);
-
-      // Unique GSM options
-      const uniqueGsms = Array.from(new Set(allGsms.filter(Boolean))).map(gsm => ({
-        value: gsm,
-        label: gsm,
+      const uniqueGsms = gsm.map(gsm => ({
+        value: gsm.name,
+        label: gsm.name,
       }));
       setGsmOptions(uniqueGsms);
     }
   }, [packagingOptions]);
 
-  // Fetch data on component mount
   useEffect(() => {
     if (isEditMode && purchaseId) dispatch(getQpPurchaseByIdThunk(purchaseId));
   }, [isEditMode, purchaseId]);
@@ -158,11 +151,9 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     }
   }, [vendors]);
 
-  // Deckal options for paper
   useEffect(() => {
     if (!paperGSM || paperGSM.length === 0) return;
 
-    // 🔹 Deckal options
     const deckalOptions = Array.from(
       new Map(
         paperGSM
@@ -174,7 +165,6 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       label: p.deckal,
     }));
 
-    // 🔹 GSM options
     const gsmOptions = Array.from(
       new Map(
         paperGSM
@@ -212,7 +202,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         gsm: singlePurchase.gsm || '',
         kg: singlePurchase.kg || '',
         reel: singlePurchase.reel || '',
-        reelBatchNo: singlePurchase.reelBatchNo || '', // Added for edit mode
+        reelBatchNo: singlePurchase.reelBatchNo || '',
         category: singlePurchase.category || '',
         paperMil: singlePurchase.paperMil || '',
         bf: singlePurchase.bf || '',
@@ -225,6 +215,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
         boxWidth: singlePurchase.boxWidth || '',
         boxLength: singlePurchase.boxLength || '',
         noOfBox: singlePurchase.noOfBox || '',
+        isDuplex: singlePurchase.isDuplex || false, // Load isDuplex in edit mode
       });
 
       if (singlePurchase.for?._id) {
@@ -256,7 +247,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       ...prev,
       [name]: value || '',
       ...(name === 'type'
-        ? { kantan: '', kg: '', deckal: '', gsm: '', reel: '', reelBatchNo: '', paperMil: '', bf: '', color: '' }
+        ? { kantan: '', kg: '', deckal: '', gsm: '', reel: '', reelBatchNo: '', paperMil: '', bf: '', color: '', isDuplex: false } // Reset isDuplex on type change
         : {}),
     }));
 
@@ -267,7 +258,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
       const requiredFields = ['vendorName', 'billNumber', 'companyName', 'for', 'forCompany', 'type'];
 
       if (formData.type === 'kantan') {
-        requiredFields.push('kantan', 'reel'); // Added reelBatchNo as required
+        requiredFields.push('kantan', 'reel');
       } else if (formData.type === 'glue' || formData.type === 'wire') {
         requiredFields.push('kg');
       } else if (formData.type === 'paper') {
@@ -314,7 +305,6 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
     }
   };
 
-  // Current type ke according deckal options decide karein
   const getCurrentDeckalOptions = () => {
     if (formData.type === 'paper') {
       return deckalOptions;
@@ -446,9 +436,8 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
           )}
         </Stack>
 
-        {/* DECKAL FIELD - Ab yeh kantan aur paper dono ke liye dikhega */}
         {(formData.type === 'paper') && (
-          <Stack direction="row" spacing={2} mb={2}>
+          <Stack direction="row" spacing={2} mb={2} alignItems="center">
             <ThemeSelect
               label="DECKAL"
               options={getCurrentDeckalOptions()}
@@ -458,7 +447,6 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
               fullWidth
             />
 
-            {/* GSM FIELD - Sirf paper type ke liye */}
             {formData.type === 'paper' && (
               <>
                 <ThemeSelect
@@ -479,12 +467,12 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                   placeholder="Enter BF"
                 />
                 <ThemeInput
-                  labelName="TAKA/BATCH NO"
+                  labelName="REEL/BATCH NO"
                   name="reelBatchNo"
                   value={formData.reelBatchNo}
                   onChange={handleChange}
                   fullWidth
-                  placeholder="Enter TAKA/batch number"
+                  placeholder="Enter reel/batch number"
                 />
                 <Autocomplete
                   freeSolo
@@ -503,11 +491,22 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
                   )}
                 />
 
-
+                {/* Added Duplex Checkbox */}
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.isDuplex}
+                      onChange={(e) => setFormData(prev => ({ ...prev, isDuplex: e.target.checked }))}
+                      name="isDuplex"
+                      color="primary"
+                    />
+                  }
+                  label="Duplex"
+                  sx={{ ml: 1 }}
+                />
               </>
             )}
 
-            {/* KG FIELD - Paper, glue, wire ke liye */}
             {(formData.type === 'paper' || formData.type === 'glue' || formData.type === 'wire') && (
               <ThemeInput
                 labelName="KG"
@@ -521,6 +520,7 @@ const QpNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, purchas
             )}
           </Stack>
         )}
+
         {formData.type === 'Box' && (
           <>
             <Stack direction="row" spacing={2} mb={2}>

@@ -266,6 +266,21 @@ const QpInventoryPage = () => {
         };
     }, []);
 
+    const calculatePaperStats = useCallback((row: any) => {
+        const data = allInventory.filter((item: any) => item?.inventoryType === "paper" &&
+            item.deckal === row.deckal && item.gsm === row.gsm && item.bf === row.bf
+        );
+        
+        const inward = data.filter((item: any) => item?.type === "inward");
+        const outward = data.filter((item: any) => item?.type === "outward");
+
+        const balance = inward.reduce((acc: number, item: any) => acc + Number(item?.kg), 0) - outward.reduce((acc: number, item: any) => acc + Number(item?.kg), 0);
+
+        return {
+            balance
+        };
+    }, []);
+
     const tableConfigs: Record<any, { header: any[]; render: (row: any, index: number) => any }> = {
         kantan: {
             header: [
@@ -411,20 +426,26 @@ const QpInventoryPage = () => {
                 { id: "gsm", label: "GSM", value: 'gsm' },
                 { id: "bf", label: "BF", value: 'bf' }, // Fixed: Capitalize label for clarity
                 { id: "color", label: "COLOR", value: 'color' }, // Fixed: Capitalize label for clarity
+                { id: "balance", label: "BALANCE", value: 'balance' },
                 detailOpen !== null && { id: "kg", label: "KG", value: 'kg' },
                 { id: "date", label: "DATE", value: null },
             ].filter(Boolean),
-            render: (row, index) => (
+            render: (row, index) =>{ 
+                const stats = calculatePaperStats(row);
+                return(
                 <>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>Paper</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{normalizeDeckal(row?.deckal)}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.gsm || "N/A"}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.bf || "N/A"}</TableCell>
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.color || "N/A"}</TableCell>
-                    {detailOpen !== null ? <TableCell sx={{ cursor: 'pointer' }}>{row?.kg || 0}</TableCell> : null}
-                    <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
-                </>
-            ),
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>Paper</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{normalizeDeckal(row?.deckal)}</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.gsm || "N/A"}</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.bf || "N/A"}</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.color || "N/A"}</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{stats?.balance || "N/A"}</TableCell>
+                        {detailOpen !== null ? <TableCell sx={{ cursor: 'pointer' }}>{row?.kg || 0}</TableCell> : null}
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
+                    </>
+                )
+            
+            },
         },
     };
 

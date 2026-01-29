@@ -8,6 +8,16 @@ import {
   Box,
   ListItemText,
 } from '@mui/material';
+import { createFilterOptions } from '@mui/material/Autocomplete';
+
+const filter = createFilterOptions<OptionType>({
+  stringify: (option) =>
+    option.label
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim(),
+});
+
 
 type OptionType = {
   key?: string | number;
@@ -68,6 +78,17 @@ const ThemeSelect: React.FC<ThemeSelectProps> = ({
         size={size}
         readOnly={readOnly}
         popupIcon={undefined}
+        filterOptions={(opts, state) => {
+          const input = state.inputValue
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          return filter(
+            opts,
+            { ...state, inputValue: input }
+          );
+        }}
         sx={{
           '& .MuiOutlinedInput-root': {
             borderRadius: '10px',

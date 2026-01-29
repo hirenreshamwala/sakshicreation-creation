@@ -288,5 +288,18 @@ const Endpoint = {
   EXPORT_PAYMENT_FOLDER_EXCEL: `${BaseURL}/api/payment-folders/export-payment-folder-excel`,
   EXPORT_PENDING_CLIENT_APPROVAL_ORDERS: `${BaseURL}/api/orders/export-pending-client-approval-orders`,
   BULK_DELETE_LEADS: `${BaseURL}/api/lead/delete/bulk`,
+
+  DELETE_DECKAL: `${BaseURL}/api/deckal/delete`,
+  UPDATE_DECKAL: `${BaseURL}/api/deckal/update`,
+  CREATE_DECKAL: `${BaseURL}/api/deckal/create`,
+  GET_ALL_DECKAL: `${BaseURL}/api/deckal/getall`,
+  GET_DECKAL_BY_ID: `${BaseURL}/api/deckal/getbyid`,
+
+  //gsm
+  GET_ALL_GSM: `${BaseURL}/api/gsm/getall`,
+  GET_GSM_BY_ID: `${BaseURL}/api/gsm/getbyid`,
+  CREATE_GSM: `${BaseURL}/api/gsm/create`,
+  UPDATE_GSM: `${BaseURL}/api/gsm/update`,
+  DELETE_GSM: `${BaseURL}/api/gsm/delete`,
 };
 export default Endpoint;
