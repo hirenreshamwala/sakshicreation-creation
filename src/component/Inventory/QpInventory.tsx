@@ -430,11 +430,11 @@ const QpInventoryPage = () => {
                 detailOpen !== null && { id: "kg", label: "KG", value: 'kg' },
                 { id: "date", label: "DATE", value: null },
             ].filter(Boolean),
-            render: (row, index) =>{ 
+            render: (row, index) => {
                 const stats = calculatePaperStats(row);
-                return(
-                <>
-                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>Paper</TableCell>
+                return (
+                    <>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.isDuplex ? 'Duplex' : 'Paper'}</TableCell>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{normalizeDeckal(row?.deckal)}</TableCell>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.gsm || "N/A"}</TableCell>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.bf || "N/A"}</TableCell>
@@ -444,7 +444,7 @@ const QpInventoryPage = () => {
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
                     </>
                 )
-            
+
             },
         },
     };
