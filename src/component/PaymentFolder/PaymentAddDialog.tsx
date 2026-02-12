@@ -58,22 +58,45 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
 
     const validationSchema = Yup.object({
         amount: Yup.number()
-
-            .required("Amount is required")
-            .positive("Amount must be positive")
+            .min(0, "Amount cannot be negative")
             .max(
                 folderData?.pendingAmount || 0,
                 `Amount cannot exceed pending amount (₹${folderData?.pendingAmount || 0})`
             ),
-        paymentDate: Yup.string().required("Payment Date is required"),
-        paymentMethod: Yup.string().required("Payment Method is required"),
-        receivedBy: Yup.string().required("Received By is required"),
+        differenceAmount: Yup.number()
+            .min(0, "Difference cannot be negative")
+            .max(
+                folderData?.pendingAmount || 0,
+                `Difference cannot exceed pending amount (₹${folderData?.pendingAmount || 0})`
+            ),
+        paymentDate: Yup.string().when("amount", {
+            is: (val: number) => val > 0,
+            then: (schema) => schema.required("Payment Date is required"),
+            otherwise: (schema) => schema.optional(),
+        }),
+        paymentMethod: Yup.string().when("amount", {
+            is: (val: number) => val > 0,
+            then: (schema) => schema.required("Payment Method is required"),
+            otherwise: (schema) => schema.optional(),
+        }),
+        receivedBy: Yup.string().when("amount", {
+            is: (val: number) => val > 0,
+            then: (schema) => schema.required("Received By is required"),
+            otherwise: (schema) => schema.optional(),
+        }),
         remark: Yup.string(),
-    });
+    }).test(
+        "at-least-one",
+        "Either Amount or Difference must be greater than 0",
+        function (values) {
+            return (values.amount || 0) > 0 || (values.differenceAmount || 0) > 0;
+        }
+    );
 
     const getInitialValues = () => {
         return {
             amount: 0,
+            differenceAmount: 0,
             paymentDate: moment().format('YYYY-MM-DD'),
             paymentMethod: "Cash",
             receivedBy: "",
@@ -88,13 +111,17 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
         onSubmit: async (values) => {
             setIsLoading(true);
             try {
-                const paymentData = {
-                    date: values.paymentDate,
-                    amount: values.amount,
-                    remark: values.remark,
-                    paymentMethod: values.paymentMethod,
-                    receivedBy: values.receivedBy,
+                const paymentData: any = {
+                    differenceAmount: values.differenceAmount || 0,
                 };
+
+                if (values.amount > 0) {
+                    paymentData.amount = values.amount;
+                    paymentData.date = values.paymentDate;
+                    paymentData.remark = values.remark;
+                    paymentData.paymentMethod = values.paymentMethod;
+                    paymentData.receivedBy = values.receivedBy;
+                }
 
                 const res = await dispatch(addPaymentToFolderThunk({
                     folderId: folderData._id,
@@ -140,14 +167,16 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
         const totalReceived = folderData.receivedAmount || 0;
         const totalPending = folderData.pendingAmount || 0;
         const paymentAmount = folderData.paymentAmount || 0;
+        const differenceAmount = folderData.differenceAmount || 0;
 
         return {
             totalReceived,
             totalPending,
             paymentAmount,
-            remainingAfterNewPayment: totalPending - (formik.values.amount || 0)
+            differenceAmount,
+            remainingAfterNewPayment: totalPending - (formik.values.amount || 0) - (formik.values.differenceAmount || 0)
         };
-    }, [folderData, formik.values.amount]);
+    }, [folderData, formik.values.amount, formik.values.differenceAmount]);
 
     // Get payment history
     const paymentHistory: PaymentHistoryItem[] = useMemo(() => {
@@ -195,7 +224,14 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
                                 color="warning"
                                 variant="outlined"
                             />
-                            {formik.values.amount > 0 && (
+                            {paymentSummary?.differenceAmount > 0 && (
+                                <Chip
+                                    label={`Difference: ₹${paymentSummary?.differenceAmount}`}
+                                    color="error"
+                                    variant="outlined"
+                                />
+                            )}
+                            {(formik.values.amount > 0 || formik.values.differenceAmount > 0) && (
                                 <Chip
                                     label={`Remaining: ₹${paymentSummary?.remainingAfterNewPayment}`}
                                     color="info"
@@ -214,28 +250,40 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
                         value={formik.values.amount}
                         onChange={(e) => {
                             let val = e.target.value;
-
-                            // Prevent multiple zeros or a single zero
                             if (val === "0") return;
-
-                            // If initial value is 0 and user types non-zero, replace it
                             if (formik.values.amount === "0" && val !== "" && val !== "0") {
                                 formik.setFieldValue("amount", val.replace(/^0+/, ""));
                                 return;
                             }
-
-                            // Remove leading zeros always
                             val = val.replace(/^0+/, "");
-
-                            // Set final value
                             formik.setFieldValue("amount", val);
                         }}
                         error={formik.touched.amount && Boolean(formik.errors.amount)}
                         helperText={formik.touched.amount && formik.errors.amount}
-                        required
                         fullWidth
                     />
 
+                    <ThemeInput
+                        labelName="Difference Amount"
+                        type="number"
+                        value={formik.values.differenceAmount}
+                        onChange={(e) => {
+                            let val = e.target.value;
+                            if (val === "0") return;
+                            if (formik.values.differenceAmount === "0" && val !== "" && val !== "0") {
+                                formik.setFieldValue("differenceAmount", val.replace(/^0+/, ""));
+                                return;
+                            }
+                            val = val.replace(/^0+/, "");
+                            formik.setFieldValue("differenceAmount", val);
+                        }}
+                        error={formik.touched.differenceAmount && Boolean(formik.errors.differenceAmount)}
+                        helperText={formik.touched.differenceAmount && formik.errors.differenceAmount}
+                        fullWidth
+                    />
+                </Stack>
+
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
                     <ThemeInput
                         labelName="Payment Date"
                         type="date"
@@ -243,9 +291,10 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
                         onChange={(e) => formik.setFieldValue("paymentDate", e.target.value)}
                         error={formik.touched.paymentDate && Boolean(formik.errors.paymentDate)}
                         helperText={formik.touched.paymentDate && formik.errors.paymentDate}
-                        required
+                        required={formik.values.amount > 0}
                         fullWidth
                     />
+                    <Box sx={{ width: '100%' }} />
                 </Stack>
 
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={1}>
@@ -256,7 +305,7 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
                         onChange={(event, newValue) => formik.setFieldValue("paymentMethod", newValue ? newValue.value : "")}
                         error={formik.touched.paymentMethod && Boolean(formik.errors.paymentMethod)}
                         helperText={formik.touched.paymentMethod && formik.errors.paymentMethod}
-                        required
+                        required={formik.values.amount > 0}
                     />
                     <ThemeSelect
                         label="Received By"
@@ -265,7 +314,7 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
                         onChange={(event, newValue) => formik.setFieldValue("receivedBy", newValue ? newValue.value : "")}
                         error={formik.touched.receivedBy && Boolean(formik.errors.receivedBy)}
                         helperText={formik.touched.receivedBy && formik.errors.receivedBy}
-                        required
+                        required={formik.values.amount > 0}
                     />
                 </Stack>
 
@@ -337,7 +386,7 @@ const PaymentAddDialog: React.FC<PaymentAddDialogProps> = memo(({
                         mt: 1,
                         "&:hover": { background: "#059669" },
                     }}
-                    disabled={isLoading || formik.isSubmitting || !formik.values.amount}
+                    disabled={isLoading || formik.isSubmitting || (!formik.values.amount && !formik.values.differenceAmount)}
                 >
                     {isLoading || formik.isSubmitting ? "Adding Payment..." : "Add Payment"}
                 </ThemeButton>

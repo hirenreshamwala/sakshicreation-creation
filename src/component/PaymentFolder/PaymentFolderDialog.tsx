@@ -88,8 +88,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
     area: Yup.string().required("Area is required"),
     month: Yup.string().required("Month is required"),
     paymentAmount: Yup.number().required("Payment Amount is required").positive("Must be positive"),
-    assignTo: Yup.string().required("Assign To is required"),
-    assignedDate: Yup.string().required("Assigned Date is required"),
     paymentTerms: Yup.string(),
     remarks: Yup.string(),
   });
@@ -175,7 +173,7 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
           ...values,
           company: values.companyName,
           party: values.partyName,
-          assignedTo: values.assignTo,
+          assignedTo: values.assignTo === "" ? null : values.assignTo,
           assignedDate: values.assignedDate,
           month: values.month,
           paymentAmount: values.paymentAmount,
@@ -363,29 +361,6 @@ const PaymentFolderDialog: React.FC<PaymentFolderDialogProps> = memo(({
             helperText={formik.touched.paymentAmount && formik.errors.paymentAmount}
             required
           />
-          <ThemeInput
-            labelName="Assigned Date"
-            type="date"
-            value={formik.values.assignedDate}
-            onChange={(e) => formik.setFieldValue("assignedDate", e.target.value)}
-            error={formik.touched.assignedDate && Boolean(formik.errors.assignedDate)}
-            helperText={formik.touched.assignedDate && formik.errors.assignedDate}
-            required
-            // disabled={!isEditMode && formik.values.month && formik.values.paymentTerms}
-          />
-        </Stack>
-
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
-          <ThemeSelect
-            label="Assign To"
-            options={staffOptions}
-            value={getSelectedOption(formik.values.assignTo, staffOptions)}
-            onChange={(event, newValue) => formik.setFieldValue("assignTo", newValue ? newValue.value : "")}
-            error={formik.touched.assignTo && Boolean(formik.errors.assignTo)}
-            helperText={formik.touched.assignTo && formik.errors.assignTo}
-            required
-          />
-
           {/* Payment Terms Section */}
           <Box sx={{ width: "100%" }}>
             <Box sx={{ mb: 1 }}>

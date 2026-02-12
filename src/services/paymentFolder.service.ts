@@ -147,5 +147,17 @@ export const paymentFolderService = {
         } catch (error: any) {
             throw new Error(error.response?.data?.message || 'Failed to delete payment folders');
         }
+    },
+
+    async assignTaskToFolder(id: string, data: { assignedTo: string; assignedDate: string; remarks?: string }): Promise<PaymentFolder> {
+        try {
+            const response: AxiosResponse<{ data: PaymentFolder; message: string }> = await Request.post(
+                `${Endpoint.ASSIGN_TASK_FOLDER}/${id}`,
+                data
+            );
+            return response.data.data;
+        } catch (error: any) {
+            throw new Error(error.response?.data?.message || 'Failed to assign task to payment folder');
+        }
     }
 };

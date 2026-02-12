@@ -247,6 +247,7 @@ const Endpoint = {
   ADD_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/payments`,
   DELETE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/delete`,
   DELETE_MULTIPLE_PAYMENT_FOLDER: `${BaseURL}/api/payment-folders/multi-delete`,
+  ASSIGN_TASK_FOLDER: `${BaseURL}/api/payment-folders/assign-task`,
 
 
   // filteres data 
