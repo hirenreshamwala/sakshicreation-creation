@@ -264,23 +264,6 @@ const BookletBinderTaskView = () => {
 
     setSubmitLoading(true)
     try {
-      let newBookletFiles: any[] = []
-      if (fileUploadRef.current) {
-        const selectedFiles = fileUploadRef.current.getSelectedFiles()
-        if (selectedFiles.length > 0) {
-          const uploadedFileResults = selectedFiles.map((file: File) => ({
-            folder: "booklet-files",
-            filename: file.name,
-          }))
-          newBookletFiles = uploadedFileResults.map((file: any) => ({
-            path: `${file.folder}/${file.filename}`,
-            remark: bookletBinderRemarks,
-            uploadedAt: new Date().toISOString(),
-          }))
-        }
-      }
-
-      const allBookletFiles = [...(singleOrder?.bookletBinderFiles || []), ...newBookletFiles.filter((f) => !f.isNew)]
       const currentDate = new Date().toISOString()?.split('T')[0]
 
       const updateData: any = {
@@ -288,7 +271,6 @@ const BookletBinderTaskView = () => {
         status: "Delivery",
         bookletBinderRemarks,
         bookletBinderWastedSheet: parseFloat(bookletBinderWastedSheet) || 0,
-        bookletBinderFiles: allBookletFiles,
         bookletPapers, // Include booklet papers
         size: formData.size,
         qty: qtyNum,
@@ -923,52 +905,7 @@ const BookletBinderTaskView = () => {
 
         {/* Booklet Binder Remarks */}
 
-        {/* File Upload for Booklet Binder Files */}
-        <Box mb={3}>
-          <Typography fontWeight={500} mb={1}>
-            Upload Booklet Binder Files (Optional)
-          </Typography>
-          <FileUpload
-            ref={fileUploadRef}
-            folder="booklet-files"
-            multiple={true}
-            accept="*/*"
-            variant="dropzone"
-            onFilesSelected={handleBookletFilesSelected}
-            onFileRemoved={handleBookletFileRemoved}
-            onUploadError={handleUploadError}
-            showPreview={true}
-            showUploadButton={false}
-            autoUpload={false}
-            label="Drop booklet files here or click to browse"
-            helperText="Upload any relevant files related to the booklet binding process (e.g., proofs, samples)"
-            disabled={!canEditBookletBinderTask}
-          />
-        </Box>
-
-        {/* View Booklet Files */}
-        {uploadedBookletFiles && uploadedBookletFiles.length > 0 && (
-          <Box mb={3}>
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleViewBookletFiles}
-              sx={{
-                color: "#344054",
-                borderColor: "#D0D5DD",
-                fontWeight: 600,
-                textTransform: "none",
-                fontSize: 16,
-                py: 1.2,
-                background: "#fff",
-                "&:hover": { background: "#f6fef9", borderColor: "#D0D5DD" },
-              }}
-              startIcon={<AiOutlineEye />}
-            >
-              View All Booklet Files ({uploadedBookletFiles.length})
-            </Button>
-          </Box>
-        )}
+        
 
         {/* Submit Button */}
         {singleOrder.bookletBinderStatus === "In Progress" && (
@@ -1006,14 +943,6 @@ const BookletBinderTaskView = () => {
         onClose={handleCloseBinderFilesDialog}
         files={singleOrder?.binderFiles?.map((file: any) => file.path) || []}
         title="Binder Files"
-        showDownload={true}
-        showView={true}
-      />
-      <ViewFilesDialog
-        open={openBookletFilesDialog}
-        onClose={handleCloseBookletFilesDialog}
-        files={uploadedBookletFiles.map((file: any) => file.path) || []}
-        title="Booklet Binder Files"
         showDownload={true}
         showView={true}
       />

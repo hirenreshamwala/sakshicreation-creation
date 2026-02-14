@@ -2,12 +2,10 @@
 import { useEffect, useRef, useState } from "react"
 import { Box, Button, Typography, Paper, CircularProgress, Stack, IconButton, FormControlLabel, Switch } from "@mui/material"
 import { AiOutlineEye } from "react-icons/ai"
-import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog"
-import FileUpload from "@/component/reusablecomponents/FileUpload"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { getOrderByIdThunk, updateOrderThunk } from "@/store/slices/orderSlice"
 import { useRouter } from "next/router"
@@ -35,10 +33,9 @@ type PaperField = {
 
 const BinderTaskView = () => {
   const dispatch = useAppDispatch()
-  const fileUploadRef = useRef<any>(null)
   const router = useRouter()
   const { id: orderId } = router.query
-  const { singleOrder } = useAppSelector((state) => state.orders)
+  const { singleOrder }:any = useAppSelector((state) => state.orders)
   const { materials } = useAppSelector(state => state.materials);
   const { binderTypes } = useAppSelector((state) => state.binderType);
   const [pageLoading, setPageLoading] = useState(true)
@@ -50,7 +47,7 @@ const BinderTaskView = () => {
   const [uploadedBinderFiles, setUploadedBinderFiles] = useState<any[]>([])
   const [binderPapers, setBinderPapers] = useState<PaperField[]>([])
   const [binding, setBinding] = useState(false)
-  const [bindingType, setBindingType] = useState("")
+  const [bindingType, setBindingType] = useState<any>("")
 
   const getSelectedOption = (value: string, options: OptionType[]) => {
     return options.find((option) => option.value === value) || null;
@@ -231,34 +228,16 @@ const BinderTaskView = () => {
 
     setSubmitLoading(true)
     try {
-      let newBinderFiles: any[] = []
-      if (fileUploadRef.current) {
-        const selectedFiles = fileUploadRef.current.getSelectedFiles()
-        if (selectedFiles.length > 0) {
-          const uploadedFileResults = selectedFiles.map((file: File) => ({
-            folder: "binder-files",
-            filename: file.name,
-          }))
-          newBinderFiles = uploadedFileResults.map((file: any) => ({
-            path: `${file.folder}/${file.filename}`,
-            remark: binderRemarks,
-            uploadedAt: new Date().toISOString(),
-          }))
-        }
-      }
-
-      const allBinderFiles = [...(singleOrder?.binderFiles || []), ...newBinderFiles.filter((f) => !f.isNew)]
       const currentDate = new Date().toISOString()?.split('T')[0]
 
       const updateData: any = {
         binderStatus: "Done",
         binderRemarks,
         binderWastedSheet: parseFloat(binderWastedSheet) || 0,
-        binderFiles: allBinderFiles,
-        binderPapers, // Include binder papers
+        binderPapers,
         receivedDate: currentDate,
-        binding: binding, // Include binding status
-        bindingType: binding ? bindingType : null, // Include binding type conditionally
+        binding: binding,
+        bindingType: binding ? bindingType : null,
       }
 
       await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap()
@@ -280,11 +259,11 @@ const BinderTaskView = () => {
 
   // Get GSM options for a specific material (_id)
   const getMaterialGSMOptions = (materialId: string) => {
-    const filteredMaterials = materials.filter(m => m._id === materialId);
+    const filteredMaterials = materials.filter((m:any) => m._id === materialId);
     return Array.from(
-      new Set(filteredMaterials.map(m => m.materialGSM.toString()))
-    ).map(gsm => {
-      const gsmMaterial = filteredMaterials.find(m => m.materialGSM.toString() === gsm);
+      new Set(filteredMaterials.map((m:any) => m.materialGSM.toString()))
+    ).map((gsm:any) => {
+      const gsmMaterial = filteredMaterials.find((m:any) => m.materialGSM.toString() === gsm);
       return {
         value: gsmMaterial?._id, // Use _id for GSM too
         label: `${gsm} GSM`,
@@ -305,7 +284,7 @@ const BinderTaskView = () => {
 
   // Handle material name selection
   const handleMaterialNameChange = (index: number, id: string) => {
-    const updatedPapers = [...binderPapers];
+    const updatedPapers:any = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
       paperType: id || null, // Use null for empty values
@@ -317,7 +296,7 @@ const BinderTaskView = () => {
 
   // Handle GSM selection
   const handleMaterialGSMChange = (index: number, id: string) => {
-    const updatedPapers = [...binderPapers];
+    const updatedPapers:any = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
       gsm: id || null, // Use null for empty values
@@ -328,7 +307,7 @@ const BinderTaskView = () => {
 
   // Handle size selection
   const handleMaterialSizeChange = (index: number, id: string) => {
-    const updatedPapers = [...binderPapers];
+    const updatedPapers:any = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
       sheetSize: id || null, // store _id
@@ -442,8 +421,8 @@ const BinderTaskView = () => {
             <Box sx={{ width: 1 }} >
               <ThemeSelect
                 label="Binding Type"
-                value={getSelectedOption(bindingType, binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || [])}
-                options={binderTypes?.map((item) => ({ value: item?._id, label: item?.name })) || []}
+                value={getSelectedOption(bindingType, binderTypes?.map((item:any) => ({ value: item?._id, label: item?.name })) || [])}
+                options={binderTypes?.map((item:any) => ({ value: item?._id, label: item?.name })) || []}
                 onChange={(_, v) => setBindingType(v ? v.value : "")}
                 disabled
                 sx={{ flex: 1 }}
@@ -640,8 +619,8 @@ const BinderTaskView = () => {
                 />
                 <ThemeSelect
                   label="GSM"
-                  options={getMaterialGSMOptions(paper.paperType)}
-                  value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
+                  options={getMaterialGSMOptions(paper.paperType) as any}
+                  value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null as any}
                   onChange={(e, newValue) =>
                     handleMaterialGSMChange(index, newValue?.value as string || "")
                   }
@@ -718,52 +697,7 @@ const BinderTaskView = () => {
         {/* Binder Remarks */}
         
 
-        {/* File Upload for Binder's Files */}
-        <Box mb={3}>
-          <Typography fontWeight={500} mb={1}>
-            Upload Binder Files (Optional)
-          </Typography>
-          <FileUpload
-            ref={fileUploadRef}
-            folder="binder-files"
-            multiple={true}
-            accept="*/*"
-            variant="dropzone"
-            onFilesSelected={handleBinderFilesSelected}
-            onFileRemoved={handleBinderFileRemoved}
-            onUploadError={handleUploadError}
-            showPreview={true}
-            showUploadButton={false}
-            autoUpload={false}
-            label="Drop binder files here or click to browse"
-            helperText="Upload any relevant files related to the binding process (e.g., proofs, samples)"
-            disabled={!canEditBinderTask}
-          />
-        </Box>
-
-        {/* View Binder Files */}
-        {uploadedBinderFiles && uploadedBinderFiles.length > 0 && (
-          <Box mb={3}>
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleViewBinderFiles}
-              sx={{
-                color: "#344054",
-                borderColor: "#D0D5DD",
-                fontWeight: 600,
-                textTransform: "none",
-                fontSize: 16,
-                py: 1.2,
-                background: "#fff",
-                "&:hover": { background: "#f6fef9", borderColor: "#D0D5DD" },
-              }}
-              startIcon={<AiOutlineEye />}
-            >
-              View All Binder Files ({uploadedBinderFiles.length})
-            </Button>
-          </Box>
-        )}
+        
 
         {/* Submit Button */}
         {singleOrder.binderStatus === "In Progress" && (
@@ -794,14 +728,6 @@ const BinderTaskView = () => {
         onClose={handleCloseDesignFilesDialog}
         files={singleOrder?.approvedFiles?.map((file: any) => file) || []}
         title="Design Files"
-        showDownload={true}
-        showView={true}
-      />
-      <ViewFilesDialog
-        open={openBinderFilesDialog}
-        onClose={handleCloseBinderFilesDialog}
-        files={uploadedBinderFiles.map((file: any) => file.path) || []}
-        title="Binder Files"
         showDownload={true}
         showView={true}
       />

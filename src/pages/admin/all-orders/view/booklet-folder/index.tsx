@@ -24,11 +24,9 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { getOrderByIdThunk, updateOrderThunk } from "@/store/slices/orderSlice"
 import { toast } from "react-toastify"
 import RoleStaffSelect from "@/component/reusablecomponents/RoleStaffSelect"
-import FileUpload from "@/component/reusablecomponents/FileUpload"
 import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog"
 import { useFormik } from "formik"
 import * as Yup from "yup"
-import { AiOutlineEye } from "react-icons/ai"
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ThemeCheckbox from "@/component/common_component/themecheckbox"
@@ -57,7 +55,7 @@ const BookletFolderBinderForm = () => {
   const router = useRouter()
   const { id: orderId } = router.query
   const dispatch = useAppDispatch()
-  const { singleOrder } = useAppSelector((state) => state.orders)
+  const { singleOrder }:any = useAppSelector((state) => state.orders)
   const fileUploadRef = useRef<any>(null)
   const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
@@ -71,7 +69,7 @@ const BookletFolderBinderForm = () => {
   const { allInventory } = useAppSelector(state => state.inventory);
 
 
-  const formik = useFormik({
+  const formik:any = useFormik({
     initialValues: {
       issuedDate: new Date().toISOString()?.split("T")[0],
       receivedDate: "",
@@ -153,20 +151,6 @@ const BookletFolderBinderForm = () => {
 
       setLoading(true)
       try {
-        let newBookletFiles: any[] = []
-        if (fileUploadRef.current) {
-          const selectedFiles = fileUploadRef.current.getSelectedFiles()
-          if (selectedFiles.length > 0) {
-            newBookletFiles = selectedFiles.map((file: File) => ({
-              path: `booklet-files/${file.name}`,
-              remark: values.remarks,
-              uploadedAt: new Date().toISOString(),
-            }))
-          }
-        }
-
-        const allBookletFiles = [...(singleOrder?.bookletBinderFiles || []), ...newBookletFiles.filter((f) => !f.isNew)]
-
         const updateData = {
           bookletBinder: selectedBookletBinder.value,
           bookletBinderStatus: "Pending",
@@ -189,7 +173,6 @@ const BookletFolderBinderForm = () => {
           isCreasing: values.isCreasing,
           isFoil: values.isFoil,
           isPunching: values.isPunching,
-          bookletBinderFiles: allBookletFiles,
           bookletPapers: bookletPapers,
           punchingType: values.isPunching ? values.punchingType : "",
         }
@@ -256,7 +239,7 @@ const BookletFolderBinderForm = () => {
         isPunching: singleOrder.isPunching || false,
         punchingType: singleOrder.punchingType || "",
         bookletPapers: singleOrder.bookletPapers || [],
-        bookletBinderRemarks: singleOrder.bookletBinderRemarks || "",
+        // bookletBinderRemarks: singleOrder.bookletBinderRemarks || "",
       })
 
       if (singleOrder.bookletBinder && singleOrder.bookletBinder._id) {
@@ -647,13 +630,8 @@ Your Team
                 roleFilter="Booklet & Folder Binder"
                 showStaff={true}
                 disabled={areFieldsReadOnly || isBookletBinderAssigned}
-                fullWidth
               />
             </Stack>
-
-
-
-
 
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <ThemeInput
@@ -728,11 +706,6 @@ Your Team
             />
             <Box>
               <Grid container spacing={2} alignItems="center">
-                {/* Quantity */}
-                <Grid item xs={12} sm={3}>
-
-                </Grid>
-
 
                 {/* Lamination */}
                 <Grid item xs={12} sm={3}>
@@ -1110,63 +1083,6 @@ Your Team
               )}
             </Stack>
 
-
-            <Box mb={2}>
-              <FileUpload
-                ref={fileUploadRef}
-                folder="booklet-files"
-                multiple={true}
-                accept="*/*"
-                variant="dropzone"
-                onFilesSelected={handleBookletFilesSelected}
-                onFileRemoved={handleBookletFileRemoved}
-                onUploadError={handleUploadError}
-                showPreview={true}
-                showUploadButton={false}
-                autoUpload={false}
-                label="Drop booklet files here or click to browse"
-                helperText="Upload any relevant files related to the booklet binding process"
-                disabled={areFieldsReadOnly}
-              />
-            </Box>
-
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleViewDesignFiles}
-              sx={{
-                color: "#344054",
-                borderColor: "#D0D5DD",
-                fontWeight: 600,
-                fontSize: 16,
-                py: 1.2,
-                background: "#fff",
-                "&:hover": { background: "#f6fef9" },
-              }}
-              startIcon={<AiOutlineEye />}
-            >
-              View Designer Files ({singleOrder?.approvedFiles?.length || 0})
-            </Button>
-
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleViewBinderFiles}
-              sx={{
-                color: "#344054",
-                borderColor: "#D0D5DD",
-                fontWeight: 600,
-                fontSize: 16,
-                py: 1.2,
-                background: "#fff",
-                "&:hover": { background: "#f6fef9" },
-              }}
-              startIcon={<AiOutlineEye />}
-            >
-              View Binder Files ({singleOrder?.binderFiles?.length || 0})
-            </Button>
-
-
             <Box sx={{ display: "flex", gap: 2, flexDirection: "row" }}>
               {/* {isBookletBinderStatusPending && ( */}
               <ThemeButton
@@ -1207,31 +1123,7 @@ Your Team
               </ThemeButton>
             </Box>
 
-            {isBookletBinderStatusDone && singleOrder?.bookletBinderFiles && singleOrder.bookletBinderFiles.length > 0 && (
-              <Box mt={3}>
-                <Typography fontWeight={600} mb={1}>
-                  Booklet Binder Uploaded Files
-                </Typography>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={handleViewBookletFiles}
-                  sx={{
-                    color: "#344054",
-                    borderColor: "#D0D5DD",
-                    fontWeight: 600,
-                    textTransform: "none",
-                    fontSize: 16,
-                    py: 1.2,
-                    background: "#fff",
-                    "&:hover": { background: "#f6fef9" },
-                  }}
-                  startIcon={<AiOutlineEye />}
-                >
-                  View All Booklet Uploaded Files ({singleOrder.bookletBinderFiles.length})
-                </Button>
-              </Box>
-            )}
+            
 
             {isBookletBinderStatusDone && (
               <Box mt={4}>
@@ -1298,28 +1190,10 @@ Your Team
       </Box>
 
       <ViewFilesDialog
-        open={openBookletFilesDialog}
-        onClose={handleCloseBookletFilesDialog}
-        files={uploadedBookletFiles.map((file: any) => file.path) || []}
-        title="Booklet Binder Files"
-        showDownload={true}
-        showView={true}
-      />
-
-      <ViewFilesDialog
         open={openDesignFilesDialog}
         onClose={handleCloseDesignFilesDialog}
         files={singleOrder?.approvedFiles?.map((file: any) => file) || []}
         title="Designer Files"
-        showDownload={true}
-        showView={true}
-      />
-
-      <ViewFilesDialog
-        open={openBinderFilesDialog}
-        onClose={handleCloseBinderFilesDialog}
-        files={singleOrder?.binderFiles?.map((file: any) => file.path) || []}
-        title="Binder Files"
         showDownload={true}
         showView={true}
       />

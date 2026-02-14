@@ -53,7 +53,7 @@ const PrinterForm = () => {
   const router = useRouter();
   const { id: orderId } = router.query;
   const dispatch = useAppDispatch();
-  const { singleOrder } = useAppSelector((state) => state.orders);
+  const { singleOrder }:any = useAppSelector((state) => state.orders);
   const { binderTypes } = useAppSelector((state) => state.binderType);
   const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true);
@@ -65,7 +65,7 @@ const PrinterForm = () => {
     message: "",
     severity: "success" as "success" | "error",
   });
-  const [paperFields, setPaperFields] = useState<PaperField[]>([]);
+  const [paperFields, setPaperFields] = useState<any>([]);
 
   // Fetch order data
   useEffect(() => {
@@ -109,11 +109,8 @@ const PrinterForm = () => {
         color: singleOrder.color || "",
         color1: singleOrder.color1 || "",
         color2: singleOrder.color2 || "",
-        // subPaper: singleOrder.subPaper || "",
-        // usedPaper: singleOrder.usedPaper || "",
         pType: singleOrder.pType || "",
         printingrate: singleOrder.printingrate || "",
-        // printingratePerUnit: singleOrder.printingratePerUnit || "",
         gsm: singleOrder.gsm || "",
         rowPaperSize: singleOrder.rowPaperSize || "",
         rowPaperUser: singleOrder.rowPaperUser || "",
@@ -140,7 +137,6 @@ const PrinterForm = () => {
           sheetSize: null,
           paperType: null,
           gsm: null,
-          // ratePerUnit: null, // Hidden field - Commented out
           paperSize: null,
         }]);
       }
@@ -164,11 +160,8 @@ const PrinterForm = () => {
       color: "",
       color1: "",
       color2: "",
-      // subPaper: "", // Hidden field - Commented out
-      // usedPaper: "", // Hidden field - Commented out
       pType: "",
       printingrate: "",
-      // printingratePerUnit: "", // Hidden field - Commented out
       gsm: "",
       rowPaperSize: "",
       rowPaperUser: "",
@@ -176,28 +169,12 @@ const PrinterForm = () => {
     },
     validationSchema: Yup.object({
       size: Yup.string().required("Size is required"),
-      // binding: Yup.boolean().required("Binding is required"),
-      // bindingType: Yup.string().when('binding', {
-      // is: true,
-      // then: (schema) => schema.required("Binding Type is required"),
-      // otherwise: (schema) => schema.notRequired(),
-      // }),
-      // subPaper: Yup.string().required("Sub Paper is required"),
-      // usedPaper: Yup.string().required("Used Paper is required"),
-      // pType: Yup.string().required("Product Type is required"),
-      // printingrate: Yup.string().required("Printing Rate is required"),
-      // printingratePerUnit: Yup.string().required("Printing Rate Per Unit is required"),
-      // gsm: Yup.string().required("GSM is required"),
-      // rowPaperSize: Yup.string().required("Raw Paper Size is required"),
-      // rowPaperUser: Yup.string().required("Raw Paper User is required"),
-      // printerRemarks: Yup.string().required("Remarks are required"),
       printerPapers: Yup.array().of(
         Yup.object().shape({
           numberOfSheetsUsed: Yup.string().required("Number of Sheets Used is required"),
           sheetSize: Yup.string().required("Sheet Size is required"),
           paperType: Yup.string().required("Paper Type is required"),
           gsm: Yup.string().required("GSM is required"),
-          // ratePerUnit: Yup.string().required("Rate Per Unit is required"),
         })
       ),
     }),
@@ -223,11 +200,8 @@ const PrinterForm = () => {
           bindingPage: values.bindingPage,
           bookletFolder: values.bookletFolder,
           bookletFolderType: values.bookletFolder ? values.bookletFolderType : null,
-          // subPaper: values.subPaper,
-          // usedPaper: values.usedPaper,
           pType: values.pType,
           printingrate: values.printingrate,
-          // printingratePerUnit: values.printingratePerUnit,
           gsm: values.gsm,
           rowPaperSize: values.rowPaperSize,
           rowPaperUser: values.rowPaperUser,
@@ -235,9 +209,8 @@ const PrinterForm = () => {
           printer: selectedPrinterStaff.value,
           printerStatus: "Pending",
           status: "Printer",
-          printerPapers: paperFields.map(paper => ({
+          printerPapers: paperFields.map((paper:any) => ({
             ...paper,
-            // ratePerUnit: paper.ratePerUnit,
           })),
         };
         await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap();
@@ -257,12 +230,11 @@ const PrinterForm = () => {
   ).map(name => {
     const materialObj = materials.find(m => m.materialName === name)!;
     return {
-      value: materialObj._id, // store _id
+      value: materialObj._id,
       label: name
     };
   });
 
-  // GSM Options
   const getMaterialGSMOptions = (materialName: string) => {
     const filteredMaterials = materials.filter(material => material._id === materialName);
     return Array.from(
@@ -270,13 +242,12 @@ const PrinterForm = () => {
     ).map(gsm => {
       const materialObj = filteredMaterials.find(m => m.materialGSM.toString() === gsm)!;
       return {
-        value: materialObj._id, // store _id
+        value: materialObj._id,
         label: `${gsm} GSM`
       };
     });
   };
 
-  // Size Options
   const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
     const filteredMaterials = materials.filter(
       material =>
@@ -287,21 +258,20 @@ const PrinterForm = () => {
     ).map(size => {
       const materialObj = filteredMaterials.find(m => m.materialSize === size)!;
       return {
-        value: materialObj._id, // store _id
+        value: materialObj._id,
         label: size
       };
     });
   };
 
-  // Handle material selection for a specific paper field
   const handleMaterialNameChange = (index: number, value: string) => {
     const updatedFields = [...paperFields];
     updatedFields[index] = {
       ...updatedFields[index],
       materialName: value,
       paperType: value,
-      gsm: "", // Reset GSM when material name changes
-      materialSize: "", // Reset size when material name changes
+      gsm: "",
+      materialSize: "",
     };
     setPaperFields(updatedFields);
   };
@@ -311,7 +281,7 @@ const PrinterForm = () => {
     updatedFields[index] = {
       ...updatedFields[index],
       gsm: value,
-      materialSize: "", // Reset size when GSM changes
+      materialSize: "",
     };
     setPaperFields(updatedFields);
   };
@@ -321,7 +291,7 @@ const PrinterForm = () => {
     updatedFields[index] = {
       ...updatedFields[index],
       materialSize: value,
-      sheetSize: value // Set sheetSize to match material size
+      sheetSize: value
     };
     setPaperFields(updatedFields);
   };
@@ -376,12 +346,12 @@ const PrinterForm = () => {
       const updateData = {
         status: "Booklet & Folder Binder",
         bookletBinderStatus: "Pending",
-        bookletBinder: null, // Will be set in BookletFolderBinderForm
+        bookletBinder: null,
         printerStatus: singleOrder?.printerStatus === "Pending" ? "Done" : singleOrder?.printerStatus,
-        binderStatus: singleOrder?.binderStatus || "Pending", // Mark binder as skipped
+        binderStatus: singleOrder?.binderStatus || "Pending",
       };
 
-      await dispatch(updateOrderThunk({ id: orderId, data: updateData })).unwrap();
+      await dispatch(updateOrderThunk({ id: orderId, data: updateData as any })).unwrap();
       toast.success("Order assigned to Booklet & Folder Binder successfully");
       router.push(`/admin/all-orders/view/booklet-folder/?id=${orderId}`);
     } catch (error: any) {
@@ -403,7 +373,6 @@ const PrinterForm = () => {
       sheetSize: "",
       paperType: "",
       gsm: "",
-      // ratePerUnit: "" // Hidden field - Commented out
     }]);
   };
 
@@ -421,13 +390,12 @@ const PrinterForm = () => {
       toast.error("At least one paper field is required");
       return;
     }
-    const updatedFields = paperFields.filter((_, i) => i !== index);
+    const updatedFields = paperFields.filter((_:any, i:any) => i !== index);
     setPaperFields(updatedFields);
   };
 
-  // Email functionality implementation
   const handleEmailClick = (type: 'printer' = 'printer') => {
-    const recipientEmail = singleOrder?.party?.email || ''; // Add party.email to your data if not exists
+    const recipientEmail = singleOrder?.party?.email || '';
     const contactPerson = singleOrder?.party?.contactPerson || 'Customer';
     const orderNumber = singleOrder?.orderNumber || 'N/A';
     const companyName = singleOrder?.companyName?.companyName || 'N/A';
@@ -439,7 +407,6 @@ const PrinterForm = () => {
     const gstPercentage = singleOrder?.gstPercentage || 0;
     const remarks = singleOrder?.remarks || 'No remarks';
 
-    // Address formatting
     const address = [
       singleOrder?.party?.address?.unitNo || '',
       singleOrder?.party?.address?.marketName?.marketName || '',
@@ -448,11 +415,8 @@ const PrinterForm = () => {
     ].filter(part => part?.trim() !== '').join(', ') || 'N/A';
 
     const gstText = gstPercentage > 0 ? ` (incl. ${gstPercentage}% GST)` : '';
-
-    // Dynamic subject based on type
     const subject = `Order ${orderNumber} - Printer Work Completed`;
 
-    // Dynamic body with all details
     const body = `Dear ${contactPerson},
 
 Printer work for the following order has been completed. Please review the details and proceed to the next step (Binder or Delivery).
@@ -483,9 +447,6 @@ Please let us know if you have any questions or need adjustments.
 
 Best regards,
 Your Team
-[Your Company Name]
-[Contact: +91-XXXXXXXXXX]
-[Email: your.email@company.com]
 `;
 
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -514,7 +475,6 @@ Your Team
   const isPrinterStatusDone = singleOrder?.printerStatus === "Done";
   const isPrinterStatusInProgress = singleOrder?.printerStatus === "In Progress";
 
-  // Determine if fields should be read-only
   const areFieldsReadOnly = isHeld || isPrinterStatusDone || isPrinterStatusInProgress;
 
   return (
@@ -580,7 +540,6 @@ Your Team
             />
           </Stack>
 
-          {/* Specs Section - Single Row */}
           <Stack direction="row" spacing={2} mb={3}>
             <ThemeInput
               labelName="Item Size"
@@ -598,27 +557,6 @@ Your Team
               fullWidth
               InputProps={{ readOnly: true }}
             />
-
-            {/* <ThemeInput
-              labelName="Sub Paper"
-              name="subPaper"
-              value={formik.values.subPaper}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.subPaper && Boolean(formik.errors.subPaper)}
-              helperText={formik.touched.subPaper && formik.errors.subPaper}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            /> */}
-            {/* <ThemeInput
-              labelName="Used Paper"
-              name="usedPaper"
-              value={formik.values.usedPaper}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.usedPaper && Boolean(formik.errors.usedPaper)}
-              helperText={formik.touched.usedPaper && formik.errors.usedPaper}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            /> */}
             <ThemeInput
               labelName="Printing Type"
               value={formik.values.pType}
@@ -690,12 +628,6 @@ Your Team
             )}
           </Stack>
 
-          {/* Specs Section - Third Row */}
-          {/* <Stack direction="row" spacing={2} mb={3}>
-            
-          </Stack> */}
-
-          {/* Remarks */}
           <Box mb={3}>
             <ThemeInput
               labelName="Printer Remarks"
@@ -711,8 +643,8 @@ Your Team
               InputProps={{ readOnly: areFieldsReadOnly }}
             />
           </Box>
-          {/* Paper Fields Section */}
-          {paperFields?.map((paper, index) => (
+          
+          {paperFields?.map((paper:any, index:any) => (
             <Box key={index} mb={3} p={2} border={1} borderRadius={2} borderColor="#ddd">
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography fontWeight={600}>
@@ -732,7 +664,6 @@ Your Team
                 )}
               </Box>
               <Stack direction="row" spacing={2}>
-                {/* <Stack direction="row" spacing={2} mb={2}> */}
                 <ThemeSelect
                   label="Paper Type"
                   options={materialNameOptions}
@@ -757,15 +688,14 @@ Your Team
                   required
                   disabled={!paper.paperType || areFieldsReadOnly}
                 />
-                {/* </Stack> */}
                 <ThemeInput
                   labelName="Paper No. Of Sheet Used"
                   name="numberOfSheetsUsed"
                   type="number"
                   value={paper.numberOfSheetsUsed || ""}
                   onChange={(e) =>
-                    setPaperFields((prev) =>
-                      prev.map((p, i) =>
+                    setPaperFields((prev:any) =>
+                      prev.map((p:any, i:any) =>
                         i === index ? { ...p, numberOfSheetsUsed: e.target.value } : p
                       )
                     )
@@ -773,16 +703,6 @@ Your Team
                   fullWidth
                   InputProps={{ readOnly: areFieldsReadOnly }}
                 />
-                {/* <ThemeInput
-                  labelName="Rate / Unit"
-                  value={paper.ratePerUnit}
-                  onChange={(e) => handlePaperFieldChange(index, 'ratePerUnit', e.target.value)}
-                  fullWidth
-                  required
-                  // error={!paper.ratePerUnit && formik.submitCount > 0}
-                  // helperText={!paper.ratePerUnit && formik.submitCount > 0 ? "This field is required" : ""}
-                  InputProps={{ readOnly: areFieldsReadOnly }}
-                /> */}
               </Stack>
             </Box>
           ))}
@@ -797,7 +717,7 @@ Your Team
                   backgroundColor: "#6366F1",
                   borderRadius: "8px",
                   color: "#fff",
-                  "&:hover": { backgroundColor: "#4F46E5" }, // hover effect
+                  "&:hover": { backgroundColor: "#4F46E5" },
                 }}
               >
                 Add Paper
@@ -805,8 +725,6 @@ Your Team
             </Box>
           )}
 
-          {/* Specs Section - Second Row */}
-          
           <Typography fontWeight={600} mb={2}>
             Send for Next Step Approval via
           </Typography>
@@ -834,33 +752,34 @@ Your Team
               </Typography>
             </Box>
           </Stack>
-          {/* View Design Files */}
-          <Stack direction="row" gap={2} mb={3}>
-            <ThemeButton
-              variant="outlined"
-              fullWidth
-              onClick={() => setOpenFilesDialog(true)}
-              sx={{
-                color: "#344054",
-                borderColor: "#D0D5DD",
-                fontWeight: 600,
-                textTransform: "none",
-                fontSize: 16,
-                background: "#fff",
-                "&:hover": { background: "#f6fef9" },
-              }}
-              startIcon={
-                <svg width="20" height="20" fill="none">
-                  <circle cx="10" cy="10" r="9" stroke="#98A2B3" strokeWidth="2" />
-                  <circle cx="10" cy="10" r="3" fill="#98A2B3" />
-                </svg>
-              }
-            >
-              View Design Files ({singleOrder?.approvedFiles?.length || 0})
-            </ThemeButton>
-          </Stack>
 
-          {/* Action Buttons */}
+          {singleOrder?.approvedFiles && singleOrder.approvedFiles.length > 0 && (
+            <Stack direction="row" gap={2} mb={3}>
+              <ThemeButton
+                variant="outlined"
+                fullWidth
+                onClick={() => setOpenFilesDialog(true)}
+                sx={{
+                  color: "#344054",
+                  borderColor: "#D0D5DD",
+                  fontWeight: 600,
+                  textTransform: "none",
+                  fontSize: 16,
+                  background: "#fff",
+                  "&:hover": { background: "#f6fef9" },
+                }}
+                startIcon={
+                  <svg width="20" height="20" fill="none">
+                    <circle cx="10" cy="10" r="9" stroke="#98A2B3" strokeWidth="2" />
+                    <circle cx="10" cy="10" r="3" fill="#98A2B3" />
+                  </svg>
+                }
+              >
+                View Design Files ({singleOrder.approvedFiles.length})
+              </ThemeButton>
+            </Stack>
+          )}
+
           <Box sx={{ display: "flex", gap: 2, flexDirection: "row" }}>
             <ThemeButton
               sx={{
@@ -896,7 +815,6 @@ Your Team
             </ThemeButton>
           </Box>
 
-          {/* Printer Status Done Section */}
           {isPrinterStatusDone && (
             <Box mt={4}>
               <Typography fontWeight={600} mb={2} color="#12B76A">
@@ -957,7 +875,7 @@ Your Team
           )}
         </Paper>
       </Box>
-      {/* Files Dialog */}
+
       <ViewFilesDialog
         open={openFilesDialog}
         onClose={() => setOpenFilesDialog(false)}

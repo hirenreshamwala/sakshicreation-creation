@@ -1,12 +1,11 @@
 "use client"
-import { useEffect, useRef, useState } from "react"
-import { Box, Button, Typography, Paper, CircularProgress, Stack, IconButton, FormControlLabel, Switch } from "@mui/material"
+import { useEffect, useState } from "react"
+import { Box, Button, Typography, Paper, CircularProgress, Stack } from "@mui/material"
 import { AiOutlineEye } from "react-icons/ai"
 import AddIcon from '@mui/icons-material/Add';
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
 import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog"
-import FileUpload from "@/component/reusablecomponents/FileUpload"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { getOrderByIdThunk, updateOrderThunk } from "@/store/slices/orderSlice"
 import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice"
@@ -23,7 +22,7 @@ type PaperField = {
   paperType: string;
   gsm: string;
   ratePerUnit: string;
-  wastage: string; // Added wastage field
+  wastage: string;
 };
 
 type OptionType = {
@@ -33,7 +32,6 @@ type OptionType = {
 
 const PrinterTaskView = () => {
   const dispatch = useAppDispatch()
-  const fileUploadRef = useRef<any>(null)
   const router = useRouter()
   const { id: orderId } = router.query
   const { singleOrder } = useAppSelector((state) => state.orders)
@@ -42,15 +40,12 @@ const PrinterTaskView = () => {
   const [pageLoading, setPageLoading] = useState(true)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [openDesignFilesDialog, setOpenDesignFilesDialog] = useState(false)
-  const [openPrinterFilesDialog, setOpenPrinterFilesDialog] = useState(false)
   const [printerRemarks, setPrinterRemarks] = useState("")
   const [printerWastedSheet, setPrinterWastedSheet] = useState("")
-  const [uploadedPrinterFiles, setUploadedPrinterFiles] = useState<any[]>([])
   const [printerPapers, setPrinterPapers] = useState<PaperField[]>([])
   const [binding, setBinding] = useState(false);
   const [bindingType, setBindingType] = useState("");
 
-  // Fetch order data
   useEffect(() => {
     const fetchOrderData = async () => {
       if (orderId && typeof orderId === "string") {
@@ -73,23 +68,18 @@ const PrinterTaskView = () => {
     if (!binderTypes.length) dispatch(getAllBinderTypesThunk());
   }, [dispatch, binderTypes.length]);
 
-  // Populate local state when singleOrder changes
   useEffect(() => {
     if (singleOrder) {
       setPrinterRemarks(singleOrder.printerRemarks || "")
       setPrinterWastedSheet(singleOrder.printerWastedSheet?.toString() || "")
-      setUploadedPrinterFiles(singleOrder.printerFiles || [])
-      // Safely convert binding to boolean: handles boolean false/true, string "false"/"true", undefined/null/empty as false
       const bindingValue = !!singleOrder.binding && singleOrder.binding !== "false";
       setBinding(bindingValue);
-
       setBindingType(singleOrder.bindingType?._id || "");
 
-      // Initialize printer papers with wastage field
       if (singleOrder.printerPapers && singleOrder.printerPapers.length > 0) {
         setPrinterPapers(singleOrder.printerPapers.map((paper: any) => ({
           ...paper,
-          wastage: paper.wastage?.toString() || "0" // Initialize wastage field
+          wastage: paper.wastage?.toString() || "0"
         })))
       } else {
         setPrinterPapers([{
@@ -98,8 +88,7 @@ const PrinterTaskView = () => {
           sheetSize: "",
           paperType: "",
           gsm: "",
-          // ratePerUnit: "",
-          wastage: "0" // Default wastage value
+          wastage: "0"
         }])
       }
     }
@@ -109,7 +98,6 @@ const PrinterTaskView = () => {
     return options.find((option) => option.value === value) || null;
   };
 
-  // Calculate total wastage whenever printerPapers changes
   useEffect(() => {
     const totalWastage = printerPapers.reduce((sum, paper) => {
       return sum + (parseFloat(paper.wastage) || 0)
@@ -118,32 +106,8 @@ const PrinterTaskView = () => {
     setPrinterWastedSheet(totalWastage.toString())
   }, [printerPapers])
 
-  const handlePrinterFilesSelected = (selectedFiles: File[]) => {
-    const newFileList = selectedFiles.map((file) => ({
-      path: file.name,
-      remark: "",
-      _id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      file: file,
-      isNew: true,
-    }))
-    setUploadedPrinterFiles((prev) => [...prev, ...newFileList])
-  }
-
-  const handlePrinterFileRemoved = (removedFile: File) => {
-    setUploadedPrinterFiles((prev) =>
-      prev.filter((file) => !(file.isNew && file.file && file.file.name === removedFile.name))
-    )
-  }
-
-  const handleUploadError = (error: string) => {
-    console.error("Upload error:", error)
-    toast.error(error)
-  }
-
   const handleViewDesignFiles = () => setOpenDesignFilesDialog(true)
   const handleCloseDesignFilesDialog = () => setOpenDesignFilesDialog(false)
-  const handleViewPrinterFiles = () => setOpenPrinterFilesDialog(true)
-  const handleClosePrinterFilesDialog = () => setOpenPrinterFilesDialog(false)
 
   const handleUpdateStatus = async (orderId: string, statusType: string, status: string) => {
     try {
@@ -183,8 +147,7 @@ const PrinterTaskView = () => {
       sheetSize: "",
       paperType: "",
       gsm: "",
-      // ratePerUnit: "",
-      wastage: "0" // Default wastage value
+      wastage: "0"
     }])
   }
 
@@ -203,9 +166,8 @@ const PrinterTaskView = () => {
       return
     }
 
-    // Validate printer papers
     for (const paper of printerPapers) {
-      if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm /*|| !paper.ratePerUnit*/) {
+      if (!paper.numberOfSheetsUsed || !paper.sheetSize || !paper.paperType || !paper.gsm) {
         toast.error("All paper fields must be filled")
         return
       }
@@ -213,33 +175,11 @@ const PrinterTaskView = () => {
 
     setSubmitLoading(true)
     try {
-      let newPrinterFiles: any[] = []
-      if (fileUploadRef.current) {
-        const selectedFiles = fileUploadRef.current.getSelectedFiles()
-        if (selectedFiles.length > 0) {
-          const uploadedFileResults = selectedFiles.map((file: File) => ({
-            folder: "printer-files",
-            filename: file.name,
-          }))
-          newPrinterFiles = uploadedFileResults.map((file: any) => ({
-            path: `${file.folder}/${file.filename}`,
-            remark: printerRemarks,
-            uploadedAt: new Date().toISOString(),
-          }))
-        }
-      }
-
-      const allPrinterFiles = [
-        ...(singleOrder?.printerFiles || []),
-        ...newPrinterFiles.filter((f) => !f.isNew),
-      ]
-
       const updateData: any = {
         printerStatus: "Done",
         printerRemarks,
-        printerWastedSheet: parseFloat(printerWastedSheet) || 0, // Use calculated total
-        printerFiles: allPrinterFiles,
-        printerPapers, // Include printer papers with wastage
+        printerWastedSheet: parseFloat(printerWastedSheet) || 0,
+        printerPapers,
         binding,
         bindingType: binding ? bindingType : null,
       }
@@ -260,12 +200,11 @@ const PrinterTaskView = () => {
   ).map(name => {
     const materialObj = materials.find(m => m.materialName === name)!;
     return {
-      value: materialObj._id, // store _id
+      value: materialObj._id,
       label: name
     };
   });
 
-  // GSM Options
   const getMaterialGSMOptions = (materialName: string) => {
     const filteredMaterials = materials.filter(material => material._id === materialName);
     return Array.from(
@@ -273,13 +212,12 @@ const PrinterTaskView = () => {
     ).map(gsm => {
       const materialObj = filteredMaterials.find(m => m.materialGSM.toString() === gsm)!;
       return {
-        value: materialObj._id, // store _id
+        value: materialObj._id,
         label: `${gsm} GSM`
       };
     });
   };
 
-  // Size Options
   const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
     const filteredMaterials = materials.filter(
       material =>
@@ -290,43 +228,42 @@ const PrinterTaskView = () => {
     ).map(size => {
       const materialObj = filteredMaterials.find(m => m.materialSize === size)!;
       return {
-        value: materialObj._id, // store _id
+        value: materialObj._id,
         label: size
       };
     });
   };
 
-  // Handle material selection for a specific paper field
   const handleMaterialNameChange = (index: number, value: string) => {
-    const updatedFields = [...paperFields];
+    const updatedFields = [...printerPapers];
     updatedFields[index] = {
       ...updatedFields[index],
       materialName: value,
       paperType: value,
-      gsm: "", // Reset GSM when material name changes
-      materialSize: "", // Reset size when material name changes
+      gsm: "",
+      materialSize: "",
     };
-    setPaperFields(updatedFields);
+    setPrinterPapers(updatedFields);
   };
 
   const handleMaterialGSMChange = (index: number, value: string) => {
-    const updatedFields = [...paperFields];
+    const updatedFields = [...printerPapers];
     updatedFields[index] = {
       ...updatedFields[index],
       gsm: value,
-      materialSize: "", // Reset size when GSM changes
+      materialSize: "",
     };
-    setPaperFields(updatedFields);
+    setPrinterPapers(updatedFields);
   };
 
   const handleMaterialSizeChange = (index: number, value: string) => {
-    const updatedFields = [...paperFields];
+    const updatedFields = [...printerPapers];
     updatedFields[index] = {
       ...updatedFields[index],
       materialSize: value,
-      sheetSize: value // Set sheetSize to match material size
+      sheetSize: value
     };
-    setPaperFields(updatedFields);
+    setPrinterPapers(updatedFields);
   };
 
   if (pageLoading) {
@@ -351,7 +288,6 @@ const PrinterTaskView = () => {
 
   return (
     <Box>
-      {/* Order Details */}
       <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h6" fontWeight={600} color="#1976D2">
@@ -410,15 +346,12 @@ const PrinterTaskView = () => {
         </Box>
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <Box flex={1} minWidth={240}>
-
           <ThemeInput
             labelName="Size"
             value={singleOrder.size || "N/A"}
-            // sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
           </Box>
-
           <Box flex={1} minWidth={240}>
             <ThemeInput
               labelName="Printing Type"
@@ -467,7 +400,6 @@ const PrinterTaskView = () => {
             sx={{ flex: 1 }}
             InputProps={{ readOnly: true }}
           />
-
           <ThemeInput
             labelName="Printing Rate"
             value={singleOrder.printingrate || "N/A"}
@@ -485,12 +417,10 @@ const PrinterTaskView = () => {
             rows={3}
             sx={{ width: "100%" }}
             InputProps={{ readOnly: true }}
-
           />
         </Box>
       </Paper>
 
-      {/* Design Files Section */}
       {singleOrder.approvedFiles && singleOrder.approvedFiles.length > 0 && (
         <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           <Typography variant="h6" fontWeight={600} mb={2} color="#4CAF50">
@@ -517,7 +447,6 @@ const PrinterTaskView = () => {
         </Paper>
       )}
 
-      {/* Printer Work Section */}
       <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
         <Typography variant="h6" fontWeight={600} mb={2} color="#FF9800">
           Printer Work
@@ -545,7 +474,6 @@ const PrinterTaskView = () => {
           </Box>
         )}
 
-        {/* Printer Papers Section */}
         <Box mb={3}>
           <Typography fontWeight={600} mb={2}>
             Printer Papers
@@ -589,13 +517,6 @@ const PrinterTaskView = () => {
                   fullWidth
                   InputProps={{ readOnly: !canEditPrinterTask }}
                 />
-                {/* <ThemeInput
-                  labelName="Rate / Unit"
-                  value={paper.ratePerUnit}
-                  onChange={(e) => handlePrinterPaperChange(index, 'ratePerUnit', e.target.value)}
-                  fullWidth
-                  InputProps={{ readOnly: !canEditPrinterTask }}
-                /> */}
                 <ThemeInput
                   labelName="Wastage"
                   value={paper.wastage}
@@ -607,27 +528,8 @@ const PrinterTaskView = () => {
               </Stack>
             </Box>
           ))}
-
-          {/* {canEditPrinterTask && (
-            <Box display="flex" justifyContent="flex-end">
-              <ThemeButton
-                onClick={handleAddPrinterPaper}
-                disabled={!canEditPrinterTask}
-                startIcon={<AddIcon />}
-                sx={{
-                  backgroundColor: "#6366F1",
-                  borderRadius: "8px",
-                  color: "#fff",
-                  "&:hover": { backgroundColor: "#4F46E5" },
-                }}
-              >
-                Add Printer Paper
-              </ThemeButton>
-            </Box>
-          )} */}
         </Box>
 
-        {/* Total Printer Wasted Sheet (Calculated) */}
         <Box mb={3}>
           <ThemeInput
             labelName="Total Printer Wasted Sheet"
@@ -637,57 +539,6 @@ const PrinterTaskView = () => {
           />
         </Box>
 
-        {/* Printer Remarks */}
-        
-
-        {/* File Upload for Printer's Files */}
-        <Box mb={3}>
-          <Typography fontWeight={500} mb={1}>
-            Upload Printer Files (Optional)
-          </Typography>
-          <FileUpload
-            ref={fileUploadRef}
-            folder="printer-files"
-            multiple={true}
-            accept="*/*"
-            variant="dropzone"
-            onFilesSelected={handlePrinterFilesSelected}
-            onFileRemoved={handlePrinterFileRemoved}
-            onUploadError={handleUploadError}
-            showPreview={true}
-            showUploadButton={false}
-            autoUpload={false}
-            label="Drop printer files here or click to browse"
-            helperText="Upload any relevant files related to the printing process (e.g., proofs, samples)"
-            disabled={!canEditPrinterTask}
-          />
-        </Box>
-
-        {/* View Printer Files */}
-        {uploadedPrinterFiles && uploadedPrinterFiles.length > 0 && (
-          <Box mb={3}>
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleViewPrinterFiles}
-              sx={{
-                color: "#344054",
-                borderColor: "#D0D5DD",
-                fontWeight: 600,
-                textTransform: "none",
-                fontSize: 16,
-                py: 1.2,
-                background: "#fff",
-                "&:hover": { background: "#f6fef9", borderColor: "#D0D5DD" },
-              }}
-              startIcon={<AiOutlineEye />}
-            >
-              View All Printer Files ({uploadedPrinterFiles.length})
-            </Button>
-          </Box>
-        )}
-
-        {/* Submit Button */}
         {singleOrder.printerStatus === "In Progress" && (
           <ThemeButton
             sx={{
@@ -709,20 +560,11 @@ const PrinterTaskView = () => {
         )}
       </Paper>
 
-      {/* View Files Dialogs */}
       <ViewFilesDialog
         open={openDesignFilesDialog}
         onClose={handleCloseDesignFilesDialog}
         files={singleOrder?.approvedFiles?.map((file: any) => file) || []}
         title="Design Files"
-        showDownload={true}
-        showView={true}
-      />
-      <ViewFilesDialog
-        open={openPrinterFilesDialog}
-        onClose={handleClosePrinterFilesDialog}
-        files={uploadedPrinterFiles.map((file: any) => file.path) || []}
-        title="Printer Files"
         showDownload={true}
         showView={true}
       />
