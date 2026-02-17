@@ -58,10 +58,10 @@ const ReworkDialog = ({
   const fileUploadRef = useRef<any>(null)
 
   const handleSubmit = async () => {
-    if (!reworkRemark.trim()) {
-      toast.error("Please provide a remark for rework")
-      return
-    }
+    // if (!reworkRemark.trim()) {
+    //   toast.error("Please provide a remark for rework")
+    //   return
+    // }
     /* 
     let selectedFiles: File[] = []
     if (fileUploadRef.current) {

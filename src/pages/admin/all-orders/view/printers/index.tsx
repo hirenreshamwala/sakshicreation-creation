@@ -34,6 +34,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ThemeSelect from "@/component/common_component/themeselect";
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice";
+import { orderService } from "@/services/order.service";
 
 type OptionType = {
   label: string;
@@ -74,6 +75,7 @@ const PrinterForm = () => {
         try {
           setPageLoading(true);
           await dispatch(getOrderByIdThunk(orderId)).unwrap();
+          await orderService.markNotificationRead(orderId, "printer");
         } catch (err) {
           console.error("Failed to fetch order:", err);
           toast.error("Failed to load order data");

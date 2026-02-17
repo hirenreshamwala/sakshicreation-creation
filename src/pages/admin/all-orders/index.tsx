@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
-import { Avatar, Box, TableCell, Typography, Button, CircularProgress, IconButton } from "@mui/material"
+import { Avatar, Box, TableCell, Typography, Button, CircularProgress, IconButton, Badge } from "@mui/material"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
 import { useAppDispatch, useAppSelector } from "@/store"
@@ -83,6 +83,10 @@ type OrderRow = {
   qty?: number
   daysAfterConfirmation?: number
   lastStatusChangeDate?: string
+  designerNotificationUnread?: boolean
+  printerNotificationUnread?: boolean
+  binderNotificationUnread?: boolean
+  bookletBinderNotificationUnread?: boolean
 }
 
 const AllOrdersPage = () => {
@@ -273,46 +277,46 @@ const AllOrdersPage = () => {
     setComplainOpen(true);
   };
   const handleExportPendingClientApproval = async () => {
-  setExportingPendingApproval(true);
-  try {
-    const payload = {
-      startDate: currentFilterState.startDate || undefined,
-      endDate: currentFilterState.endDate || undefined,
-    };
+    setExportingPendingApproval(true);
+    try {
+      const payload = {
+        startDate: currentFilterState.startDate || undefined,
+        endDate: currentFilterState.endDate || undefined,
+      };
 
-    const result = await reportService.exportPendingClientApprovalOrders(payload);
+      const result = await reportService.exportPendingClientApprovalOrders(payload);
 
-    // Check if result is empty response
-    if (typeof result === 'object' && result.empty) {
-      toast.info(result.message || 'No pending approval orders found for export.');
-      return;
+      // Check if result is empty response
+      if (typeof result === 'object' && result.empty) {
+        toast.info(result.message || 'No pending approval orders found for export.');
+        return;
+      }
+
+      // If we get here, result is a Blob
+      const blob = result as Blob;
+
+      const dateStr = payload.startDate && payload.endDate
+        ? `${moment(payload.startDate).format('DDMMYYYY')}_to_${moment(payload.endDate).format('DDMMYYYY')}`
+        : 'All_Time';
+
+      const fileName = `Pending_Client_Approval_Orders_${dateStr}.xlsx`;
+
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Pending client approval orders exported successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to export pending approval orders');
+    } finally {
+      setExportingPendingApproval(false);
     }
-
-    // If we get here, result is a Blob
-    const blob = result as Blob;
-
-    const dateStr = payload.startDate && payload.endDate
-      ? `${moment(payload.startDate).format('DDMMYYYY')}_to_${moment(payload.endDate).format('DDMMYYYY')}`
-      : 'All_Time';
-
-    const fileName = `Pending_Client_Approval_Orders_${dateStr}.xlsx`;
-
-    const url = window.URL.createObjectURL(new Blob([blob]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    toast.success('Pending client approval orders exported successfully');
-  } catch (error: any) {
-    toast.error(error.message || 'Failed to export pending approval orders');
-  } finally {
-    setExportingPendingApproval(false);
-  }
-};
+  };
 
 
   const handleExcelDownload = async () => {
@@ -573,6 +577,11 @@ const AllOrdersPage = () => {
       daysAfterConfirmation: order.daysAfterConfirmation,
       lastStatusChangeDate: order.lastStatusChangeDate,
 
+      designerNotificationUnread: order.designerNotificationUnread,
+      printerNotificationUnread: order.printerNotificationUnread,
+      binderNotificationUnread: order.binderNotificationUnread,
+      bookletBinderNotificationUnread: order.bookletBinderNotificationUnread,
+
       // Add these fields for proper filtering
       company: order.companyName?.companyName || "N/A",
       partyName: order.party?.partyName || "N/A",
@@ -586,12 +595,28 @@ const AllOrdersPage = () => {
 
   // Render row function
   const renderRow = (row: OrderRow, index: number) => {
+    let counter = 0
+    if (row.designerNotificationUnread === true) {
+      counter++
+    }
+    if (row.printerNotificationUnread === true) {
+      counter++
+    }
+    if (row.binderNotificationUnread === true) {
+      counter++
+    }
+    if (row.bookletBinderNotificationUnread === true) {
+      counter++
+    }
     return (
       <>
         <TableCell>
-          <Typography fontSize="14px" color="#6B7280">
-            {row.orderNumber || "N/A"}
-          </Typography>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography fontSize="14px" color="#6B7280">
+              {row.orderNumber || "N/A"}
+            </Typography>
+
+          </Box>
         </TableCell>
         <TableCell>
           <Box display="flex" alignItems="center" gap={2}>
@@ -659,6 +684,11 @@ const AllOrdersPage = () => {
             onClick={canViewGlobal ? () => handleRowClick(row) : undefined}
           >
             <StatusBadge row={row} />
+            {counter > 0 && (
+              <Badge color="primary" sx={{ mt: 1.6 }} badgeContent={counter}>
+                {counter}
+              </Badge>
+            )}
             <FaChevronRight
               style={{
                 fontSize: 14,
@@ -754,7 +784,7 @@ const AllOrdersPage = () => {
           >
             {/* आप लोडिंग के दौरान एक स्पिनर भी दिखा सकते हैं */}
             {downloadLoading ? (
-              <CircularProgress size={16} color="inherit" /> 
+              <CircularProgress size={16} color="inherit" />
             ) : (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -781,7 +811,7 @@ const AllOrdersPage = () => {
                 />
               </svg>
             )}
-            <Typography fontSize={12} sx={{ml:1}}>Download orders</Typography> 
+            <Typography fontSize={12} sx={{ ml: 1 }}>Download orders</Typography>
           </IconButton>
           <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
           {/* <Button
@@ -795,27 +825,27 @@ const AllOrdersPage = () => {
             {exportingPendingApproval ? 'Exporting...' : 'Pending Approval Design Orders'}
           </Button> */}
           <IconButton
-                          onClick={handleExportPendingClientApproval}
-                          sx={{
-                            border: "1px solid #D0D5DD",
-                            borderRadius: 2,
-                            p: 1,
-                            color: "#667085",
-                            display: "flex",
-                            alignItems: "center",
-                          }}
-                          title="Download as Excel"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            height="16"
-                            width="16"
-                            viewBox="0 0 384 512"
-                          // style={{ marginRight: "8px" }}
-                          >
-                            <path
-                              fill="#667085"
-                              d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
+            onClick={handleExportPendingClientApproval}
+            sx={{
+              border: "1px solid #D0D5DD",
+              borderRadius: 2,
+              p: 1,
+              color: "#667085",
+              display: "flex",
+              alignItems: "center",
+            }}
+            title="Download as Excel"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="16"
+              width="16"
+              viewBox="0 0 384 512"
+            // style={{ marginRight: "8px" }}
+            >
+              <path
+                fill="#667085"
+                d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
                                  10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
                                  0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
                                  8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
@@ -829,10 +859,10 @@ const AllOrdersPage = () => {
                                  18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
                                  12.5 2.5 17 7l97.9 98c4.5 4.5 7 
                                  10.6 7 16.9z"
-                            />
-                          </svg>
-                          <Typography fontSize={12} sx={{ml:1}}>Pending approval designs</Typography> 
-                        </IconButton>
+              />
+            </svg>
+            <Typography fontSize={12} sx={{ ml: 1 }}>Pending approval designs</Typography>
+          </IconButton>
         </Box>
       </Box>
       {(loading || isLoadingData) && orders.length === 0 ? (

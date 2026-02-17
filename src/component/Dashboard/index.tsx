@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Avatar,
@@ -38,13 +38,8 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { clearAuth, fetchUserThunk } from "@/store/slices/authSlice";
 import { authService } from "@/services/auth.service";
 import Slide from "@mui/material/Slide";
-import {
-  getBinderOrdersThunk,
-  getBookletBinderThunk,
-  getDesignerOrdersThunk,
-  getPrinterOrdersThunk,
-} from "@/store/slices/orderSlice";
 import { orderService } from "@/services/order.service";
+import { io, type Socket } from "socket.io-client";
 
 const permissionMapping: { [key: string]: string } = {
   "Account Master": "account_master",
@@ -234,7 +229,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [pageLoading, setPageLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [dateTime, setDateTime] = useState<Date | null>(null);
-  const [tasks,setTask] = useState([])
+  const [tasks, setTask] = useState([])
   const [activeSubSidebar, setActiveSubSidebar] = useState<string | null>(null); // Initially null
   const [filteredMenuItems, setFilteredMenuItems] = useState(menuItems);
   const transitionDuration = 300;
@@ -247,60 +242,119 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     REWORK: "Rework",
     DONE: "Done",
   };
- const getRoleSpecificTasks = async () => {
-  switch (role) {
-    case "designer": {
-      const res = await orderService.getDesignerOrders();
-      return res.data.filter(
-        (order) =>  order?.designerStatus !== STATUS?.APPROVED
-      ) || [];
-    }
+  const [notificationCounts, setNotificationCounts] = useState({
+    designer: 0,
+    printer: 0,
+    binder: 0,
+    bookletBinder: 0,
+  });
 
-    case "printer": {
-      const res1 = await orderService.getPrinterOrders();
-      return res1.data.filter(
-        (order) =>
-          order?.designerStatus === STATUS.APPROVED &&
-          order?.printerStatus !== STATUS.DONE
-      )|| [];
-    }
+  const socketRef = useRef<Socket | null>(null);
+  const getRoleSpecificTasks = async () => {
+    switch (role) {
+      case "designer": {
+        const res = await orderService.getDesignerOrders();
+        return res.data.filter(
+          (order) => order?.designerStatus !== STATUS?.APPROVED
+        ) || [];
+      }
 
-    case "binder": {
-      const res2 = await orderService.getBinderOrders();
-      return res2.data.filter(
-        (order) =>
-          order?.printerStatus === STATUS.DONE &&
-          order?.binderStatus !== STATUS.DONE
-      )|| [];
-    }
+      case "printer": {
+        const res1 = await orderService.getPrinterOrders();
+        return res1.data.filter(
+          (order) =>
+            order?.designerStatus === STATUS.APPROVED &&
+            order?.printerStatus !== STATUS.DONE
+        ) || [];
+      }
 
-    case "booklet & folder binder": {
-      const res3 = await orderService.getBookletBinder();
-      return res3.data.filter(
-        (order) =>
-          (order?.binderStatus === STATUS.DONE ||
-            order?.binderStatus === STATUS.PENDING) &&
-          order?.bookletBinderStatus !== STATUS.DONE
-      )|| [];
-    }
+      case "binder": {
+        const res2 = await orderService.getBinderOrders();
+        return res2.data.filter(
+          (order) =>
+            order?.printerStatus === STATUS.DONE &&
+            order?.binderStatus !== STATUS.DONE
+        ) || [];
+      }
 
-    case "admin":
-      return orders;
-    default:
-      return [];
-  }
-};
+      case "booklet & folder binder": {
+        const res3 = await orderService.getBookletBinder();
+        return res3.data.filter(
+          (order) =>
+            (order?.binderStatus === STATUS.DONE ||
+              order?.binderStatus === STATUS.PENDING) &&
+            order?.bookletBinderStatus !== STATUS.DONE
+        ) || [];
+      }
+
+      case "admin":
+        return orders;
+      default:
+        return [];
+    }
+  };
 
 
 useEffect(() => {
   if (user) {
     (async () => {
-     const res =  await getRoleSpecificTasks();
-     setTask(res);  
+     const res = await getRoleSpecificTasks();
+     setTask(res);
     })();
   }
 }, [user]);
 
+  useEffect(() => {
+    const initNotifications = async () => {
+      const isAdmin =
+        user && typeof user.role?.roleName === "string"
+          ? user.role.roleName.toLowerCase() === "admin"
+          : false;
+
+      if (!isAdmin) {
+        return;
+      }
+
+      try {
+        const response = await orderService.getNotificationSummary();
+        if (response.success && response.data) {
+          setNotificationCounts(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch notification summary", error);
+      }
+
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      if (!socketRef.current) {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8383";
+
+        const socket = io(baseUrl, {
+          transports: ["websocket"],
+        });
+
+        socket.on("orderNotificationUpdated", (payload: any) => {
+          if (payload && payload.summary) {
+            setNotificationCounts(payload.summary);
+          }
+        });
+
+        socketRef.current = socket;
+      }
+    };
+
+    initNotifications();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [user]);
 
   // Function to get current page title
   const getCurrentPageTitle = () => {
@@ -453,6 +507,13 @@ useEffect(() => {
   const handleMouseLeave = () => {
     if (drawerOpen) setDrawerOpen(false);
   };
+
+  const totalNotificationCount = user?.role?.roleName?.toLowerCase() === "admin"
+    ? notificationCounts.designer +
+    notificationCounts.printer +
+    notificationCounts.binder +
+    notificationCounts.bookletBinder
+    : 0;
 
   const setupSubMenuItems = [
     {
@@ -984,7 +1045,83 @@ useEffect(() => {
                     placement="right"
                   >
                     <ListItem disablePadding sx={{ mb: 0.5 }}>
-                      {item.label === "Task" ? (
+                      {item.label.toLowerCase() === "all orders" && user?.role?.roleName?.toLowerCase() === "admin" ? (
+                        <Badge
+                          badgeContent={totalNotificationCount}
+                          color="primary"
+                          sx={{
+                            width: "100%",
+                            "& .MuiBadge-badge": {
+                              right: drawerOpen ? 20 : 6,
+                              top: drawerOpen ? 24 : 0,
+                            },
+                          }}
+                        >
+                          <ListItemButton
+                            selected={
+                              router.pathname === item.path ||
+                              (item.path &&
+                                router.pathname.startsWith(item.path + "/"))
+                            }
+                            onClick={async () => {
+                              if (item.label === "Setup") {
+                                await handleSetupClick();
+                              } else if (item.children) {
+                                toggleSubmenu(item.label);
+                                setDrawerOpen(false);
+                                await new Promise((resolve) =>
+                                  setTimeout(resolve, transitionDuration)
+                                );
+                              } else {
+                                await handleNavigation(item.path);
+                              }
+                            }}
+                            sx={{
+                              borderRadius: 2,
+                              py: 0.75,
+                              px: drawerOpen ? 1 : 1.5,
+                              justifyContent: drawerOpen
+                                ? "flex-start"
+                                : "center",
+                              minHeight: 48,
+                              "&.Mui-selected": {
+                                bgcolor: theme.palette.primary.light,
+                                color: "#344054",
+                                border: "2px solid #7F56D9",
+                              },
+                              "&:hover": {
+                                bgcolor: theme.palette.primary.light,
+                                border: "2px solid #7F56D9",
+                              },
+                            }}
+                          >
+                            <ListItemIcon
+                              sx={{
+                                minWidth: 0,
+                                mr: drawerOpen ? 2 : "auto",
+                                justifyContent: "center",
+                                color: "#6b7280",
+                              }}
+                            >
+                              {item.icon}
+                            </ListItemIcon>
+                            {drawerOpen && (
+                              <>
+                                <ListItemText
+                                  primary={item.label}
+                                  primaryTypographyProps={{ fontSize: 14 }}
+                                />
+                                {item.children &&
+                                  (openMenus.includes(item.label) ? (
+                                    <MdExpandLess size={18} />
+                                  ) : (
+                                    <MdExpandMore size={18} />
+                                  ))}
+                              </>
+                            )}
+                          </ListItemButton>
+                        </Badge>
+                      ) : item.label === "Task" ? (
                         <Badge
                           badgeContent={tasks.length}
                           color="primary"
@@ -1134,47 +1271,53 @@ useEffect(() => {
                       unmountOnExit
                     >
                       <List component="div" disablePadding>
-                        {item.children.map((child) => (
-                          <ListItem key={child.label} disablePadding>
-                            <Tooltip
-                              title={!drawerOpen ? child.label : ""}
-                              placement="right"
+                        {item.children.map((child) => {
+                          const button = (
+                            <ListItemButton
+                              selected={
+                                router.pathname === child.path ||
+                                router.pathname.startsWith(child.path + "/")
+                              }
+                              onClick={() => handleNavigation(child.path)}
+                              sx={{
+                                borderRadius: 2,
+                                py: 0.75,
+                                px: 1,
+                                pl: 4,
+                                "&.Mui-selected": {
+                                  bgcolor: theme.palette.primary.light,
+                                  color: "#344054",
+                                  border: "2px solid #7F56D9",
+                                },
+                                "&:hover": {
+                                  bgcolor: theme.palette.primary.light,
+                                  border: "2px solid #7F56D9",
+                                },
+                              }}
                             >
-                              <ListItemButton
-                                selected={
-                                  router.pathname === child.path ||
-                                  router.pathname.startsWith(child.path + "/")
-                                }
-                                onClick={() => handleNavigation(child.path)}
-                                sx={{
-                                  borderRadius: 2,
-                                  py: 0.75,
-                                  px: 1,
-                                  pl: 4,
-                                  "&.Mui-selected": {
-                                    bgcolor: theme.palette.primary.light,
-                                    color: "#344054",
-                                    border: "2px solid #7F56D9",
-                                  },
-                                  "&:hover": {
-                                    bgcolor: theme.palette.primary.light,
-                                    border: "2px solid #7F56D9",
-                                  },
-                                }}
+                              <ListItemIcon sx={{ minWidth: 32 }}>
+                                {child.icon}
+                              </ListItemIcon>
+                              {drawerOpen && (
+                                <ListItemText
+                                  primary={child.label}
+                                  primaryTypographyProps={{ fontSize: 13 }}
+                                />
+                              )}
+                            </ListItemButton>
+                          );
+
+                          return (
+                            <ListItem key={child.label} disablePadding>
+                              <Tooltip
+                                title={!drawerOpen ? child.label : ""}
+                                placement="right"
                               >
-                                <ListItemIcon sx={{ minWidth: 32 }}>
-                                  {child.icon}
-                                </ListItemIcon>
-                                {drawerOpen && (
-                                  <ListItemText
-                                    primary={child.label}
-                                    primaryTypographyProps={{ fontSize: 13 }}
-                                  />
-                                )}
-                              </ListItemButton>
-                            </Tooltip>
-                          </ListItem>
-                        ))}
+                                {button}
+                              </Tooltip>
+                            </ListItem>
+                          );
+                        })}
                       </List>
                     </Collapse>
                   )}

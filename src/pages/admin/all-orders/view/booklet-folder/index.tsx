@@ -1,5 +1,5 @@
 "use client"
-import { useRef, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Box,
   Typography,
@@ -24,7 +24,6 @@ import { useAppDispatch, useAppSelector } from "@/store"
 import { getOrderByIdThunk, updateOrderThunk } from "@/store/slices/orderSlice"
 import { toast } from "react-toastify"
 import RoleStaffSelect from "@/component/reusablecomponents/RoleStaffSelect"
-import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import AddIcon from '@mui/icons-material/Add';
@@ -36,6 +35,7 @@ import moment from "moment"
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice"
 import ThemeSelect from "@/component/common_component/themeselect"
 import { getAllInventoryThunk } from "@/store/slices/inventorySlice"
+import { orderService } from "@/services/order.service"
 
 type OptionType = {
   label: string
@@ -56,18 +56,12 @@ const BookletFolderBinderForm = () => {
   const { id: orderId } = router.query
   const dispatch = useAppDispatch()
   const { singleOrder }:any = useAppSelector((state) => state.orders)
-  const fileUploadRef = useRef<any>(null)
   const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
   const [loading, setLoading] = useState(false)
   const [selectedBookletBinder, setSelectedBookletBinder] = useState<OptionType | null>(null)
-  const [openBookletFilesDialog, setOpenBookletFilesDialog] = useState(false)
-  const [uploadedBookletFiles, setUploadedBookletFiles] = useState<any[]>([])
-  const [openDesignFilesDialog, setOpenDesignFilesDialog] = useState(false)
-  const [openBinderFilesDialog, setOpenBinderFilesDialog] = useState(false)
   const [bookletPapers, setBookletPapers] = useState<PaperField[]>([])
   const { allInventory } = useAppSelector(state => state.inventory);
-
 
   const formik:any = useFormik({
     initialValues: {
@@ -188,8 +182,6 @@ const BookletFolderBinderForm = () => {
       }
     },
   })
-  console.log("DEBUG : BookletFolderBinderForm : formik:", formik);
-
 
   useEffect(() => {
     const fetchOrderData = async () => {
@@ -197,6 +189,7 @@ const BookletFolderBinderForm = () => {
         try {
           setPageLoading(true)
           await dispatch(getOrderByIdThunk(orderId)).unwrap()
+          await orderService.markNotificationRead(orderId, "bookletBinder")
         } catch (err) {
           console.error("Failed to fetch order:", err)
           toast.error("Failed to load order data")
@@ -267,8 +260,6 @@ const BookletFolderBinderForm = () => {
           ratePerUnit: ""
         }])
       }
-
-      setUploadedBookletFiles(singleOrder.bookletBinderFiles || [])
     }
   }, [singleOrder])
 
@@ -325,40 +316,7 @@ const BookletFolderBinderForm = () => {
     }
   }
 
-  const handleBookletFilesSelected = (selectedFiles: File[]) => {
-    const newFileList = selectedFiles.map((file) => ({
-      path: file.name,
-      remark: "",
-      _id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      file: file,
-      isNew: true,
-    }))
-    setUploadedBookletFiles((prev) => [...prev, ...newFileList])
-  }
-
-  const handleBookletFileRemoved = (removedFile: File) => {
-    setUploadedBookletFiles((prev) =>
-      prev.filter((file) => !(file.isNew && file.file && file.file.name === removedFile.name))
-    )
-  }
-
-  const handleUploadError = (error: string) => {
-    console.error("Upload error:", error)
-    toast.error(error)
-  }
-
-  const handleProceedToDelivery = () => {
-    router.push(`/admin/all-orders/view/dilevery/?id=${orderId}`)
-  }
-
-  const handleViewDesignFiles = () => setOpenDesignFilesDialog(true)
-  const handleCloseDesignFilesDialog = () => setOpenDesignFilesDialog(false)
-
-  const handleViewBinderFiles = () => setOpenBinderFilesDialog(true)
-  const handleCloseBinderFilesDialog = () => setOpenBinderFilesDialog(false)
-
-  const handleViewBookletFiles = () => setOpenBookletFilesDialog(true)
-  const handleCloseBookletFilesDialog = () => setOpenBookletFilesDialog(false)
+  const handleProceedToDelivery = () => router.push(`/admin/all-orders/view/dilevery/?id=${orderId}`)
 
   const handleAddBookletPaper = () => {
     const printerPaperCount = singleOrder?.printerPapers?.length || 0
@@ -646,30 +604,6 @@ Your Team
                 fullWidth
                 InputProps={{ readOnly: true }}
               />
-              {/* <ThemeInput
-                labelName="Issued Date"
-                type="date"
-                name="issuedDate"
-                value={formik.values.issuedDate}
-                onChange={formik.handleChange}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                error={formik.touched.issuedDate && Boolean(formik.errors.issuedDate)}
-                helperText={formik.touched.issuedDate && formik.errors.issuedDate}
-                InputProps={{ readOnly: areFieldsReadOnly }}
-              />
-              <ThemeInput
-                labelName="Received Date"
-                type="date"
-                name="receivedDate"
-                value={formik.values.receivedDate}
-                onChange={formik.handleChange}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                error={formik.touched.receivedDate && Boolean(formik.errors.receivedDate)}
-                helperText={formik.touched.receivedDate && formik.errors.receivedDate}
-                InputProps={{ readOnly: areFieldsReadOnly }}
-              /> */}
               <ThemeInput
                 labelName="Size"
                 name="size"
@@ -706,7 +640,6 @@ Your Team
             />
             <Box>
               <Grid container spacing={2} alignItems="center">
-
                 {/* Lamination */}
                 <Grid item xs={12} sm={3}>
                   <FormControl component="fieldset" disabled={areFieldsReadOnly}>
@@ -778,97 +711,6 @@ Your Team
                 </Grid>
               </Grid>
             </Box>
-            {/* Display Printer Papers */}
-            {/* {isPrinterStatusDone && singleOrder?.printerPapers?.length > 0 && (
-              <Box mb={3}>
-                <Typography fontWeight={600} mb={2}>
-                  Printer Papers
-                </Typography>
-                {singleOrder.printerPapers.map((paper, index) => (
-                  <Box key={`printer-${index}`} mb={2} p={2} border={1} borderRadius={2} borderColor="#ddd">
-                    <Typography fontWeight={600}>{paper.paperName}</Typography>
-                    <Stack direction="row" spacing={2} mt={1}>
-                      <ThemeInput
-                        labelName="Number of Sheets Used"
-                        value={paper.numberOfSheetsUsed}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                      <ThemeInput
-                        labelName="Sheet Size"
-                        value={paper.sheetSize}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                      <ThemeInput
-                        labelName="Paper Type"
-                        value={paper.paperType}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                      <ThemeInput
-                        labelName="GSM"
-                        value={paper.gsm}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                      <ThemeInput
-                        labelName="Rate / Unit"
-                        value={paper.ratePerUnit}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                    </Stack>
-                  </Box>
-                ))}
-              </Box>
-            )} */}
-
-            {/* Display Binder Papers */}
-            {/* {isBinderStatusDone && singleOrder?.binderPapers?.length > 0 && (
-              <Box mb={3}>
-                <Typography fontWeight={600} mb={2}>
-                  Binder Papers
-                </Typography>
-                {singleOrder.binderPapers.map((paper, index) => (
-                  <Box key={`binder-${index}`} mb={2} p={2} border={1} borderRadius={2} borderColor="#ddd">
-                    <Typography fontWeight={600}>{paper.paperName}</Typography>
-                    <Stack direction="row" spacing={2} mt={1}>
-                      <ThemeInput
-                        labelName="Number of Sheets Used"
-                        value={paper.numberOfSheetsUsed}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                      <ThemeInput
-                        labelName="Sheet Size"
-                        value={paper.sheetSize}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                      <ThemeInput
-                        labelName="Paper Type"
-                        value={paper.paperType}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                      <ThemeInput
-                        labelName="GSM"
-                        value={paper.gsm}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                      <ThemeInput
-                        labelName="Rate / Unit"
-                        value={paper.ratePerUnit}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                    </Stack>
-                  </Box>
-                ))}
-              </Box>
-            )} */}
 
             {/* Booklet Papers */}
             <Box mb={3}>
@@ -932,13 +774,6 @@ Your Team
                         fullWidth
                         InputProps={{ readOnly: areFieldsReadOnly }}
                       />
-                    {/* <ThemeInput
-                      labelName="Rate / Unit"
-                      value={paper.ratePerUnit}
-                      onChange={(e) => handleBookletPaperChange(index, 'ratePerUnit', e.target.value)}
-                      fullWidth
-                      InputProps={{ readOnly: areFieldsReadOnly }}
-                    /> */}
                   </Stack>
                 </Box>
               ))}
@@ -961,59 +796,7 @@ Your Team
               )}
             </Box>
 
-
-
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              {/*  <ThemeInput
-              labelName="Number of Sheets Used"
-              name="numberOfSheetUsed"
-              value={formik.values.numberOfSheetUsed}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.numberOfSheetUsed && Boolean(formik.errors.numberOfSheetUsed)}
-              helperText={formik.touched.numberOfSheetUsed && formik.errors.numberOfSheetUsed}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            />
-            <ThemeInput
-              labelName="Sheet Size"
-              name="sheetSize"
-              value={formik.values.sheetSize}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.sheetSize && Boolean(formik.errors.sheetSize)}
-              helperText={formik.touched.sheetSize && formik.errors.sheetSize}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            />
-            <ThemeInput
-              labelName="Paper Type"
-              name="paperType"
-              value={formik.values.paperType}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.paperType && Boolean(formik.errors.paperType)}
-              helperText={formik.touched.paperType && formik.errors.paperType}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            />
-            <ThemeInput
-              labelName="GSM"
-              name="gsm"
-              value={formik.values.gsm}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.gsm && Boolean(formik.errors.gsm)}
-              helperText={formik.touched.gsm && formik.errors.gsm}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            />
-            <ThemeInput
-              labelName="Rate / Unit"
-              name="ratePerUnit"
-              value={formik.values.ratePerUnit}
-              onChange={formik.handleChange}
-              fullWidth
-              error={formik.touched.ratePerUnit && Boolean(formik.errors.ratePerUnit)}
-              helperText={formik.touched.ratePerUnit && formik.errors.ratePerUnit}
-              InputProps={{ readOnly: areFieldsReadOnly }}
-            /> */}
               {(isBookletBinderStatusDone || isBookletBinderStatusInProgress) && (
                 <ThemeInput
                   labelName="Booklet Binder Wasted Sheet"
@@ -1082,7 +865,6 @@ Your Team
                 </Box>
               )}
             </Stack>
-
             <Box sx={{ display: "flex", gap: 2, flexDirection: "row" }}>
               {/* {isBookletBinderStatusPending && ( */}
               <ThemeButton
@@ -1122,9 +904,6 @@ Your Team
                 {loading ? "Processing..." : isHeld ? "Unhold" : "Hold"}
               </ThemeButton>
             </Box>
-
-            
-
             {isBookletBinderStatusDone && (
               <Box mt={4}>
                 <Stack direction='row' mb={2} gap={2}>
@@ -1188,15 +967,6 @@ Your Team
           </Stack>
         </Paper>
       </Box>
-
-      <ViewFilesDialog
-        open={openDesignFilesDialog}
-        onClose={handleCloseDesignFilesDialog}
-        files={singleOrder?.approvedFiles?.map((file: any) => file) || []}
-        title="Designer Files"
-        showDownload={true}
-        showView={true}
-      />
     </>
   )
 }

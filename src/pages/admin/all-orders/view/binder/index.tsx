@@ -21,6 +21,7 @@ import moment from "moment"
 import ThemeSelect from "@/component/common_component/themeselect"
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice"
 import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice"
+import { orderService } from "@/services/order.service"
 
 type OptionType = {
   label: string;
@@ -186,6 +187,7 @@ const BinderForm = () => {
         try {
           setPageLoading(true)
           await dispatch(getOrderByIdThunk(orderId)).unwrap()
+          await orderService.markNotificationRead(orderId, "binder")
         } catch (err) {
           console.error("Failed to fetch order:", err)
           toast.error("Failed to load order data")

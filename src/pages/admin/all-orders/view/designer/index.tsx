@@ -1,6 +1,6 @@
 "use client"
 import type React from "react"
-import { useRef, useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import {
   Box,
   Typography,
@@ -29,6 +29,7 @@ import RoleStaffSelect from "@/component/reusablecomponents/RoleStaffSelect"
 import ViewFilesDialog from "@/component/reusablecomponents/ViewFilesDialog"
 import AddNewPerformanceInvoiceDialog from "@/component/PerformanceInvoice/AddNewPerformanceInvoiceDialog"
 import { performanceInvoiceService } from "@/services/performanceInvoice.service"
+import { orderService } from "@/services/order.service"
 import Request from "@/services/axios"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice"
@@ -224,6 +225,7 @@ const ViewOrderDesigner = () => {
         try {
           setPageLoading(true)
           await dispatch(getOrderByIdThunk(orderId)).unwrap()
+          await orderService.markNotificationRead(orderId, "designer")
 
           // Check if a performa invoice already exists for this order
           const response = await performanceInvoiceService.getPerformanceInvoices()
@@ -250,11 +252,11 @@ const ViewOrderDesigner = () => {
     if (!markets.length) dispatch(getAllMarketsThunk())
   }, [])
 
-  // useEffect(() => {
-  //   if (singleOrder?.status === "Printer" && orderId) {
-  //     router.push(`/admin/all-orders/view/printers?id=${orderId}`)
-  //   }
-  // }, [singleOrder, orderId])
+  useEffect(() => {
+    if (singleOrder?.status === "Printer" && orderId) {
+      router.push(`/admin/all-orders/view/printers?id=${orderId}`)
+    }
+  }, [singleOrder, orderId])
 
   useEffect(() => {
     if (singleOrder) {
@@ -1309,22 +1311,23 @@ const ViewOrderDesigner = () => {
               )}
               <Box display="flex" gap={2} mb={2} width="100%">
                 {/* Generate Proforma Invoice */}
-                <ThemeButton
-                  sx={{
-                    flex: 1,
-                    background: isEditingDisabled ? "#ccc" : "#B100FF",
-                    color: "#fff",
-                    fontWeight: 600,
-                    fontSize: 16,
-                    borderRadius: 2,
-                    py: 1.2,
-                    "&:hover": { background: isEditingDisabled ? "#ccc" : "#8B00CC" },
-                  }}
-                  onClick={() => setPInvoiceModal(true)}
-                  disabled={isEditingDisabled}
-                >
-                  {isEditingDisabled ? "Invoice Already Generated" : "Generate Proforma Invoice"}
-                </ThemeButton>
+                {!isEditingDisabled && (
+                  <ThemeButton
+                    sx={{
+                      flex: 1,
+                      background: "#B100FF",
+                      color: "#fff",
+                      fontWeight: 600,
+                      fontSize: 16,
+                      borderRadius: 2,
+                      py: 1.2,
+                      "&:hover": { background: "#8B00CC" },
+                    }}
+                    onClick={() => setPInvoiceModal(true)}
+                  >
+                    Generate Proforma Invoice
+                  </ThemeButton>
+                )}
 
                 {/* View History */}
                 <ThemeButton
@@ -1419,7 +1422,6 @@ const ViewOrderDesigner = () => {
                 <Button
                   fullWidth
                   onClick={() => router.push(`/admin/all-orders/view/printers/?id=${orderId}`)}
-                  // disabled={!(singleOrder?.invoiceValidProof && singleOrder.invoiceValidProof.length > 0)}
                   sx={{
                     background: "#12B76A",
                     color: "#fff",

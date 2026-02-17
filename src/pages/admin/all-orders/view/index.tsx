@@ -200,11 +200,12 @@ const ViewOrderPage = () => {
     }
   }
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (!orderId || typeof orderId !== "string") {
       toast.error("Order ID not found")
       return
     }
+    formik.handleSubmit()
     router.push(`/admin/all-orders/view/designer?id=${orderId}`);
   }
 

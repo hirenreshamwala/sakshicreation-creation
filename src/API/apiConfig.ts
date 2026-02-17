@@ -130,6 +130,8 @@ const Endpoint = {
   GET_BOOKLET_BINDER: `${BaseURL}/api/orders/bookletBinder`,
   GET_ORDER_BY_STAFF_ID: `${BaseURL}/api/orders/getbystaffid`,
   GET_ORDER_FILTER_OPTIONS: `${BaseURL}/api/orders/filter-options`,
+  GET_ORDER_NOTIFICATION_SUMMARY: `${BaseURL}/api/orders/notifications/summary`,
+  MARK_ORDER_NOTIFICATION_READ: `${BaseURL}/api/orders`,
 
   //performance invoice
   GET_ALL_PERFORMANCE_INVOICES: `${BaseURL}/api/performance-invoice/getall`,

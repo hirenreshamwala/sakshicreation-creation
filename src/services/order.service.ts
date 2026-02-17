@@ -53,6 +53,13 @@ interface ApiResponse<T> {
   count?: number;
 }
 
+interface NotificationSummary {
+  designer: number;
+  printer: number;
+  binder: number;
+  bookletBinder: number;
+}
+
 export const orderService = {
   // Create Order
   async createOrder(data: CreateOrderData): Promise<ApiResponse<Order>> {
@@ -321,6 +328,43 @@ export const orderService = {
       console.error("Service: Get designer orders error:", error);
       throw new Error(
         error.response?.data?.message || "Failed to fetch designer orders"
+      );
+    }
+  },
+  async getNotificationSummary(): Promise<ApiResponse<NotificationSummary>> {
+    try {
+      const response: AxiosResponse<ApiResponse<NotificationSummary>> =
+        await Request.get(Endpoint.GET_ORDER_NOTIFICATION_SUMMARY);
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Get notification summary error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to fetch notification summary"
+      );
+    }
+  },
+  async markNotificationRead(
+    orderId: string,
+    roleType: "designer" | "printer" | "binder" | "bookletBinder"
+  ): Promise<ApiResponse<Order>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.put(
+        `${Endpoint.MARK_ORDER_NOTIFICATION_READ}/${orderId}/notifications/read`,
+        { roleType }
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Mark notification read error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to mark notification as read"
       );
     }
   },
