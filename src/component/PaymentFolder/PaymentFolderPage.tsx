@@ -1215,7 +1215,7 @@ const PaymentFolderPage: React.FC = () => {
         isDifference: type === 'difference',
       };
 
-      const blob = await reportService.exportPaymentFolderToExcel(payload);
+      const blob =type === "difference" ? await reportService.exportPaymentFolderDifffernceToExcel(payload) : await reportService.exportPaymentFolderToExcel(payload);
 
       // Create descriptive filename
       const parts = [

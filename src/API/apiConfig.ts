@@ -289,6 +289,7 @@ const Endpoint = {
   EXPORT_BOOKLETBINDER_EXCEL: `${BaseURL}/api/report/export-bookletbinder-excel`,
   EXPORT_COMPLAIN_EXCEL: `${BaseURL}/api/complain/export-complain-excel`,
   EXPORT_PAYMENT_FOLDER_EXCEL: `${BaseURL}/api/payment-folders/export-payment-folder-excel`,
+  EXPORT_PAYMENT_FOLDER_DIFFERENCE_EXCEL: `${BaseURL}/api/payment-folders/export-difference-payment-folder-excel`,
   EXPORT_PENDING_CLIENT_APPROVAL_ORDERS: `${BaseURL}/api/orders/export-pending-client-approval-orders`,
   BULK_DELETE_LEADS: `${BaseURL}/api/lead/delete/bulk`,
 

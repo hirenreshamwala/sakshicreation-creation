@@ -229,28 +229,28 @@ export const reportService = {
   },
 
   async getSalesCreditReport(data: DateRange): Promise<SalesCreditApiResponse> {
-  try {
-    const response: AxiosResponse<SalesCreditApiResponse> = await Request.post(
-      Endpoint.GET_SALES_CREDIT_REPORT, // tame endpoint define karvani
-      data
-    );
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || "Failed to fetch sales credit report");
-  }
-},
-async getQPSalesCreditReport(data: DateRange): Promise<QPSalesCreditApiResponse> {
-  try {
-    const response: AxiosResponse<QPSalesCreditApiResponse> = await Request.post(
-      Endpoint.GET_QP_SALES_CREDIT_REPORT,
-      data
-    );
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || "Failed to fetch QP sales credit report");
-  }
-},
-async exportDesignerToExcel(data: DateRange) {
+    try {
+      const response: AxiosResponse<SalesCreditApiResponse> = await Request.post(
+        Endpoint.GET_SALES_CREDIT_REPORT, // tame endpoint define karvani
+        data
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to fetch sales credit report");
+    }
+  },
+  async getQPSalesCreditReport(data: DateRange): Promise<QPSalesCreditApiResponse> {
+    try {
+      const response: AxiosResponse<QPSalesCreditApiResponse> = await Request.post(
+        Endpoint.GET_QP_SALES_CREDIT_REPORT,
+        data
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to fetch QP sales credit report");
+    }
+  },
+  async exportDesignerToExcel(data: DateRange) {
     try {
       const response = await Request.post(
         Endpoint.GET_SC_DESIGNERS_EXPORT,
@@ -271,77 +271,90 @@ async exportDesignerToExcel(data: DateRange) {
     }
   },
   async exportPrinterToExcel(data: any) {
-  try {
-    const response = await Request.post(
-      Endpoint.EXPORT_PRINTER_EXCEL,
-      data,
-      { responseType: 'blob' }
-    );
-    return response.data;
-  } catch (error: any) {
-    throw new Error('Failed to export printer report');
-  }
-},
-async exportBinderToExcel(data: any) {
-  try {
-    const response = await Request.post(
-      Endpoint.EXPORT_BINDER_EXCEL, // config માં ઉમેરો
-      data,
-      { responseType: 'blob' }
-    );
-    return response.data;
-  } catch (error: any) {
-    throw new Error('Failed to export binder report');
-  }
-},
+    try {
+      const response = await Request.post(
+        Endpoint.EXPORT_PRINTER_EXCEL,
+        data,
+        { responseType: 'blob' }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to export printer report');
+    }
+  },
+  async exportBinderToExcel(data: any) {
+    try {
+      const response = await Request.post(
+        Endpoint.EXPORT_BINDER_EXCEL, // config માં ઉમેરો
+        data,
+        { responseType: 'blob' }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to export binder report');
+    }
+  },
 
-async exportBookletBinderToExcel(data: any) {
-  try {
-    const response = await Request.post(
-      Endpoint.EXPORT_BOOKLETBINDER_EXCEL,
-      data,
-      { responseType: 'blob' }
-    );
-    return response.data;
-  } catch (error: any) {
-    throw new Error('Failed to export booklet binder report');
-  }
-},
+  async exportBookletBinderToExcel(data: any) {
+    try {
+      const response = await Request.post(
+        Endpoint.EXPORT_BOOKLETBINDER_EXCEL,
+        data,
+        { responseType: 'blob' }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to export booklet binder report');
+    }
+  },
 
-async exportComplainToExcel(data: any) {
-  try {
-    const response = await Request.post(
-      Endpoint.EXPORT_COMPLAIN_EXCEL,
-      data,
-      { responseType: 'blob' }
-    );
-    return response.data;
-  } catch (error: any) {
-    throw new Error('Failed to export complain report');
-  }
-},
+  async exportComplainToExcel(data: any) {
+    try {
+      const response = await Request.post(
+        Endpoint.EXPORT_COMPLAIN_EXCEL,
+        data,
+        { responseType: 'blob' }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to export complain report');
+    }
+  },
 
-async exportPaymentFolderToExcel(data: any): Promise<Blob> {
-  try {
-    const response = await Request.post(
-      Endpoint.EXPORT_PAYMENT_FOLDER_EXCEL,
-      data,
-      { responseType: 'blob', timeout: 300000 }
-    );
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to export payment folders');
-  }
-},
+  async exportPaymentFolderToExcel(data: any): Promise<Blob> {
+    try {
+      const response = await Request.post(
+        Endpoint.EXPORT_PAYMENT_FOLDER_EXCEL,
+        data,
+        { responseType: 'blob', timeout: 300000 }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to export payment folders');
+    }
+  },
 
-async exportPendingClientApprovalOrders(data: any): Promise<Blob | { empty: boolean; message: string }> {
+  async exportPaymentFolderDifffernceToExcel(data: any): Promise<Blob> {
+    try {
+      const response = await Request.post(
+        Endpoint.EXPORT_PAYMENT_FOLDER_DIFFERENCE_EXCEL,
+        data,
+        { responseType: 'blob', timeout: 300000 }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to export payment folders');
+    }
+  },
+
+  async exportPendingClientApprovalOrders(data: any): Promise<Blob | { empty: boolean; message: string }> {
     try {
       const response = await Request.post(
         Endpoint.EXPORT_PENDING_CLIENT_APPROVAL_ORDERS,
         data,
         { responseType: 'blob', timeout: 300000 }
       );
-      
+
       // Check if response is JSON (empty case)
       const contentType = response.headers['content-type'];
       if (contentType && contentType.includes('application/json')) {
@@ -354,7 +367,7 @@ async exportPendingClientApprovalOrders(data: any): Promise<Blob | { empty: bool
           throw new Error('Failed to parse empty response');
         }
       }
-      
+
       return response.data as Blob;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to export pending client approval orders');
