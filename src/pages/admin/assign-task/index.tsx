@@ -249,7 +249,8 @@ const AssignTaskPage: React.FC = () => {
         marketName: filters['Market Name']?.[0],
         mobile: filters['Mobile No.']?.[0],
         createdBy: filters['Assign By']?.[0],
-        assignToFilter: filters['Assign To']?.[0],
+        // Join multiple selections for Assign To to leverage backend's comma parsing
+        assignToFilter: filters['Assign To']?.length ? filters['Assign To'].join(',') : undefined,
         party: filters['Party']?.[0],
         area: filters['Area']?.[0],
         search: appliedSearchQuery,
@@ -486,7 +487,7 @@ const AssignTaskPage: React.FC = () => {
               'Mobile No.': 'mobile',
               'Reason to Visit': 'reason',
               'Assign By': 'assignBy',
-              'Assign To': 'assignedTo',
+              'Assign To': 'assignToFilter',
               'Status': 'taskStatus'
             };
 

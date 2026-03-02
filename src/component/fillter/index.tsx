@@ -394,7 +394,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                     {filteredUniqueValues.length} value{filteredUniqueValues.length !== 1 ? 's' : ''} found
                     {debouncedSearchQuery !== searchQuery && ' (searching...)'}
                   </Typography>
-                  {filteredUniqueValues.slice(0, 500).map((value) => ( // Limit to 500 for performance
+                  {filteredUniqueValues.map((value) => ( // Limit to 500 for performance
                     <MenuItem
                       key={value}
                       sx={{ px: 2 }}
@@ -415,21 +415,6 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                       />
                     </MenuItem>
                   ))}
-                  {filteredUniqueValues.length > 500 && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: 'block',
-                        px: 2,
-                        py: 1,
-                        color: '#667085',
-                        fontSize: 12,
-                        textAlign: 'center'
-                      }}
-                    >
-                      Showing 500 of {filteredUniqueValues.length} values
-                    </Typography>
-                  )}
                 </>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
