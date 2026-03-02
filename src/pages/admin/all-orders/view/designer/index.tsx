@@ -121,7 +121,7 @@ const ViewOrderDesigner = () => {
   const router = useRouter()
   const { id: orderId } = router.query
   const dispatch = useAppDispatch()
-  const { singleOrder }:any = useAppSelector((state) => state.orders)
+  const { singleOrder }: any = useAppSelector((state) => state.orders)
 
   const [pageLoading, setPageLoading] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -550,10 +550,10 @@ const ViewOrderDesigner = () => {
       await dispatch(updateOrderThunk({ id: orderId, data: updateData as any })).unwrap()
       toast.success("Order approved successfully")
       setApprovalOpen(false)
-      const updatedOrder:any = await dispatch(getOrderByIdThunk(orderId)).unwrap()
+      const updatedOrder: any = await dispatch(getOrderByIdThunk(orderId)).unwrap()
 
       // Open file selection modal after approval only if files exist
-      const hasFiles:any = (updatedOrder.designFiles?.length > 0) || (updatedOrder.reworkFiles?.length > 0)
+      const hasFiles: any = (updatedOrder.designFiles?.length > 0) || (updatedOrder.reworkFiles?.length > 0)
       if (hasFiles) {
         setFileSelectionOpen(true)
       }
@@ -654,7 +654,11 @@ const ViewOrderDesigner = () => {
 
   const shouldShowGenerateInvoiceButton = singleOrder?.designerStatus === "Approved"
 
+  // Email section: show after invoice is generated (saved)
   const shouldShowInvoiceProofSection = singleOrder?.designerStatus === "Approved" && isPerformaInvoiceSaved
+
+  // Next button: show only after invoice is approved (invoiceValidProof submitted)
+  const shouldShowNextButton = isEditingDisabled
 
   // Check if order is in Rework status (waiting for designer to resubmit)
   const isInReworkStatus = singleOrder?.designerStatus === "Rework"
@@ -828,7 +832,7 @@ const ViewOrderDesigner = () => {
                 </Typography>
               </Box>
               <Typography fontSize={14} color="#B42318" mt={1}>
-                Designer: {singleOrder.designer?.name} is currently working on the rework. 
+                Designer: {singleOrder.designer?.name} is currently working on the rework.
                 Approval options will be available once the designer resubmits the work.
               </Typography>
               {singleOrder?.designerRemarks && (
@@ -1154,6 +1158,132 @@ const ViewOrderDesigner = () => {
                       </Stack>
                     </Box>
                   )}
+                  <Box display="flex" gap={2} mb={2} width="100%">
+                    {/* Generate Proforma Invoice */}
+                    {!isEditingDisabled && (
+                      <ThemeButton
+                        sx={{
+                          flex: 1,
+                          background: "#B100FF",
+                          color: "#fff",
+                          fontWeight: 600,
+                          fontSize: 16,
+                          borderRadius: 2,
+                          py: 1.2,
+                          "&:hover": { background: "#8B00CC" },
+                        }}
+                        onClick={() => setPInvoiceModal(true)}
+                      >
+                        Generate Proforma Invoice
+                      </ThemeButton>
+                    )}
+
+                    {/* View History */}
+                    <ThemeButton
+                      sx={{
+                        flex: 1,
+                        background: "#9C27B0",
+                        color: "#fff",
+                        fontWeight: 600,
+                        fontSize: 16,
+                        borderRadius: 2,
+                        py: 1.2,
+                        "&:hover": { background: "#7B1FA2" },
+                      }}
+                      onClick={() => setProformaHistoryOpen(true)}
+                    >
+                      View History
+                    </ThemeButton>
+
+                    {/* Approve Invoice (visible after invoice generated) */}
+                    {isPerformaInvoiceSaved && !isEditingDisabled && (
+                      <ThemeButton
+                        sx={{
+                          flex: 1,
+                          background: "#12B76A",
+                          color: "#fff",
+                          fontWeight: 600,
+                          fontSize: 16,
+                          borderRadius: 2,
+                          py: 1.2,
+                          "&:hover": { background: "#079455" },
+                        }}
+                        onClick={() => setInvoiceValidProofOpen(true)}
+                      >
+                        Approve Invoice
+                      </ThemeButton>
+                    )}
+
+                    {/* Download Invoice (Only when disabled) */}
+                    {isEditingDisabled && (
+                      <ThemeButton
+                        sx={{
+                          flex: 1,
+                          background: "#2196F3",
+                          color: "#fff",
+                          fontWeight: 600,
+                          fontSize: 16,
+                          borderRadius: 2,
+                          py: 1.2,
+                          "&:hover": { background: "#1976D2" },
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 1,
+                        }}
+                        onClick={handleDownloadInvoice}
+                      >
+                        <MdDownload />
+                        Download Invoice
+                      </ThemeButton>
+                    )}
+                  </Box>
+
+                  <Collapse in={shouldShowInvoiceProofSection} timeout="auto" unmountOnExit>
+                    <Typography fontWeight={600} mb={2}>
+                      Send Invoice for Approval via
+                    </Typography>
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={4}>
+                      <Box
+                        onClick={handleEmailClick}
+                        sx={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 1,
+                          border: "1px solid #D0D5DD",
+                          borderRadius: 2,
+                          px: 2,
+                          py: 1.2,
+                          backgroundColor: "#fff",
+                          cursor: "pointer",
+                          "&:hover": { backgroundColor: "#F9FAFB" },
+                        }}
+                      >
+                        <MdEmail size={18} color="#F04438" />
+                        <Typography fontWeight={500} fontSize={14} color="#344054">
+                          Email
+                        </Typography>
+                      </Box>
+
+                    </Stack>
+                    <Button
+                      fullWidth
+                      onClick={() => router.push(`/admin/all-orders/view/printers/?id=${orderId}`)}
+                      sx={{
+                        background: "#12B76A",
+                        color: "#fff",
+                        fontWeight: 600,
+                        fontSize: 16,
+                        borderRadius: 2,
+                        py: 1.2,
+                        "&:hover": { background: "#079455" },
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </Collapse>
                   {!isApproved && (
                     <>
                       <Typography fontWeight={600} mb={2}>
@@ -1390,11 +1520,12 @@ const ViewOrderDesigner = () => {
                 )}
               </Box>
 
+              {/* Email section - shown after invoice is generated */}
               <Collapse in={shouldShowInvoiceProofSection} timeout="auto" unmountOnExit>
                 <Typography fontWeight={600} mb={2}>
                   Send Invoice for Approval via
                 </Typography>
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={4}>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
                   <Box
                     onClick={handleEmailClick}
                     sx={{
@@ -1417,8 +1548,11 @@ const ViewOrderDesigner = () => {
                       Email
                     </Typography>
                   </Box>
-
                 </Stack>
+              </Collapse>
+
+              {/* Next button - shown only after invoice is approved (Approve Invoice submitted) */}
+              <Collapse in={shouldShowNextButton} timeout="auto" unmountOnExit>
                 <Button
                   fullWidth
                   onClick={() => router.push(`/admin/all-orders/view/printers/?id=${orderId}`)}
@@ -1429,10 +1563,11 @@ const ViewOrderDesigner = () => {
                     fontSize: 16,
                     borderRadius: 2,
                     py: 1.2,
+                    mt: 2,
                     "&:hover": { background: "#079455" },
                   }}
                 >
-                  Next
+                  Next →
                 </Button>
               </Collapse>
             </Box>
