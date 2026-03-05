@@ -106,7 +106,7 @@ export const createOrderThunk = createAsyncThunk(
 // Get All Orders
 export const getAllOrdersThunk = createAsyncThunk(
   "order/getAll",
-  async (filters,{ rejectWithValue }
+  async (filters, { rejectWithValue }
   ) => {
     try {
       const response = await orderService.getAllOrders(filters);
@@ -176,11 +176,13 @@ export const getOrderByIdThunk = createAsyncThunk(
 export const updateOrderThunk = createAsyncThunk(
   "order/update",
   async (
-    { id, data }: { id: string; data: Partial<CreateOrderData & {
-      printerPapers?: PaperField[];
-      binderPapers?: PaperField[];
-      bookletPapers?: PaperField[];
-    }> },
+    { id, data }: {
+      id: string; data: Partial<CreateOrderData & {
+        printerPapers?: PaperField[];
+        binderPapers?: PaperField[];
+        bookletPapers?: PaperField[];
+      }>
+    },
     { rejectWithValue }
   ) => {
     try {
@@ -347,7 +349,41 @@ export const getOrdersByStaffIdThunk = createAsyncThunk(
   }
 );
 
+// Assign Follow Up
+export const assignFollowUpThunk = createAsyncThunk(
+  "order/assignFollowUp",
+  async ({ orderId, staffId, remarks }: { orderId: string; staffId: string; remarks?: string }, { rejectWithValue }) => {
+    try {
+      const response = await orderService.assignFollowUp(orderId, staffId, remarks);
+      if (response.success) {
+        return response.data;
+      } else {
+        return rejectWithValue(response.message || "Failed to assign follow-up");
+      }
+    } catch (error: any) {
+      console.error("Redux: Assign follow-up error:", error);
+      return rejectWithValue(error.message || "Failed to assign follow-up");
+    }
+  }
+);
 
+// Update Follow Up Status
+export const updateFollowUpStatusThunk = createAsyncThunk(
+  "order/updateFollowUpStatus",
+  async ({ orderId, status }: { orderId: string; status: string }, { rejectWithValue }) => {
+    try {
+      const response = await orderService.updateFollowUpStatus(orderId, status);
+      if (response.success) {
+        return response.data;
+      } else {
+        return rejectWithValue(response.message || "Failed to update follow-up status");
+      }
+    } catch (error: any) {
+      console.error("Redux: Update follow-up status error:", error);
+      return rejectWithValue(error.message || "Failed to update follow-up status");
+    }
+  }
+);
 
 const orderSlice = createSlice({
   name: "order",
@@ -613,6 +649,56 @@ const orderSlice = createSlice({
         state.error = action.payload as string;
         state.orderList = [];
       })
+
+      // Assign Follow Up
+      .addCase(assignFollowUpThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        assignFollowUpThunk.fulfilled,
+        (state, action: PayloadAction<Order>) => {
+          state.loading = false;
+          // Update the order in the list
+          const index = state.orderList.findIndex(
+            (order) => order._id === action.payload._id
+          );
+          if (index !== -1) {
+            state.orderList[index] = action.payload;
+          }
+          state.successMessage = "Follow-up assigned successfully";
+          state.error = null;
+        }
+      )
+      .addCase(assignFollowUpThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // Update Follow Up Status
+      .addCase(updateFollowUpStatusThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        updateFollowUpStatusThunk.fulfilled,
+        (state, action: PayloadAction<Order>) => {
+          state.loading = false;
+          // Update the order in the list
+          const index = state.orderList.findIndex(
+            (order) => order._id === action.payload._id
+          );
+          if (index !== -1) {
+            state.orderList[index] = action.payload;
+          }
+          state.successMessage = "Follow-up status updated successfully";
+          state.error = null;
+        }
+      )
+      .addCase(updateFollowUpStatusThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
 
   },
 });

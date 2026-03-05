@@ -1,0 +1,291 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import {
+    Box,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
+    InputLabel,
+    MenuItem,
+    Select,
+    TextField,
+    Typography,
+    Avatar,
+    Chip,
+} from "@mui/material";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { getAllStaffThunk } from "@/store/slices/staffSlice";
+import { assignFollowUpThunk, updateFollowUpStatusThunk } from "@/store/slices/orderSlice";
+import { toast } from "react-toastify";
+
+interface Staff {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    avatar?: string;
+}
+
+interface FollowUpData {
+    staff?: Staff | null;
+    status?: string;
+    assignedAt?: string;
+    remarks?: string;
+}
+
+interface Order {
+    _id: string;
+    orderNumber: string;
+    followUp?: FollowUpData;
+}
+
+interface FollowUpDialogProps {
+    open: boolean;
+    onClose: () => void;
+    order: Order | null;
+    onSuccess?: () => void;
+}
+
+const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
+    open,
+    onClose,
+    order,
+    onSuccess,
+}) => {
+    const dispatch = useAppDispatch();
+    const { staffList = [] } = useAppSelector((state) => state.staff || {});
+    const [selectedStaff, setSelectedStaff] = useState<string>("");
+    const [remarks, setRemarks] = useState<string>("");
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (open) {
+            dispatch(getAllStaffThunk());
+            if (order?.followUp?.staff) {
+                setSelectedStaff(order.followUp.staff._id);
+                setRemarks(order.followUp.remarks || "");
+            } else {
+                setSelectedStaff("");
+                setRemarks("");
+            }
+        }
+    }, [open, order, dispatch]);
+
+    const handleStaffChange = (event: any) => {
+        setSelectedStaff(event.target.value as string);
+    };
+
+    const handleRemarksChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setRemarks(event.target.value);
+    };
+
+    const handleSubmit = async () => {
+        if (!order?._id) {
+            toast.error("Order not found");
+            return;
+        }
+
+        if (!selectedStaff) {
+            toast.error("Please select a staff member");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const result = await dispatch(
+                assignFollowUpThunk({
+                    orderId: order._id,
+                    staffId: selectedStaff,
+                    remarks: remarks || undefined,
+                })
+            ).unwrap();
+
+            if (result) {
+                toast.success("Follow-up assigned successfully");
+                onSuccess?.();
+                onClose();
+            }
+        } catch (error: any) {
+            toast.error(error || "Failed to assign follow-up");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleStatusChange = async (newStatus: string) => {
+        if (!order?._id) {
+            toast.error("Order not found");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const result = await dispatch(
+                updateFollowUpStatusThunk({
+                    orderId: order._id,
+                    status: newStatus,
+                })
+            ).unwrap();
+
+            if (result) {
+                toast.success(`Follow-up status updated to ${newStatus}`);
+                onSuccess?.();
+            }
+        } catch (error: any) {
+            toast.error(error || "Failed to update follow-up status");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getStatusColor = (status?: string) => {
+        switch (status) {
+            case "Pending":
+                return "warning";
+            case "In Progress":
+                return "info";
+            case "Completed":
+                return "success";
+            case "Cancelled":
+                return "error";
+            default:
+                return "default";
+        }
+    };
+
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            <DialogTitle>
+                <Typography variant="h6" fontWeight="bold">
+                    Assign Follow Up
+                </Typography>
+                {order && (
+                    <Typography variant="body2" color="text.secondary">
+                        Order: {order.orderNumber}
+                    </Typography>
+                )}
+            </DialogTitle>
+
+            <DialogContent>
+                <Box sx={{ mt: 2 }}>
+                    {/* Current Follow Up Status */}
+                    {order?.followUp?.staff && (
+                        <Box sx={{ mb: 3, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Current Assignment
+                            </Typography>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                                <Avatar
+                                    src={order.followUp.staff.avatar}
+                                    alt={`${order.followUp.staff.firstName} ${order.followUp.staff.lastName}`}
+                                    sx={{ width: 32, height: 32 }}
+                                />
+                                <Typography variant="body1">
+                                    {order.followUp.staff.firstName} {order.followUp.staff.lastName}
+                                </Typography>
+                            </Box>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <Chip
+                                    label={order.followUp.taskId.status || "Pending"}
+                                    color={getStatusColor(order.followUp.taskId.status) as any}
+                                    size="small"
+                                />
+                                {order.followUp.assignedAt && (
+                                    <Typography variant="caption" color="text.secondary">
+                                        Assigned on:{" "}
+                                        {new Date(order.followUp.assignedAt).toLocaleDateString()}
+                                    </Typography>
+                                )}
+                            </Box>
+                        </Box>
+                    )}
+
+                    {/* Staff Selection */}
+                    <FormControl fullWidth sx={{ mb: 2 }}>
+                        <InputLabel id="staff-select-label">Select Staff</InputLabel>
+                        <Select
+                            labelId="staff-select-label"
+                            value={selectedStaff}
+                            label="Select Staff"
+                            onChange={handleStaffChange}
+                            disabled={loading}
+                        >
+                            {(staffList as Staff[]).map((staff) => (
+                                <MenuItem key={staff._id} value={staff._id}>
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        <Avatar
+                                            src={staff.avatar}
+                                            alt={`${staff.firstName} ${staff.lastName}`}
+                                            sx={{ width: 24, height: 24 }}
+                                        />
+                                        <Typography>
+                                            {staff.firstName} {staff.lastName}
+                                        </Typography>
+                                    </Box>
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    {/* Remarks */}
+                    <TextField
+                        fullWidth
+                        label="Remarks (Optional)"
+                        multiline
+                        rows={3}
+                        value={remarks}
+                        onChange={handleRemarksChange}
+                        disabled={loading}
+                        placeholder="Enter any additional notes or remarks..."
+                    />
+
+                    {/* Status Change Buttons (only if already assigned) */}
+                    {/* {order?.followUp?.staff && (
+                        <Box sx={{ mt: 3 }}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Update Status
+                            </Typography>
+                            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                                {["Pending", "In Progress", "Completed", "Cancelled"].map((status) => (
+                                    <Button
+                                        key={status}
+                                        variant={order.followUp?.status === status ? "contained" : "outlined"}
+                                        size="small"
+                                        onClick={() => handleStatusChange(status)}
+                                        disabled={loading || order.followUp?.status === status}
+                                        color={getStatusColor(status) as any}
+                                    >
+                                        {status}
+                                    </Button>
+                                ))}
+                            </Box>
+                        </Box>
+                    )} */}
+                </Box>
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button onClick={onClose} disabled={loading} variant="outlined">
+                    Cancel
+                </Button>
+                <Button
+                    onClick={handleSubmit}
+                    disabled={loading || !selectedStaff}
+                    variant="contained"
+                >
+                    {loading
+                        ? "Saving..."
+                        : order?.followUp?.staff
+                            ? "Reassign Follow Up"
+                            : "Assign Follow Up"}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
+export default FollowUpDialog;

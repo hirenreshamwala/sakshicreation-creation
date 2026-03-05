@@ -14,6 +14,7 @@ import AddSakhiOrderDialog from "@/component/allorderdailog"
 import { generateInvoicePDF } from "@/utills/generateInvoicePDF"
 import ComplainDialogue from "../all-complains/ComplainDialogue";
 import CustomTable2 from "@/component/common_component/Table/CustomTable2";
+import FollowUpDialog from "@/component/allorderdailog/FollowUpDialog";
 import { orderService } from "@/services/order.service";
 import { getAllPaginationOrdersThunk, getOrdersByStaffIdThunk } from "@/store/slices/orderSlice";
 import _ from "lodash";
@@ -32,6 +33,7 @@ const columns = [
   { id: "remarks", label: "Remarks", value: "remarks" },
   { id: "orderedBy", label: "Ordered By", value: "orderedBy" },
   { id: "orderStatus", label: "Order Status", value: "orderStatus" },
+  { id: "followUp", label: "Follow Up", value: "followUp" },
   { id: "actions", label: "Actions" },
   // { id: "complain", label: "Complain" },
 ]
@@ -87,6 +89,18 @@ type OrderRow = {
   printerNotificationUnread?: boolean
   binderNotificationUnread?: boolean
   bookletBinderNotificationUnread?: boolean
+  // Follow up field
+  followUp?: {
+    staff?: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+      avatar?: string;
+    };
+    status?: string;
+    assignedAt?: string;
+    remarks?: string;
+  }
 }
 
 const AllOrdersPage = () => {
@@ -103,6 +117,10 @@ const AllOrdersPage = () => {
   const [activeTab, setActiveTab] = useState(c === "Quality Packaging" ? 1 : 0)
   const [complainOpen, setComplainOpen] = useState(false)
   const [selectedOrderForComplain, setSelectedOrderForComplain] = useState<OrderRow | null>(null)
+
+  // Follow Up Dialog state
+  const [followUpDialogOpen, setFollowUpDialogOpen] = useState(false)
+  const [selectedOrderForFollowUp, setSelectedOrderForFollowUp] = useState<OrderRow | null>(null)
 
   // Remove isInitialLoad state and use loading state from Redux instead
   const [isLoadingData, setIsLoadingData] = useState(false)
@@ -275,6 +293,15 @@ const AllOrdersPage = () => {
   const handleComplainClick = (rowData: OrderRow) => {
     setSelectedOrderForComplain(rowData);
     setComplainOpen(true);
+  };
+
+  const handleFollowUpClick = (rowData: OrderRow) => {
+    setSelectedOrderForFollowUp(rowData);
+    setFollowUpDialogOpen(true);
+  };
+
+  const handleFollowUpSuccess = () => {
+    loadOrders();
   };
   const handleExportPendingClientApproval = async () => {
     setExportingPendingApproval(true);
@@ -581,6 +608,7 @@ const AllOrdersPage = () => {
       printerNotificationUnread: order.printerNotificationUnread,
       binderNotificationUnread: order.binderNotificationUnread,
       bookletBinderNotificationUnread: order.bookletBinderNotificationUnread,
+      followUp: order.followUp,
 
       // Add these fields for proper filtering
       company: order.companyName?.companyName || "N/A",
@@ -699,7 +727,86 @@ const AllOrdersPage = () => {
           </Box>
         </TableCell>
         <TableCell>
+          <Box display="flex" alignItems="center" gap={1}>
+            {row.followUp?.staff ? (
+              <>
+                <Avatar
+                  src={row.followUp.staff.avatar}
+                  alt={`${row.followUp.staff.firstName} ${row.followUp.staff.lastName}`}
+                  sx={{ width: 24, height: 24 }}
+                />
+
+                <Typography fontSize="12px" color="#6B7280">
+                  {row.followUp.staff.firstName} {row.followUp.staff.lastName}
+                </Typography>
+
+                {/* Status + Date Wrapper */}
+                <Box display="flex" flexDirection="column" gap={0.5}>
+                  {/* Status Badge */}
+                  <Box
+                    sx={{
+                      backgroundColor:
+                        row.followUp.status === "Completed"
+                          ? "#10B981"
+                          : row.followUp.status === "In Progress"
+                            ? "#3B82F6"
+                            : row.followUp.status === "Cancelled"
+                              ? "#EF4444"
+                              : row.followUp.status === "Rescheduled"
+                                ? "#8B5CF6"
+                                : "#F59E0B",
+                      color: "#FFFFFF",
+                      fontSize: "10px",
+                      fontWeight: 600,
+                      borderRadius: "4px",
+                      px: 0.75,
+                      py: 0.25,
+                      textTransform: "uppercase",
+                      width: "fit-content",
+                    }}
+                  >
+                    {row.followUp?.taskId?.status || ""}
+                  </Box>
+
+                  {/* Rescheduled Date (Now Below Badge) */}
+                  {row.followUp?.taskId?.status === "Rescheduled" &&
+                    row.followUp?.taskId?.rescheduleDate && (
+                      <Typography
+                        fontSize="10px"
+                        color="#8B5CF6"
+                        sx={{
+                          backgroundColor: "#EDE9FE",
+                          borderRadius: "4px",
+                          px: 0.75,
+                          py: 0.25,
+                          fontWeight: 500,
+                          width: "fit-content",
+                        }}
+                      >
+                        {moment(row.followUp.taskId.rescheduleDate).format(
+                          "DD-MM-YYYY"
+                        )}
+                      </Typography>
+                    )}
+                </Box>
+              </>
+            ) : (
+              <Typography fontSize="12px" color="#9CA3AF">
+                Not Assigned
+              </Typography>
+            )}
+          </Box>
+        </TableCell>
+        <TableCell>
           <Box display="flex" gap={1}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => handleFollowUpClick(row)}
+              sx={{ fontSize: "11px", textTransform: "none" }}
+            >
+              {row.followUp?.staff ? "Reassign" : "Follow Up"}
+            </Button>
             {/* <Button
                     variant="outlined"
                     size="small"
@@ -917,6 +1024,15 @@ const AllOrdersPage = () => {
         // refreshData={refreshData}
         />
       )}
+      <FollowUpDialog
+        open={followUpDialogOpen}
+        onClose={() => {
+          setFollowUpDialogOpen(false);
+          setSelectedOrderForFollowUp(null);
+        }}
+        order={selectedOrderForFollowUp}
+        onSuccess={handleFollowUpSuccess}
+      />
     </>
   );
 

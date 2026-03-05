@@ -132,6 +132,8 @@ const Endpoint = {
   GET_ORDER_FILTER_OPTIONS: `${BaseURL}/api/orders/filter-options`,
   GET_ORDER_NOTIFICATION_SUMMARY: `${BaseURL}/api/orders/notifications/summary`,
   MARK_ORDER_NOTIFICATION_READ: `${BaseURL}/api/orders`,
+  ASSIGN_FOLLOW_UP: (orderId: string) => `${BaseURL}/api/orders/${orderId}/follow-up`,
+  UPDATE_FOLLOW_UP_STATUS: (orderId: string) => `${BaseURL}/api/orders/${orderId}/follow-up/status`,
 
   //performance invoice
   GET_ALL_PERFORMANCE_INVOICES: `${BaseURL}/api/performance-invoice/getall`,

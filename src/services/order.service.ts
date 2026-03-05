@@ -85,7 +85,7 @@ export const orderService = {
   async getAllOrders(filters): Promise<ApiResponse<Order[]>> {
     try {
       const response: AxiosResponse<ApiResponse<Order[]>> = await Request.post(
-        Endpoint.GET_ALL_ORDERS,filters
+        Endpoint.GET_ALL_ORDERS, filters
       );
 
       return {
@@ -380,6 +380,46 @@ export const orderService = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to export account masters");
+    }
+  },
+
+  // Assign follow-up to an order
+  async assignFollowUp(orderId: string, staffId: string, remarks?: string): Promise<ApiResponse<Order>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
+        Endpoint.ASSIGN_FOLLOW_UP(orderId),
+        { staffId, remarks }
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Assign follow-up error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to assign follow-up"
+      );
+    }
+  },
+
+  // Update follow-up status
+  async updateFollowUpStatus(orderId: string, status: string): Promise<ApiResponse<Order>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.put(
+        Endpoint.UPDATE_FOLLOW_UP_STATUS(orderId),
+        { status }
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Update follow-up status error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to update follow-up status"
+      );
     }
   },
 };
