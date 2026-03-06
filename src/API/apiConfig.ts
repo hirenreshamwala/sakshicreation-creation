@@ -48,6 +48,11 @@ const Endpoint = {
   BULK_CREATE_PURCHASES: `${BaseURL}/api/purchase/bulk`,
 
   GET_ALL_QP_PURCHASES: `${BaseURL}/api/qppurchase/getall`,
+
+  // Orders
+  CANCEL_ORDER: `${BaseURL}/api/orders/cancel`,
+  DOWNLOAD_CANCELLED_ORDERS_EXCEL: `${BaseURL}/api/orders/download-cancelled-excel`,
+  DOWNLOAD_PENDING_APPROVAL_ORDERS_EXCEL: `${BaseURL}/api/orders/download-pending-approval-excel`,
   CREATE_QP_PURCHASE: `${BaseURL}/api/qppurchase/create`,
   UPDATE_QP_PURCHASE: `${BaseURL}/api/qppurchase/update`,
   DELETE_QP_PURCHASE: `${BaseURL}/api/qppurchase/delete`,

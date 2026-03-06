@@ -28,6 +28,9 @@ export const permissionsArray = {
     delete: false,
     status: false,
   },
+  cancel_order: {
+    view_global: false
+  },
   // sell_orders: {
   //   view_global: false,
   //   view_own: false,

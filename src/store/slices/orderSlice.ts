@@ -385,6 +385,24 @@ export const updateFollowUpStatusThunk = createAsyncThunk(
   }
 );
 
+// Cancel Order
+export const cancelOrderThunk = createAsyncThunk(
+  "order/cancelOrder",
+  async ({ orderId, cancelRemarks }: { orderId: string; cancelRemarks: string }, { rejectWithValue }) => {
+    try {
+      const response = await orderService.cancelOrder(orderId, cancelRemarks);
+      if (response.success) {
+        return response.data;
+      } else {
+        return rejectWithValue(response.message || "Failed to cancel order");
+      }
+    } catch (error: any) {
+      console.error("Redux: Cancel order error:", error);
+      return rejectWithValue(error.message || "Failed to cancel order");
+    }
+  }
+);
+
 const orderSlice = createSlice({
   name: "order",
   initialState,
@@ -696,6 +714,31 @@ const orderSlice = createSlice({
         }
       )
       .addCase(updateFollowUpStatusThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // Cancel Order
+      .addCase(cancelOrderThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        cancelOrderThunk.fulfilled,
+        (state, action: PayloadAction<Order>) => {
+          state.loading = false;
+          // Update the order in the list
+          const index = state.orderList.findIndex(
+            (order) => order._id === action.payload._id
+          );
+          if (index !== -1) {
+            state.orderList[index] = action.payload;
+          }
+          state.successMessage = "Order cancelled successfully";
+          state.error = null;
+        }
+      )
+      .addCase(cancelOrderThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

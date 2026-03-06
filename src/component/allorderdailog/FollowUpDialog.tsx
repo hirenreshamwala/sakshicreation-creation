@@ -116,32 +116,6 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
         }
     };
 
-    const handleStatusChange = async (newStatus: string) => {
-        if (!order?._id) {
-            toast.error("Order not found");
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const result = await dispatch(
-                updateFollowUpStatusThunk({
-                    orderId: order._id,
-                    status: newStatus,
-                })
-            ).unwrap();
-
-            if (result) {
-                toast.success(`Follow-up status updated to ${newStatus}`);
-                onSuccess?.();
-            }
-        } catch (error: any) {
-            toast.error(error || "Failed to update follow-up status");
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const getStatusColor = (status?: string) => {
         switch (status) {
             case "Pending":
@@ -242,29 +216,6 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                         disabled={loading}
                         placeholder="Enter any additional notes or remarks..."
                     />
-
-                    {/* Status Change Buttons (only if already assigned) */}
-                    {/* {order?.followUp?.staff && (
-                        <Box sx={{ mt: 3 }}>
-                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                Update Status
-                            </Typography>
-                            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                                {["Pending", "In Progress", "Completed", "Cancelled"].map((status) => (
-                                    <Button
-                                        key={status}
-                                        variant={order.followUp?.status === status ? "contained" : "outlined"}
-                                        size="small"
-                                        onClick={() => handleStatusChange(status)}
-                                        disabled={loading || order.followUp?.status === status}
-                                        color={getStatusColor(status) as any}
-                                    >
-                                        {status}
-                                    </Button>
-                                ))}
-                            </Box>
-                        </Box>
-                    )} */}
                 </Box>
             </DialogContent>
 

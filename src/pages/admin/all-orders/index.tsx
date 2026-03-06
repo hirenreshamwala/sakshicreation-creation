@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
-import { Avatar, Box, TableCell, Typography, Button, CircularProgress, IconButton, Badge } from "@mui/material"
+import { Avatar, Box, TableCell, Typography, Button, CircularProgress, IconButton, Badge, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@mui/material"
 import { useRouter } from "next/router"
 import ThemeButton from "@/component/common_component/themebutton"
 import { useAppDispatch, useAppSelector } from "@/store"
@@ -121,6 +121,11 @@ const AllOrdersPage = () => {
   // Follow Up Dialog state
   const [followUpDialogOpen, setFollowUpDialogOpen] = useState(false)
   const [selectedOrderForFollowUp, setSelectedOrderForFollowUp] = useState<OrderRow | null>(null)
+
+  // Cancel Order Dialog state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [selectedOrderForCancel, setSelectedOrderForCancel] = useState<OrderRow | null>(null)
+  const [cancelRemarks, setCancelRemarks] = useState("")
 
   // Remove isInitialLoad state and use loading state from Redux instead
   const [isLoadingData, setIsLoadingData] = useState(false)
@@ -303,6 +308,29 @@ const AllOrdersPage = () => {
   const handleFollowUpSuccess = () => {
     loadOrders();
   };
+
+  // Cancel Order handlers
+  const handleCancelClick = (rowData: OrderRow) => {
+    setSelectedOrderForCancel(rowData);
+    setCancelRemarks("");
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!selectedOrderForCancel) return;
+
+    try {
+      await orderService.cancelOrder(selectedOrderForCancel._id, cancelRemarks);
+      toast.success("Order cancelled successfully");
+      setCancelDialogOpen(false);
+      setSelectedOrderForCancel(null);
+      setCancelRemarks("");
+      loadOrders();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to cancel order");
+    }
+  };
+
   const handleExportPendingClientApproval = async () => {
     setExportingPendingApproval(true);
     try {
@@ -408,6 +436,47 @@ const AllOrdersPage = () => {
       toast.error(error.message || 'Failed to download Excel file');
     } finally {
       setDownloadLoading(false);
+    }
+  };
+
+  // Download Pending Approval Orders Excel
+  const [downloadingPendingApproval, setDownloadingPendingApproval] = useState(false);
+
+  const handleDownloadPendingApprovalExcel = async () => {
+    if (downloadingPendingApproval) {
+      console.log("Download already in progress...");
+      return;
+    }
+
+    setDownloadingPendingApproval(true);
+    try {
+      const payload = {
+        startDate: currentFilterState.startDate || undefined,
+        endDate: currentFilterState.endDate || undefined,
+      };
+
+      const blob = await orderService.exportPendingApprovalOrdersToExcel(payload);
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      const fileName = `Pending_Approval_Orders_${moment().format('DD-MM-YYYY_HH-mm')}.xlsx`;
+      link.setAttribute('download', fileName);
+
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Pending approval orders Excel downloaded successfully!');
+
+    } catch (error: any) {
+      console.error('Pending approval export failed:', error);
+      toast.error(error.message || 'Failed to download pending approval Excel file');
+    } finally {
+      setDownloadingPendingApproval(false);
     }
   };
 
@@ -824,6 +893,17 @@ const AllOrdersPage = () => {
             >
               Proforma
             </Button>
+            {row.status !== "Cancelled" && (
+              <Button
+                variant="outlined"
+                size="small"
+                color="error"
+                onClick={() => handleCancelClick(row)}
+                sx={{ fontSize: "12px", textTransform: "none" }}
+              >
+                Cancel
+              </Button>
+            )}
           </Box>
         </TableCell>
         {/* <TableCell>
@@ -920,6 +1000,53 @@ const AllOrdersPage = () => {
             )}
             <Typography fontSize={12} sx={{ ml: 1 }}>Download orders</Typography>
           </IconButton>
+
+          {/* Pending Approval Excel Download Button */}
+          <IconButton
+            onClick={handleDownloadPendingApprovalExcel}
+            disabled={downloadingPendingApproval || loading || isLoadingData}
+            sx={{
+              border: "1px solid #D0D5DD",
+              borderRadius: 2,
+              p: 1,
+              color: downloadingPendingApproval ? "#9CA3AF" : "#667085",
+              display: "flex",
+              alignItems: "center",
+              cursor: downloadingPendingApproval ? 'not-allowed' : 'pointer',
+            }}
+            title={downloadingPendingApproval ? "Downloading..." : "Download Pending Approval Orders"}
+          >
+            {downloadingPendingApproval ? (
+              <CircularProgress size={16} color="inherit" />
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="16"
+                width="16"
+                viewBox="0 0 384 512"
+              >
+                <path
+                  fill="#667085"
+                  d="M224 136V0H24C10.7 0 0 10.7 0 24v464c13.3 0 24
+                               10.7 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 
+                               0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 
+                               8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 
+                               405.5 192 373 192 373c-6.4 14.8-10 20-36.6 
+                               68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 
+                               0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 
+                               .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 
+                               6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 
+                               6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 
+                               10.6-6.3H274c9.5-.1 15.2 10.4 10.1 
+                               18.4zM384 121.9v6.1H256V0h6.1c6.4 0 
+                               12.5 2.5 17 7l97.9 98c4.5 4.5 7 
+                               10.6 7 16.9z"
+                />
+              </svg>
+            )}
+            <Typography fontSize={12} sx={{ ml: 1 }}>Pending Approval</Typography>
+          </IconButton>
+
           <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
           {/* <Button
             variant="contained"
@@ -1033,6 +1160,55 @@ const AllOrdersPage = () => {
         order={selectedOrderForFollowUp}
         onSuccess={handleFollowUpSuccess}
       />
+
+      {/* Cancel Order Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={() => {
+          setCancelDialogOpen(false);
+          setSelectedOrderForCancel(null);
+          setCancelRemarks("");
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Cancel Order</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Are you sure you want to cancel this order?
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+            Order No: {selectedOrderForCancel?.orderNumber}
+          </Typography>
+          <TextField
+            label="Cancel Reason / Remarks"
+            multiline
+            rows={3}
+            fullWidth
+            value={cancelRemarks}
+            onChange={(e) => setCancelRemarks(e.target.value)}
+            placeholder="Please provide reason for cancellation..."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setCancelDialogOpen(false);
+              setSelectedOrderForCancel(null);
+              setCancelRemarks("");
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleCancelConfirm}
+          >
+            Confirm Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 

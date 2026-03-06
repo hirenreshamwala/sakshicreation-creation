@@ -88,12 +88,13 @@ export const orderService = {
         Endpoint.GET_ALL_ORDERS, filters
       );
 
-      return {
-        success: response.data.success,
-        data: response.data.data || [],
-        count: response.data.count,
-        pagination: response.data.pagination,
-      };
+      return response.data
+      // return {
+      //   success: response.data.success,
+      //   data: response.data.data || [],
+      //   count: response.data.count,
+      //   pagination: response.data.pagination,
+      // };
     } catch (error: any) {
       console.error("Service: Get all orders error:", error);
       throw new Error(
@@ -380,6 +381,56 @@ export const orderService = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to export account masters");
+    }
+  },
+
+  // Cancel an order
+  async cancelOrder(orderId: string, cancelRemarks: string): Promise<ApiResponse<Order>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
+        Endpoint.CANCEL_ORDER,
+        { orderId, cancelRemarks }
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Cancel order error:", error);
+      throw new Error(error.response?.data?.message || "Failed to cancel order");
+    }
+  },
+
+  // Export cancelled orders to Excel
+  async exportCancelledOrdersToExcel(filters?: { startDate?: string; endDate?: string }): Promise<Blob> {
+    try {
+      const response: AxiosResponse<Blob> = await Request.post(
+        Endpoint.DOWNLOAD_CANCELLED_ORDERS_EXCEL,
+        filters || {},
+        {
+          responseType: 'blob'
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to export cancelled orders");
+    }
+  },
+
+  // Export pending approval orders to Excel
+  async exportPendingApprovalOrdersToExcel(filters?: { startDate?: string; endDate?: string }): Promise<Blob> {
+    try {
+      const response: AxiosResponse<Blob> = await Request.post(
+        Endpoint.DOWNLOAD_PENDING_APPROVAL_ORDERS_EXCEL,
+        filters || {},
+        {
+          responseType: 'blob'
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to export pending approval orders");
     }
   },
 

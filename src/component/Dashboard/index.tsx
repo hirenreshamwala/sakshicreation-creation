@@ -46,6 +46,7 @@ const permissionMapping: { [key: string]: string } = {
   "Assign Task": "assign_task",
   "Party call": "party_call",
   "All Orders": "all_orders",
+  "Cancel Orders": "cancel_order",
   "Quality Sale Orders": "sell_orders",
   "All Complains": "all_complains",
   "Quality Packaging": "quality_packaging",
@@ -113,11 +114,11 @@ const menuItems = [
   //   icon: <MdAssignment size={18} />,
   //   path: "/admin/sell-order",
   // },
-  // {
-  //   label: "Sell Orders",
-  //   icon: <MdAssignment size={18} />,
-  //   path: "/admin/sell-order",
-  // },
+  {
+    label: "Cancel Orders",
+    icon: <MdAssignment size={18} />,
+    path: "/admin/all-orders/cancelled",
+  },
   { label: "Driver", icon: <MdSettings size={18} />, path: "/admin/driver" },
   {
     label: "All Complains",
