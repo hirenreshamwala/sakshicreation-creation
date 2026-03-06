@@ -299,6 +299,12 @@ const Endpoint = {
   EXPORT_PAYMENT_FOLDER_EXCEL: `${BaseURL}/api/payment-folders/export-payment-folder-excel`,
   EXPORT_PAYMENT_FOLDER_DIFFERENCE_EXCEL: `${BaseURL}/api/payment-folders/export-difference-payment-folder-excel`,
   EXPORT_PENDING_CLIENT_APPROVAL_ORDERS: `${BaseURL}/api/orders/export-pending-client-approval-orders`,
+
+  // Order Reports
+  GET_PENDING_ORDERS: `${BaseURL}/api/report/get-pending-orders`,
+  GET_COMPLETED_ORDERS: `${BaseURL}/api/report/get-completed-orders`,
+  EXPORT_PENDING_ORDERS_EXCEL: `${BaseURL}/api/report/export-pending-orders-excel`,
+  EXPORT_COMPLETED_ORDERS_EXCEL: `${BaseURL}/api/report/export-completed-orders-excel`,
   BULK_DELETE_LEADS: `${BaseURL}/api/lead/delete/bulk`,
 
   DELETE_DECKAL: `${BaseURL}/api/deckal/delete`,

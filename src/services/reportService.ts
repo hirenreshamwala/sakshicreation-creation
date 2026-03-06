@@ -374,4 +374,55 @@ export const reportService = {
     }
   },
 
+  // Order Reports
+  async getPendingOrders(type: string): Promise<any> {
+    try {
+      const response: AxiosResponse<any> = await Request.post(
+        Endpoint.GET_PENDING_ORDERS,
+        { type }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch pending orders');
+    }
+  },
+
+  async getCompletedOrders(type: string, startDate?: string, endDate?: string): Promise<any> {
+    try {
+      const response: AxiosResponse<any> = await Request.post(
+        Endpoint.GET_COMPLETED_ORDERS,
+        { type, startDate, endDate }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch completed orders');
+    }
+  },
+
+  async exportPendingOrdersToExcel(type: string): Promise<Blob> {
+    try {
+      const response = await Request.post(
+        Endpoint.EXPORT_PENDING_ORDERS_EXCEL,
+        { type },
+        { responseType: 'blob', timeout: 300000 }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to export pending orders');
+    }
+  },
+
+  async exportCompletedOrdersToExcel(type: string, startDate?: string, endDate?: string): Promise<Blob> {
+    try {
+      const response = await Request.post(
+        Endpoint.EXPORT_COMPLETED_ORDERS_EXCEL,
+        { type, startDate, endDate },
+        { responseType: 'blob', timeout: 300000 }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to export completed orders');
+    }
+  },
+
 };
