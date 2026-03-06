@@ -374,6 +374,26 @@ export const reportService = {
     }
   },
 
+  // Staff Billing Export
+  async exportStaffBilling(data: {
+    staffId: string;
+    staffType: 'binder' | 'printer' | 'booklet-binder';
+    startDate?: string;
+    endDate?: string;
+    isFullBill?: boolean;
+  }): Promise<Blob> {
+    try {
+      const response = await Request.post(
+        Endpoint.EXPORT_STAFF_BILLING,
+        data,
+        { responseType: 'blob' }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to export staff billing');
+    }
+  },
+
   // Order Reports
   async getPendingOrders(type: string): Promise<any> {
     try {

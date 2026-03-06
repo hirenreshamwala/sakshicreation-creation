@@ -305,6 +305,7 @@ const Endpoint = {
   GET_COMPLETED_ORDERS: `${BaseURL}/api/report/get-completed-orders`,
   EXPORT_PENDING_ORDERS_EXCEL: `${BaseURL}/api/report/export-pending-orders-excel`,
   EXPORT_COMPLETED_ORDERS_EXCEL: `${BaseURL}/api/report/export-completed-orders-excel`,
+  EXPORT_STAFF_BILLING: `${BaseURL}/api/report/export-staff-billing`,
   BULK_DELETE_LEADS: `${BaseURL}/api/lead/delete/bulk`,
 
   DELETE_DECKAL: `${BaseURL}/api/deckal/delete`,
