@@ -192,6 +192,21 @@ const menuItems = [
     icon: <MdInventory size={18} />,
     path: "/admin/inventory",
   },
+  {
+    label: "Printer Paper Inventory",
+    icon: <MdInventory size={18} />,
+    path: "/admin/paper-inventory?category=printer",
+  },
+  {
+    label: "Binder Paper Inventory",
+    icon: <MdInventory size={18} />,
+    path: "/admin/paper-inventory?category=binder",
+  },
+  {
+    label: "Booklet Binder Paper Inventory",
+    icon: <MdInventory size={18} />,
+    path: "/admin/paper-inventory?category=booklet",
+  },
   // {
   //   label: "LowStockManagement",
   //   icon: <MdInventory size={18} />,
@@ -296,14 +311,14 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   };
 
 
-useEffect(() => {
-  if (user) {
-    (async () => {
-     const res = await getRoleSpecificTasks();
-     setTask(res);
-    })();
-  }
-}, [user]);
+  useEffect(() => {
+    if (user) {
+      (async () => {
+        const res = await getRoleSpecificTasks();
+        setTask(res);
+      })();
+    }
+  }, [user]);
 
   useEffect(() => {
     const initNotifications = async () => {

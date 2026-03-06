@@ -27,6 +27,7 @@ export interface ApiResponse<T> {
   count?: number;
   totalCount?: number;
   pagination?: any;
+  summary?: any;
 }
 
 export const inventoryService = {
@@ -57,6 +58,24 @@ export const inventoryService = {
       throw new Error(
         error.response?.data?.message || 'Failed to fetch inventory summary'
       );
+    }
+  },
+
+  async getStaffPaperInventory(category: string, params?: { page?: number; pageSize?: number; isPagination?: boolean }): Promise<ApiResponse<any>> {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await Request.post(
+        `${Endpoint.GET_STAFF_PAPER_INVENTORY}/${category}`,
+        params || {}
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data || [],
+        summary: response.data.summary,
+        pagination: response.data.pagination,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch staff paper inventory');
     }
   },
 
@@ -108,7 +127,7 @@ export const inventoryService = {
   async getInventoryBoxSummery(data: any): Promise<ApiResponse<Inventory[]>> {
     try {
       const response: AxiosResponse<ApiResponse<Inventory[]>> = await Request.post(
-        Endpoint.GET_INVENTORY_BOX,data);
+        Endpoint.GET_INVENTORY_BOX, data);
       return response.data;
     } catch (error: any) {
       throw new Error(
