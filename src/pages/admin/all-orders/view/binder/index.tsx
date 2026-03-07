@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { Box, Typography, Paper, Button, CircularProgress, Stack, IconButton, FormControlLabel, Switch } from "@mui/material"
+import { Box, Typography, Paper, Button, CircularProgress, Stack, IconButton, FormControlLabel, Switch, Dialog, DialogTitle, DialogContent, Table, TableHead, TableRow, TableCell, TableBody } from "@mui/material"
 import { MdEmail } from "react-icons/md"
 import ThemeInput from "@/component/common_component/themeinput"
 import ThemeButton from "@/component/common_component/themebutton"
@@ -16,12 +16,14 @@ import * as Yup from "yup"
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { downloadVisitingCardPDF } from "@/utills/utills"
-import { Download } from "@mui/icons-material"
+import { ArrowBack, Download } from "@mui/icons-material"
 import moment from "moment"
 import ThemeSelect from "@/component/common_component/themeselect"
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice"
 import { getAllBinderTypesThunk } from "@/store/slices/binderTypeSlice"
 import { orderService } from "@/services/order.service"
+import { FaEye } from "react-icons/fa6"
+import { getAllStaffThunk } from "@/store/slices/staffSlice"
 
 type OptionType = {
   label: string;
@@ -38,11 +40,87 @@ type PaperField = {
   materialId?: string; // Add materialId to track the selected material
 };
 
+// Rate View Dialog Component
+const BinderRateDialog = ({ open, onClose, binderId, binderName }: { open: boolean; onClose: () => void; binderId: string; binderName: string }) => {
+  const { staffList: staff, error } = useAppSelector((state) => state.staff)
+  const dispatch = useAppDispatch()
+  const [binderRates, setBinderRates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!staff?.length) dispatch(getAllStaffThunk())
+  }, []);
+
+  useEffect(() => {
+    if (open && binderId) {
+      fetchBinderRates();
+    }
+  }, [open, binderId]);
+
+  const fetchBinderRates = async () => {
+    setLoading(true);
+    try {
+      // Find the selected binder from staff list
+      const selectedBinder = staff.find((s: any) => s._id === binderId);
+      if (selectedBinder && selectedBinder.rates) {
+        setBinderRates(selectedBinder.rates);
+      } else {
+        setBinderRates([]);
+      }
+    } catch (error) {
+      console.error("Error fetching binder rates:", error);
+      toast.error("Failed to load binder rates");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        <Typography variant="h6" fontWeight={600}>
+          {binderName} - Rate List
+        </Typography>
+      </DialogTitle>
+      <DialogContent>
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : binderRates.length > 0 ? (
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell><Typography fontWeight={600}>Size</Typography></TableCell>
+                <TableCell><Typography fontWeight={600}>Pages</Typography></TableCell>
+                <TableCell><Typography fontWeight={600}>Rate</Typography></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {binderRates.map((rate, index) => (
+                <TableRow key={index}>
+                  <TableCell>{rate.size || 'N/A'}</TableCell>
+                  <TableCell>{rate.page || 'N/A'}</TableCell>
+                  <TableCell>{rate.price}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <Box py={4} textAlign="center">
+            <Typography color="textSecondary">No rates found for this binder</Typography>
+          </Box>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const BinderForm = () => {
   const router = useRouter()
   const { id: orderId } = router.query
   const dispatch = useAppDispatch()
-  const { singleOrder }:any = useAppSelector((state) => state.orders)
+  const { singleOrder }: any = useAppSelector((state) => state.orders)
   const { binderTypes } = useAppSelector((state) => state.binderType);
   const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
@@ -52,6 +130,9 @@ const BinderForm = () => {
   const [uploadedBinderFiles, setUploadedBinderFiles] = useState<any[]>([])
   const [openDesignFilesDialog, setOpenDesignFilesDialog] = useState(false)
   const [binderPapers, setBinderPapers] = useState<PaperField[]>([])
+
+  // Rate Dialog State
+  const [rateDialogOpen, setRateDialogOpen] = useState(false)
 
   const getSelectedOption = (value: string, options: OptionType[]) => {
     return options.find((option) => option.value === value) || null;
@@ -188,6 +269,7 @@ const BinderForm = () => {
           setPageLoading(true)
           await dispatch(getOrderByIdThunk(orderId)).unwrap()
           await orderService.markNotificationRead(orderId, "binder")
+          await dispatch(getAllStaffThunk()) // Fetch all staff for rates
         } catch (err) {
           console.error("Failed to fetch order:", err)
           toast.error("Failed to load order data")
@@ -391,7 +473,7 @@ const BinderForm = () => {
 
   // Handle material name selection
   const handleMaterialNameChange = (index: number, id: string) => {
-    const updatedPapers:any = [...binderPapers];
+    const updatedPapers: any = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
       paperType: id || null, // Use null for empty values
@@ -403,7 +485,7 @@ const BinderForm = () => {
 
   // Handle GSM selection
   const handleMaterialGSMChange = (index: number, id: string) => {
-    const updatedPapers:any = [...binderPapers];
+    const updatedPapers: any = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
       gsm: id || null, // Use null for empty values
@@ -414,7 +496,7 @@ const BinderForm = () => {
 
   // Handle size selection
   const handleMaterialSizeChange = (index: number, id: string) => {
-    const updatedPapers:any = [...binderPapers];
+    const updatedPapers: any = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
       sheetSize: id || null, // store _id
@@ -501,6 +583,14 @@ Your Team
     window.open(gmailUrl, '_blank');
   };
 
+  const handleViewRateClick = () => {
+    if (!selectedBinderStaff) {
+      toast.error("Please select a binder first");
+      return;
+    }
+    setRateDialogOpen(true);
+  };
+
   if (pageLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -580,6 +670,16 @@ Your Team
               </Typography>
             </Box>
           )}
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+            <ThemeButton
+              variant="contained"
+              onClick={handleViewRateClick}
+              startIcon={<FaEye />}
+              disabled={!selectedBinderStaff}
+            >
+              View Rate
+            </ThemeButton>
+          </Box>
           <Box display="flex" gap={2} mb={2} width={"100%"} justifyContent={"space-between"}>
             <ThemeInput
               labelName="Order Number"
@@ -982,7 +1082,7 @@ Your Team
             </ThemeButton>
           </Box>
 
-          
+
 
           {isBinderStatusDone && (
             <Box mt={4}>
@@ -1071,6 +1171,14 @@ Your Team
         title="Designer Files"
         showDownload={true}
         showView={true}
+      />
+
+      {/* Binder Rate Dialog */}
+      <BinderRateDialog
+        open={rateDialogOpen}
+        onClose={() => setRateDialogOpen(false)}
+        binderId={selectedBinderStaff?.value}
+        binderName={selectedBinderStaff?.label}
       />
     </>
   )

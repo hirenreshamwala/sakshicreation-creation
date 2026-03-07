@@ -55,6 +55,9 @@ const permissionMapping: { [key: string]: string } = {
   Reports: "reports",
   LowStockManagement: "inventory",
   Inventory: "inventory",
+  "Printer Paper Inventory": "printer_inventory",
+  "Binder Paper Inventory": "binder_inventory",
+  "Booklet Binder Paper Inventory": "booklet_binder_inventory",
   Purchase: "purchase",
   Task: "task",
   Driver: "driver",
@@ -117,7 +120,7 @@ const menuItems = [
   {
     label: "Cancel Orders",
     icon: <MdAssignment size={18} />,
-    path: "/admin/all-orders/cancelled",
+    path: "/admin/cancelled",
   },
   { label: "Driver", icon: <MdSettings size={18} />, path: "/admin/driver" },
   {
@@ -186,6 +189,21 @@ const menuItems = [
         icon: <MdBackpack size={18} />,
       }
     ],
+  },
+  {
+    label: "Printer Inventory",
+    icon: <MdInventory size={18} />,
+    path: "/admin/paper-inventory",
+  },
+  {
+    label: "Binder Inventory",
+    icon: <MdInventory size={18} />,
+    path: "/admin/paper-inventory",
+  },
+  {
+    label: "Booklet Binder Inventory",
+    icon: <MdInventory size={18} />,
+    path: "/admin/paper-inventory",
   },
   {
     label: "Inventory",

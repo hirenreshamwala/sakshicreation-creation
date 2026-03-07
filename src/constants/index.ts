@@ -88,6 +88,15 @@ export const permissionsArray = {
     edit: false,
     delete: false,
   },
+  printer_inventory: {
+    view_global: false
+  },
+  binder_inventory: {
+    view_global: false
+  },
+  booklet_binder_inventory: {
+    view_global: false
+  },
   purchase: {
     view_global: false,
     view_own: false,

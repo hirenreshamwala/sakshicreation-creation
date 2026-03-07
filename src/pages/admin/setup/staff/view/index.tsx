@@ -13,6 +13,8 @@ import {
   Select,
   MenuItem,
   OutlinedInput,
+  Paper,
+  Grid,
 } from "@mui/material"
 import { useFormik } from "formik"
 import * as Yup from "yup"
@@ -25,12 +27,18 @@ import { getStaffByIdThunk, createStaffThunk, updateStaffThunk } from "@/store/s
 import { getAllRolesThunk } from "@/store/slices/roleSlice"
 import { deleteFileThunk } from "@/store/slices/fileUploadSlice"
 import FileUpload, { type FileUploadRef } from "@/component/reusablecomponents/FileUpload"
-import { ArrowBack, Delete, Close } from "@mui/icons-material"
+import { ArrowBack, Delete, Close, Add } from "@mui/icons-material"
 import { decryptData } from "@/utills/utills"
 import StaffService from "@/services/staff.service"
 import { getAllCompaniesThunk } from "@/store/slices/compnaySlice"
 import Request from "@/services/axios"
 import Endpoint from "@/API/apiConfig"
+
+interface BinderRate {
+  size: string;
+  price: string;
+  page: string;
+}
 
 interface StaffFormData {
   firstName: string;
@@ -49,6 +57,7 @@ interface StaffFormData {
   password?: string;
   aadharFiles: string[];
   addressFiles: string[];
+  rates: BinderRate[];
 }
 
 const ITEM_HEIGHT = 48;
@@ -89,6 +98,11 @@ const validationSchema = Yup.object({
   }),
   aadharFiles: Yup.array().of(Yup.string()).required("Aadhar files are required"),
   addressFiles: Yup.array().of(Yup.string()).optional(),
+  rates: Yup.array().when("role", {
+    is: (role: string) => role === "binder",
+    then: (schema) => schema.min(1, "At least one binder rate is required").required("Binder rates are required"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
 })
 
 const StaffView = () => {
@@ -126,6 +140,7 @@ const StaffView = () => {
       password: "",
       aadharFiles: [],
       addressFiles: [],
+      rates: [{ size: "", page: "", price: "" }],
       mode: mode as string,
     },
     validationSchema,
@@ -171,6 +186,7 @@ const StaffView = () => {
           password: values.password,
           aadharFiles: finalAadharFiles,
           addressFiles: finalAddressFiles,
+          rates: values.rates,
           ...(mode === "add" && { password: values.password }),
         }
 
@@ -200,9 +216,7 @@ const StaffView = () => {
     if (!roles.length) dispatch(getAllRolesThunk())
   }, [])
 
-
   const getData = async () => {
-
     const res = await Request.get(`${Endpoint.GET_STAFF_BY_ID}/${id}`)
     if (res.status === 200) {
       const newData = res?.data?.data
@@ -225,6 +239,7 @@ const StaffView = () => {
         password: user?.role?.roleName === 'Admin' && user?.role?.isDelete === false ? decryptData(newData?.password) : "",
         aadharFiles: newData.aadharFiles || [],
         addressFiles: newData.addressFiles || [],
+        rates: newData.rates || [],
         mode: "edit",
       }
       formik.setValues(editData)
@@ -325,6 +340,7 @@ const StaffView = () => {
         password: "",
         aadharFiles: staffData.aadharFiles || [],
         addressFiles: staffData.addressFiles || [],
+        rates: staffData.rates || [],
         mode: "edit",
       }
       formik.setValues(editData)
@@ -338,6 +354,29 @@ const StaffView = () => {
     aadharFileUploadRef.current?.clearSelectedFiles()
     addressFileUploadRef.current?.clearSelectedFiles()
   }
+
+  // Binder Rates handlers
+  const handleAddBinderRate = () => {
+    formik.setFieldValue("rates", [
+      ...formik.values.rates,
+      { size: "", price: "", page: "" }
+    ])
+  }
+
+  const handleRemoveBinderRate = (index: number) => {
+    const updatedRates = formik.values.rates.filter((_, i) => i !== index)
+    formik.setFieldValue("rates", updatedRates)
+  }
+
+  const handleBinderRateChange = (index: number, field: keyof BinderRate, value: string) => {
+    const updatedRates = [...formik.values.rates]
+    updatedRates[index] = { ...updatedRates[index], [field]: value }
+    formik.setFieldValue("rates", updatedRates)
+  }
+
+  // Check if selected role is binder
+  const selectedRole = roles.find(r => r._id === formik.values.role)
+  const isBinderRole = selectedRole?.roleName?.toLowerCase() === "binder"
 
   return (
     <Box sx={{ width: "100%" }} component="form" onSubmit={formik.handleSubmit}>
@@ -665,6 +704,104 @@ const StaffView = () => {
         )}
       </Box>
 
+      {/* Binder Rates Section - Only show when role is binder */}
+      {isBinderRole && (
+        <Paper sx={{ p: 3, mb: 3, bgcolor: '#f9f9f9' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+              Binder Rates
+            </Typography>
+            <ThemeButton
+              onClick={handleAddBinderRate}
+              startIcon={<Add />}
+              sx={{
+                background: "#7F56D9",
+                "&:hover": { background: "#5B3FB4" },
+                fontSize: '0.875rem',
+                py: 1
+              }}
+            >
+              Add Rate
+            </ThemeButton>
+          </Box>
+
+          {formik.values.rates.map((rate, index) => (
+            <Paper
+              key={index}
+              sx={{
+                p: 2,
+                mb: 2,
+                position: 'relative',
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}
+              elevation={0}
+            >
+              <IconButton
+                size="small"
+                onClick={() => handleRemoveBinderRate(index)}
+                sx={{
+                  position: 'absolute',
+                  right: 8,
+                  top: 8,
+                  color: 'grey.500',
+                  '&:hover': { color: 'error.main' }
+                }}
+              >
+                <Close fontSize="small" />
+              </IconButton>
+
+              <Grid container spacing={2}>
+                <Grid item xs={4}>
+                  <ThemeInput
+                    labelName="Size"
+                    value={rate.size}
+                    onChange={(e) => handleBinderRateChange(index, 'size', e.target.value)}
+                    fullWidth
+                    required
+                    placeholder="e.g., A4, Letter"
+                  />
+                </Grid>
+                <Grid item xs={4}>
+                  <ThemeInput
+                    labelName="Page"
+                    value={rate.page}
+                    onChange={(e) => handleBinderRateChange(index, 'page', e.target.value)}
+                    fullWidth
+                    required
+                    type="number"
+                    placeholder="Number of pages"
+                  />
+                </Grid>
+                <Grid item xs={4}>
+                  <ThemeInput
+                    labelName="Price"
+                    value={rate.price}
+                    onChange={(e) => handleBinderRateChange(index, 'price', e.target.value)}
+                    fullWidth
+                    required
+                    type="number"
+                    placeholder="Enter price"
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
+          ))}
+
+          {formik.values.rates.length === 0 && (
+            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>
+              No binder rates added. Click "Add Rate" to add rates.
+            </Typography>
+          )}
+
+          {formik.errors.rates && (
+            <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+              {formik.errors.rates as string}
+            </Typography>
+          )}
+        </Paper>
+      )}
+
       <Stack direction="row" spacing={2} mb={4}>
         <ThemeInput
           labelName="Joining date"
@@ -719,7 +856,7 @@ const StaffView = () => {
             helperText={formik.errors.password}
             fullWidth
             InputLabelProps={{ shrink: true }}
-            
+
             sx={{ mb: 2 }}
             required
           />
