@@ -1,6 +1,7 @@
 import { AxiosResponse } from "axios";
 import Endpoint from "@/API/apiConfig";
 import Request from "./axios";
+import { toast } from "react-toastify";
 
 export interface DesignerPerformance {
   designerId: string;
@@ -388,9 +389,21 @@ export const reportService = {
         data,
         { responseType: 'blob' }
       );
-      return response.data;
+
+      const blob = response.data;
+
+      // Agar backend ne JSON error bheja hai
+      if (blob.type === 'application/json') {
+        const text = await blob.text();
+        const json = JSON.parse(text);
+
+        toast.error(json.message || 'No data to show');
+      }
+
+      return blob;
+
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to export staff billing');
+      throw new Error(error.message || 'Failed to export staff billing');
     }
   },
 

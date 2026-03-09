@@ -5,12 +5,7 @@ import {
     Box,
     Typography,
     Paper,
-    Button,
     CircularProgress,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Alert,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -19,6 +14,8 @@ import moment from "moment";
 import { toast } from "react-toastify";
 import StaffService from "@/services/staff.service";
 import { reportService } from "@/services/reportService";
+import ThemeSelect from "@/component/common_component/themeselect";
+import ThemeButton from "@/component/common_component/themebutton";
 
 interface StaffMember {
     _id: string;
@@ -35,18 +32,13 @@ const BillPage = () => {
     const [downloading, setDownloading] = useState(false);
     const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
     const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([]);
-
-    // Default to current month
     const defaultStartDate = moment().startOf("month").toDate();
     const defaultEndDate = moment().endOf("month").toDate();
-
     const [startDate, setStartDate] = useState<Date | null>(defaultStartDate);
     const [endDate, setEndDate] = useState<Date | null>(defaultEndDate);
-
     const [selectedStaffType, setSelectedStaffType] = useState<string>("");
     const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
 
-    // Staff type options
     const staffTypes = [
         { value: "binder", label: "Binder" },
         { value: "printer", label: "Printer" },
@@ -89,11 +81,12 @@ const BillPage = () => {
     };
 
     const handleStaffTypeChange = (event: any) => {
-        setSelectedStaffType(event.target.value);
+        setSelectedStaffType(event.value);
+        setSelectedStaff(null)
     };
 
     const handleStaffChange = (event: any) => {
-        const staffId = event.target.value;
+        const staffId = event.value;
         const staff = filteredStaff.find((s) => s._id === staffId);
         setSelectedStaff(staff || null);
     };
@@ -202,62 +195,41 @@ const BillPage = () => {
                 }}
             >
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    {/* Staff Type Selection */}
-                    <FormControl fullWidth size="small">
-                        <InputLabel>Select Staff Type</InputLabel>
-                        <Select
-                            value={selectedStaffType}
-                            label="Select Staff Type"
-                            onChange={handleStaffTypeChange}
-                            disabled={loading || downloading}
-                        >
-                            {staffTypes.map((type) => (
-                                <MenuItem key={type.value} value={type.value}>
-                                    {type.label}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    {/* Staff Selection */}
-                    <FormControl fullWidth size="small">
-                        <InputLabel>Select Staff</InputLabel>
-                        <Select
-                            value={selectedStaff?._id || ""}
-                            label="Select Staff"
-                            onChange={handleStaffChange}
-                            disabled={loading || downloading || !selectedStaffType}
-                        >
-                            {staffOptions.map((staff) => (
-                                <MenuItem key={staff.value} value={staff.value}>
-                                    {staff.label}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    {/* Download Buttons */}
+                    <ThemeSelect
+                        label="Select Role"
+                        value={staffTypes.find((item) => item.value === selectedStaffType)}
+                        placeholder="Select Role"
+                        options={staffTypes}
+                        onChange={(e, newValue) => handleStaffTypeChange(newValue)}
+                        disabled={loading || downloading}
+                    />
+                    <ThemeSelect
+                        label="Select Staff"
+                        value={staffOptions.find((item) => item.value === selectedStaff?._id)}
+                        placeholder="Select Staff"
+                        options={staffOptions}
+                        onChange={(e, newValue) => handleStaffChange(newValue)}
+                        disabled={loading || downloading || !selectedStaffType}
+                    />
                     <Box sx={{ display: "flex", gap: 2 }}>
-                        <Button
+                        <ThemeButton
                             variant="contained"
-                            color="primary"
                             startIcon={<DownloadIcon />}
                             onClick={handleDownloadFullBill}
                             disabled={!selectedStaff || downloading}
                             size="small"
                         >
                             Full Bill
-                        </Button>
-                        <Button
+                        </ThemeButton>
+                        <ThemeButton
                             variant="contained"
-                            color="secondary"
                             startIcon={<DownloadIcon />}
                             onClick={handleDownloadMonthlyBill}
                             disabled={!selectedStaff || downloading}
                             size="small"
                         >
                             Monthly Bill
-                        </Button>
+                        </ThemeButton>
                     </Box>
 
                     {/* Date Range Picker for Monthly Bill */}
@@ -271,9 +243,9 @@ const BillPage = () => {
                             onStartDateChange={(value: string) => setStartDate(value ? new Date(value) : null)}
                             onEndDateChange={(value: string) => setEndDate(value ? new Date(value) : null)}
                         />
-                        <Button size="small" onClick={handleClearDateRange}>
+                        <ThemeButton variant="outlined" size="small" onClick={handleClearDateRange}>
                             Reset
-                        </Button>
+                        </ThemeButton>
                     </Box>
                 </Box>
 
@@ -297,25 +269,6 @@ const BillPage = () => {
                         No staff found for the selected type. Please select a different type or add staff.
                     </Alert>
                 )}
-            </Paper>
-
-            {/* Instructions */}
-            <Paper elevation={2} sx={{ p: 2, borderRadius: 2 }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                    Instructions
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    1. Select the staff type (Binder, Printer, or Booklet Binder)
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    2. Select the specific staff member from the dropdown
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    3. For Full Bill: Click "Full Bill" to download all orders
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    4. For Monthly Bill: Select date range and click "Monthly Bill" to download orders for that period
-                </Typography>
             </Paper>
         </Box>
     );

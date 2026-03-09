@@ -16,7 +16,10 @@ interface Column {
 
 const columns: Column[] = [
     { id: "orderNumber", label: "Order No." },
+    { id: "orderDate", label: "Date" },
     { id: "party", label: "Party" },
+    { id: "itemName", label: "Item Name" },
+    { id: "itemSize", label: "Item Size" },
     { id: "followUpStaff", label: "Followup Staff" },
     { id: "cancelReason", label: "Cancel Reason" },
     { id: "cancelledAt", label: "Cancelled At" },
@@ -69,15 +72,15 @@ const CancelledOrdersPage = () => {
         setDownloading(true)
         try {
             // Use the existing getAllOrders API with status filter and pagination
-            const response = await orderService.getAllOrders({ 
+            const response = await orderService.getAllOrders({
                 status: ["Cancelled"],
                 page,
                 limit: pageSize
             })
-            
+
             if (response.success && response.data) {
                 setCancelledOrders(response.data as any[])
-                
+
                 // Update pagination info from response
                 if (response.pagination) {
                     setPagination({
@@ -144,6 +147,8 @@ const CancelledOrdersPage = () => {
         id: order._id || "",
         orderNumber: order.orderNumber || "N/A",
         partyName: order.party?.partyName || "N/A",
+        itemName: order.productItem?.itemName,
+        itemSize: order.size,
         followUpStaff: order.followUp?.staff
             ? `${order.followUp.staff.firstName} ${order.followUp.staff.lastName}`
             : "Not Assigned",
@@ -161,7 +166,22 @@ const CancelledOrdersPage = () => {
                 </TableCell>
                 <TableCell>
                     <Typography fontSize="14px" color="#6B7280">
+                        {moment(row.createdAt).format('DD-MM-YYYY')}
+                    </Typography>
+                </TableCell>
+                <TableCell>
+                    <Typography fontSize="14px" color="#6B7280">
                         {row.partyName}
+                    </Typography>
+                </TableCell>
+                <TableCell>
+                    <Typography fontSize="14px" color="#6B7280">
+                        {row?.itemName}
+                    </Typography>
+                </TableCell>
+                <TableCell>
+                    <Typography fontSize="14px" color="#6B7280">
+                        {row.itemSize}
                     </Typography>
                 </TableCell>
                 <TableCell>

@@ -2,23 +2,20 @@ import React, { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
-    Button,
     CircularProgress,
     TableCell,
     Tabs,
     Tab,
     Card,
     CardContent,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import BasicTable from '@/component/common_component/Table/themetable';
 import DateRangePicker from '@/component/daterangepicker';
 import moment from 'moment';
 import { reportService } from '@/services/reportService';
+import ThemeSelect from '@/component/common_component/themeselect';
+import ThemeButton from '@/component/common_component/themebutton';
 
 interface OrderReportData {
     id: string;
@@ -37,8 +34,6 @@ interface OrderReportData {
     booklet: string;
 }
 
-
-
 const OrderReportsPage = () => {
     const [tabValue, setTabValue] = useState(0);
     const [orderType, setOrderType] = useState('printer');
@@ -46,14 +41,10 @@ const OrderReportsPage = () => {
     const [exporting, setExporting] = useState(false);
     const [pendingOrders, setPendingOrders] = useState<OrderReportData[]>([]);
     const [completedOrders, setCompletedOrders] = useState<OrderReportData[]>([]);
-
-    // Date range for completed orders
     const defaultStartDate = moment().subtract(30, 'days').toDate();
     const defaultEndDate = moment().toDate();
-
     const [startDate, setStartDate] = useState<Date | null>(defaultStartDate);
     const [endDate, setEndDate] = useState<Date | null>(defaultEndDate);
-
     const [dateRange, setDateRange] = useState({
         startDate: moment(defaultStartDate).format('YYYY-MM-DD'),
         endDate: moment(defaultEndDate).format('YYYY-MM-DD'),
@@ -96,13 +87,9 @@ const OrderReportsPage = () => {
         }
     };
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setTabValue(newValue);
-    };
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => setTabValue(newValue);
 
-    const handleOrderTypeChange = (event: any) => {
-        setOrderType(event.target.value);
-    };
+    const handleOrderTypeChange = (event: any) => setOrderType(event);
 
     const handleApplyDateRange = () => {
         if (startDate && endDate) {
@@ -123,13 +110,8 @@ const OrderReportsPage = () => {
     };
 
     // Date change handlers for DateRangePicker callbacks
-    const handleStartDateChange = (value: string) => {
-        setStartDate(value ? new Date(value) : null);
-    };
-
-    const handleEndDateChange = (value: string) => {
-        setEndDate(value ? new Date(value) : null);
-    };
+    const handleStartDateChange = (value: string) => setStartDate(value ? new Date(value) : null);
+    const handleEndDateChange = (value: string) => setEndDate(value ? new Date(value) : null);
 
     const handleExportToExcel = async () => {
         setExporting(true);
@@ -209,6 +191,12 @@ const OrderReportsPage = () => {
         { id: 'status', label: 'Status' },
         { id: orderType === "printer" ? 'printer' : orderType === "binder" ? 'binder' : 'booklet', label: orderType === "printer" ? 'Printer' : orderType === "binder" ? 'Binder' : 'Booklet' },
     ];
+
+    const OrderType = [
+        { value: "printer", label: "Printer" },
+        { value: "binder", label: "Binder" },
+        { value: "booklet-binder", label: "Booklet Binder" },
+    ];
     return (
         <Box sx={{ width: '100%' }}>
             <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
@@ -218,18 +206,15 @@ const OrderReportsPage = () => {
             <Card sx={{ mb: 3 }}>
                 <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                        <FormControl sx={{ minWidth: 200 }}>
-                            <InputLabel>Order Type</InputLabel>
-                            <Select
-                                value={orderType}
-                                label="Order Type"
-                                onChange={handleOrderTypeChange}
-                            >
-                                <MenuItem value="printer">Printer</MenuItem>
-                                <MenuItem value="binder">Binder</MenuItem>
-                                <MenuItem value="booklet-binder">Booklet Binder</MenuItem>
-                            </Select>
-                        </FormControl>
+                        <ThemeSelect
+                            label="Select Order Type"
+                            sx={{ width: "200px", mt: -2.5 }}
+                            value={OrderType.find(item => item.value === orderType)}
+                            placeholder="Select Order Type"
+                            options={OrderType}
+                            onChange={(_, v) => handleOrderTypeChange(v ? v.value : "")}
+                            disabled={loading}
+                        />
 
                         {tabValue === 1 && (
                             <>
@@ -240,26 +225,24 @@ const OrderReportsPage = () => {
                                     onEndDateChange={handleEndDateChange}
                                     sx={{ flexGrow: 1, maxWidth: 400 }}
                                 />
-                                <Button variant="contained" color="primary" onClick={handleApplyDateRange}>
+                                <ThemeButton onClick={handleApplyDateRange}>
                                     Apply
-                                </Button>
+                                </ThemeButton>
                                 {isDateRangeChanged && (
-                                    <Button variant="outlined" color="error" onClick={handleClearDateRange}>
+                                    <ThemeButton onClick={handleClearDateRange}>
                                         Clear
-                                    </Button>
+                                    </ThemeButton>
                                 )}
                             </>
                         )}
 
-                        <Button
-                            variant="contained"
-                            color="success"
+                        <ThemeButton
                             startIcon={exporting ? <CircularProgress size={20} color="inherit" /> : <DownloadIcon />}
                             onClick={handleExportToExcel}
                             disabled={loading || exporting}
                         >
                             {exporting ? 'Exporting...' : 'Download Excel'}
-                        </Button>
+                        </ThemeButton>
                     </Box>
                 </CardContent>
             </Card>

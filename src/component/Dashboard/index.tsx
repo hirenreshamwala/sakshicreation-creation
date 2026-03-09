@@ -173,6 +173,11 @@ const menuItems = [
         path: "/admin/reports/staff",
         icon: <MdGroup size={18} />,
       },
+       {
+        label: "Bills",
+        path: "/admin/reports/bill",
+        icon: <MdGroup size={18} />,
+      },
       {
         label: "Products Items Report",
         path: "/admin/reports/products-items-report",

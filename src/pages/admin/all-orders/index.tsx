@@ -21,7 +21,7 @@ import _ from "lodash";
 import moment from "moment";
 import { FaChevronRight } from "react-icons/fa6"
 import { reportService } from "@/services/reportService";
-import { Download as DownloadIcon } from '@mui/icons-material';
+import CancelOrderDialog from "@/component/allorderdailog/CancelOrderDialog"
 
 const columns = [
   { id: "orderNumber", label: "Order No.", value: "orderNumber" },
@@ -954,7 +954,7 @@ const AllOrdersPage = () => {
         }}
       >
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
           <IconButton
             onClick={handleExcelDownload}
             disabled={downloadLoading || loading || isLoadingData} // लोडिंग हो तो डिसेबल
@@ -1044,10 +1044,9 @@ const AllOrdersPage = () => {
                 />
               </svg>
             )}
-            <Typography fontSize={12} sx={{ ml: 1 }}>Pending Approval</Typography>
+            <Typography fontSize={12} sx={{ ml: 1 }}>Pending Orders</Typography>
           </IconButton>
 
-          <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
           {/* <Button
             variant="contained"
             color="secondary"
@@ -1097,6 +1096,7 @@ const AllOrdersPage = () => {
             </svg>
             <Typography fontSize={12} sx={{ ml: 1 }}>Pending approval designs</Typography>
           </IconButton>
+          <ThemeButton onClick={() => setOpen(true)}>+ Add New Order</ThemeButton>
         </Box>
       </Box>
       {(loading || isLoadingData) && orders.length === 0 ? (
@@ -1161,54 +1161,15 @@ const AllOrdersPage = () => {
         onSuccess={handleFollowUpSuccess}
       />
 
-      {/* Cancel Order Dialog */}
-      <Dialog
-        open={cancelDialogOpen}
-        onClose={() => {
-          setCancelDialogOpen(false);
-          setSelectedOrderForCancel(null);
-          setCancelRemarks("");
-        }}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Cancel Order</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            Are you sure you want to cancel this order?
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-            Order No: {selectedOrderForCancel?.orderNumber}
-          </Typography>
-          <TextField
-            label="Cancel Reason / Remarks"
-            multiline
-            rows={3}
-            fullWidth
-            value={cancelRemarks}
-            onChange={(e) => setCancelRemarks(e.target.value)}
-            placeholder="Please provide reason for cancellation..."
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setCancelDialogOpen(false);
-              setSelectedOrderForCancel(null);
-              setCancelRemarks("");
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleCancelConfirm}
-          >
-            Confirm Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <CancelOrderDialog
+        cancelDialogOpen={cancelDialogOpen}
+        setCancelDialogOpen={setCancelDialogOpen}
+        selectedOrderForCancel={selectedOrderForCancel}
+        setSelectedOrderForCancel={setSelectedOrderForCancel}
+        setCancelRemarks={setCancelRemarks}
+        cancelRemarks={cancelRemarks}
+        handleCancelConfirm={handleCancelConfirm}
+      />
     </>
   );
 

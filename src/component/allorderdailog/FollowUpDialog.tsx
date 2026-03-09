@@ -3,24 +3,21 @@
 import React, { useState, useEffect } from "react";
 import {
     Box,
-    Button,
     Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
-    FormControl,
-    InputLabel,
-    MenuItem,
-    Select,
-    TextField,
     Typography,
     Avatar,
     Chip,
 } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getAllStaffThunk } from "@/store/slices/staffSlice";
-import { assignFollowUpThunk, updateFollowUpStatusThunk } from "@/store/slices/orderSlice";
+import { assignFollowUpThunk } from "@/store/slices/orderSlice";
 import { toast } from "react-toastify";
+import ThemeSelect from "../common_component/themeselect";
+import ThemeInput from "../common_component/themeinput";
+import ThemeButton from "../common_component/themebutton";
 
 interface Staff {
     _id: string;
@@ -55,7 +52,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
     onClose,
     order,
     onSuccess,
-}) => {
+}:any) => {
     const dispatch = useAppDispatch();
     const { staffList = [] } = useAppSelector((state) => state.staff || {});
     const [selectedStaff, setSelectedStaff] = useState<string>("");
@@ -179,36 +176,21 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                     )}
 
                     {/* Staff Selection */}
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                        <InputLabel id="staff-select-label">Select Staff</InputLabel>
-                        <Select
-                            labelId="staff-select-label"
-                            value={selectedStaff}
-                            label="Select Staff"
-                            onChange={handleStaffChange}
-                            disabled={loading}
-                        >
-                            {(staffList as Staff[]).map((staff) => (
-                                <MenuItem key={staff._id} value={staff._id}>
-                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                        <Avatar
-                                            src={staff.avatar}
-                                            alt={`${staff.firstName} ${staff.lastName}`}
-                                            sx={{ width: 24, height: 24 }}
-                                        />
-                                        <Typography>
-                                            {staff.firstName} {staff.lastName}
-                                        </Typography>
-                                    </Box>
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    <ThemeSelect
+                        label="Select Staff"
+                        value={staffList.find((item:any) => item._id === selectedStaff) as any}
+                        options={staffList.map((item:any) => ({
+                            value: item._id,
+                            label: item.firstName + " " + item.lastName
+                        }))}
+                        onChange={handleStaffChange}
+                        disabled={loading}
+                        sx={{ mb: 2 }}
+                    />
 
-                    {/* Remarks */}
-                    <TextField
+                    <ThemeInput
                         fullWidth
-                        label="Remarks (Optional)"
+                        labelName="Remarks (Optional)"
                         multiline
                         rows={3}
                         value={remarks}
@@ -220,10 +202,10 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
             </DialogContent>
 
             <DialogActions sx={{ px: 3, pb: 2 }}>
-                <Button onClick={onClose} disabled={loading} variant="outlined">
+                <ThemeButton onClick={onClose} disabled={loading} variant="outlined">
                     Cancel
-                </Button>
-                <Button
+                </ThemeButton>
+                <ThemeButton
                     onClick={handleSubmit}
                     disabled={loading || !selectedStaff}
                     variant="contained"
@@ -233,7 +215,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                         : order?.followUp?.staff
                             ? "Reassign Follow Up"
                             : "Assign Follow Up"}
-                </Button>
+                </ThemeButton>
             </DialogActions>
         </Dialog>
     );
