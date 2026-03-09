@@ -144,6 +144,16 @@ const menuItems = [
     path: "/admin/performance-invoice",
   },
   {
+    label: "Pending Order Report",
+    path: "/admin/reports/order-reports",
+    icon: <MdGroup size={18} />,
+  },
+  {
+    label: "Bills",
+    path: "/admin/reports/bill",
+    icon: <MdGroup size={18} />,
+  },
+  {
     label: "Reports",
     icon: <MdLibraryBooks size={18} />,
     path: "/admin/reports",
@@ -173,11 +183,7 @@ const menuItems = [
         path: "/admin/reports/staff",
         icon: <MdGroup size={18} />,
       },
-       {
-        label: "Bills",
-        path: "/admin/reports/bill",
-        icon: <MdGroup size={18} />,
-      },
+
       {
         label: "Products Items Report",
         path: "/admin/reports/products-items-report",
