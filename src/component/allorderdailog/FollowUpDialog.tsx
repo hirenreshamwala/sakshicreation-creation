@@ -52,7 +52,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
     onClose,
     order,
     onSuccess,
-}:any) => {
+}: any) => {
     const dispatch = useAppDispatch();
     const { staffList = [] } = useAppSelector((state) => state.staff || {});
     const [selectedStaff, setSelectedStaff] = useState<string>("");
@@ -151,24 +151,24 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                             </Typography>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                                 <Avatar
-                                    src={order.followUp.staff.avatar}
-                                    alt={`${order.followUp.staff.firstName} ${order.followUp.staff.lastName}`}
+                                    src={order?.followUp?.staff?.avatar}
+                                    alt={`${order?.followUp?.staff?.firstName} ${order?.followUp?.staff?.lastName}`}
                                     sx={{ width: 32, height: 32 }}
                                 />
                                 <Typography variant="body1">
-                                    {order.followUp.staff.firstName} {order.followUp.staff.lastName}
+                                    {order?.followUp?.staff?.firstName} {order?.followUp?.staff?.lastName}
                                 </Typography>
                             </Box>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                                 <Chip
-                                    label={order.followUp.taskId.status || "Pending"}
-                                    color={getStatusColor(order.followUp.taskId.status) as any}
+                                    label={order?.followUp?.taskId?.status || ""}
+                                    color={getStatusColor(order?.followUp?.taskId?.status) as any}
                                     size="small"
                                 />
-                                {order.followUp.assignedAt && (
+                                {order?.followUp?.assignedAt && (
                                     <Typography variant="caption" color="text.secondary">
                                         Assigned on:{" "}
-                                        {new Date(order.followUp.assignedAt).toLocaleDateString()}
+                                        {new Date(order?.followUp?.assignedAt).toLocaleDateString()}
                                     </Typography>
                                 )}
                             </Box>
@@ -178,8 +178,8 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                     {/* Staff Selection */}
                     <ThemeSelect
                         label="Select Staff"
-                        value={staffList.find((item:any) => item._id === selectedStaff) as any}
-                        options={staffList.map((item:any) => ({
+                        value={staffList.find((item: any) => item._id === selectedStaff) as any}
+                        options={staffList.map((item: any) => ({
                             value: item._id,
                             label: item.firstName + " " + item.lastName
                         }))}

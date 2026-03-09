@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { Box, Typography, Button, CircularProgress, TableCell } from "@mui/material"
-import { useAppDispatch, useAppSelector } from "@/store"
+import { useAppSelector } from "@/store"
 import { getUserData, formatDateToDDMMYYYY } from "@/utills/utills"
 import Loader from "@/component/common_component/loader"
 import { toast } from "react-toastify"
@@ -25,33 +25,7 @@ const columns: Column[] = [
     { id: "cancelledAt", label: "Cancelled At" },
 ]
 
-type CancelledOrderRow = {
-    _id: string
-    orderNumber: string
-    party: {
-        partyName: string
-    }
-    followUp?: {
-        staff?: {
-            firstName: string
-            lastName: string
-        }
-    }
-    cancelRemarks: string
-    cancelledAt: string
-}
-
-type TableRowData = {
-    id: string
-    orderNumber: string
-    partyName: string
-    followUpStaff: string
-    cancelReason: string
-    cancelledAt: string
-}
-
 const CancelledOrdersPage = () => {
-    const dispatch = useAppDispatch()
     const { loading } = useAppSelector((state) => state.orders)
     const userData = getUserData()
 
@@ -72,7 +46,7 @@ const CancelledOrdersPage = () => {
         setDownloading(true)
         try {
             // Use the existing getAllOrders API with status filter and pagination
-            const response = await orderService.getAllOrders({
+            const response:any = await orderService.getAllOrders({
                 status: ["Cancelled"],
                 page,
                 limit: pageSize
@@ -156,49 +130,17 @@ const CancelledOrdersPage = () => {
         cancelledAt: formatDate(order.cancelledAt),
     }))
 
-    const renderRow = (row: TableRowData, index: number) => {
+    const renderRow = (row: any) => {
         return (
             <>
-                <TableCell>
-                    <Typography fontSize="14px" color="#6B7280">
-                        {row.orderNumber}
-                    </Typography>
-                </TableCell>
-                <TableCell>
-                    <Typography fontSize="14px" color="#6B7280">
-                        {moment(row.createdAt).format('DD-MM-YYYY')}
-                    </Typography>
-                </TableCell>
-                <TableCell>
-                    <Typography fontSize="14px" color="#6B7280">
-                        {row.partyName}
-                    </Typography>
-                </TableCell>
-                <TableCell>
-                    <Typography fontSize="14px" color="#6B7280">
-                        {row?.itemName}
-                    </Typography>
-                </TableCell>
-                <TableCell>
-                    <Typography fontSize="14px" color="#6B7280">
-                        {row.itemSize}
-                    </Typography>
-                </TableCell>
-                <TableCell>
-                    <Typography fontSize="14px" color="#6B7280">
-                        {row.followUpStaff}
-                    </Typography>
-                </TableCell>
-                <TableCell>
-                    <Typography fontSize="14px" color="#6B7280" sx={{ maxWidth: 200 }} noWrap title={row.cancelReason}>
-                        {row.cancelReason}
-                    </Typography>
-                </TableCell>
-                <TableCell>
-                    <Typography fontSize="14px" color="#6B7280">
-                        {row.cancelledAt}
-                    </Typography>
-                </TableCell>
+                <TableCell>{row.orderNumber}</TableCell>
+                <TableCell>{moment(row.createdAt).format('DD-MM-YYYY')}</TableCell>
+                <TableCell>{row.partyName}</TableCell>
+                <TableCell>{row?.itemName}</TableCell>
+                <TableCell>{row.itemSize}</TableCell>
+                <TableCell>{row.followUpStaff}</TableCell>
+                <TableCell>{row.cancelReason}</TableCell>
+                <TableCell>{row.cancelledAt}</TableCell>
             </>
         )
     }
