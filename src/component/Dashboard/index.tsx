@@ -79,7 +79,7 @@ const permissionMapping: { [key: string]: string } = {
   Staff: "reports.staff",
   // Sub-menu items for Setup
   "Add Role": "setup.role",
-  Staff: "setup.staff",
+  // Staff: "setup.staff",
   Products: "setup.products",
   "Paper Material": "setup.paper-material",
   "Company Name": "setup.company-name",
@@ -276,10 +276,10 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [dateTime, setDateTime] = useState<Date | null>(null);
   const [tasks, setTask] = useState([])
   const [activeSubSidebar, setActiveSubSidebar] = useState<string | null>(null); // Initially null
-  const [filteredMenuItems, setFilteredMenuItems] = useState(menuItems);
+  const [filteredMenuItems, setFilteredMenuItems] = useState<any>(menuItems);
   const transitionDuration = 300;
   const transitionEasing = "cubic-bezier(0.4, 0, 0.2, 1)";
-  const { orders } = useAppSelector((state) => state.orders);
+  const { orders }: any = useAppSelector((state) => state.orders);
   const role = user?.role?.roleName?.toLowerCase();
   const STATUS = {
     PENDING: "Pending",
@@ -298,34 +298,34 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const getRoleSpecificTasks = async () => {
     switch (role) {
       case "designer": {
-        const res = await orderService.getDesignerOrders();
-        return res.data.filter(
-          (order) => order?.designerStatus !== STATUS?.APPROVED
+        const res: any = await orderService.getDesignerOrders();
+        return res?.data?.filter(
+          (order: any) => order?.designerStatus !== STATUS?.APPROVED
         ) || [];
       }
 
       case "printer": {
-        const res1 = await orderService.getPrinterOrders();
-        return res1.data.filter(
-          (order) =>
+        const res1: any = await orderService.getPrinterOrders();
+        return res1?.data?.filter(
+          (order: any) =>
             order?.designerStatus === STATUS.APPROVED &&
             order?.printerStatus !== STATUS.DONE
         ) || [];
       }
 
       case "binder": {
-        const res2 = await orderService.getBinderOrders();
-        return res2.data.filter(
-          (order) =>
+        const res2: any = await orderService.getBinderOrders();
+        return res2?.data?.filter(
+          (order: any) =>
             order?.printerStatus === STATUS.DONE &&
             order?.binderStatus !== STATUS.DONE
         ) || [];
       }
 
       case "booklet & folder binder": {
-        const res3 = await orderService.getBookletBinder();
-        return res3.data.filter(
-          (order) =>
+        const res3: any = await orderService.getBookletBinder();
+        return res3?.data?.filter(
+          (order: any) =>
             (order?.binderStatus === STATUS.DONE ||
               order?.binderStatus === STATUS.PENDING) &&
             order?.bookletBinderStatus !== STATUS.DONE
@@ -427,7 +427,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       // Check children
       if (item.children) {
         const childItem = item.children.find(
-          (child) =>
+          (child: any) =>
             router.pathname === child.path ||
             router.pathname.startsWith(child.path + "/")
         );
@@ -1083,7 +1083,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
             unmountOnExit
           >
             <Box>
-              {filteredMenuItems.map((item) => (
+              {filteredMenuItems.map((item: any) => (
                 <React.Fragment key={item.label}>
                   <Tooltip
                     title={!drawerOpen ? item.label : ""}
@@ -1316,7 +1316,7 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                       unmountOnExit
                     >
                       <List component="div" disablePadding>
-                        {item.children.map((child) => {
+                        {item.children.map((child:any) => {
                           const button = (
                             <ListItemButton
                               selected={
