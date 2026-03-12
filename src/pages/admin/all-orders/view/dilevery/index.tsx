@@ -34,7 +34,7 @@ const DeliveryForm = () => {
       time: "",
     },
     validationSchema: Yup.object({
-      remarks: Yup.string().required("Remarks are required"),
+      remarks: Yup.string().notRequired(),
       date: Yup.string().required("Date is required"),
       time: Yup.string(),
     }),
