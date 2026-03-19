@@ -448,7 +448,8 @@ const BinderForm = () => {
 
   // Get GSM options for a specific material (_id)
   const getMaterialGSMOptions = (materialId: string) => {
-    const filteredMaterials = materials.filter(m => m._id === materialId);
+    const findName = materials.find((m: any) => m._id === materialId);
+    const filteredMaterials = materials.filter(m => m.materialName === findName?.materialName);
     return Array.from(
       new Set(filteredMaterials.map(m => m.materialGSM.toString()))
     ).map(gsm => {

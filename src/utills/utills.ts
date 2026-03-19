@@ -267,7 +267,7 @@ export const downloadVisitingCardPDF = (data: any) => {
     2: { cellWidth: 14, fontStyle: "bold" },
     3: { cellWidth: 21 },
     4: { cellWidth: 12, fontStyle: "bold" },
-    5: { cellWidth: 1 },
+    5: { cellWidth: 15 },
   };
   const col4 = {
     0: { cellWidth: 13, fontStyle: "bold" },
