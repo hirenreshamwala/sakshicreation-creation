@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { memo, useEffect, useState } from "react"
 import { Box, Typography } from "@mui/material"
 import { companyOptions } from "@/constants"
 
@@ -82,4 +82,4 @@ const TabComponent: React.FC<AddOrderDialogProps> = ({
   )
 }
 
-export default TabComponent
+export default memo(TabComponent)

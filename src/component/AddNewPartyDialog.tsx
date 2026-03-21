@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import { Box, debounce, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Typography } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -1330,4 +1330,4 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   );
 };
 
-export default AddNewPartyDialog;
+export default memo(AddNewPartyDialog);

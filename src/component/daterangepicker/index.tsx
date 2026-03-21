@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Box, Stack, SxProps, Theme } from '@mui/material';
 import { BiRightArrowAlt } from 'react-icons/bi';
 import ThemeInput from '@/component/common_component/themeinput';
@@ -71,4 +71,4 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   );
 };
 
-export default DateRangePicker;
+export default memo(DateRangePicker);

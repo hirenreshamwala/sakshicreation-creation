@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Fragment } from "react";
+import { useState, useEffect, useCallback, Fragment, memo } from "react";
 import {
   Box,
   Paper,
@@ -334,4 +334,4 @@ const CustomTable2 = <T extends { id: string; lastStatusChangeDate?: string | Da
   );
 };
 
-export default CustomTable2;
+export default memo(CustomTable2);

@@ -1,5 +1,5 @@
 // components/common_component/Loader.tsx
-import React from 'react';
+import React, { memo } from 'react';
 import { Box, Typography } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 
@@ -21,4 +21,4 @@ const Loader: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => {
   );
 };
 
-export default Loader;
+export default memo(Loader);

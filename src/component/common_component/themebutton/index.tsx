@@ -1,5 +1,5 @@
 // components/common_component/ThemeButton.tsx
-import React from 'react';
+import React, { memo } from 'react';
 import { Button, CircularProgress } from '@mui/material';
 
 export interface ButtonProps {
@@ -70,4 +70,4 @@ const ThemeButton: React.FC<ButtonProps> = ({
   );
 };
 
-export default ThemeButton;
+export default memo(ThemeButton);
