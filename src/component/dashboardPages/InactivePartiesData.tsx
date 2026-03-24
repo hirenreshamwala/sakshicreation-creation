@@ -113,6 +113,20 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
         setPage(newPage);
     }, []);
 
+    // Combined filter state for CustomTable
+    const currentFilterState = useMemo(() => ({
+        page,
+        pageSize,
+    }), [page, pageSize]);
+
+    // Handler for CustomTable's setCurrentFilterState
+    const handleFilterStateChange = useCallback((newState: any) => {
+        console.log("newState", newState)
+        if (newState?.page !== undefined) {
+            setPage(newState.page);
+        }
+    }, []);
+
     const formatLastOrderDate = (date: string | null) => {
         if (!date) {
             return "NEW PARTY";
@@ -382,13 +396,9 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
                     rowData={inactiveData}
                     renderRow={renderRow}
                     totalRows={totalRows}
-                    currentFilterState={{ page: page, pageSize }}
-                    setCurrentFilterState={(state: any) => {
-                        // Handle page change from CustomTable
-                        if (state?.page !== undefined) {
-                            setPage(state.page);
-                        }
-                    }}
+                    currentFilterState={currentFilterState}
+                    setCurrentFilterState={handleFilterStateChange}
+                    setPage={setPage}
                 />
             ) : (
                 <Box sx={{ textAlign: 'center', color: 'gray', mt: 4 }}>
