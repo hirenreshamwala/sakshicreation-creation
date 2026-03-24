@@ -55,7 +55,7 @@ const BookletFolderBinderForm = () => {
   const router = useRouter()
   const { id: orderId } = router.query
   const dispatch = useAppDispatch()
-  const { singleOrder }:any = useAppSelector((state) => state.orders)
+  const { singleOrder }: any = useAppSelector((state) => state.orders)
   const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -63,7 +63,7 @@ const BookletFolderBinderForm = () => {
   const [bookletPapers, setBookletPapers] = useState<PaperField[]>([])
   const { allInventory } = useAppSelector(state => state.inventory);
 
-  const formik:any = useFormik({
+  const formik: any = useFormik({
     initialValues: {
       issuedDate: new Date().toISOString()?.split("T")[0],
       receivedDate: "",
@@ -358,29 +358,57 @@ const BookletFolderBinderForm = () => {
     label: material.materialName,
   }));
 
-  // Get GSM options for a specific material (_id)
-  const getMaterialGSMOptions = (materialId: string) => {
-    const filteredMaterials = materials.filter(m => m._id === materialId);
-    return Array.from(
-      new Set(filteredMaterials.map(m => m.materialGSM.toString()))
-    ).map(gsm => {
-      const gsmMaterial = filteredMaterials.find(m => m.materialGSM.toString() === gsm);
+  // // Get GSM options for a specific material (_id)
+  // const getMaterialGSMOptions = (materialId: string) => {
+  //   const filteredMaterials = materials.filter(m => m._id === materialId);
+  //   return Array.from(
+  //     new Set(filteredMaterials.map(m => m.materialGSM.toString()))
+  //   ).map(gsm => {
+  //     const gsmMaterial = filteredMaterials.find(m => m.materialGSM.toString() === gsm);
+  //     return {
+  //       value: gsmMaterial?._id, // Use _id for GSM too
+  //       label: `${gsm} GSM`,
+  //     };
+  //   });
+  // };
+
+  // // Get size options for a specific material + GSM
+  // const getMaterialSizeOptions = (materialId: string, materialGSM: string) => {
+  //   const filteredMaterials = materials.filter(
+  //     m => m._id === materialGSM
+  //   );
+  //   return filteredMaterials.map(m => ({
+  //     value: m._id, // Each size option tied to material _id
+  //     label: m.materialSize,
+  //   }));
+  // };
+
+  const getMaterialGSMOptions = (materialName: string) => {
+    const findName = materials?.find(material => material?._id === materialName);
+
+    const filteredMaterials = materials?.filter(material => material?.materialName === findName?.materialName);
+    return filteredMaterials?.map(gsm => {
       return {
-        value: gsmMaterial?._id, // Use _id for GSM too
-        label: `${gsm} GSM`,
+        value: gsm?._id,
+        label: `${gsm?.materialGSM} GSM`
       };
     });
   };
 
-  // Get size options for a specific material + GSM
-  const getMaterialSizeOptions = (materialId: string, materialGSM: string) => {
-    const filteredMaterials = materials.filter(
-      m => m._id === materialGSM
+  const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
+    const findName = materials?.find(material => material?._id === materialGSM);
+
+    const filteredMaterials = materials?.filter(
+      material =>
+        material?.materialGSM === findName?.materialGSM
     );
-    return filteredMaterials.map(m => ({
-      value: m._id, // Each size option tied to material _id
-      label: m.materialSize,
-    }));
+
+    return filteredMaterials?.map(size => {
+      return {
+        value: size?._id,
+        label: size?.materialSize
+      };
+    });
   };
 
   // Handle material name selection
@@ -767,13 +795,13 @@ Your Team
                       required
                       disabled={!paper.paperType || !paper.gsm || areFieldsReadOnly}
                     />
-                      <ThemeInput
-                        labelName="Number of Sheets Used"
-                        value={paper.numberOfSheetsUsed}
-                        onChange={(e) => handleBookletPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
-                        fullWidth
-                        InputProps={{ readOnly: areFieldsReadOnly }}
-                      />
+                    <ThemeInput
+                      labelName="Number of Sheets Used"
+                      value={paper.numberOfSheetsUsed}
+                      onChange={(e) => handleBookletPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
+                      fullWidth
+                      InputProps={{ readOnly: areFieldsReadOnly }}
+                    />
                   </Stack>
                 </Box>
               ))}
