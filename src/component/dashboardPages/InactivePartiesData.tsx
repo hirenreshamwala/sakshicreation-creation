@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Box, TableCell, Button, Popover, List, ListItem, ListItemText, IconButton, Tooltip } from "@mui/material";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { Box, TableCell, Button, Popover, List, ListItem, ListItemButton, ListItemText, IconButton, Tooltip } from "@mui/material";
 import { useAppSelector } from "@/store";
 import Request from "@/services/axios";
-import BasicTable from "../common_component/Table/themetable";
+import CustomTable from "../common_component/Table/CustomTable2";
 import Loader from "../common_component/loader";
 import * as XLSX from "xlsx";
 import { FiDownload } from "react-icons/fi";
@@ -22,6 +22,12 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
     const [selectedDays, setSelectedDays] = useState(30);
     const [partyTypeFilter, setPartyTypeFilter] = useState('Customer'); // 'All', 'New Party', 'Customer'
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const [pageSize] = useState(10);
+    const [totalRows, setTotalRows] = useState(0);
+
     const open = Boolean(anchorEl);
 
     const presets = [
@@ -41,21 +47,71 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
     };
 
     const handlePresetSelect = (value: number) => {
-        setSelectedDays(value); // triggers useEffect
+        setSelectedDays(value);
+        setPage(1); // Reset to first page when filter changes
         handleClose();
     };
 
     const handlePartyTypeChange = (type: string) => {
         setPartyTypeFilter(type);
+        setPage(1); // Reset to first page when filter changes
     };
 
-    // Filtered data based on partyTypeFilter
-    const filteredData = inactiveData.filter((row) => {
-        if (partyTypeFilter === 'All') return true;
-        if (partyTypeFilter === 'New Party') return row.partyTag === 'NEW';
-        if (partyTypeFilter === 'Customer') return row.partyTag === 'CUSTOMER';
-        return true;
-    });
+    // Get the paginated endpoint
+    const getInactiveEndpoint = () => {
+        if (companyName === 'Sakshi') {
+            return '/api/report/getscinactive-parties-paginated';
+        } else if (companyName === 'QP') {
+            return '/api/report/getqpinactive-parties-paginated';
+        }
+        return '';
+    };
+
+    // Fetch inactive parties data with pagination - wrapped in useCallback
+    const fetchInactiveData = useCallback(async () => {
+        const endpoint = getInactiveEndpoint();
+        if (!endpoint || !user?.id) return;
+
+        setLoading(true);
+        try {
+            const BaseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8383';
+            const body = {
+                days: selectedDays,
+                page,
+                limit: pageSize,
+                partyType: partyTypeFilter === 'All' ? undefined : partyTypeFilter
+            };
+            const res = await Request.post(`${BaseURL}${endpoint}`, body);
+
+            if (res.data.success) {
+                setInactiveData(res.data.data || []);
+                if (res.data.pagination) {
+                    setTotalRows(res.data.pagination.total);
+                }
+            } else {
+                setInactiveData([]);
+                setTotalRows(0);
+            }
+        } catch (err) {
+            console.error("Error fetching inactive parties data:", err);
+            setInactiveData([]);
+            setTotalRows(0);
+        } finally {
+            setLoading(false);
+        }
+    }, [user?.id, companyName, selectedDays, page, pageSize, partyTypeFilter]);
+
+    // Fetch data when page, filters, or user changes
+    useEffect(() => {
+        if (user?.id) {
+            fetchInactiveData();
+        }
+    }, [fetchInactiveData]);
+
+    // Handle page change from table
+    const handlePageChange = useCallback((newPage: number) => {
+        setPage(newPage);
+    }, []);
 
     const formatLastOrderDate = (date: string | null) => {
         if (!date) {
@@ -70,9 +126,9 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
         return `${day}-${month}-${year}`;
     };
 
-    // Excel डाउनलोड के लिए डेटा तैयार करें
+    // Excel data preparation
     const prepareExcelData = useMemo(() => {
-        return filteredData.map((row) => {
+        return inactiveData.map((row) => {
             if (companyName === 'Sakshi') {
                 return {
                     'Party': row.partyName || 'N/A',
@@ -101,9 +157,8 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
             }
             return {};
         });
-    }, [filteredData, companyName]);
+    }, [inactiveData, companyName]);
 
-    // Excel हेडर्स तैयार करें
     const excelHeaders = useMemo(() => {
         if (companyName === 'Sakshi') {
             return ['Party', 'Address', 'Created By', 'Last Order Date', 'Last Order Number', 'Item Name', 'Quantity', 'Amount'];
@@ -113,26 +168,18 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
         return [];
     }, [companyName]);
 
-    // Excel डाउनलोड फंक्शन
     const handleExcelDownload = () => {
         if (prepareExcelData.length === 0) return;
 
-        // Create worksheet
         const worksheet = XLSX.utils.json_to_sheet(prepareExcelData);
-
-        // Add headers to the worksheet
         XLSX.utils.sheet_add_aoa(worksheet, [excelHeaders], { origin: "A1" });
-
-        // Create workbook
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Inactive Parties");
-
-        // Download file
         const fileName = `Inactive_Parties_${companyName}_${new Date().toISOString().split('T')[0]}.xlsx`;
         XLSX.writeFile(workbook, fileName);
     };
 
-    // Conditional columns based on companyName
+    // Column definitions
     const getColumns = () => {
         if (companyName === 'Sakshi') {
             return [
@@ -163,58 +210,18 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
         return [];
     };
 
-    // Inactive parties ke liye API endpoint
-    const getInactiveEndpoint = () => {
-        if (companyName === 'Sakshi') {
-            return '/api/report/getscinactive-parties';
-        } else if (companyName === 'QP') {
-            return '/api/report/getqpinactive-parties';
-        }
-        return '';
-    };
-
-    // Inactive parties data fetch karein
-    const fetchInactiveData = async () => {
-        const endpoint = getInactiveEndpoint();
-        if (!endpoint || !user?.id) return;
-
-        setLoading(true);
-        try {
-            const BaseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8383';
-            const body = { days: selectedDays };
-            const res = await Request.post(`${BaseURL}${endpoint}`, body);
-
-            if (res.data.success) {
-                setInactiveData(res.data.data || []);
-            } else {
-                setInactiveData([]);
-            }
-        } catch (err) {
-            console.error("Error fetching inactive parties data:", err);
-            setInactiveData([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (user?.id) {
-            fetchInactiveData();
-        }
-    }, [activeTab, companyName, selectedDays]);
-
-    const handleNewcClick = (partyName) => {
+    const handleNewcClick = (partyName: string) => {
         const url = `/admin/all-orders?&party=${partyName}&c=${companyName}`;
         window.open(url, '_blank');
     };
 
-    // Conditional renderRow based on companyName
+    // Row renderer
     const renderRow = (row: any) => {
         if (companyName === 'Sakshi') {
             return (<>
                 <TableCell onClick={() => handleNewcClick(row._id)} sx={{ cursor: 'pointer' }}>{row.partyName || 'N/A'}</TableCell>
-                <TableCell>{`${row.address.unitNo} - ${row.address.marketName} - ${row.address.area} - ${row.address.pincode}`}</TableCell>
-                <TableCell>{`${row.createdBy.firstName} ${row.createdBy.lastName}`}</TableCell>
+                <TableCell>{`${row.address?.unitNo || ''} - ${row.address?.marketName || ''} - ${row.address?.area || ''} - ${row.address?.pincode || ''}`}</TableCell>
+                <TableCell>{`${row.createdBy?.firstName || ''} ${row.createdBy?.lastName || ''}`}</TableCell>
                 <TableCell>{formatLastOrderDate(row.actualLastOrderDate)}</TableCell>
                 <TableCell>{`${row?.lastOrderId?.orderNumber || "-"}`}</TableCell>
                 <TableCell>{`${row?.lastOrderId?.productItem?.itemName || "-"}`}</TableCell>
@@ -228,8 +235,8 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
         } else if (companyName === 'QP') {
             return (<>
                 <TableCell onClick={() => handleNewcClick(row._id)} sx={{ cursor: 'pointer' }}>{row.partyName || 'N/A'}</TableCell>
-                <TableCell>{`${row.address.unitNo} - ${row.address.marketName} - ${row.address.area} - ${row.address.pincode}`}</TableCell>
-                <TableCell>{`${row.createdBy.firstName} ${row.createdBy.lastName}`}</TableCell>
+                <TableCell>{`${row.address?.unitNo || ''} - ${row.address?.marketName || ''} - ${row.address?.area || ''} - ${row.address?.pincode || ''}`}</TableCell>
+                <TableCell>{`${row.createdBy?.firstName || ''} ${row.createdBy?.lastName || ''}`}</TableCell>
                 <TableCell>{formatLastOrderDate(row.actualLastOrderDate)}</TableCell>
                 <TableCell>{`QP-${row?.lastOrderId?.orderNo || 'N/A'}`}</TableCell>
                 <TableCell>{`${row?.lastOrderId?.orderdata?.ply || 'N/A'}`}</TableCell>
@@ -277,13 +284,13 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
                         <Box sx={{ p: 2, width: 200 }}>
                             <List>
                                 {presets.map((preset) => (
-                                    <ListItem
-                                        button
-                                        key={preset.value}
-                                        onClick={() => handlePresetSelect(preset.value)}
-                                        selected={selectedDays === preset.value}
-                                    >
-                                        <ListItemText primary={preset.label} />
+                                    <ListItem key={preset.value} disablePadding>
+                                        <ListItemButton
+                                            selected={selectedDays === preset.value}
+                                            onClick={() => handlePresetSelect(preset.value)}
+                                        >
+                                            <ListItemText primary={preset.label} />
+                                        </ListItemButton>
                                     </ListItem>
                                 ))}
                             </List>
@@ -318,7 +325,7 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
                     </Box>
 
                     {/* Excel Download Button */}
-                    {filteredData.length > 0 && (
+                    {inactiveData.length > 0 && (
                         <Tooltip title="Download as Excel">
                             <IconButton
                                 onClick={handleExcelDownload}
@@ -337,7 +344,6 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
                                     height="16"
                                     width="16"
                                     viewBox="0 0 384 512"
-                                // style={{ marginRight: "8px" }}
                                 >
                                     <path
                                         fill="#667085"
@@ -357,7 +363,6 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
                                                    10.6 7 16.9z"
                                     />
                                 </svg>
-                                {/* <Typography fontSize={12}>Download excel</Typography>  */}
                             </IconButton>
                         </Tooltip>
                     )}
@@ -366,16 +371,24 @@ const InactivePartiesData: React.FC<InactivePartiesDataProps> = ({
 
             {loading ? (
                 <Loader />
-            ) : filteredData.length > 0 ? (
-                <BasicTable
+            ) : inactiveData.length > 0 ? (
+                <CustomTable
                     showDatePicker={false}
                     showFillter={false}
                     showSearch={false}
-                    showExcelDownload={false} // BasicTable का एक्सेल डाउनलोड बंद करें
+                    showExcelDownload={false}
                     title={`Inactive Parties - ${companyName}`}
                     tableHeader={columns}
-                    rowData={filteredData}
+                    rowData={inactiveData}
                     renderRow={renderRow}
+                    totalRows={totalRows}
+                    currentFilterState={{ page: page, pageSize }}
+                    setCurrentFilterState={(state: any) => {
+                        // Handle page change from CustomTable
+                        if (state?.page !== undefined) {
+                            setPage(state.page);
+                        }
+                    }}
                 />
             ) : (
                 <Box sx={{ textAlign: 'center', color: 'gray', mt: 4 }}>
