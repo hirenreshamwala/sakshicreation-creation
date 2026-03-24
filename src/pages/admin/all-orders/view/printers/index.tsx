@@ -54,7 +54,7 @@ const PrinterForm = () => {
   const router = useRouter();
   const { id: orderId } = router.query;
   const dispatch = useAppDispatch();
-  const { singleOrder }:any = useAppSelector((state) => state.orders);
+  const { singleOrder }: any = useAppSelector((state) => state.orders);
   const { binderTypes } = useAppSelector((state) => state.binderType);
   const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true);
@@ -211,7 +211,7 @@ const PrinterForm = () => {
           printer: selectedPrinterStaff.value,
           printerStatus: "Pending",
           status: "Printer",
-          printerPapers: paperFields.map((paper:any) => ({
+          printerPapers: paperFields.map((paper: any) => ({
             ...paper,
           })),
         };
@@ -227,41 +227,37 @@ const PrinterForm = () => {
     },
   });
 
-  const materialNameOptions = Array.from(
-    new Set(materials.map(material => material.materialName))
-  ).map(name => {
-    const materialObj = materials.find(m => m.materialName === name)!;
+  const materialNameOptions = materials?.map(material => {
     return {
-      value: materialObj._id,
-      label: name
+      value: material?._id,
+      label: material?.materialName
     };
   });
 
   const getMaterialGSMOptions = (materialName: string) => {
-    const filteredMaterials = materials.filter(material => material._id === materialName);
-    return Array.from(
-      new Set(filteredMaterials.map(material => material.materialGSM.toString()))
-    ).map(gsm => {
-      const materialObj = filteredMaterials.find(m => m.materialGSM.toString() === gsm)!;
+    const findName = materials?.find(material => material?._id === materialName);
+
+    const filteredMaterials = materials?.filter(material => material?.materialName === findName?.materialName);
+    return filteredMaterials?.map(gsm => {
       return {
-        value: materialObj._id,
-        label: `${gsm} GSM`
+        value: gsm?._id,
+        label: `${gsm?.materialGSM} GSM`
       };
     });
   };
 
   const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
-    const filteredMaterials = materials.filter(
+    const findName = materials?.find(material => material?._id === materialName);
+
+    const filteredMaterials = materials?.filter(
       material =>
-        material._id === materialName
+        material?.materialGSM === findName?.materialGSM
     );
-    return Array.from(
-      new Set(filteredMaterials.map(material => material.materialSize))
-    ).map(size => {
-      const materialObj = filteredMaterials.find(m => m.materialSize === size)!;
+
+    return filteredMaterials?.map(size => {
       return {
-        value: materialObj._id,
-        label: size
+        value: size?._id,
+        label: size?.materialSize
       };
     });
   };
@@ -392,7 +388,7 @@ const PrinterForm = () => {
       toast.error("At least one paper field is required");
       return;
     }
-    const updatedFields = paperFields.filter((_:any, i:any) => i !== index);
+    const updatedFields = paperFields.filter((_: any, i: any) => i !== index);
     setPaperFields(updatedFields);
   };
 
@@ -645,8 +641,8 @@ Your Team
               InputProps={{ readOnly: areFieldsReadOnly }}
             />
           </Box>
-          
-          {paperFields?.map((paper:any, index:any) => (
+
+          {paperFields?.map((paper: any, index: any) => (
             <Box key={index} mb={3} p={2} border={1} borderRadius={2} borderColor="#ddd">
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography fontWeight={600}>
@@ -696,8 +692,8 @@ Your Team
                   type="number"
                   value={paper.numberOfSheetsUsed || ""}
                   onChange={(e) =>
-                    setPaperFields((prev:any) =>
-                      prev.map((p:any, i:any) =>
+                    setPaperFields((prev: any) =>
+                      prev.map((p: any, i: any) =>
                         i === index ? { ...p, numberOfSheetsUsed: e.target.value } : p
                       )
                     )

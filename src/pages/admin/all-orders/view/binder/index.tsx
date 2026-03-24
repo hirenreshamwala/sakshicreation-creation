@@ -448,14 +448,28 @@ const BinderForm = () => {
 
   // Get GSM options for a specific material (_id)
   const getMaterialGSMOptions = (materialId: string) => {
-    const findName = materials.find((m: any) => m._id === materialId);
-    const filteredMaterials = materials.filter(m => m.materialName === findName?.materialName);
-    return Array.from(
+    // Step 1: Find selected material
+    const selectedMaterial = materials.find(m => m._id === materialId);
+    if (!selectedMaterial) return [];
+
+    // Step 2: Filter by same materialName
+    const filteredMaterials = materials.filter(
+      m => m.materialName === selectedMaterial.materialName
+    );
+
+    // Step 3: Get unique GSM values
+    const uniqueGSMs = Array.from(
       new Set(filteredMaterials.map(m => m.materialGSM.toString()))
-    ).map(gsm => {
-      const gsmMaterial = filteredMaterials.find(m => m.materialGSM.toString() === gsm);
+    );
+
+    // Step 4: Map to dropdown format
+    return uniqueGSMs.map(gsm => {
+      const gsmMaterial = filteredMaterials.find(
+        m => m.materialGSM.toString() === gsm
+      );
+
       return {
-        value: gsmMaterial?._id, // Use _id for GSM too
+        value: gsmMaterial?._id, // if you really need id
         label: `${gsm} GSM`,
       };
     });
@@ -463,8 +477,10 @@ const BinderForm = () => {
 
   // Get size options for a specific material + GSM
   const getMaterialSizeOptions = (materialId: string, materialGSM: string) => {
+
+    const findName = materials.find((m: any) => m._id === materialId);
     const filteredMaterials = materials.filter(
-      m => m._id === materialGSM
+      m => m.materialGSM === findName?.materialGSM
     );
     return filteredMaterials.map(m => ({
       value: m._id, // Each size option tied to material _id
