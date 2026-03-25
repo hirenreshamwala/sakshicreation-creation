@@ -336,8 +336,8 @@ const BookletBinderTaskView = () => {
     const getMaterialGSMOptions = (materialName: string) => {
     const findName = materials?.find(material => material?._id === materialName);
 
-    const filteredMaterials = materials?.filter(material => material?.materialName === findName?.materialName);
-    return filteredMaterials?.map(gsm => {
+    // const filteredMaterials = materials?.filter(material => material?.materialName === findName?.materialName);
+    return materials?.map(gsm => {
       return {
         value: gsm?._id,
         label: `${gsm?.materialGSM} GSM`
@@ -348,12 +348,12 @@ const BookletBinderTaskView = () => {
   const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
     const findName = materials?.find(material => material?._id === materialGSM);
 
-    const filteredMaterials = materials?.filter(
-      material =>
-        material?.materialGSM === findName?.materialGSM
-    );
+    // const filteredMaterials = materials?.filter(
+    //   material =>
+    //     material?.materialGSM === findName?.materialGSM
+    // );
 
-    return filteredMaterials?.map(size => {
+    return materials?.map(size => {
       return {
         value: size?._id,
         label: size?.materialSize

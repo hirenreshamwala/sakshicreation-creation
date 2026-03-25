@@ -285,40 +285,44 @@ const BinderTaskView = () => {
   // Get GSM options for a specific material (_id)
   const getMaterialGSMOptions = (materialId: string) => {
     // Step 1: Find selected material
-    const selectedMaterial = materials.find(m => m._id === materialId);
-    if (!selectedMaterial) return [];
+    // const selectedMaterial = materials.find(m => m._id === materialId);
+    // if (!selectedMaterial) return [];
 
-    // Step 2: Filter by same materialName
-    const filteredMaterials = materials.filter(
-      m => m.materialName === selectedMaterial.materialName
-    );
+    // // Step 2: Filter by same materialName
+    // const filteredMaterials = materials.filter(
+    //   m => m.materialName === selectedMaterial.materialName
+    // );
 
-    // Step 3: Get unique GSM values
-    const uniqueGSMs = Array.from(
-      new Set(filteredMaterials.map(m => m.materialGSM.toString()))
-    );
+    // // Step 3: Get unique GSM values
+    // const uniqueGSMs = Array.from(
+    //   new Set(filteredMaterials.map(m => m.materialGSM.toString()))
+    // );
 
-    // Step 4: Map to dropdown format
-    return uniqueGSMs.map(gsm => {
-      const gsmMaterial = filteredMaterials.find(
-        m => m.materialGSM.toString() === gsm
-      );
+    // // Step 4: Map to dropdown format
+    // return uniqueGSMs.map(gsm => {
+    //   const gsmMaterial = filteredMaterials.find(
+    //     m => m.materialGSM.toString() === gsm
+    //   );
 
-      return {
-        value: gsmMaterial?._id, // if you really need id
-        label: `${gsm} GSM`,
-      };
-    });
+    //   return {
+    //     value: gsmMaterial?._id, // if you really need id
+    //     label: `${gsm} GSM`,
+    //   };
+    // });
+    return materials.map(m => ({
+      value: m._id, // Each size option tied to material _id
+      label: m.materialGSM,
+    }));
   };
 
   // Get size options for a specific material + GSM
   const getMaterialSizeOptions = (materialId: string, materialGSM: string) => {
 
-    const findName = materials.find((m: any) => m._id === materialId);
-    const filteredMaterials = materials.filter(
-      m => m.materialGSM === findName?.materialGSM
-    );
-    return filteredMaterials.map(m => ({
+    // const findName = materials.find((m: any) => m._id === materialId);
+    // const filteredMaterials = materials.filter(
+    //   m => m.materialGSM === findName?.materialGSM
+    // );
+    return materials.map(m => ({
       value: m._id, // Each size option tied to material _id
       label: m.materialSize,
     }));
