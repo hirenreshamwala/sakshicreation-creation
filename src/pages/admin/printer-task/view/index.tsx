@@ -205,31 +205,31 @@ const PrinterTaskView = () => {
     };
   });
 
+
   const getMaterialGSMOptions = (materialName: string) => {
-    const filteredMaterials = materials.filter(material => material._id === materialName);
-    return Array.from(
-      new Set(filteredMaterials.map(material => material.materialGSM.toString()))
-    ).map(gsm => {
-      const materialObj = filteredMaterials.find(m => m.materialGSM.toString() === gsm)!;
+    const findName = materials?.find(material => material?._id === materialName);
+
+    const filteredMaterials = materials?.filter(material => material?.materialName === findName?.materialName);
+    return filteredMaterials?.map(gsm => {
       return {
-        value: materialObj._id,
-        label: `${gsm} GSM`
+        value: gsm?._id,
+        label: `${gsm?.materialGSM} GSM`
       };
     });
   };
 
   const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
-    const filteredMaterials = materials.filter(
+    const findName = materials?.find(material => material?._id === materialName);
+
+    const filteredMaterials = materials?.filter(
       material =>
-        material._id === materialName
+        material?.materialGSM === findName?.materialGSM
     );
-    return Array.from(
-      new Set(filteredMaterials.map(material => material.materialSize))
-    ).map(size => {
-      const materialObj = filteredMaterials.find(m => m.materialSize === size)!;
+
+    return filteredMaterials?.map(size => {
       return {
-        value: materialObj._id,
-        label: size
+        value: size?._id,
+        label: size?.materialSize
       };
     });
   };
