@@ -703,6 +703,7 @@ import { StaticCompanyOptions } from "@/constants";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getAllCompanyNamesThunk } from "@/store/slices/companyNameSlice";
 import dynamic from "next/dynamic";
+import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 
 // Dynamic imports for heavy dialogs — chunks are prefetched on idle, not on click
 const AssignLeadDialog = dynamic(() => import("@/component/AssignLeadDialog"), { ssr: false });
@@ -1028,9 +1029,11 @@ const AccountMasterPage: React.FC = memo(() => {
     }
   }, []);
 
+  console.log(companies,'companies')
+
   // ── Effect: load company names once ───────────────────────────────────────
   useEffect(() => {
-    if (!companies.length) dispatch(getAllCompanyNamesThunk());
+    if (!companies.length) dispatch(getAllCompaniesThunk());
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── FIX: single consolidated mount effect — replaces three overlapping ones ─
@@ -1391,6 +1394,7 @@ const AccountMasterPage: React.FC = memo(() => {
           title="Account-master"
           showExcelDownload={true}
           companyName={StaticCompanyOptions[companyTab]}
+          companyId={companies.find((item: any) => (item.companyName || item.name) === StaticCompanyOptions[companyTab])?._id}
           rowData={formattedRows}
           setCurrentFilterState={setCurrentFilterState}
           currentFilterState={currentFilterState}
@@ -1466,11 +1470,13 @@ const AccountMasterPage: React.FC = memo(() => {
               : responseState?.counts?.pending
           }
           pageName="account-master"
-          setDownloadLoading={setDownloadLoading}
           downloadLoading={downloadLoading}
           handleDownloadExcel={handleDownloadExcel}
+          companyId={companies.find((item: any) => (item.companyName) === StaticCompanyOptions[companyTab])?._id}
         />
       )}
+
+      {console.log(companies.find((item: any) => (item.companyName) === StaticCompanyOptions[companyTab])?._id,companies,'companies.find((item: any) => (item.companyName) === StaticCompanyOptions[companyTab])?._id')}
 
       {/* Dialogs — rendered only when needed to keep DOM lean */}
       {open && (

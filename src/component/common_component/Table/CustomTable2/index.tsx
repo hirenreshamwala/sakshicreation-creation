@@ -83,6 +83,7 @@ const CustomTable2 = <T extends { id: string; _id?: string; lastStatusChangeDate
   getRowColor,
   setCurrentFilterState,
   pageName,
+  setPage,
   // Filter props
   onFilterFieldSelect,
   onFieldOpen,
@@ -229,6 +230,10 @@ const CustomTable2 = <T extends { id: string; _id?: string; lastStatusChangeDate
 
   // Handle page changes
   const handlePageChange = useCallback((newPage: number) => {
+    if(setPage)
+    {
+      setPage(newPage + 1 );
+    }
     if (setCurrentFilterState) {
       setCurrentFilterState((prev: any) => ({
         ...prev,

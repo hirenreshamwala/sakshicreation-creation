@@ -510,6 +510,7 @@ import {
 import { FiFilter, FiSearch, FiX } from "react-icons/fi";
 import { MdArrowBack } from "react-icons/md";
 import { Virtuoso } from "react-virtuoso";
+import { useSelector } from "react-redux";
 
 interface FilterDropdownProps {
   filterOptions: string[];
@@ -521,6 +522,7 @@ interface FilterDropdownProps {
   onFieldSelect: (field: string | null) => void;
   onFieldOpen?: (field: string) => Promise<void>;
   defaultFilter?: any;
+  companyTab?: number;
 }
 
 const labelMap: Record<string, string> = {
@@ -549,6 +551,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = React.memo(({
   defaultFilter,
   onFieldSelect,
   onFieldOpen,
+  companyTab
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -557,6 +560,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = React.memo(({
   const [cachedValues, setCachedValues] = useState<Record<string, string[]>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
   const open = Boolean(anchorEl);
+  const {companies} = useSelector((state:any)=>state.company)
 
   // Memoize debounced search query to prevent unnecessary re-renders
   const debouncedSearchQuery = useMemo(() => searchQuery, [searchQuery]);
@@ -575,6 +579,11 @@ const FilterDropdown: React.FC<FilterDropdownProps> = React.memo(({
     if (selectedField && filters[selectedField]) setTempSelectedValues(filters[selectedField]);
     else setTempSelectedValues([]);
   }, [selectedField, filters]);
+
+  // Clear cached filter values when companyTab changes so stale data is removed
+  useEffect(() => {
+    setCachedValues({});
+  }, [companyTab]);
 
   // Memoize hasActiveFilters calculation
   const hasActiveFilters = useMemo(() => {

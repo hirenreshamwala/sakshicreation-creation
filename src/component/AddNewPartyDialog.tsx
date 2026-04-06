@@ -826,7 +826,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                       formik.values.partyType
                         ? {
                           value: formik.values.partyType,
-                          label: formik.values.partyType.charAt(0).toUpperCase() + formik.values.partyType.slice(1)
+                          label: formik?.values?.partyType?.charAt(0)?.toUpperCase() + formik?.values?.partyType?.slice(1)
                         }
                         : null
                     }

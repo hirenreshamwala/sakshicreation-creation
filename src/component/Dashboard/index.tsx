@@ -723,11 +723,11 @@ const Dashboard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
           {drawerOpen && user && activeSubSidebar !== "setup" && (
             <Box display="flex" alignItems="center" gap={1}>
               <Avatar sx={{ width: 32, height: 32 }}>
-                {user.firstName.charAt(0).toUpperCase()}
+                {user?.firstName?.charAt(0)?.toUpperCase()}
               </Avatar>
               <Box>
                 <Typography fontSize={14} fontWeight={600}>
-                  {user.firstName} {user.lastName}
+                  {user?.firstName} {user?.lastName}
                 </Typography>
                 <Typography fontSize={12} color="text.secondary">
                   {user.email}

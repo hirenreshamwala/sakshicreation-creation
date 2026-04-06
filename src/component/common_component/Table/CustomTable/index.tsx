@@ -62,6 +62,12 @@ interface BasicTableProps<T> {
   currentFilterState?: any;
   pageName?: string;
   getFilterOptions?: (field: string, filters?: any) => Promise<{ success: boolean; data: string[] }>;
+  companyTab?: number;
+  companyName?: string;
+  companyId?: string;
+  defaultFilter?: any;
+  downloadLoading?: boolean;
+  handleDownloadExcel?: () => void;
 }
 
 // Debounce hook
@@ -114,7 +120,8 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   downloadLoading,
   handleDownloadExcel,
   currentFilterState,
-  companyName
+  companyName,
+  companyId,
 }: BasicTableProps<T>) => {
   const dispatch = useDispatch();
   const { companies } = useAppSelector((state) => state.company)
@@ -276,6 +283,12 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
     }
   }, [currentFilterState?.filters]);
 
+  // Clear filter options cache when companyTab changes so stale data is not reused
+  useEffect(() => {
+    setFilterOptionsLocal({});
+    setSelectedFilterField(null);
+  }, [companyTab]);
+
   // Sync dates with currentFilterState
   useEffect(() => {
     if (currentFilterState?.startDate || currentFilterState?.dateRange?.start) {
@@ -310,10 +323,11 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
       const apiFilters = {
         startDate: currentFilterState?.startDate,
         endDate: currentFilterState?.endDate,
-        companyName: currentFilterState?.companyName,
-        companyName: companies.find((item) => item.companyName === companyName)?._id,
+        companyId: companyId,
         // Add other relevant filters
       };
+
+      console.log("apiFilters", apiFilters);
 
       // Fetch data from API
       const response = await accountMasterService.searchFilterOptions(field, "", apiFilters);
@@ -408,7 +422,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   }, [tableHeader, rowData]);
 
   const handleExcelDownload = () => {
-    handleDownloadExcel();
+    handleDownloadExcel?.();
   };
 
   const getPaginationItems = () => {
@@ -620,6 +634,7 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
                   onFieldSelect={handleFilterFieldSelect}
                   defaultFilter={defaultFilter}
                   onFieldOpen={handleFieldOpen} // Make sure this is passed
+                  companyTab={companyTab}
                 />
               </Box>
             )}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import {
   Box,
   Button,
@@ -122,14 +122,14 @@ const IndexPage: React.FC = () => {
 
   // Initialize date range
   useEffect(() => {
-  if (selectedPreset === "custom") return; 
+    if (selectedPreset === "custom") return;
 
-  const { startDate: s, endDate: e } = getDateRange(selectedPreset);
-  setStartDate(s);
-  setEndDate(e);
-  setCustomStartDate(s);
-  setCustomEndDate(e);
-}, [selectedPreset]);
+    const { startDate: s, endDate: e } = getDateRange(selectedPreset);
+    setStartDate(s);
+    setEndDate(e);
+    setCustomStartDate(s);
+    setCustomEndDate(e);
+  }, [selectedPreset]);
 
 
   // Main API Call Function
@@ -163,8 +163,8 @@ const IndexPage: React.FC = () => {
     }
   }, [startDate, endDate, apiEndpoint, companyTab]);
 
-  // Filter data based on staff selection
-  const filteredData = React.useMemo(() => {
+  // Filter data based on staff selection - memoized for performance
+  const filteredData = useMemo(() => {
     const filterArray = Array.isArray(staffFilter)
       ? staffFilter
       : staffFilter && Array.isArray(staffFilter["Staff Name"])
@@ -173,8 +173,11 @@ const IndexPage: React.FC = () => {
 
     if (!filterArray || filterArray.length === 0) return apiData;
 
+    // Create a Set for O(1) lookup instead of O(n) array.some
+    const filterSet = new Set(filterArray.map((f: string) => f.toLowerCase()));
+
     return apiData.filter((row) =>
-      filterArray.some((f: string) => f.toLowerCase() === row.staffName.toLowerCase())
+      filterSet.has(row.staffName?.toLowerCase())
     );
   }, [apiData, staffFilter]);
 
