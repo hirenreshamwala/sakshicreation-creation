@@ -399,7 +399,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
   useEffect(() => {
     if (open) {
       if (!staffList?.length) dispatch(getAllStaffThunk());
-
+      
       if (!isEditMode && !isBulkMode) {
         formik.resetForm();
         setCustomReason("");
@@ -549,7 +549,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
             </Box>
           )}
 
-          {!isBulkMode ? (
+          {!isBulkMode && (
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
               <ThemeInput
                 labelName="Unit No"
@@ -608,7 +608,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
                 }}
               />
             </Stack>
-          ):null}
+          )}
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
             <ThemeInput
@@ -724,7 +724,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
             />
           </Box>
 
-          {isEditMode ? (
+          {isEditMode && (
             <>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
                 <ThemeSelect
@@ -777,7 +777,7 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
                 />
               </Box>
             </>
-          ):null}
+          )}
 
           <ThemeButton
             type="submit"
@@ -809,11 +809,11 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = memo(({
         </Box>
       </CustomDialog>
 
-      {inputReasonOpen ? <InputReasonDialog
+      <InputReasonDialog
         open={inputReasonOpen}
         onClose={() => setInputReasonOpen(false)}
         onSave={handleSaveReason}
-      /> : null}
+      />
     </>
   );
 });
