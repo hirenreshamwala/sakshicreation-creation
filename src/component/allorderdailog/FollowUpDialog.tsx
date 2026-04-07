@@ -57,6 +57,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
     const { staffList = [] } = useAppSelector((state) => state.staff || {});
     const [selectedStaff, setSelectedStaff] = useState<string>("");
     const [remarks, setRemarks] = useState<string>("");
+    const [followUpDate, setFollowUpDate] = useState<string>("");
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -65,9 +66,11 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
             if (order?.followUp?.staff) {
                 setSelectedStaff(order.followUp.staff._id);
                 setRemarks(order.followUp.remarks || "");
+                setFollowUpDate(order.followUp.taskId?.rescheduleDate ? new Date(order.followUp.taskId.rescheduleDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
             } else {
                 setSelectedStaff("");
                 setRemarks("");
+                setFollowUpDate(new Date().toISOString().split('T')[0]);
             }
         }
     }, [open, order, dispatch]);
@@ -98,6 +101,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                     orderId: order._id,
                     staffId: selectedStaff,
                     remarks: remarks || undefined,
+                    date: followUpDate,
                 })
             ).unwrap();
 
@@ -184,6 +188,16 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                             label: item.firstName + " " + item.lastName
                         }))}
                         onChange={handleStaffChange}
+                        disabled={loading}
+                        sx={{ mb: 2 }}
+                    />
+
+                    <ThemeInput
+                        fullWidth
+                        labelName="Follow Up Date"
+                        type="date"
+                        value={followUpDate}
+                        onChange={(e) => setFollowUpDate(e.target.value)}
                         disabled={loading}
                         sx={{ mb: 2 }}
                     />

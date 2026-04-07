@@ -128,7 +128,7 @@ const Endpoint = {
   GET_ALL_ORDERS_PAGINATION: `${BaseURL}/api/orders/all-pagination`,
   GET_ORDER_BY_ID: `${BaseURL}/api/orders`,
   UPDATE_ORDER: `${BaseURL}/api/orders/update`,
-  DELETE_ORDER: `${BaseURL}/api/orders/delete`,
+  DELETE_ORDER: (id: string) => `${BaseURL}/api/orders/delete/${id}`,
   GET_ORDERS_BY_COMPANY_PARTY: `${BaseURL}/api/orders`,
   GET_DESIGNER_ORDERS: `${BaseURL}/api/orders/designe`,
   GET_PRINTER_ORDERS: `${BaseURL}/api/orders/printer`,

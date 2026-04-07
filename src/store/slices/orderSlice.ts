@@ -352,9 +352,9 @@ export const getOrdersByStaffIdThunk = createAsyncThunk(
 // Assign Follow Up
 export const assignFollowUpThunk = createAsyncThunk(
   "order/assignFollowUp",
-  async ({ orderId, staffId, remarks }: { orderId: string; staffId: string; remarks?: string }, { rejectWithValue }) => {
+  async ({ orderId, staffId, remarks, date }: { orderId: string; staffId: string; remarks?: string; date?: string }, { rejectWithValue }) => {
     try {
-      const response = await orderService.assignFollowUp(orderId, staffId, remarks);
+      const response = await orderService.assignFollowUp(orderId, staffId, remarks, date);
       if (response.success) {
         return response.data;
       } else {

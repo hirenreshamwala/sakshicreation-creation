@@ -435,11 +435,11 @@ export const orderService = {
   },
 
   // Assign follow-up to an order
-  async assignFollowUp(orderId: string, staffId: string, remarks?: string): Promise<ApiResponse<Order>> {
+  async assignFollowUp(orderId: string, staffId: string, remarks?: string, date?: string): Promise<ApiResponse<Order>> {
     try {
       const response: AxiosResponse<ApiResponse<Order>> = await Request.post(
         Endpoint.ASSIGN_FOLLOW_UP(orderId),
-        { staffId, remarks }
+        { staffId, remarks, date }
       );
       return {
         success: response.data.success,
@@ -470,6 +470,25 @@ export const orderService = {
       console.error("Service: Update follow-up status error:", error);
       throw new Error(
         error.response?.data?.message || "Failed to update follow-up status"
+      );
+    }
+  },
+
+  // Delete Order
+  async deleteOrder(id: string): Promise<ApiResponse<Order>> {
+    try {
+      const response: AxiosResponse<ApiResponse<Order>> = await Request.delete(
+        Endpoint.DELETE_ORDER(id)
+      );
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Service: Delete order error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to delete order"
       );
     }
   },
