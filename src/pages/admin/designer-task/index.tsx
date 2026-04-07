@@ -99,8 +99,22 @@ const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
     router.push(`/admin/designer-task//view?id=${orderId}`);
   };
 
+  // Sort tasks by effective date (ascending)
+  const sortedTasks = [...tasks].sort((a, b) => {
+    const getEffectiveDate = (order: any) => {
+      if (order.designerStatus === "Rework" && order.reworkHistory && order.reworkHistory.length > 0) {
+        const latestRework = order.reworkHistory[order.reworkHistory.length - 1];
+        return new Date(latestRework.date || latestRework.createdAt || order.createdAt);
+      }
+      return new Date(order.createdAt);
+    };
+    const dateA = getEffectiveDate(a);
+    const dateB = getEffectiveDate(b);
+    return dateB.getTime() - dateA.getTime();
+  });
+
   // Transform orders data for table
-  const rowData = tasks.map((order) => {
+  const rowData = sortedTasks.map((order) => {
     console.log("DEBUG : DesignerTask : order:", order);
     return {
     id: order._id,
@@ -110,7 +124,14 @@ const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
     bindingPage: order.bindingPage || "N/A",
     bookletType: order.bookletFolderType || "N/A",
     party: order.party?.partyName || "N/A",
-    date: formatDateToDDMMYYYY(order.createdAt),
+    date: (() => {
+      let displayDate = order.createdAt;
+      if (order.designerStatus === "Rework" && order.reworkHistory && order.reworkHistory.length > 0) {
+        const latestRework = order.reworkHistory[order.reworkHistory.length - 1];
+        displayDate = latestRework.date || latestRework.createdAt || order.createdAt;
+      }
+      return formatDateToDDMMYYYY(displayDate);
+    })(),
     size: order.size || "N/A",
     itemName: order.productItem?.itemName || "N/A",
     remarks: order.remarks || "N/A",
