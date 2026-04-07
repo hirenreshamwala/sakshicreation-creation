@@ -32,6 +32,7 @@ interface FollowUpData {
     status?: string;
     assignedAt?: string;
     remarks?: string;
+    date?: string;
 }
 
 interface Order {
@@ -75,8 +76,8 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
         }
     }, [open, order, dispatch]);
 
-    const handleStaffChange = (event: any) => {
-        setSelectedStaff(event.target.value as string);
+    const handleStaffChange = (event:any, newValue: any) => {
+        setSelectedStaff(newValue.value as string);
     };
 
     const handleRemarksChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,7 +183,10 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                     {/* Staff Selection */}
                     <ThemeSelect
                         label="Select Staff"
-                        value={staffList.find((item: any) => item._id === selectedStaff) as any}
+                        value={staffList.map((item: any) => ({
+                            value: item._id,
+                            label: item.firstName + " " + item.lastName
+                        })).find((item: any) => item.value === selectedStaff) as any}
                         options={staffList.map((item: any) => ({
                             value: item._id,
                             label: item.firstName + " " + item.lastName

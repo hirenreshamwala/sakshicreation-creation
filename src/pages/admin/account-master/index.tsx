@@ -1029,8 +1029,6 @@ const AccountMasterPage: React.FC = memo(() => {
     }
   }, []);
 
-  console.log(companies,'companies')
-
   // ── Effect: load company names once ───────────────────────────────────────
   useEffect(() => {
     if (!companies.length) dispatch(getAllCompaniesThunk());
