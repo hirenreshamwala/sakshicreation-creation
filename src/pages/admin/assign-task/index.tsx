@@ -3198,11 +3198,11 @@ const AssignTaskPage: React.FC = () => {
     ...task,
     id: task._id,
     company: { name: task.companyName?.companyName || "Unknown", avatar: task.companyName?.avatar || "" },
-    date: new Date(
-      task.isRescheduledTask && task.originalTaskId?.createdAt
-        ? task.originalTaskId.createdAt
-        : task.createdAt
-    ).toLocaleDateString("en-GB"),
+    date: formatDateToDDMMYYYY(
+        task.isRescheduledTask && task.originalTaskId?.createdAt
+          ? task.originalTaskId.createdAt
+          : task.createdAt
+      ),
     taskDate: task.date,
     reason: task.reasonForVisit || "N/A",
     party: task.partyName?.partyName || "Unknown",
@@ -3225,9 +3225,7 @@ const AssignTaskPage: React.FC = () => {
     status: task.status || "Pending",
     statusType: mapStatusToType(task.status),
     isRescheduledTask: task.isRescheduledTask || false,
-    originalTaskDate: task.originalTaskId?.date
-      ? new Date(task.originalTaskId.date).toLocaleDateString("en-GB")
-      : null,
+    originalTaskDate: formatDateToDDMMYYYY(task.originalTaskId?.date),
     rescheduleDate: task.rescheduleDate,
     highlightYellow:
       !defaultReasons.includes(task.reasonForVisit) &&

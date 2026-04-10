@@ -504,7 +504,7 @@ const PaymentFolderPage: React.FC = () => {
           )}
           {row.isRescheduledTask && row.status !== "Completed" && (
             <Typography variant="caption" display="block" color="warning.main">
-              New Date: {moment(row.taskDate).format('DD-MM-YYYY')}
+              New Date: {row.taskDate ? moment(row.taskDate).format('DD-MM-YYYY') : 'N/A'}
             </Typography>
           )}
         </Box>
@@ -571,10 +571,10 @@ const PaymentFolderPage: React.FC = () => {
     { id: 'area', label: 'Area', value: 'area' },
     { id: 'month', label: 'Month', value: 'month' },
     { id: 'paymentTerms', label: 'Payment Terms' /* , value: 'paymentTerms' */ },
-    { id: 'paymentAmount', label: 'Payment Amount' },
-    { id: 'receivedAmount', label: 'Received Amount' },
-    { id: 'differenceAmount', label: 'Difference Amount' },
-    { id: 'pendingAmount', label: 'Pending Amount' },
+    { id: 'paymentAmount', label: 'Payment Amount', value: 'paymentAmount' },
+    { id: 'receivedAmount', label: 'Received Amount', value: 'receivedAmount' },
+    { id: 'differenceAmount', label: 'Difference Amount', value: 'differenceAmount' },
+    { id: 'pendingAmount', label: 'Pending Amount', value: 'pendingAmount' },
     { id: 'assignTo', label: 'Assigned To', value: 'assignTo' },
     { id: 'taskStatus', label: 'Task Status', value: 'taskStatus' },
     { id: 'assignedDate', label: 'Assigned Date', value: 'assignedDate' },
@@ -583,7 +583,8 @@ const PaymentFolderPage: React.FC = () => {
   ], []);
 
   const getRowColor = useCallback((row: any) => {
-    if (row.pendingAmount === 0) return "#e6fffa";
+    if (row.pendingAmount === 0 && row.status === 'Completed') return "#e6fffa"; // Completed & Settled
+    if (row.pendingAmount > 0 && row.status === 'Pending') return "#fff5f5"; // Active & Pending
     return "";
   }, []);
 

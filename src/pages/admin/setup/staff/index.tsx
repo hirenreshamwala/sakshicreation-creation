@@ -14,6 +14,7 @@ import AddNewStaffBulkDialog from '@/component/AddNewStaffBulkDialog';
 import PasswordUpdateDialog from "@/component/PasswordUpdateDialog"
 import { companyOptions } from "@/constants"
 import TabComponent from "@/component/Dialog/TabComponent"
+import { formatDateToDDMMYYYY } from "@/utills/utills"
 
 const tabLabels = companyOptions
 const columns = [
@@ -126,7 +127,7 @@ const StaffPage = () => {
     id: staff.id,
     name: staff.name || `${staff.firstName} ${staff.lastName}`,
     role: staff.role?.roleName || "N/A", // Use roleName from populated role
-    joiningDate: staff.joiningDate ? new Date(staff.joiningDate).toLocaleDateString() : "-",
+    joiningDate: formatDateToDDMMYYYY(staff.joiningDate),
     status: staff.status ? "Active" : "Inactive",
     aadharFiles: staff.aadharFiles || [], // Include Aadhar files
     addressFiles: staff.addressFiles || [], // Include Address files

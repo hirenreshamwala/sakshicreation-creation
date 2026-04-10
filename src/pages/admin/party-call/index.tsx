@@ -31,6 +31,7 @@ import { getAllCompaniesThunk } from "@/store/slices/compnaySlice";
 import { leadService } from "@/services/lead.service";
 import CustomTable2 from "@/component/common_component/Table/CustomTable/CustomTable2";
 import AssignTaskDialog from "@/component/assigntaskdailog";
+import moment from "moment";
 
 interface Lead {
   _id: string;
@@ -768,7 +769,7 @@ const LeadManagementPage: React.FC = () => {
         </Box>
       </TableCell>
       <TableCell sx={{ fontSize: 14 }}>
-        {row.createdAt ? new Date(row.createdAt).toLocaleDateString("en-GB") : "N/A"}
+        {row.createdAt ? moment(row.createdAt).format("DD-MM-YYYY") : "N/A"}
       </TableCell>
       <TableCell
         sx={{ cursor: "pointer", fontSize: 14 }}

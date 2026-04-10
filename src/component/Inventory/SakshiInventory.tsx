@@ -20,6 +20,7 @@ import { getInventoryByCategoryThunk, getInventorySummaryThunk } from '@/store/s
 import { getAllMaterialsThunk } from '@/store/slices/materialSlice';
 import { getAllVendorsThunk } from '@/store/slices/vendorSlice';
 import { toast } from 'react-toastify';
+import { formatDateToDDMMYYYY } from '@/utills/utills';
 
 enum InventoryCategory {
   PRINTER = 'printer',
@@ -350,7 +351,7 @@ const SakshiInventoryPage = () => {
       <TableCell>{row.material?.materialGSM || 'N/A'}</TableCell>
       <TableCell>{row.kg || 0}</TableCell>
       <TableCell>{row.quantity || 0}</TableCell>
-      <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+      <TableCell>{formatDateToDDMMYYYY(row.date)}</TableCell>
       <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
     </>
   ), []);
@@ -528,7 +529,7 @@ const SakshiInventoryPage = () => {
                     <TableCell>{row.material?.materialGSM || 'N/A'}</TableCell>
                     <TableCell>{row.material?.materialSize || 'N/A'}</TableCell>
                     <TableCell>{row.quantity}</TableCell>
-                    <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDateToDDMMYYYY(row.date)}</TableCell>
                     <TableCell>
                       {activeWardTab === WardTab.INWARD ? (
                         <Box display="flex" justifyContent="space-between" alignItems="center">

@@ -9,6 +9,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { getAllInventoryForQualitThunk, getInventoryFilterOptionsThunk } from '@/store/slices/inventorySlice';
 import { toast } from 'react-toastify';
 import Loader from '../common_component/loader';
+import { formatDateToDDMMYYYY } from '@/utills/utills';
 
 enum InventoryCategory {
     FACTORY = 'factory',
@@ -292,7 +293,7 @@ const QpInventoryPage = () => {
                 <>
                     <TableCell>{row.kantan?.kantanName || "N/A"}</TableCell>
                     <TableCell>{row.reel || "N/A"}</TableCell>
-                    <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDateToDDMMYYYY(row.createdAt)}</TableCell>
                 </>
             ),
         },
@@ -384,7 +385,7 @@ const QpInventoryPage = () => {
                             <>
                                 <TableCell sx={{ cursor: "pointer" }}>{row?.quantity || 0}</TableCell>
                                 <TableCell sx={{ cursor: "pointer" }}>{row?.usedBox || 0}</TableCell>
-                                <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
+                                <TableCell>{formatDateToDDMMYYYY(row.createdAt)}</TableCell>
                             </>
                         )}
                     </>
@@ -401,7 +402,7 @@ const QpInventoryPage = () => {
                 <>
                     <TableCell>{row.wireType || "Wire"}</TableCell>
                     <TableCell>{row.kg || "N/A"}</TableCell>
-                    <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDateToDDMMYYYY(row.createdAt)}</TableCell>
                 </>
             ),
         },
@@ -415,7 +416,7 @@ const QpInventoryPage = () => {
                 <>
                     <TableCell>{row.glueType || "Glue"}</TableCell>
                     <TableCell>{row.kg || "N/A"}</TableCell>
-                    <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDateToDDMMYYYY(row.createdAt)}</TableCell>
                 </>
             ),
         },
@@ -441,7 +442,7 @@ const QpInventoryPage = () => {
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{row?.color || "N/A"}</TableCell>
                         <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{stats?.balance || "N/A"}</TableCell>
                         {detailOpen !== null ? <TableCell sx={{ cursor: 'pointer' }}>{row?.kg || 0}</TableCell> : null}
-                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell onClick={() => handleRowClick(row)} sx={{ cursor: 'pointer' }}>{formatDateToDDMMYYYY(row.createdAt)}</TableCell>
                     </>
                 )
 
