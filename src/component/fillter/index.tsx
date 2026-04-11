@@ -1072,7 +1072,12 @@ const labelMap: Record<string, string> = {
   orderNumber: "Order Number",
   orderedBy: "Ordered By",
   orderStatus: "Order Status",
-  assignedDate: "assigned date"
+  assignedDate: "assigned date",
+  paymentAmount: "Payment Amount",
+  receivedAmount:"Received Amount",
+  differenceAmount:"Difference Amount",
+  pendingAmount: "Pending Amount",
+  taskStatus: "Task Status"
 };
 
 // Helper function to format date values

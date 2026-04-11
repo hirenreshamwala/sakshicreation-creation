@@ -200,8 +200,6 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
         !formData.materialGSM ||
         !formData.materialSize ||
         !formData.quantity ||
-        !formData.ratePerSheet ||
-        !formData.kg ||
         !formData.companyName ||
         !formData.for ||
         !formData.forCompany
@@ -213,8 +211,8 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
       const purchaseData = {
         ...formData,
         quantity: Number(formData.quantity),
-        ratePerSheet: Number(formData.ratePerSheet),
-        kg: Number(formData.kg)
+        ratePerSheet: formData.ratePerSheet ? Number(formData.ratePerSheet) : 0,
+        kg: formData.kg ? Number(formData.kg) : 0
       };
 
       const result = await Swal.fire({
@@ -317,7 +315,6 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
             value={formData.ratePerSheet}
             onChange={handleChange}
             fullWidth
-            required
           />
           <ThemeInput
             labelName="KG"
@@ -326,7 +323,6 @@ const SakshiNewPurchase: React.FC<NewPurchaseProps> = ({ isEditMode = false, pur
             value={formData.kg}
             onChange={handleChange}
             fullWidth
-            required
           />
         </Stack>
         <Stack direction="row" spacing={2} mb={2}>
