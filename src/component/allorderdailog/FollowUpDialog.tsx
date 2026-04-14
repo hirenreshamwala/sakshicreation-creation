@@ -67,7 +67,8 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
             if (order?.followUp?.staff) {
                 setSelectedStaff(order.followUp.staff._id);
                 setRemarks(order.followUp.remarks || "");
-                setFollowUpDate(order.followUp.taskId?.rescheduleDate ? new Date(order.followUp.taskId.rescheduleDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+                const savedDate = order.followUp.date || order.followUp.taskId?.rescheduleDate;
+                setFollowUpDate(savedDate ? new Date(savedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
             } else {
                 setSelectedStaff("");
                 setRemarks("");
