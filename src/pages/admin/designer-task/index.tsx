@@ -1,11 +1,13 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, TableCell } from "@mui/material";
 import BasicTable from "@/component/common_component/Table/themetable";
+import ThemeButton from "@/component/common_component/themebutton";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { getDesignerOrdersThunk } from "@/store/slices/orderSlice";
+import { getDesignerOrdersThunk, updateOrderThunk, getOrderByIdThunk } from "@/store/slices/orderSlice";
 import { useRouter } from "next/router";
 import Loader from "@/component/common_component/loader";
 import { formatDateToDDMMYYYY } from "@/utills/utills";
+import { toast } from "react-toastify";
 
 interface Column {
   id: string;
@@ -24,6 +26,7 @@ const tableHeader: Column[] = [
   { id: "bpage", label: "binding page" },
   { id: "bftype", label: "booklet folder type" },
   { id: "remarks", label: "Remarks" },
+  { id: "action", label: "Action", align: "center" as const },
   { id: "status", label: "Status", align: "center" as const },
 ];
 
@@ -83,10 +86,12 @@ interface DesignerTaskProps {
   }>;
 }
 
-const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
+const DesignerTask: React.FC<DesignerTaskProps> = () => {
   const dispatch = useAppDispatch();
-  const { orders, loading } = useAppSelector((state) => state.orders);
+  const { orderList, loading } = useAppSelector((state) => state.orders);
   const router = useRouter();
+  const [submitLoadingId, setSubmitLoadingId] = useState<string | null>(null);
+
   useEffect(() => {
     dispatch(getDesignerOrdersThunk());
   }, [dispatch]);
@@ -99,8 +104,40 @@ const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
     router.push(`/admin/designer-task//view?id=${orderId}`);
   };
 
+  const handleStartWorking = async (orderId: string) => {
+    setSubmitLoadingId(orderId);
+    try {
+      await dispatch(updateOrderThunk({ id: orderId, data: { designerStatus: "In Progress" } })).unwrap();
+      toast.success("Work started!");
+      dispatch(getDesignerOrdersThunk());
+    } catch (error: any) {
+      toast.error(error || "Failed to start work");
+    } finally {
+      setSubmitLoadingId(null);
+    }
+  };
+
+  const handleMarkDone = async (orderId: string) => {
+    setSubmitLoadingId(orderId);
+    try {
+      await dispatch(updateOrderThunk({
+        id: orderId,
+        data: {
+          designerStatus: "Done",
+          clientApprovalSentAt: null,
+        },
+      })).unwrap();
+      toast.success("Task marked as done!");
+      dispatch(getDesignerOrdersThunk());
+    } catch (error: any) {
+      toast.error(error || "Failed to update order");
+    } finally {
+      setSubmitLoadingId(null);
+    }
+  };
+
   // Sort tasks by effective date (ascending)
-  const sortedTasks = [...tasks].sort((a, b) => {
+  const sortedTasks = [...orderList].sort((a, b) => {
     const getEffectiveDate = (order: any) => {
       if (order.designerStatus === "Rework" && order.reworkHistory && order.reworkHistory.length > 0) {
         const latestRework = order.reworkHistory[order.reworkHistory.length - 1];
@@ -135,6 +172,7 @@ const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
     size: order.size || "N/A",
     itemName: order.productItem?.itemName || "N/A",
     remarks: order.remarks || "N/A",
+    rawStatus: order.designerStatus || "Pending",
     status: order.designerStatus || "Pending",
   };
   });
@@ -161,6 +199,48 @@ const DesignerTask: React.FC<DesignerTaskProps> = ({ tasks }) => {
       <TableCell>{row.bindingPage}</TableCell>
       <TableCell>{row.bookletType}</TableCell>
       <TableCell>{row.remarks}</TableCell>
+      
+      <TableCell align="center" sx={{ minWidth: 100 }}>
+        {(row.rawStatus === "Pending" || row.rawStatus === "Rework") && (
+          <ThemeButton
+            sx={{
+              background: "#1976D2",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 13,
+              borderRadius: 2,
+              py: 0.8,
+              px: 2,
+              "&:hover": { background: "#1565C0" },
+            }}
+            onClick={() => handleStartWorking(row.id)}
+            disabled={submitLoadingId === row.id}
+          >
+            {submitLoadingId === row.id ? "Processing..." : "Start Working"}
+          </ThemeButton>
+        )}
+        {row.rawStatus === "In Progress" && (
+          <Box>
+            <ThemeButton
+              sx={{
+                background: "#4CAF50",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 13,
+                borderRadius: 2,
+                py: 0.8,
+                px: 2,
+                "&:hover": { background: "#388E3C" },
+                width: "100%",
+              }}
+              onClick={() => handleMarkDone(row.id)}
+              disabled={submitLoadingId === row.id}
+            >
+              {submitLoadingId === row.id ? "Processing..." : "Mark as Done"}
+            </ThemeButton>
+          </Box>
+        )}
+      </TableCell>
       <TableCell align="center">
         <StatusBadge status={row.status} />
       </TableCell>
