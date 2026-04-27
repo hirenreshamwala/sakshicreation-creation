@@ -227,9 +227,12 @@ const StaffPage = () => {
   const taskColumns = useMemo(() => generateTaskColumns(selectedTaskReasons), [selectedTaskReasons]);
   const leadColumns = useMemo(() => generateLeadColumns(selectedLeadReasons), [selectedLeadReasons]);
 
-  // Sales staff filter
+  // Sales staff + driver filter
   const salesStaff = useMemo(() =>
-    staffList.filter((staff: any) => staff.role?.roleName?.includes('Sales Staff')),
+    staffList.filter((staff: any) => {
+      const roleName = staff.role?.roleName?.toLowerCase() || '';
+      return roleName.includes('sales staff') || roleName.includes('driver');
+    }),
     [staffList]
   );
 
