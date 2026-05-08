@@ -207,11 +207,11 @@ const SakshiInventoryPage = () => {
     }
   };
   const aggregateInventory = useCallback((): AggregatedInventory[] => {
-    const filtered = getPermissionWiseInventory().filter(item => item.type === activeWardTab);
+    const allCategoryItems = getPermissionWiseInventory().filter(item => item.category === activeMainTab);
     const aggregated: Record<string, AggregatedInventory> = {};
 
-    // First pass: aggregate items based on current ward tab
-    filtered.forEach(item => {
+    // Process all items for the category to calculate proper totals
+    allCategoryItems.forEach(item => {
       if (!item.forCompany || !item.material) return;
 
       const key = `${item.forCompany._id}-${item.material._id}`;
@@ -233,51 +233,31 @@ const SakshiInventoryPage = () => {
         };
       }
 
-      // Add quantity based on type
-      if (item.type === 'inward') {
-        aggregated[key].totalQuantity += item.quantity;
-        aggregated[key].purchases.push(item);
+      // Add to purchases array for details
+      aggregated[key].purchases.push(item);
 
+      // Calculate totals based on type
+      if (item.type === 'inward') {
+        aggregated[key].totalQuantity += item.quantity || 0;
+        
         // Track the most recent inward purchase
         const itemDate = new Date(item.date);
         if (!aggregated[key].lastPurchaseDate || itemDate > aggregated[key].lastPurchaseDate) {
           aggregated[key].lastPurchaseDate = itemDate;
-          aggregated[key].lastPurchase = item.quantity;
+          aggregated[key].lastPurchase = item.quantity || 0;
         }
       } else if (item.type === 'outward') {
-        aggregated[key].usedQty += item.quantity;
-        aggregated[key].purchases.push(item);
+        aggregated[key].usedQty += item.quantity || 0;
       }
     });
 
-    // Second pass: calculate total inward and outward for balance
-    // Get all items for the category to calculate proper balance
-    const allCategoryItems = getPermissionWiseInventory().filter(item => item.category === activeMainTab);
+    // Calculate balance for each aggregated item
     Object.keys(aggregated).forEach(key => {
-      const [printerId, materialId] = key.split('-');
-      const totalInward = allCategoryItems
-        .filter(item => item.type === 'inward' && item.forCompany?._id === printerId && item.material?._id === materialId)
-        .reduce((sum, item) => sum + item.quantity, 0);
-      const totalOutward = allCategoryItems
-        .filter(item => item.type === 'outward' && item.forCompany?._id === printerId && item.material?._id === materialId)
-        .reduce((sum, item) => sum + item.quantity, 0);
-      aggregated[key].totalQuantity = totalInward;
-      aggregated[key].usedQty = totalOutward;
-      aggregated[key].balance = totalInward - totalOutward;
-      if (activeWardTab === 'outward') {
-        const lastPurchase = allCategoryItems
-          .filter(item => item.type === 'inward' && item.forCompany?._id === printerId && item.material?._id === materialId)
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-
-        if (lastPurchase) {
-          aggregated[key].lastPurchase = lastPurchase.quantity;
-          aggregated[key].lastPurchaseDate = new Date(lastPurchase.date);
-        }
-      }
+      aggregated[key].balance = aggregated[key].totalQuantity - aggregated[key].usedQty;
     });
 
     return Object.values(aggregated);
-  }, [getPermissionWiseInventory, activeWardTab, activeMainTab]);
+  }, [getPermissionWiseInventory, activeMainTab]);
 
   const aggregatedData = useMemo(() => aggregateInventory(), [aggregateInventory]);
 
@@ -537,7 +517,10 @@ const SakshiInventoryPage = () => {
                           <FaChevronRight style={styles.tableActionIcon} />
                         </Box>
                       ) : (
-                        row.orderId || 'N/A'
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <span>{row.orderId?.orderNumber || row.orderId || 'N/A'}</span>
+                          <FaChevronRight style={styles.tableActionIcon} />
+                        </Box>
                       )}
                     </TableCell>
                   </>

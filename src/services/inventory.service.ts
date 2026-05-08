@@ -13,6 +13,8 @@ export interface Inventory {
   vendor: any;
   date: string;
   purchase?: string;
+  orderId?: string;
+  order?: { orderNumber: string };
   companyName: any;
   for: any;
   forCompany: any;
