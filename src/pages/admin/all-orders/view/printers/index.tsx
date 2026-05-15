@@ -227,7 +227,9 @@ const PrinterForm = () => {
     },
   });
 
-  const materialNameOptions = materials?.map(material => {
+  const materialNameOptions = materials?.filter((material, index, self) => 
+    index === self.findIndex(m => m.materialName === material.materialName)
+  ).map(material => {
     return {
       value: material?._id,
       label: material?.materialName
@@ -238,7 +240,10 @@ const PrinterForm = () => {
     const findName = materials?.find(material => material?._id === materialName);
 
     const filteredMaterials = materials?.filter(material => material?.materialName === findName?.materialName);
-    return filteredMaterials?.map(gsm => {
+    const uniqueGSMs = filteredMaterials?.filter((material, index, self) => 
+      index === self.findIndex(m => m.materialGSM === material.materialGSM)
+    );
+    return uniqueGSMs?.map(gsm => {
       return {
         value: gsm?._id,
         label: `${gsm?.materialGSM} GSM`
@@ -254,7 +259,11 @@ const PrinterForm = () => {
         material?.materialGSM === findName?.materialGSM
     );
 
-    return filteredMaterials?.map(size => {
+    const uniqueSizes = filteredMaterials?.filter((material, index, self) => 
+      index === self.findIndex(m => m.materialSize === material.materialSize)
+    );
+
+    return uniqueSizes?.map(size => {
       return {
         value: size?._id,
         label: size?.materialSize

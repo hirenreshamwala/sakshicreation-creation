@@ -518,7 +518,12 @@ const SakshiInventoryPage = () => {
                         </Box>
                       ) : (
                         <Box display="flex" justifyContent="space-between" alignItems="center">
-                          <span>{row.orderId?.orderNumber || row.orderId || 'N/A'}</span>
+                          <span>
+                            {row.orderId?.orderNumber || row.orderId || 'N/A'}
+                            {/* {row.orderId?.party?.partyName && (
+                              <><br /><small style={{ color: '#666' }}>{row.orderId.party.partyName}</small></>
+                            )} */}
+                          </span>
                           <FaChevronRight style={styles.tableActionIcon} />
                         </Box>
                       )}
