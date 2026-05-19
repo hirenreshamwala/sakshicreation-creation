@@ -38,6 +38,7 @@ type PaperField = {
   gsm: string;
   ratePerUnit: string;
   materialId?: string; // Add materialId to track the selected material
+  materialName?: string;
 };
 
 // Rate View Dialog Component
@@ -328,7 +329,14 @@ const BinderForm = () => {
       // Initialize binder papers
       const printerPaperCount = singleOrder.printerPapers?.length || 0
       if (singleOrder.binderPapers && singleOrder.binderPapers.length > 0) {
-        setBinderPapers(singleOrder.binderPapers)
+        const normalizedBinderPapers = singleOrder.binderPapers.map((paper: any) => {
+          const selectedMaterial = materials?.find((m: any) => m._id === paper.paperType)
+          return {
+            ...paper,
+            materialName: paper.materialName || selectedMaterial?.materialName || paper.paperType || "",
+          }
+        })
+        setBinderPapers(normalizedBinderPapers)
       } else {
         setBinderPapers([{
           paperName: `Paper-${printerPaperCount + 1}`,
@@ -342,7 +350,7 @@ const BinderForm = () => {
 
       setUploadedBinderFiles(singleOrder.binderFiles || [])
     }
-  }, [singleOrder])
+  }, [singleOrder, materials])
 
   const handleBinderStaffChange = (event: any, newValue: any) => {
     setSelectedBinderStaff(newValue)
@@ -440,59 +448,73 @@ const BinderForm = () => {
   }
 
   // Get unique material names
-  // Get unique material names (using _id)
-  const materialNameOptions = materials.map(material => ({
-    value: material._id, // Use _id as value
-    label: material.materialName,
-  }));
+  const materialNameOptions = materials
+    .filter((material, index, self) =>
+      index === self.findIndex(m => m.materialName === material.materialName)
+    )
+    .map(material => ({
+      value: material._id, // Use _id as value
+      label: material.materialName,
+    }));
 
-  // Get GSM options for a specific material (_id)
-  const getMaterialGSMOptions = (materialId: string) => {
-    // Step 1: Find selected material
-    const selectedMaterial = materials.find(m => m._id === materialId);
-    if (!selectedMaterial) return [];
-
-    // Step 2: Filter by same materialName
-    const filteredMaterials = materials.filter(
-      m => m.materialName === selectedMaterial.materialName
+  const getMaterialOptionByValueOrLabel = (valueOrLabel?: string | null) => {
+    if (!valueOrLabel) return null;
+    return (
+      materialNameOptions.find(opt => opt.value === valueOrLabel) ||
+      materialNameOptions.find(opt => opt.label === valueOrLabel) ||
+      null
     );
-
-    // Step 3: Get unique GSM values
-    const uniqueGSMs = Array.from(
-      new Set(filteredMaterials.map(m => m.materialGSM.toString()))
-    );
-
-    // Step 4: Map to dropdown format
-    return uniqueGSMs.map(gsm => {
-      const gsmMaterial = filteredMaterials.find(
-        m => m.materialGSM.toString() === gsm
-      );
-
-      return {
-        value: gsmMaterial?._id, // if you really need id
-        label: `${gsm} GSM`,
-      };
-    });
   };
 
-  // Get size options for a specific material + GSM
-  const getMaterialSizeOptions = (materialId: string, materialGSM: string) => {
+  const getPaperTypeGroupKey = (paper: any) => {
+    if (paper.materialName) return paper.materialName;
+    if (paper.paperType) return paper.paperType;
+    return "unspecified";
+  };
 
-    const findName = materials.find((m: any) => m._id === materialId);
-    const filteredMaterials = materials.filter(
-      m => m.materialGSM === findName?.materialGSM
+  const getMaterialGSMOptions = (materialId: string) => {
+    const selectedMaterial = materials?.find(m => m?._id === materialId);
+    if (!selectedMaterial) return [];
+
+    const filtered = materials?.filter(m => m?.materialName === selectedMaterial.materialName);
+    const uniqueGSMs = filtered?.filter((m, index, self) => 
+      index === self.findIndex(item => item.materialGSM === m.materialGSM)
     );
-    return filteredMaterials.map(m => ({
-      value: m._id, // Each size option tied to material _id
-      label: m.materialSize,
+    return uniqueGSMs?.map(m => ({
+      value: m?._id,
+      label: `${m?.materialGSM} GSM`
+    }));
+  };
+
+  const getMaterialSizeOptions = (materialId: string, gsmId: string) => {
+    const selectedMaterial = materials?.find(m => m?._id === materialId);
+    const selectedGSM = materials?.find(m => m?._id === gsmId);
+    if (!selectedMaterial || !selectedGSM) return [];
+
+    const filtered = materials?.filter(m => 
+      m?.materialName === selectedMaterial.materialName && 
+      m?.materialGSM === selectedGSM.materialGSM
+    );
+
+    const uniqueSizes = filtered?.filter((m, index, self) => 
+      index === self.findIndex(item => 
+        item.materialSize?.trim().toUpperCase() === m.materialSize?.trim().toUpperCase()
+      )
+    );
+
+    return uniqueSizes?.map(size => ({
+      value: size?._id,
+      label: size?.materialSize
     }));
   };
 
   // Handle material name selection
   const handleMaterialNameChange = (index: number, id: string) => {
+    const selectedOption = getMaterialOptionByValueOrLabel(id);
     const updatedPapers: any = [...binderPapers];
     updatedPapers[index] = {
       ...updatedPapers[index],
+      materialName: selectedOption?.label || id,
       paperType: id || null, // Use null for empty values
       gsm: null,
       sheetSize: null,
@@ -965,82 +987,73 @@ Your Team
             <Typography fontWeight={600} mb={2}>
               Binder Papers
             </Typography>
-            {binderPapers.map((paper, index) => (
-              <Box key={`binder-${index}`} mb={2} p={2} border={1} borderRadius={2} borderColor="#ddd">
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography fontWeight={600}>
-                    {paper.paperName}
-                  </Typography>
-                  {!areFieldsReadOnly && (
-                    <IconButton
-                      onClick={() => handleDeleteBinderPaper(index)}
-                      disabled={binderPapers.length === 1}
-                      sx={{
-                        color: '#F04438',
-                        '&:hover': { backgroundColor: '#FEE2E2' },
+            {(() => {
+              const grouped = binderPapers.reduce((acc: any, paper: any, index: number) => {
+                const type = getPaperTypeGroupKey(paper);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push({ ...paper, originalIndex: index });
+                return acc;
+              }, {});
+
+              return Object.entries(grouped).map(([paperType, fields]: [string, any], groupIndex) => (
+                <Box key={groupIndex} mb={3} p={2} border={1} borderRadius={2} borderColor="#ddd">
+                 
+
+                  {fields.map((paper: any, fieldIndex: number) => (
+                    <Box key={fieldIndex} sx={{ position: 'relative', mb: fieldIndex < fields.length - 1 ? 2 : 0 }}>
+                      <Stack direction="row" spacing={2} alignItems="center">
+ <ThemeSelect
+                      label="Paper Type"
+                      options={materialNameOptions}
+                      value={getMaterialOptionByValueOrLabel(paperType === "unspecified" ? "" : paperType)}
+                      onChange={(e, newValue) => {
+                        fields.forEach((f: any) => handleMaterialNameChange(f.originalIndex, newValue?.value as string || ""));
                       }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  )}
+                      // sx={{ width: { xs: '100%', sm: '40%' } }}
+                    />
+                                            <ThemeSelect
+                          label="GSM"
+                          options={getMaterialGSMOptions(paper.paperType) as any}
+                          value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null as any}
+                          onChange={(e, newValue) =>
+                            handleMaterialGSMChange(paper.originalIndex, newValue?.value as string || "")
+                          }
+                        />
+
+                        <ThemeSelect
+                          label="Size"
+                          options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
+                          value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.sheetSize) || null}
+                          onChange={(e, newValue) =>
+                            handleMaterialSizeChange(paper.originalIndex, newValue?.value as string || "")
+                          }
+                        />
+
+                        <ThemeInput
+                          labelName="Number of Sheets Used"
+                          value={paper.numberOfSheetsUsed}
+                          onChange={(e) => handleBinderPaperChange(paper.originalIndex, 'numberOfSheetsUsed', e.target.value)}
+                          fullWidth
+                          InputProps={{ readOnly: areFieldsReadOnly }}
+                        />
+                        {!areFieldsReadOnly && (
+                          <IconButton
+                            onClick={() => handleDeleteBinderPaper(paper.originalIndex)}
+                            disabled={binderPapers.length === 1}
+                            sx={{
+                              color: '#F04438',
+                              '&:hover': { backgroundColor: '#FEE2E2' },
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        )}
+                      </Stack>
+                    </Box>
+                  ))}
                 </Box>
-                <Stack direction="row" spacing={2} mt={1}>
-                  <ThemeSelect
-                    label="Paper Type"
-                    options={materialNameOptions}
-                    value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
-                    onChange={(e, newValue) =>
-                      handleMaterialNameChange(index, newValue?.value as string || "")
-                    }
-                  // required
-                  // disabled={areFieldsReadOnly}
-                  />
-
-                  <ThemeSelect
-                    label="GSM"
-                    options={getMaterialGSMOptions(paper.paperType) as any}
-                    value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null as any}
-                    onChange={(e, newValue) =>
-                      handleMaterialGSMChange(index, newValue?.value as string || "")
-                    }
-                  // required
-                  // disabled={!paper.paperType || areFieldsReadOnly}
-                  />
-
-                  <ThemeSelect
-                    label="Size"
-                    options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
-                    value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.sheetSize) || null}
-                    onChange={(e, newValue) =>
-                      handleMaterialSizeChange(index, newValue?.value as string || "")
-                    }
-                  // required
-                  // disabled={!paper.paperType || !paper.gsm || areFieldsReadOnly}
-                  />
-
-                  <ThemeInput
-                    labelName="Number of Sheets Used"
-                    value={paper.numberOfSheetsUsed}
-                    onChange={(e) => handleBinderPaperChange(index, 'numberOfSheetsUsed', e.target.value)}
-                    fullWidth
-                    // required
-                    // error={!paper.numberOfSheetsUsed && formik.submitCount > 0}
-                    // helperText={!paper.numberOfSheetsUsed && formik.submitCount > 0 ? "This field is required" : ""}
-                    InputProps={{ readOnly: areFieldsReadOnly }}
-                  />
-                  {/* <ThemeInput
-                    labelName="Rate / Unit"
-                    value={paper.ratePerUnit}
-                    onChange={(e) => handleBinderPaperChange(index, 'ratePerUnit', e.target.value)}
-                    fullWidth
-                    // required
-                    // error={!paper.ratePerUnit && formik.submitCount > 0}
-                    // helperText={!paper.ratePerUnit && formik.submitCount > 0 ? "This field is required" : ""}
-                    InputProps={{ readOnly: areFieldsReadOnly }}
-                  /> */}
-                </Stack>
-              </Box>
-            ))}
+              ));
+            })()}
             {!areFieldsReadOnly && (
               <Box display="flex" justifyContent="flex-end">
                 <ThemeButton

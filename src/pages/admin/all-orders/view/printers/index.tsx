@@ -236,39 +236,40 @@ const PrinterForm = () => {
     };
   });
 
-  const getMaterialGSMOptions = (materialName: string) => {
-    const findName = materials?.find(material => material?._id === materialName);
+  const getMaterialGSMOptions = (materialId: string) => {
+    const selectedMaterial = materials?.find(m => m?._id === materialId);
+    if (!selectedMaterial) return [];
 
-    const filteredMaterials = materials?.filter(material => material?.materialName === findName?.materialName);
-    const uniqueGSMs = filteredMaterials?.filter((material, index, self) => 
-      index === self.findIndex(m => m.materialGSM === material.materialGSM)
+    const filtered = materials?.filter(m => m?.materialName === selectedMaterial.materialName);
+    const uniqueGSMs = filtered?.filter((m, index, self) => 
+      index === self.findIndex(item => item.materialGSM === m.materialGSM)
     );
-    return uniqueGSMs?.map(gsm => {
-      return {
-        value: gsm?._id,
-        label: `${gsm?.materialGSM} GSM`
-      };
-    });
+    return uniqueGSMs?.map(m => ({
+      value: m?._id,
+      label: `${m?.materialGSM} GSM`
+    }));
   };
 
-  const getMaterialSizeOptions = (materialName: string, materialGSM: string) => {
-    const findName = materials?.find(material => material?._id === materialName);
+  const getMaterialSizeOptions = (materialId: string, gsmId: string) => {
+    const selectedMaterial = materials?.find(m => m?._id === materialId);
+    const selectedGSM = materials?.find(m => m?._id === gsmId);
+    if (!selectedMaterial || !selectedGSM) return [];
 
-    const filteredMaterials = materials?.filter(
-      material =>
-        material?.materialGSM === findName?.materialGSM
+    const filtered = materials?.filter(m => 
+      m?.materialName === selectedMaterial.materialName && 
+      m?.materialGSM === selectedGSM.materialGSM
     );
 
-    const uniqueSizes = filteredMaterials?.filter((material, index, self) => 
-      index === self.findIndex(m => m.materialSize === material.materialSize)
+    const uniqueSizes = filtered?.filter((m, index, self) => 
+      index === self.findIndex(item => 
+        item.materialSize?.trim().toUpperCase() === m.materialSize?.trim().toUpperCase()
+      )
     );
 
-    return uniqueSizes?.map(size => {
-      return {
-        value: size?._id,
-        label: size?.materialSize
-      };
-    });
+    return uniqueSizes?.map(size => ({
+      value: size?._id,
+      label: size?.materialSize
+    }));
   };
 
   const handleMaterialNameChange = (index: number, value: string) => {
@@ -651,68 +652,82 @@ Your Team
             />
           </Box>
 
-          {paperFields?.map((paper: any, index: any) => (
-            <Box key={index} mb={3} p={2} border={1} borderRadius={2} borderColor="#ddd">
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography fontWeight={600}>
-                  {paper.paperName}
-                </Typography>
-                {!areFieldsReadOnly && (
-                  <IconButton
-                    onClick={() => handleDeletePaperField(index)}
-                    disabled={paperFields.length === 1}
-                    sx={{
-                      color: '#F04438',
-                      '&:hover': { backgroundColor: '#FEE2E2' },
+          {/* Grouping by Paper Type */}
+          {(() => {
+            const grouped = paperFields.reduce((acc: any, paper: any, index: number) => {
+              const type = paper.paperType || "unspecified";
+              if (!acc[type]) acc[type] = [];
+              acc[type].push({ ...paper, originalIndex: index });
+              return acc;
+            }, {});
+
+            return Object.entries(grouped).map(([paperType, fields]: [string, any], groupIndex) => (
+              <Box key={groupIndex} mb={3} p={2} border={1} borderRadius={2} borderColor="#ddd">
+
+                {fields.map((paper: any, fieldIndex: number) => (
+                  <Box key={fieldIndex} sx={{ position: 'relative', mb: fieldIndex < fields.length - 1 ? 2 : 0 }}>
+                    <Stack direction="row" spacing={2}>
+                       <ThemeSelect
+                    label="Paper Type"
+                    options={materialNameOptions}
+                    value={materialNameOptions.find(opt => opt.value === (paperType === "unspecified" ? "" : paperType)) || null}
+                    onChange={(e, newValue) => {
+                      // Update all fields in this group to the new paper type
+                      fields.forEach((f: any) => handleMaterialNameChange(f.originalIndex, newValue?.value as string || ""));
                     }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                )}
+                    required
+                    disabled={areFieldsReadOnly}
+                    // sx={{ width: { xs: '100%', sm: '40%' } }}
+                  />
+                      <ThemeSelect
+                        label="GSM"
+                        options={getMaterialGSMOptions(paper.paperType)}
+                        value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
+                        onChange={(e, newValue) => handleMaterialGSMChange(paper.originalIndex, newValue?.value as string || "")}
+                        required
+                        disabled={!paper.paperType || areFieldsReadOnly}
+                      />
+                      <ThemeSelect
+                        label="Size"
+                        options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
+                        value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.materialSize) || null}
+                        onChange={(e, newValue) => handleMaterialSizeChange(paper.originalIndex, newValue?.value as string || "")}
+                        required
+                        disabled={!paper.paperType || areFieldsReadOnly}
+                      />
+                      <ThemeInput
+                        labelName="Paper No. Of Sheet Used"
+                        name="numberOfSheetsUsed"
+                        type="number"
+                        value={paper.numberOfSheetsUsed || ""}
+                        onChange={(e) =>
+                          setPaperFields((prev: any) =>
+                            prev.map((p: any, i: any) =>
+                              i === paper.originalIndex ? { ...p, numberOfSheetsUsed: e.target.value } : p
+                            )
+                          )
+                        }
+                        fullWidth
+                        InputProps={{ readOnly: areFieldsReadOnly }}
+                      />
+                      {!areFieldsReadOnly && (
+                        <IconButton
+                          onClick={() => handleDeletePaperField(paper.originalIndex)}
+                          disabled={paperFields.length === 1}
+                          sx={{
+                            color: '#F04438',
+                            '&:hover': { backgroundColor: '#FEE2E2' },
+                          }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      )}
+                    </Stack>
+                  </Box>
+                ))}
               </Box>
-              <Stack direction="row" spacing={2}>
-                <ThemeSelect
-                  label="Paper Type"
-                  options={materialNameOptions}
-                  value={materialNameOptions.find(opt => opt.value === paper.paperType) || null}
-                  onChange={(e, newValue) => handleMaterialNameChange(index, newValue?.value as string || "")}
-                  required
-                  disabled={areFieldsReadOnly}
-                />
-                <ThemeSelect
-                  label="GSM"
-                  options={getMaterialGSMOptions(paper.paperType)}
-                  value={getMaterialGSMOptions(paper.paperType).find(opt => opt.value === paper.gsm) || null}
-                  onChange={(e, newValue) => handleMaterialGSMChange(index, newValue?.value as string || "")}
-                  required
-                  disabled={!paper.paperType || areFieldsReadOnly}
-                />
-                <ThemeSelect
-                  label="Size"
-                  options={getMaterialSizeOptions(paper.paperType, paper.gsm)}
-                  value={getMaterialSizeOptions(paper.paperType, paper.gsm).find(opt => opt.value === paper.materialSize) || null}
-                  onChange={(e, newValue) => handleMaterialSizeChange(index, newValue?.value as string || "")}
-                  required
-                  disabled={!paper.paperType || areFieldsReadOnly}
-                />
-                <ThemeInput
-                  labelName="Paper No. Of Sheet Used"
-                  name="numberOfSheetsUsed"
-                  type="number"
-                  value={paper.numberOfSheetsUsed || ""}
-                  onChange={(e) =>
-                    setPaperFields((prev: any) =>
-                      prev.map((p: any, i: any) =>
-                        i === index ? { ...p, numberOfSheetsUsed: e.target.value } : p
-                      )
-                    )
-                  }
-                  fullWidth
-                  InputProps={{ readOnly: areFieldsReadOnly }}
-                />
-              </Stack>
-            </Box>
-          ))}
+            ));
+          })()}
 
           {!areFieldsReadOnly && (
             <Box mb={3} display="flex" justifyContent="flex-end">

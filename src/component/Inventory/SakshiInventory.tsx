@@ -331,10 +331,11 @@ const SakshiInventoryPage = () => {
       <TableCell>{row.material?.materialGSM || 'N/A'}</TableCell>
       <TableCell>{row.kg || 0}</TableCell>
       <TableCell>{row.quantity || 0}</TableCell>
+      <TableCell>{row.billNumber || row.purchase?.billNumber || 'N/A'}</TableCell>
       <TableCell>{formatDateToDDMMYYYY(row.date)}</TableCell>
       <TableCell>{row.vendor?.name || 'N/A'}</TableCell>
     </>
-  ), []);
+  ), [handleRowClick]);
 
   // Columns for FACTORY CustomTable2
   const factoryColumns = useMemo(() => [
@@ -343,9 +344,10 @@ const SakshiInventoryPage = () => {
     { id: 'gsm', label: 'GSM', value: null },
     { id: 'kg', label: 'KG', value: null },
     { id: 'qty', label: 'QTY', value: null },
+    { id: 'billNumber', label: 'BILL NUMBER', value: null },
     { id: 'date', label: 'DATE', value: null },
     { id: 'vendor', label: 'VENDOR', value: null },
-    { id: 'action', label: 'ACTIONS', value: null }, // No actions for now
+    { id: 'action', label: 'ACTIONS', value: null },
   ], []);
 
   // Handle page change for FACTORY
@@ -484,6 +486,7 @@ const SakshiInventoryPage = () => {
                       { id: 'gsm', label: 'GSM' },
                       { id: 'size', label: 'SIZE' },
                       { id: 'qty', label: 'QTY' },
+                      { id: 'billNumber', label: 'BILL NUMBER' },
                       { id: 'date', label: 'DATE IN WARD' },
                       { id: 'vendor', label: 'VENDOR' },
                     ]
@@ -509,6 +512,9 @@ const SakshiInventoryPage = () => {
                     <TableCell>{row.material?.materialGSM || 'N/A'}</TableCell>
                     <TableCell>{row.material?.materialSize || 'N/A'}</TableCell>
                     <TableCell>{row.quantity}</TableCell>
+                    {activeWardTab === WardTab.INWARD && (
+                      <TableCell>{row.billNumber || row.purchase?.billNumber || 'N/A'}</TableCell>
+                    )}
                     <TableCell>{formatDateToDDMMYYYY(row.date)}</TableCell>
                     <TableCell>
                       {activeWardTab === WardTab.INWARD ? (
