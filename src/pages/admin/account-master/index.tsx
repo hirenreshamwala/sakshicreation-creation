@@ -1259,6 +1259,7 @@ const AccountMasterPage: React.FC = memo(() => {
       setDownloadLoading(true);
       const payload = {
         ...currentFilterState,
+        pagination: false,
         filters: {
           ...currentFilterState.filters,
           company: [StaticCompanyOptions[companyTab]],
