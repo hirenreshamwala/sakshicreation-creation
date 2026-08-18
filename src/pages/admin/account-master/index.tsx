@@ -1257,9 +1257,10 @@ const AccountMasterPage: React.FC = memo(() => {
   const handleDownloadExcel = useCallback(async () => {
     try {
       setDownloadLoading(true);
+      const { page, pageSize, isPagination, includeCounts, ...rest } = currentFilterState;
       const payload = {
-        ...currentFilterState,
-        pagination: false,
+        ...rest,
+        isPagination: false,
         filters: {
           ...currentFilterState.filters,
           company: [StaticCompanyOptions[companyTab]],
