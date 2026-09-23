@@ -1083,6 +1083,7 @@ const labelMap: Record<string, string> = {
 // Helper function to format date values
 const formatDateValue = (value: string): string => {
   if (!value) return value;
+  if (/^\d{2}-\d{2}-\d{4}$/.test(value)) return value;
   
   // Check if the value is a valid date
   const date = moment(value);

@@ -87,6 +87,24 @@ const useDebounce = (value: string, delay: number) => {
   return debouncedValue;
 };
 
+const normalizeFilterOptions = (values: unknown[], field: string): string[] => {
+  const seen = new Set<string>();
+  const isDateField = field.toLowerCase().includes("date");
+
+  return values.reduce<string[]>((result, rawValue) => {
+    const value = String(rawValue ?? "").trim().replace(/\s+/g, " ");
+    if (!value) return result;
+
+    const displayValue = isDateField ? value.split(" ")[0] : value;
+    const key = displayValue.toLocaleLowerCase();
+    if (seen.has(key)) return result;
+
+    seen.add(key);
+    result.push(displayValue);
+    return result;
+  }, []);
+};
+
 // Function to check if lastStatusChangeDate date is older than 3 days
 const isStatusChangeOlderThanThreeDays = (lastStatusChangeDate: string | Date | null): boolean => {
   if (!lastStatusChangeDate) return false;
@@ -153,6 +171,10 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [colWidths, setColWidths] = useState<number[]>([]);
   const [loadingOptions, setLoadingOptions] = useState<{ [key: string]: boolean }>({});
+
+  useEffect(() => {
+    setFilterOptionsLocal({});
+  }, [companyId, currentFilterState?.startDate, currentFilterState?.endDate]);
 
   // Use totalRows from server for pagination calculation
   const pageCount = Math.ceil(totalRows / rowsPerPage);
@@ -339,10 +361,10 @@ const CustomTable = <T extends { id: string; lastStatusChangeDate?: string | Dat
         if (Array.isArray(response.data)) {
           if (response.data.length > 0 && typeof response.data[0] === 'object' && response.data[0].name) {
             // If data is array of objects with name property
-            values = [...new Set(response.data.map(item => item.name))];
+            values = normalizeFilterOptions(response.data.map(item => item.name), field);
           } else {
             // If data is array of strings
-            values = [...new Set(response.data)];
+            values = normalizeFilterOptions(response.data, field);
           }
         }
 
