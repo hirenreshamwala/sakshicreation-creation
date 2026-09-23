@@ -8,22 +8,28 @@ import { PersistGate } from "redux-persist/integration/react";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useRouter } from "next/router";
+import Head from "next/head";
 import Dashboard from "@/component/Dashboard";
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter()
 
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <ThemeProvider theme={theme}>
-          {router.pathname === "/login" ? <Component {...pageProps} /> : <Dashboard>
-            <Component {...pageProps} /></Dashboard>}
-          {/* <Component {...pageProps} />; */}
-          <ToastContainer />
-        </ThemeProvider>
-      </PersistGate>
-    </Provider>
+    <>
+      <Head>
+        <title>Sakshi Creation</title>
+      </Head>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <ThemeProvider theme={theme}>
+            {router.pathname === "/login" ? <Component {...pageProps} /> : <Dashboard>
+              <Component {...pageProps} /></Dashboard>}
+            {/* <Component {...pageProps} />; */}
+            <ToastContainer />
+          </ThemeProvider>
+        </PersistGate>
+      </Provider>
+    </>
   )
 
 }
