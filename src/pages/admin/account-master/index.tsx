@@ -1260,6 +1260,19 @@ const AccountMasterPage: React.FC = memo(() => {
       const { page, pageSize, isPagination, includeCounts, ...rest } = currentFilterState;
       const payload = {
         ...rest,
+        ...(si ? { staffId: si } : {}),
+        ...(st ? { startDate: st } : {}),
+        ...(e ? { endDate: e } : {}),
+        ...(p
+          ? {
+              partyTag: p
+                .toString()
+                .split(",")
+                .map((value: string) => value.trim().toUpperCase())
+                .filter(Boolean),
+            }
+          : {}),
+        ...(companyName ? { companyName } : {}),
         isPagination: false,
         filters: {
           ...currentFilterState.filters,
@@ -1285,7 +1298,7 @@ const AccountMasterPage: React.FC = memo(() => {
     } finally {
       setDownloadLoading(false);
     }
-  }, [currentFilterState, companyTab, statusTab]);
+  }, [currentFilterState, companyTab, statusTab, si, st, e, p, companyName]);
 
   const handleCompanyTabChange = useCallback(
     (tab: number) => {
