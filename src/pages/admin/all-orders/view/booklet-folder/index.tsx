@@ -36,6 +36,7 @@ import { getAllMaterialsThunk } from "@/store/slices/materialSlice"
 import ThemeSelect from "@/component/common_component/themeselect"
 import { getAllInventoryThunk } from "@/store/slices/inventorySlice"
 import { orderService } from "@/services/order.service"
+import BookletBinderJobCardDialog from "@/component/BookletBinderJobCardDialog"
 
 type OptionType = {
   label: string
@@ -60,6 +61,7 @@ const BookletFolderBinderForm = () => {
   const { materials } = useAppSelector(state => state.materials);
   const [pageLoading, setPageLoading] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [jobCardPreviewOpen, setJobCardPreviewOpen] = useState(false)
   const [selectedBookletBinder, setSelectedBookletBinder] = useState<OptionType | null>(null)
   const [bookletPapers, setBookletPapers] = useState<PaperField[]>([])
   const { allInventory } = useAppSelector(state => state.inventory);
@@ -971,6 +973,24 @@ Your Team
               </ThemeButton>
               {/* )} */}
 
+              {isBookletBinderAssigned && (
+                <ThemeButton
+                  sx={{
+                    background: "#2563EB",
+                    color: "#fff",
+                    fontWeight: 600,
+                    fontSize: 18,
+                    borderRadius: 2,
+                    py: 1.2,
+                    width: "100%",
+                    "&:hover": { background: "#1D4ED8" },
+                  }}
+                  onClick={() => setJobCardPreviewOpen(true)}
+                >
+                  Print Job Card
+                </ThemeButton>
+              )}
+
               <ThemeButton
                 sx={{
                   background: isHeld ? "#6366F1" : "#F04438",
@@ -1051,6 +1071,13 @@ Your Team
           </Stack>
         </Paper>
       </Box>
+
+      <BookletBinderJobCardDialog
+        open={jobCardPreviewOpen}
+        onClose={() => setJobCardPreviewOpen(false)}
+        order={singleOrder}
+        materials={materials}
+      />
     </>
   )
 }
