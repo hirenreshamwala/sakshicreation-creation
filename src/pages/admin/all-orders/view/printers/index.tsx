@@ -35,6 +35,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ThemeSelect from "@/component/common_component/themeselect";
 import { getAllMaterialsThunk } from "@/store/slices/materialSlice";
 import { orderService } from "@/services/order.service";
+import PrinterJobCardDialog from "@/component/PrinterJobCardDialog";
 
 type OptionType = {
   label: string;
@@ -60,6 +61,7 @@ const PrinterForm = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [openFilesDialog, setOpenFilesDialog] = useState(false);
+  const [jobCardPreviewOpen, setJobCardPreviewOpen] = useState(false);
   const [selectedPrinterStaff, setSelectedPrinterStaff] = useState<any>(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -825,6 +827,23 @@ Your Team
             >
               {loading ? "Assigning..." : `Assign To Printer →`}
             </ThemeButton>
+            {isPrinterAssigned && (
+              <ThemeButton
+                sx={{
+                  background: "#2563EB",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: 18,
+                  borderRadius: 2,
+                  py: 1.2,
+                  width: "100%",
+                  "&:hover": { background: "#1D4ED8" },
+                }}
+                onClick={() => setJobCardPreviewOpen(true)}
+              >
+                Print Job Card
+              </ThemeButton>
+            )}
             <ThemeButton
               sx={{
                 background: isHeld ? "#6366F1" : "#F04438",
@@ -911,6 +930,13 @@ Your Team
         title="Design Files"
         showDownload={true}
         showView={true}
+      />
+
+      <PrinterJobCardDialog
+        open={jobCardPreviewOpen}
+        onClose={() => setJobCardPreviewOpen(false)}
+        order={singleOrder}
+        materials={materials}
       />
 
       <Snackbar
