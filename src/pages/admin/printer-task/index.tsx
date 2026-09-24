@@ -16,6 +16,7 @@ interface Column {
 
 const tableHeader: Column[] = [
   { id: "order", label: "Order No" },
+  { id: "jobName", label: "Job Name" },
   { id: "date", label: "Date" },
   { id: "party", label: "Party" },
   { id: "qty", label: "qty" },
@@ -153,6 +154,7 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
     number: order.number || "N/A",
     printerRemarks: order.printerRemarks || "N/A",
     orderNo: order.orderNumber,
+    jobName: order.jobName || "N/A",
     color: order.color,
     printingType: order.pType || "N/A",
     bindingType: order.bindingType?.name || "N/A",
@@ -166,6 +168,7 @@ const PrinterTask: React.FC<PrinterTaskProps> = ({ tasks }) => {
     <>
 
       <TableCell>{row.orderNo}</TableCell>
+      <TableCell>{row.jobName}</TableCell>
       <TableCell>{row.date}</TableCell>
       <TableCell
         onClick={() => handleRowClick(row.id)}

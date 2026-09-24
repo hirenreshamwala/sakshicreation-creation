@@ -17,6 +17,7 @@ interface Column {
 
 const tableHeader: Column[] = [
   { id: "ono", label: "order number" },
+  { id: "jobName", label: "Job Name" },
   { id: "date", label: "Date" },
   { id: "party", label: "Party" },
   { id: "size", label: "Size" },
@@ -72,6 +73,7 @@ interface DesignerTaskProps {
   tasks: Array<{
     _id: string;
     orderNumber: string;
+    jobName?: string;
     party?: {
       partyName: string;
     };
@@ -156,6 +158,7 @@ const DesignerTask: React.FC<DesignerTaskProps> = () => {
     return {
     id: order._id,
     orderNo: order.orderNumber,
+    jobName: order.jobName || "N/A",
     printingType: order.pType || "N/A",
     bindingType: order.bindingType?.name || "N/A",
     bindingPage: order.bindingPage || "N/A",
@@ -180,6 +183,7 @@ const DesignerTask: React.FC<DesignerTaskProps> = () => {
   const renderRow = (row: (typeof rowData)[number], index: number) => (
     <>
     <TableCell>{row.orderNo}</TableCell>
+    <TableCell>{row.jobName}</TableCell>
     <TableCell>{row.date}</TableCell>
       <TableCell
         onClick={() => handleRowClick(row.id)}

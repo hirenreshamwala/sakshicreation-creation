@@ -1249,6 +1249,7 @@ import CancelOrderDialog from "@/component/allorderdailog/CancelOrderDialog"
 
 const columns = [
   { id: "orderNumber", label: "Order No.", value: "orderNumber" },
+  { id: "jobName", label: "Job Name", value: "jobName" },
   { id: "company", label: "Company", value: "company" },
   { id: "date", label: "Date" },
   { id: "party", label: "Party", value: "party" },
@@ -1265,6 +1266,7 @@ type OrderRow = {
   _id: string;
   id: string;
   orderNumber: string;
+  jobName?: string;
   companyName: {
     companyName: string;
     _id?: string;
@@ -1726,6 +1728,7 @@ const AllOrdersPage = () => {
       _id: order._id,
       id: order._id,
       orderNumber: order.orderNumber || "N/A",
+      jobName: order.jobName || "N/A",
       companyName: order.companyName || { companyName: "N/A" },
       party: order.party || { partyName: "N/A" },
       productItem: order.productItem || { itemName: "N/A" },
@@ -1773,6 +1776,9 @@ const AllOrdersPage = () => {
           <Box display="flex" alignItems="center" gap={1}>
             <Typography fontSize="14px" color="#6B7280">{row.orderNumber || "N/A"}</Typography>
           </Box>
+        </TableCell>
+        <TableCell>
+          <Typography fontSize="14px" color="#6B7280">{row.jobName || "N/A"}</Typography>
         </TableCell>
         <TableCell>
           <Box display="flex" alignItems="center" gap={2}>

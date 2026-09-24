@@ -9,6 +9,7 @@ import { FilterSharp } from "@mui/icons-material";
 interface Order {
   _id: string;
   orderNumber: string;
+  jobName?: string;
   companyName: {
     _id: string;
     companyName: string;
@@ -46,6 +47,7 @@ interface PaperField {
 }
 interface CreateOrderData {
   companyName: string;
+  jobName: string;
   party: string;
   productItem: string;
   qty: number;

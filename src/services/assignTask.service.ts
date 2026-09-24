@@ -29,6 +29,11 @@ export interface AssignTask {
   status: string;
   createdAt: string;
   updatedAt: string;
+  orderId?: {
+    _id: string;
+    orderNumber?: string;
+    jobName?: string;
+  };
   rescheduleDate?: string;
   originalTaskId?: {
     _id: string;

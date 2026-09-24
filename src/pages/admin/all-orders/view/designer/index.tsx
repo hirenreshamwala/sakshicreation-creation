@@ -881,6 +881,13 @@ const ViewOrderDesigner = () => {
             </Box>
             <Box flex={1} minWidth={240}>
               <ThemeInput
+                labelName="Job Name"
+                value={singleOrder.jobName || "N/A"}
+                InputProps={{ readOnly: true }}
+              />
+            </Box>
+            <Box flex={1} minWidth={240}>
+              <ThemeInput
                 labelName="Company Name"
                 value={singleOrder.companyName?.companyName || "N/A"}
                 InputProps={{ readOnly: true }}

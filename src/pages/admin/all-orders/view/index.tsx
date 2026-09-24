@@ -389,6 +389,12 @@ const ViewOrderPage = () => {
         <Box component="form" noValidate onSubmit={formik.handleSubmit}>
           <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={3}>
             <ThemeInput
+              labelName="Job Name"
+              value={singleOrder?.jobName || "N/A"}
+              sx={{ flex: 1 }}
+              disabled
+            />
+            <ThemeInput
               labelName="Company Name"
               value={formik.values.companyName}
               name="companyName"

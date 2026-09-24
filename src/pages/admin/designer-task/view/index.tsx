@@ -188,6 +188,12 @@ const DesignerViewTask = () => {
         {/* Row 1: Company, Party, Item */}
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <ThemeInput
+            labelName="Job Name"
+            value={singleOrder.jobName || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
             labelName="Company Name"
             value={formData.companyName}
             onChange={(e) => handleInputChange("companyName", e.target.value)}

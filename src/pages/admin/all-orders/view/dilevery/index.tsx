@@ -147,6 +147,12 @@ const DeliveryForm = () => {
           <Stack spacing={2}>
             <Stack direction="row" spacing={2}>
               <ThemeInput
+                labelName="Job Name"
+                value={singleOrder.jobName || "N/A"}
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
+              <ThemeInput
                 labelName="Company Name"
                 value={singleOrder.companyName?.companyName || "N/A"}
                 fullWidth

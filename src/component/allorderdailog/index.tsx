@@ -48,6 +48,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
   const [sakshiFormData, setSakshiFormData] = useState({
     companyName: company,
     partyName: "",
+    jobName: "",
     personName: "",
     whatsapp: "",
     binding: false,
@@ -184,7 +185,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
   const handleUploadError = (error: string) => toast.error(error)
 
   const handleSakshiSubmit = async () => {
-    if (!sakshiFormData.partyName || !sakshiFormData.itemName || !sakshiFormData.qty) {
+    if (!sakshiFormData.partyName || !sakshiFormData.jobName.trim() || !sakshiFormData.itemName || !sakshiFormData.qty) {
       toast.error("Please fill all required fields")
       return
     }
@@ -201,7 +202,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
       }
      const orderData = {
         companyName: sakshiFormData.companyName,
-
+        jobName: sakshiFormData.jobName.trim(),
         party: sakshiFormData.partyName,
         pType: sakshiFormData.pType,
         binding: sakshiFormData.binding,
@@ -244,6 +245,7 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
     setSakshiFormData({
       companyName: "",
       partyName: "",
+      jobName: "",
       personName: "",
       whatsapp: "",
       itemName: "",
@@ -287,6 +289,16 @@ const AddSakhiOrderDialog: React.FC<AddOrderDialogProps> = ({ company, open, onC
 
   const renderSakshiForm = () => (
     <>
+      <Stack direction="row" spacing={2} mb={2}>
+        <ThemeInput
+          labelName="Job Name"
+          placeholder="Enter job name"
+          fullWidth
+          value={sakshiFormData.jobName}
+          onChange={(e) => handleSakshiChange("jobName", e.target.value)}
+          required
+        />
+      </Stack>
       <Stack direction="row" spacing={2} mb={2}>
         <ThemeInput
           labelName="Person Name"

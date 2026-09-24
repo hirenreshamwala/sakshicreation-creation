@@ -18,6 +18,7 @@ interface Column {
 
 const tableHeader: Column[] = [
   { id: "order", label: "Order No" },
+  { id: "jobName", label: "Job Name" },
   { id: "date", label: "Date" },
   { id: "party", label: "Party" },
   { id: "party", label: "QTY" },
@@ -119,6 +120,7 @@ const BookletBinderTask: React.FC<BookletBinderTaskProps> = ({ tasks }) => {
   const rowData = tasks.map((order) => ({
     id: order._id,
     orderNo: order.orderNumber,
+    jobName: order.jobName || "N/A",
     date: formatDateToDDMMYYYY(order.createdAt),
     party: order.party?.partyName || "N/A",
     qty: order.qty || "N/A",
@@ -132,6 +134,7 @@ const BookletBinderTask: React.FC<BookletBinderTaskProps> = ({ tasks }) => {
   const renderRow = (row: (typeof rowData)[number], index: number) => (
     <>
       <TableCell>{row.orderNo}</TableCell>
+      <TableCell>{row.jobName}</TableCell>
       <TableCell>{row.date}</TableCell>
       <TableCell
         onClick={() => handleRowClick(row.id)}

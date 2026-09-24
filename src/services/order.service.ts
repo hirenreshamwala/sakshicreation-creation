@@ -13,6 +13,7 @@ interface PaperField {
 }
 interface Order {
   _id: string;
+  jobName?: string;
   companyName: any;
   party: any;
   productItem: any;
@@ -31,6 +32,7 @@ interface Order {
 
 interface CreateOrderData {
   companyName: string;
+  jobName?: string;
   party: string;
   productItem: string;
   qty: number;

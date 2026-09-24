@@ -513,6 +513,12 @@ Your Team
           </Typography>
           <Stack direction="row" spacing={2} mb={3}>
             <ThemeInput
+              labelName="Job Name"
+              value={singleOrder.jobName || "N/A"}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+            <ThemeInput
               labelName="Company Name"
               value={formik.values.companyName}
               fullWidth

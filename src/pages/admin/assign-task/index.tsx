@@ -2512,6 +2512,11 @@ interface Task {
   date: string;
   createdAt: string;
   updatedAt: string;
+  orderId?: {
+    _id: string;
+    orderNumber?: string;
+    jobName?: string;
+  };
   createdBy?: {
     _id: string;
     firstName?: string;
@@ -2534,6 +2539,7 @@ interface RowData {
   company: { name: string; avatar?: string };
   date: string;
   party: string;
+  jobName: string;
   reason: string;
   address: string;
   market: string;
@@ -2627,6 +2633,7 @@ const AssignTaskPage: React.FC = () => {
       { id: "company", label: "Company" },
       { id: "date", label: "Date" },
       { id: "party", label: "Party" },
+      { id: "jobName", label: "Job Name" },
       { id: "address", label: "Unit No" },
       { id: "market", label: "Market Name" },
       { id: "area", label: "Area" },
@@ -3206,6 +3213,7 @@ const AssignTaskPage: React.FC = () => {
     taskDate: task.date,
     reason: task.reasonForVisit || "N/A",
     party: task.partyName?.partyName || "Unknown",
+    jobName: task.orderId?.jobName || "N/A",
     partyId: task.partyName?._id || "Unknown",
     address: task.partyName?.address?.unitNo || "N/A",
     market: (task.partyName?.address?.marketName as any)?.marketName || "N/A",
@@ -3270,6 +3278,7 @@ const AssignTaskPage: React.FC = () => {
         >
           {row.party}
         </TableCell>
+        <TableCell sx={getCellSx({ fontSize: 14 })}>{row.jobName}</TableCell>
         <TableCell sx={getCellSx({ fontSize: 14 })}>
           <Typography sx={{ maxWidth: 150, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {truncateText(row.address, 30)}

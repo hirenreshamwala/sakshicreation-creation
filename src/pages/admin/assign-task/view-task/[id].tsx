@@ -67,6 +67,11 @@ interface Task {
   };
   createdAt: string;
   updatedAt: string;
+  orderId?: {
+    _id: string;
+    orderNumber?: string;
+    jobName?: string;
+  };
   isRescheduledTask?: boolean;
   originalTaskId?: {
     _id: string;
@@ -227,6 +232,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ title, task, showStatusChip = true,
           <Typography component="div">Reason for Visit</Typography>
           <Typography component="div">
             <strong>{task.reasonForVisit}</strong>
+          </Typography>
+        </Box>
+        <Box>
+          <Typography component="div">Job Name</Typography>
+          <Typography component="div">
+            <strong>{task.orderId?.jobName || "N/A"}</strong>
           </Typography>
         </Box>
         <Box>

@@ -443,6 +443,12 @@ const BookletBinderTaskView = () => {
         </Box>
         <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2} mb={2}>
           <ThemeInput
+            labelName="Job Name"
+            value={singleOrder.jobName || "N/A"}
+            sx={{ flex: 1 }}
+            InputProps={{ readOnly: true }}
+          />
+          <ThemeInput
             labelName="Company Name"
             value={singleOrder.companyName?.companyName || "N/A"}
             sx={{ flex: 1 }}
