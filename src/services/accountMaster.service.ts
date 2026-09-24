@@ -109,6 +109,14 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+export interface BulkAccountMasterResponse extends ApiResponse<AccountMaster[]> {
+  insertedCount: number;
+  updatedCount: number;
+  skippedCount: number;
+  skippedRecords: Record<string, unknown>[];
+  data: AccountMaster[];
+}
+
 export interface PartySuggestion {
   _id: string;
   partyName: string;
@@ -155,15 +163,15 @@ export const accountMasterService = {
     }
   },
 
-  async bulkCreateAccountMasters(formData: FormData): Promise<ApiResponse<AccountMaster[]>> {
+  async bulkCreateAccountMasters(formData: FormData): Promise<BulkAccountMasterResponse> {
     try {
-      const response: AxiosResponse<ApiResponse<AccountMaster[]>> = await Request.post(
+      const response: AxiosResponse<BulkAccountMasterResponse> = await Request.post(
         Endpoint.BULK_CREATE_ACCOUNT_MASTERS,
         formData
       );
-      return response;
+      return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || "Failed to bulk create account masters");
+      throw new Error(error.response?.data?.message || "Failed to bulk upload account masters");
     }
   },
 

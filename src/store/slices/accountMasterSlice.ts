@@ -4,7 +4,8 @@ import {
   AccountMaster,
   CreateAccountMaster,
   UpdateAccountMaster,
-  PartySuggestion
+  PartySuggestion,
+  BulkAccountMasterResponse
 } from "@/services/accountMaster.service";
 import { toast } from "react-toastify";
 
@@ -84,11 +85,11 @@ export const bulkCreateAccountMastersThunk = createAsyncThunk(
   async (formData: FormData, { rejectWithValue }) => {
     try {
       const response = await accountMasterService.bulkCreateAccountMasters(formData);
-      toast.success(response.data.message);
-      return response.data;
+      toast.success(response.message);
+      return response;
     } catch (error: any) {
       toast.error(error.message);
-      return rejectWithValue(error.response?.data?.message || "Failed to bulk create account masters");
+      return rejectWithValue(error.message || "Failed to bulk upload account masters");
     }
   }
 );
@@ -302,15 +303,14 @@ const accountMasterSlice = createSlice({
       })
       .addCase(
         bulkCreateAccountMastersThunk.fulfilled,
-        (state, action: PayloadAction<AccountMaster[]>) => {
+        (state, action: PayloadAction<BulkAccountMasterResponse>) => {
           state.loading = false;
-          state.accountMasters = [...state.accountMasters, ...action.payload.data];
-          state.successMessage = "Account masters created successfully";
+          state.successMessage = action.payload.message || "Account bulk upload completed";
         }
       )
       .addCase(bulkCreateAccountMastersThunk.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.data as string;
+        state.error = action.payload as string;
       })
       // Update Account Master
       .addCase(updateAccountMasterThunk.pending, (state) => {

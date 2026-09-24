@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, memo } from "react";
-import { Box, debounce, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Typography } from "@mui/material";
+import { Alert, Box, CircularProgress, debounce, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Typography } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { toast } from "react-toastify";
@@ -29,6 +29,7 @@ import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import { getAllMarketsThunk } from "@/store/slices/marketDataSlice";
 import { downloadSkippedRecordsAsCSV, validateString } from "@/utills/utills";
+import type { BulkAccountMasterResponse } from "@/services/accountMaster.service";
 
 interface Address {
   unitNo: string;
@@ -96,11 +97,13 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
 
   const [referenceOptions, setReferenceOptions] = useState<PartySuggestion[]>([]);
   const [recordSkipped, setRecordSkipped] = useState(false)
-  const [skippedRecords, setSkippedRecords] = useState([])
+  const [skippedRecords, setSkippedRecords] = useState<Record<string, unknown>[]>([])
   const [isLoading, setIsLoading] = useState(false);
   const [partyOptions, setPartyOptions] = useState<PartySuggestion[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [uploadResult, setUploadResult] = useState<BulkAccountMasterResponse | null>(null);
+  const [uploadError, setUploadError] = useState("");
   const [hasReference, setHasReference] = useState("no");
   const isEditMode = !!accountId;
 
@@ -265,7 +268,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   }, [formik.values.reference]);
 
   const handleDownloadSample = () => {
-    const csvContent = `partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,partyType,createdBy\nTest Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Near Abc,Area A,400001,Visit,Ref123,FALSE,New,Stationery,SUSHIL CHHAJER\nTest Party 2,Mary Jane,8765432109,8765432109,mary.jane@example.com,Tom Brown,9234567890,9234567890,tom.brown@example.com,Payment Contact 2,9234567880,9234567880,payment2@example.com,22AAAAA0000A1Z6,Unit 102,Market B,Near Mall,Area B,400002,Order,Ref456,TRUE,Customer,booklet,SUSHIL CHHAJER\nTest Party 3,Robert Brown,7654321098,7654321098,robert@example.com,Alice White,9345678901,9345678901,alice@example.com,Payment Contact 3,9345678902,9345678902,payment3@example.com,22AAAAA0000A1Z7,Unit 103,Market C,Near Park,Area C,400003,Visit,Ref789,FALSE,New,other,SUSHIL CHHAJER`;
+    const csvContent = `accountId,partyName,ownerName,ownerMobileNo,ownerWhatsAppNo,ownerEmail,contactPerson,personMobileNo,personWhatsAppNo,contactPersonEmail,contactForPayment,contactMobileNo,contactWhatsAppNo,contactForPaymentEmail,GSTNo,unitNo,marketName,landMark,area,pincode,reasonToVisit,reference,isRequestMode,partyTag,partyType,createdById,createdBy\n,Test Party 1,John Doe,9876543210,9876543210,john.doe@example.com,Jane Smith,9123456789,9123456789,jane.smith@example.com,Payment Contact,9123456780,9123456780,payment@example.com,22AAAAA0000A1Z5,Unit 101,Market A,Near Abc,Area A,400001,Visit,Ref123,FALSE,New,Stationery,,SUSHIL CHHAJER`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -474,10 +477,13 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
   }, [referenceOptions, formik.values.partyName]);
 
   const handleDialogClose = () => {
+    if (isLoading) return;
     formik.resetForm();
     setInputValue("");
     setFile(null);
     setSkippedRecords([]);
+    setUploadResult(null);
+    setUploadError("");
     setHasReference("no");
     dispatch(clearSuggestions());
     onClose();
@@ -1176,7 +1182,8 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                   textAlign: "center",
                   backgroundColor: "#fafafa",
                   transition: "all 0.3s ease",
-                  cursor: "pointer",
+                  cursor: isLoading ? "not-allowed" : "pointer",
+                  opacity: isLoading ? 0.65 : 1,
                   "&:hover": {
                     borderColor: "#1976d2",
                     backgroundColor: "#f5f5f5",
@@ -1186,15 +1193,23 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                     backgroundColor: "#f1f8e9",
                   }),
                 }}
-                onClick={() => document.getElementById("bulk-file-input")?.click()}
+                onClick={() => {
+                  if (!isLoading) document.getElementById("bulk-file-input")?.click();
+                }}
               >
                 <input
                   id="bulk-file-input"
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
+                  disabled={isLoading}
                   onChange={(e) => {
                     const selectedFile = e.target.files?.[0];
-                    if (selectedFile) setFile(selectedFile);
+                    if (selectedFile) {
+                      setFile(selectedFile);
+                      setUploadResult(null);
+                      setUploadError("");
+                      setSkippedRecords([]);
+                    }
                   }}
                   style={{ display: "none" }}
                 />
@@ -1206,10 +1221,10 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                         📁 Choose File to Upload
                       </Typography>
                       <Typography variant="body2" color="textSecondary">
-                        Click here to select CSV file
+                        Click here to select CSV or Excel file
                       </Typography>
                       <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
-                        Supported formats: .csv
+                        Supported formats: .csv, .xlsx, .xls
                       </Typography>
                     </Box>
                   </>
@@ -1230,6 +1245,30 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 )}
               </Box>
 
+              {isLoading && (
+                <Box display="flex" alignItems="center" justifyContent="center" gap={1.5} mt={2}>
+                  <CircularProgress size={22} />
+                  <Typography fontWeight={500} color="primary">
+                    Uploading accounts… Please keep this window open.
+                  </Typography>
+                </Box>
+              )}
+
+              {uploadResult && (
+                <Alert severity={uploadResult.skippedCount > 0 ? "warning" : "success"} sx={{ mt: 2 }}>
+                  <Typography fontWeight={600}>{uploadResult.message}</Typography>
+                  <Typography variant="body2" mt={0.5}>
+                    Created: {uploadResult.insertedCount} · Updated: {uploadResult.updatedCount} · Skipped: {uploadResult.skippedCount}
+                  </Typography>
+                </Alert>
+              )}
+
+              {uploadError && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {uploadError}
+                </Alert>
+              )}
+
               {skippedRecords?.length ? <Box
                 sx={{
                   display: "flex",
@@ -1245,40 +1284,39 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 </Typography>
                 <ThemeButton onClick={() => {
                   downloadSkippedRecordsAsCSV(skippedRecords)
-                  setSkippedRecords([])
-                  onClose()
-                }}>
+                }} disabled={isLoading}>
                   Download Skipped Records
                 </ThemeButton>
               </Box> : null}
 
               <Box display="flex" gap={2} alignItems="center" justifyContent="center" mt={2}>
                 <ThemeButton
-                  disabled={!formik.values.companyName || !file}
+                  disabled={isLoading || !formik.values.companyName || !file}
                   onClick={async () => {
-                    if (file) {
+                    if (file && !isLoading) {
                       setIsLoading(true);
+                      setUploadResult(null);
+                      setUploadError("");
+                      setSkippedRecords([]);
                       try {
                         const formData = new FormData();
                         formData.append("file", file);
                         formData.append("companyName", formik.values.companyName);
                         formData.append("createdBy", formik.values.createdBy);
                         const res = await dispatch(bulkCreateAccountMastersThunk(formData)).unwrap();
+                        setUploadResult(res);
+                        setSkippedRecords(res?.skippedRecords || []);
+                        setRecordSkipped(res?.skippedCount > 0);
+                        setFile(null);
+                        const input = document.getElementById("bulk-file-input") as HTMLInputElement;
+                        if (input) input.value = "";
+                        if (refreshData) refreshData();
                         if (res?.skippedCount > 0) {
-                          setRecordSkipped(true)
-                          setSkippedRecords(res?.skippedRecords)
-                          setFile(null);
-                          if (refreshData) refreshData();
-                          toast.success("Bulk upload completed successfully");
                           return
                         }
-                        toast.success("Bulk upload completed successfully");
-                        if (refreshData) refreshData();
-                        setFile(null);
-                        onClose();
-                        setSkippedRecords([])
                       } catch (err: any) {
-                        toast.error(err.message || "Bulk upload failed");
+                        const message = typeof err === "string" ? err : err?.message || "Bulk upload failed";
+                        setUploadError(message);
                       } finally {
                         setIsLoading(false);
                       }
@@ -1292,8 +1330,12 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 {file && (
                   <ThemeButton
                     variant="outlined"
+                    disabled={isLoading}
                     onClick={() => {
                       setFile(null);
+                      setUploadResult(null);
+                      setUploadError("");
+                      setSkippedRecords([]);
                       const input = document.getElementById("bulk-file-input") as HTMLInputElement;
                       if (input) input.value = "";
                     }}
@@ -1304,6 +1346,7 @@ const AddNewPartyDialog: React.FC<AddNewPartyDialogProps> = ({
                 )}
                 <ThemeButton
                   variant="outlined"
+                  disabled={isLoading}
                   onClick={handleDownloadSample}
                   sx={{ minWidth: 180 }}
                 >
